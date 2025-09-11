@@ -1,0 +1,70 @@
+<STYLE TYPE="text/css">
+<!--
+    /*****************************************************************************************/
+    /* The contents of this file are subject to the Mozilla Public License Version 1.1       */
+    /* (the "License"); you may not use this file except in compliance with the License.     */
+    /* You may obtain a copy of the License at <http://www.mozilla.org/MPL/>.                */
+    /*                                                                                       */
+    /* Software distributed under the License is distributed on an "AS IS" basis, WITHOUT    */
+    /* WARRANTY OF ANY KIND, either express or implied. See the License for the specific     */
+    /* language governing rights and limitations under the License.                          */
+    /*                                                                                       */
+    /* The Original Code is the Venice Web Communities System.                               */
+    /*                                                                                       */
+    /* The Initial Developer of the Original Code is Eric J. Bowersox <erbo@users.sf.net>,     */
+    /* for Silverwrist Design Studios.  Portions created by Eric J. Bowersox are             */
+    /* Copyright (C) 2001 Eric J. Bowersox/Silverwrist Design Studios.  All Rights Reserved. */
+    /*                                                                                       */
+    /* Contributor(s):                                                                       */
+    /*****************************************************************************************/
+    BODY { font-family: Arial, Helvetica, sans-serif; background: #9999FF;
+         }
+    .tbar { font-family: Arial, Helvetica, sans-serif; background: #6666CC;
+	    color: white; font-size: 14pt;
+          }
+    A.tbar { color: yellow;
+           }
+    A.tbar:link { color: yellow;
+                }
+    A.tbar:visited { color: yellow;
+                   }
+    .lbar { font-family: Arial, Helvetica, sans-serif; background: #9999FF;
+            color: black; font-size: 10pt;
+          }
+    A.lbar { color: blue;
+           }
+    A.lbar:link { color: blue;
+                }
+    A.lbar:visited { color: blue;
+                   }
+    .content { font-family: Arial, Helvetica, sans-serif; background: white;
+               color: black; font-size: 10pt;
+             }
+    .chead1 { font-family: Arial, Helvetica, sans-serif; font-size: 16pt; color: #3333AA;
+            }
+    .chead2 { font-family: Arial, Helvetica, sans-serif; font-size: 13pt; color: #3333AA;
+            }
+    .cinput { font-family: Courier New, Courier, monospace; font-size: 11pt;
+            }
+    .c2 { font-family: Arial, Helvetica, sans-serif; background: white;
+          color: black; font-size: 8pt;
+        }
+    .post { font-family: Courier New, Courier, monospace; font-size: 11pt;
+          }
+    .footer { font-family: Arial, Helvetica, sans-serif; background: white;
+               color: black; font-size: 8pt;
+             }
+    .sideboxtop { font-family: Arial, Helvetica, sans-serif; background: #6666CC;
+                  color: white; font-size: 14pt;
+                }
+    .sidebox { font-family: Arial, Helvetica, sans-serif; background: #9999FF;
+               color: black; font-size: 10pt;
+             }
+    A.sidebox { color: blue;
+              }
+    A.sidebox:link { color: blue;
+                   }
+    A.sidebox:visited { color: blue;
+                      }
+-->
+</STYLE>

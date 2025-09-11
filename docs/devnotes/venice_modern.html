@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Front Page - Venice Test</title>
+    <link rel="icon" href="http://necrovenice:8080/venice/images/venice-icon.png" type="image/png">
+    <link rel="shortcut icon" href="http://necrovenice:8080/venice/images/venice-favicon.ico">
+    <meta http-equiv="refresh" content="300">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-blue-400 font-sans">
+    <!-- PAGE HEADER -->
+    <div class="bg-blue-600 w-full">
+        <div class="flex items-center justify-between px-2 py-2">
+            <!-- Site Logo -->
+            <div class="w-1/5">
+                <a href="http://venice.sourceforge.net/">
+                    <img src="./venice-frontpage_files/powered-by-venice.gif" 
+                         alt="Venice Test" 
+                         class="w-35 h-20 mx-2 my-2">
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="w-2/5 text-center">
+                <div class="text-white font-bold text-base mb-2">
+                    <a href="http://necrovenice:8080/venice/top.js.vs" class="text-yellow-300 hover:text-yellow-400">
+                        Front Page
+                    </a>
+                </div>
+                <div class="text-white font-bold text-base">
+                    <a href="http://necrovenice:8080/TODO" class="text-yellow-300 hover:text-yellow-400">Help</a>
+                    <span class="mx-2">|</span>
+                    <a href="http://necrovenice:8080/venice/find.js.vs" class="text-yellow-300 hover:text-yellow-400">Find</a>
+                </div>
+            </div>
+
+            <!-- Banner Ad -->
+            <div class="w-2/5 flex justify-end">
+                <img src="./venice-frontpage_files/midler.gif" 
+                     alt="" 
+                     class="w-96 h-15 mx-2 my-2">
+            </div>
+        </div>
+
+        <!-- Login Section -->
+        <div class="bg-blue-600 text-center py-2">
+            <span class="text-white text-base">
+                You are not logged in
+                <span class="mx-2">-</span>
+                <a href="http://necrovenice:8080/venice/login.js.vs?tgt=top.js.vs" 
+                   class="text-yellow-300 hover:text-yellow-400">Log In</a>
+                <span class="mx-2">|</span>
+                <a href="http://necrovenice:8080/venice/new_account.js.vs?tgt=top.js.vs" 
+                   class="text-yellow-300 hover:text-yellow-400">Create Account</a>
+            </span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex">
+        <!-- LEFT SIDEBAR -->
+        <div class="w-32 bg-blue-400 p-2">
+            <div class="mb-4">
+                <div class="text-black text-sm">
+                    <div class="font-bold mb-1">Front Page</div>
+                    <div class="text-gray-500 mb-1">Calendar</div>
+                    <div class="text-gray-500">Chat</div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="text-black text-sm">
+                    <div class="font-bold mb-1">About This Site</div>
+                    <div class="text-gray-500 mb-1">Documentation</div>
+                    <a href="http://necrovenice:8080/venice/frame/about-venice.html" 
+                       class="text-blue-700 hover:text-blue-900">About Venice</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1 bg-white">
+            <div class="flex">
+                <!-- Content Area -->
+                <div class="flex-1 p-4">
+                    <!-- Welcome Section -->
+                    <div class="mb-8">
+                        <h1 class="text-blue-800 text-4xl font-bold mb-2">Welcome to Venice</h1>
+                        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+                        <p class="text-black text-sm mb-4">
+                            Welcome to the <strong>Venice Web Communities System</strong>. To get the most out of this site, you should log in or create an account, using one of the links above.
+                        </p>
+                    </div>
+
+                    <!-- Venice Currents Section -->
+                    <div>
+                        <h2 class="text-blue-800 text-4xl font-bold mb-2">Venice Currents</h2>
+                        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+                        
+                        <div class="text-black text-sm">
+                            <div class="mb-2">
+                                <strong>Amy, formerly Eric</strong>
+                                (<em>
+                                    <a href="http://necrovenice:8080/venice/user/Administrator" 
+                                       target="_blank" 
+                                       class="text-blue-700 hover:text-blue-900">Administrator</a>,
+                                    Sep 8, 2025 5:17:02 PM
+                                </em>)
+                            </div>
+                            <pre class="mb-4 whitespace-pre-wrap">This is a test.
+This is only a test.
+If this had been an <em>actual</em> emergency, we would all be 
+dead by now.</pre>
+                            <div class="text-xs italic">
+                                (From the topic: <a href="http://necrovenice:8080/venice/go/Piazza!General.1" 
+                                                   class="text-blue-700 hover:text-blue-900">It Works Again!</a>)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDEBAR -->
+                <div class="w-52 p-4">
+                    <!-- Featured Communities -->
+                    <div class="mb-4">
+                        <div class="bg-blue-600 px-2 py-1 rounded-t">
+                            <h3 class="text-white font-bold text-base">Featured Communities:</h3>
+                        </div>
+                        <div class="bg-blue-400 px-2 py-2 rounded-b">
+                            <div class="flex items-center">
+                                <img src="./venice-frontpage_files/purple-ball.gif" 
+                                     alt="*" 
+                                     class="w-3.5 h-3.5 mr-2">
+                                <a href="http://necrovenice:8080/venice/community/Piazza" 
+                                   class="text-blue-700 hover:text-blue-900 font-bold text-sm">La Piazza</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Featured Conferences -->
+                    <div class="mb-4">
+                        <div class="bg-blue-600 px-2 py-1 rounded-t">
+                            <h3 class="text-white font-bold text-base">Featured Conferences:</h3>
+                        </div>
+                        <div class="bg-blue-400 px-2 py-2 rounded-b">
+                            <div class="flex items-center">
+                                <img src="./venice-frontpage_files/purple-ball.gif" 
+                                     alt="*" 
+                                     class="w-3.5 h-3.5 mr-2">
+                                <div class="text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/topics.js.vs?sig=2&conf=2" 
+                                       class="text-blue-700 hover:text-blue-900 font-bold">General Discussion</a>
+                                    <span class="text-black"> (La Piazza)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Online -->
+                    <div class="mb-4">
+                        <div class="bg-blue-600 px-2 py-1 rounded-t">
+                            <h3 class="text-white font-bold text-base">Users Online:</h3>
+                        </div>
+                        <div class="bg-blue-400 px-2 py-2 rounded-b">
+                            <div class="text-black text-sm font-bold mb-2">1 total (max 1)</div>
+                            <div class="flex items-center">
+                                <img src="./venice-frontpage_files/purple-ball.gif" 
+                                     alt="*" 
+                                     class="w-3.5 h-3.5 mr-2">
+                                <span class="text-black text-sm">Not logged in (1)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="flex">
+        <div class="w-32 bg-blue-400">&nbsp;</div>
+        <div class="flex-1 bg-white p-4">
+            <hr class="border-gray-400 w-4/5 mx-auto mb-4">
+            <div class="flex justify-center items-start gap-6">
+                <div class="text-right text-xs text-black leading-relaxed">
+                    All trademarks and copyrights on this page are owned by their respective companies.<br>
+                    All messages posted by users on this page are owned by those users.<br>
+                    The rest: Copyright © 2001-2006 
+                    <a href="http://www.silverwrist.com/" class="text-blue-700 hover:text-blue-900">Silverwrist Design Studios</a>,
+                    All Rights Reserved.<br>
+                    See our <a href="http://necrovenice:8080/TODO" class="text-blue-700 hover:text-blue-900">Policy Page</a> 
+                    for our copyright and privacy policies.
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="http://venice.users.sf.net/" target="_blank">
+                        <img src="./venice-frontpage_files/powered-by-venice.gif" 
+                             alt="Powered By Venice" 
+                             class="w-32 h-26">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
