@@ -9,24 +9,33 @@
 package ui
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 )
 
 type AmContext interface {
-	Render(int, string, interface{}) error
+	Render(string) error
+	SetRC(int)
 }
 
 type amContext struct {
 	echoContext echo.Context
+	httprc      int
 }
 
-func (c *amContext) Render(code int, name string, data interface{}) error {
-	return c.echoContext.Render(code, name, data)
+func (c *amContext) Render(name string) error {
+	return c.echoContext.Render(c.httprc, name, c)
+}
+
+func (c *amContext) SetRC(rc int) {
+	c.httprc = rc
 }
 
 func NewAmContext(ctxt echo.Context) AmContext {
 	rc := amContext{
 		echoContext: ctxt,
+		httprc:      http.StatusOK,
 	}
 	return &rc
 }

@@ -10,8 +10,8 @@ package main
 
 import (
 	"io"
-	"net/http"
 
+	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/labstack/echo/v4"
 )
@@ -24,7 +24,7 @@ var views = jet.NewSet(
 type TemplateRenderer struct {
 }
 
-func (self *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+func (r *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
 	view, err := views.GetTemplate(name)
 	if err != nil {
 		return err
@@ -35,9 +35,9 @@ func (self *TemplateRenderer) Render(w io.Writer, name string, data interface{},
 func setupEcho() *echo.Echo {
 	e := echo.New()
 	e.Renderer = &TemplateRenderer{}
-	e.GET("/", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "frame.jet", nil)
-	})
+	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
+		return "template", "frame.jet", nil
+	}))
 	return e
 }
 
