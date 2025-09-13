@@ -24,12 +24,12 @@ type amContext struct {
 	httprc      int
 }
 
-func (c *amContext) Render(name string) error {
-	return c.echoContext.Render(c.httprc, name, c)
-}
-
 func (c *amContext) SetRC(rc int) {
 	c.httprc = rc
+}
+
+func (c *amContext) Render(name string) error {
+	return c.echoContext.Render(c.httprc, name, c)
 }
 
 func NewAmContext(ctxt echo.Context) AmContext {
