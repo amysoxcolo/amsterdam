@@ -18,8 +18,10 @@ import (
 
 type AmContext interface {
 	RC() int
+	OutputType() string
 	Render(string) error
 	SubRender(string) ([]byte, error)
+	SetOutputType(string)
 	SetRC(int)
 	URLPath() string
 	VarMap() jet.VarMap
@@ -29,10 +31,15 @@ type amContext struct {
 	echoContext echo.Context
 	httprc      int
 	rendervars  jet.VarMap
+	outputType  string
 }
 
 func (c *amContext) RC() int {
 	return c.httprc
+}
+
+func (c *amContext) OutputType() string {
+	return c.outputType
 }
 
 func (c *amContext) Render(name string) error {
@@ -47,6 +54,10 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err = view.Execute(buf, c.VarMap(), c)
 	return buf.Bytes(), err
+}
+
+func (c *amContext) SetOutputType(typ string) {
+	c.outputType = typ
 }
 
 func (c *amContext) SetRC(rc int) {
@@ -66,6 +77,7 @@ func NewAmContext(ctxt echo.Context) AmContext {
 		echoContext: ctxt,
 		httprc:      http.StatusOK,
 		rendervars:  make(jet.VarMap),
+		outputType:  "",
 	}
 	ctxt.Set("amsterdam_context", &rc)
 	return &rc

@@ -20,6 +20,8 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 		what, rc, err := myfunc(amctxt)
 		if err == nil {
 			switch what {
+			case "bytes":
+				err = ctxt.Blob(amctxt.RC(), amctxt.OutputType(), rc.([]byte))
 			case "string":
 				err = ctxt.String(amctxt.RC(), fmt.Sprintf("%v", rc))
 			case "template":
