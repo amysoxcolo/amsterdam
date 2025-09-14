@@ -17,9 +17,10 @@ import (
 
 func setupEcho() *echo.Echo {
 	e := echo.New()
+	e.Logger = &EchoLogrusAdapter{}
+	e.Renderer = &ui.TemplateRenderer{}
 	e.Use(middleware.Recover())
 	e.Use(LogrusMiddleware)
-	e.Renderer = &ui.TemplateRenderer{}
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
 	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
