@@ -28,6 +28,11 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 			default:
 				err = fmt.Errorf("unknown rendering type: %s", what)
 			}
+			if err != nil {
+				ctxt.Logger().Error("Rendering error: %v", err)
+			}
+		} else {
+			ctxt.Logger().Error("Page function error: %v", err)
 		}
 		return err
 	}

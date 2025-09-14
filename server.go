@@ -17,6 +17,7 @@ func setupEcho() *echo.Echo {
 	e := echo.New()
 	e.Renderer = &ui.TemplateRenderer{}
 	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
+		ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
 		return "framed_template", "top.jet", nil
 	}))
 	return e

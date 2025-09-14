@@ -11,6 +11,7 @@ package ui
 import (
 	"io"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/labstack/echo/v4"
 )
@@ -19,6 +20,10 @@ var views = jet.NewSet(
 	jet.NewOSFileSystemLoader("./views"),
 	jet.DevelopmentMode(true),
 )
+
+func init() {
+	views.AddGlobal("GlobalConfig", config.GlobalConfig)
+}
 
 type TemplateRenderer struct {
 }
