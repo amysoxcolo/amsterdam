@@ -22,11 +22,11 @@ var static_images embed.FS
 func AmServeImage(ctxt AmContext) (string, any, error) {
 	components := strings.SplitAfter(ctxt.URLPath(), "/")
 	var err error = nil
-	if len(components) == 2 && components[0] == "builtin" {
+	if len(components) == 4 && components[2] == "builtin/" {
 		var b []byte
-		b, err = static_images.ReadFile(fmt.Sprintf("static_images/%s", components[1]))
+		b, err = static_images.ReadFile(fmt.Sprintf("static_images/%s", components[3]))
 		if err == nil {
-			mtype := mime.TypeByExtension(components[1][strings.LastIndex(components[1], "."):])
+			mtype := mime.TypeByExtension(components[3][strings.LastIndex(components[3], "."):])
 			ctxt.SetOutputType(mtype)
 			return "bytes", b, nil
 		}
