@@ -3,9 +3,13 @@ module git.erbosoft.com/amy/amsterdam
 go 1.25.0
 
 require (
+	github.com/CloudyKit/jet/v6 v6.3.1
+	github.com/labstack/echo/v4 v4.13.4
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
-	github.com/CloudyKit/jet/v6 v6.3.1 // indirect
-	github.com/labstack/echo/v4 v4.13.4 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -15,5 +19,4 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
