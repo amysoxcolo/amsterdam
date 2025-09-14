@@ -19,6 +19,10 @@ import (
 //go:embed static_images/*
 var static_images embed.FS
 
+func mimeTypeFromFilename(filename string) string {
+	return mime.TypeByExtension(filename[strings.LastIndex(filename, "."):])
+}
+
 func AmServeImage(ctxt AmContext) (string, any, error) {
 	components := strings.SplitAfter(ctxt.URLPath(), "/")
 	var err error = nil
@@ -26,8 +30,7 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 		var b []byte
 		b, err = static_images.ReadFile(fmt.Sprintf("static_images/%s", components[3]))
 		if err == nil {
-			mtype := mime.TypeByExtension(components[3][strings.LastIndex(components[3], "."):])
-			ctxt.SetOutputType(mtype)
+			ctxt.SetOutputType(mimeTypeFromFilename(components[3]))
 			return "bytes", b, nil
 		}
 	}

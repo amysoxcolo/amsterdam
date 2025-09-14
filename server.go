@@ -11,10 +11,14 @@ package main
 import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	log "github.com/sirupsen/logrus"
 )
 
 func setupEcho() *echo.Echo {
 	e := echo.New()
+	e.Use(middleware.Recover())
+	e.Use(LogrusMiddleware)
 	e.Renderer = &ui.TemplateRenderer{}
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
 	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
@@ -25,6 +29,13 @@ func setupEcho() *echo.Echo {
 }
 
 func main() {
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+	log.SetLevel(log.InfoLevel)
+
 	e := setupEcho()
+
 	e.Logger.Fatal(e.Start(":1323"))
 }
