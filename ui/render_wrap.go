@@ -22,6 +22,9 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 			switch what {
 			case "template":
 				err = amctxt.Render(fmt.Sprintf("%v", rc))
+			case "framed_template":
+				amctxt.VarMap().Set("amsterdam_innerPage", rc)
+				err = amctxt.Render("frame.jet")
 			default:
 				err = fmt.Errorf("unknown rendering type: %s", what)
 			}

@@ -9,34 +9,15 @@
 package main
 
 import (
-	"io"
-
 	"git.erbosoft.com/amy/amsterdam/ui"
-	"github.com/CloudyKit/jet/v6"
 	"github.com/labstack/echo/v4"
 )
 
-var views = jet.NewSet(
-	jet.NewOSFileSystemLoader("./views"),
-	jet.DevelopmentMode(true),
-)
-
-type TemplateRenderer struct {
-}
-
-func (r *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
-	view, err := views.GetTemplate(name)
-	if err != nil {
-		return err
-	}
-	return view.Execute(w, nil, nil)
-}
-
 func setupEcho() *echo.Echo {
 	e := echo.New()
-	e.Renderer = &TemplateRenderer{}
+	e.Renderer = &ui.TemplateRenderer{}
 	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
-		return "template", "frame.jet", nil
+		return "framed_template", "top.jet", nil
 	}))
 	return e
 }
