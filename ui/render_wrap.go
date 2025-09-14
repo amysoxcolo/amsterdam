@@ -20,6 +20,8 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 		what, rc, err := myfunc(amctxt)
 		if err == nil {
 			switch what {
+			case "string":
+				err = ctxt.String(amctxt.RC(), fmt.Sprintf("%v", rc))
 			case "template":
 				err = amctxt.Render(fmt.Sprintf("%v", rc))
 			case "framed_template":

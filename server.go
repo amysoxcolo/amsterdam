@@ -9,6 +9,8 @@
 package main
 
 import (
+	"fmt"
+
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo/v4"
 )
@@ -16,6 +18,9 @@ import (
 func setupEcho() *echo.Echo {
 	e := echo.New()
 	e.Renderer = &ui.TemplateRenderer{}
+	e.GET("/img/*", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
+		return "string", fmt.Sprintf("Path: %s", ctxt.URLPath()), nil
+	}))
 	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
 		return "framed_template", "top.jet", nil

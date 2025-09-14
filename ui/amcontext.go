@@ -17,9 +17,11 @@ import (
 )
 
 type AmContext interface {
+	RC() int
 	Render(string) error
 	SubRender(string) ([]byte, error)
 	SetRC(int)
+	URLPath() string
 	VarMap() jet.VarMap
 }
 
@@ -27,6 +29,10 @@ type amContext struct {
 	echoContext echo.Context
 	httprc      int
 	rendervars  jet.VarMap
+}
+
+func (c *amContext) RC() int {
+	return c.httprc
 }
 
 func (c *amContext) Render(name string) error {
@@ -45,6 +51,10 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 
 func (c *amContext) SetRC(rc int) {
 	c.httprc = rc
+}
+
+func (c *amContext) URLPath() string {
+	return c.echoContext.Request().URL.Path
 }
 
 func (c *amContext) VarMap() jet.VarMap {
