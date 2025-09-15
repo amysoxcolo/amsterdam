@@ -6,6 +6,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
+// Package main contains the high-level Amsterdam logic.
 package main
 
 import (
@@ -17,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// init sets up the initial configuration for Logrus logging.
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -25,6 +28,12 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 }
 
+/* toglog converts a Logrus logging level to a glog one.
+ * Parameters:
+ *     l - The Logrus log level to be converted.
+ * Returns:
+ *     The equivalent glog log level.
+ */
 func toglog(l log.Level) glog.Lvl {
 	switch l {
 	case log.DebugLevel:
@@ -40,6 +49,12 @@ func toglog(l log.Level) glog.Lvl {
 	}
 }
 
+/* fromglog converts a glog logging level to a Logrus one.
+ * Parameters:
+ *     l - The glog log level to be converted.
+ * Returns:
+ *     The equivalent Logrus log level.
+ */
 func fromglog(l glog.Lvl) log.Level {
 	switch l {
 	case glog.DEBUG:
@@ -55,7 +70,7 @@ func fromglog(l glog.Lvl) log.Level {
 	}
 }
 
-// EchoLogrusAdapter implements echo.Logger using logrus
+// EchoLogrusAdapter implements echo.Logger using logrus.
 type EchoLogrusAdapter struct{}
 
 func (l *EchoLogrusAdapter) Output() io.Writer                         { return log.StandardLogger().Out }
@@ -87,7 +102,7 @@ func (l *EchoLogrusAdapter) Panicf(format string, args ...interface{}) { log.Pan
 func (l *EchoLogrusAdapter) Panicj(j glog.JSON)                        { log.WithFields(log.Fields(j)).Panic() }
 func (l *EchoLogrusAdapter) SetHeader(h string)                        {}
 
-// Custom Logrus middleware
+// LogrusMiddleware installs Logrus logging into the Echo middleware chain.
 func LogrusMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		start := time.Now()

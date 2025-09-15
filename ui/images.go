@@ -6,6 +6,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
+// Package ui holds the support for the Amsterdam user interface, wrapping Echo and Jet templates.
 package ui
 
 import (
@@ -19,10 +21,24 @@ import (
 //go:embed static_images/*
 var static_images embed.FS
 
+/* mimeTypeFromFilenane returns the MIME type of a file, given its filename.
+ * Parameters:
+ *     filaname - The name of the file to be tested.
+ * Returns:
+ *     The file's inferred MIME type.
+ */
 func mimeTypeFromFilename(filename string) string {
 	return mime.TypeByExtension(filename[strings.LastIndex(filename, "."):])
 }
 
+/* AmServeImage serves an image from internal storage.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Type of content to be rendered
+ *     Content to be rendered
+ *     Standard Go error return
+ */
 func AmServeImage(ctxt AmContext) (string, any, error) {
 	components := strings.SplitAfter(ctxt.URLPath(), "/")
 	var err error = nil
@@ -35,5 +51,6 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 		}
 	}
 	ctxt.SetRC(http.StatusNotFound)
+	// TODO: improve this error reporting
 	return "string", fmt.Sprintf("File not found: %s", ctxt.URLPath()), err
 }

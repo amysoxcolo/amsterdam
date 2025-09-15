@@ -6,6 +6,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
+// Package main contains the high-level Amsterdam logic.
 package main
 
 import (
@@ -14,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+// setupEcho creates, configures, and returns a new Echo instance.
 func setupEcho() *echo.Echo {
 	e := echo.New()
 	e.Logger = &EchoLogrusAdapter{}
@@ -30,6 +33,7 @@ func setupEcho() *echo.Echo {
 	return e
 }
 
+// main is Ye Olde Main Function.
 func main() {
 	e := setupEcho()
 

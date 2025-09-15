@@ -6,6 +6,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
+// Package ui holds the support for the Amsterdam user interface, wrapping Echo and Jet templates.
 package ui
 
 import (
@@ -14,6 +16,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+/* AmWrap wraps the Amsterdam handler function in a wrapper that implements the spec for
+ * Echo handler functions.
+ * Parameters:
+ *     myfunc - The Amsterdam handler to be wrapped.
+ * Returns:
+ *     The wrapped function.
+ */
 func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 	return func(ctxt echo.Context) error {
 		amctxt := NewAmContext(ctxt)
@@ -33,10 +42,10 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 				err = fmt.Errorf("unknown rendering type: %s", what)
 			}
 			if err != nil {
-				ctxt.Logger().Error("Rendering error: %v", err)
+				ctxt.Logger().Errorf("Rendering error: %v", err)
 			}
 		} else {
-			ctxt.Logger().Error("Page function error: %v", err)
+			ctxt.Logger().Errorf("Page function error: %v", err)
 		}
 		return err
 	}
