@@ -11,6 +11,8 @@
 package ui
 
 import (
+	"embed"
+	"fmt"
 	"io"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -18,9 +20,44 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+//go:embed views/*
+var static_views embed.FS
+
+// EmbeddedLoader is our implementation of Loader that references an embedded filesystem.
+type EmbeddedLoader struct {
+	efs    embed.FS
+	prefix string
+}
+
+/* Exists (implements Loader) tests if a particular template exists.
+ * Parameters:
+ *     templatePath - Path of the template to be tested.
+ * Returns:
+ *     true if the template exists, false if not.
+ */
+func (l *EmbeddedLoader) Exists(templatePath string) bool {
+	file, err := l.efs.Open(fmt.Sprintf("%s%s", l.prefix, templatePath))
+	if err == nil {
+		file.Close()
+		return true
+	}
+	return false
+}
+
+/* Open (implements Loader) opens a template file.
+ * Parameters:
+ *     templatePath - Path of the template to open.
+ * Returns:
+ *     Handle to the opened template file
+ *.    Standard Go error status.
+ */
+func (l *EmbeddedLoader) Open(templatePath string) (io.ReadCloser, error) {
+	return l.efs.Open((fmt.Sprintf("%s%s", l.prefix, templatePath)))
+}
+
 // views is the main Jet template repository.
 var views = jet.NewSet(
-	jet.NewOSFileSystemLoader("./views"),
+	&EmbeddedLoader{efs: static_views, prefix: "views"},
 	jet.DevelopmentMode(true),
 )
 
