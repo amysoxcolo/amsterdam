@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
@@ -44,7 +45,7 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 	var err error = nil
 	if len(components) == 4 && components[2] == "builtin/" {
 		var b []byte
-		b, err = static_images.ReadFile(fmt.Sprintf("static_images/%s", components[3]))
+		b, err = static_images.ReadFile(filepath.Join("static_images", components[3]))
 		if err == nil {
 			ctxt.SetOutputType(mimeTypeFromFilename(components[3]))
 			return "bytes", b, nil

@@ -21,6 +21,9 @@ type AmConfig struct {
 	Site struct {
 		Title string `yaml:"title"`
 	} `yaml:"site"`
+	Rendering struct {
+		TemplateDir string `yaml:"templatedir"`
+	} `yaml:"rendering"`
 }
 
 //go:embed default.yaml

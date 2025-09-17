@@ -12,57 +12,30 @@ package ui
 
 import (
 	"embed"
-	"fmt"
 	"io"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/CloudyKit/jet/v6"
+	"github.com/CloudyKit/jet/v6/loaders/embedfs"
+	"github.com/CloudyKit/jet/v6/loaders/multi"
 	"github.com/labstack/echo/v4"
 )
 
 //go:embed views/*
 var static_views embed.FS
 
-// EmbeddedLoader is our implementation of Loader that references an embedded filesystem.
-type EmbeddedLoader struct {
-	efs    embed.FS
-	prefix string
-}
-
-/* Exists (implements Loader) tests if a particular template exists.
- * Parameters:
- *     templatePath - Path of the template to be tested.
- * Returns:
- *     true if the template exists, false if not.
- */
-func (l *EmbeddedLoader) Exists(templatePath string) bool {
-	file, err := l.efs.Open(fmt.Sprintf("%s%s", l.prefix, templatePath))
-	if err == nil {
-		file.Close()
-		return true
-	}
-	return false
-}
-
-/* Open (implements Loader) opens a template file.
- * Parameters:
- *     templatePath - Path of the template to open.
- * Returns:
- *     Handle to the opened template file
- *.    Standard Go error status.
- */
-func (l *EmbeddedLoader) Open(templatePath string) (io.ReadCloser, error) {
-	return l.efs.Open((fmt.Sprintf("%s%s", l.prefix, templatePath)))
-}
-
 // views is the main Jet template repository.
-var views = jet.NewSet(
-	&EmbeddedLoader{efs: static_views, prefix: "views"},
-	jet.DevelopmentMode(true),
-)
+var views *jet.Set
 
-// init adds additional configuration for the views object.
-func init() {
+// SetupTemplates is called to set up the template renderer after the configuration is loaded.
+func SetupTemplates() {
+	views = jet.NewSet(
+		multi.NewLoader(
+			jet.NewOSFileSystemLoader(config.GlobalConfig.Rendering.TemplateDir),
+			embedfs.NewLoader("views/", static_views),
+		),
+		jet.DevelopmentMode(true),
+	)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
 }
 

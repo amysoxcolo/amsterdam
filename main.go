@@ -35,6 +35,7 @@ func setupEcho() *echo.Echo {
 
 // main is Ye Olde Main Function.
 func main() {
+	ui.SetupTemplates()
 	e := setupEcho()
 
 	e.Logger.Fatal(e.Start(":1323"))

@@ -8,3 +8,5 @@
 #
 site:
   title: "Amsterdam Web Communities System"
+rendering:
+  templatedir: custom_templates
