@@ -11,6 +11,7 @@
 package main
 
 import (
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -35,6 +36,7 @@ func setupEcho() *echo.Echo {
 
 // main is Ye Olde Main Function.
 func main() {
+	config.SetupConfig()
 	ui.SetupTemplates()
 	e := setupEcho()
 
