@@ -25,9 +25,17 @@ import (
  */
 func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 	return func(ctxt echo.Context) error {
-		amctxt := NewAmContext(ctxt)
+		amctxt, aerr := NewAmContext(ctxt)
+		if aerr != nil {
+			ctxt.Logger().Errorf("Session creation error: %v", aerr)
+			return aerr
+		}
 		what, rc, err := myfunc(amctxt)
 		if err == nil {
+			if err = amctxt.Session().Save(ctxt.Request(), ctxt.Response()); err != nil {
+				ctxt.Logger().Errorf("Session save error: %v", err)
+				return err
+			}
 			switch what {
 			case "bytes":
 				err = ctxt.Blob(amctxt.RC(), amctxt.OutputType(), rc.([]byte))

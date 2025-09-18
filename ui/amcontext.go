@@ -15,6 +15,8 @@ import (
 	"net/http"
 
 	"github.com/CloudyKit/jet/v6"
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
 
@@ -23,7 +25,9 @@ type AmContext interface {
 	RC() int
 	OutputType() string
 	Render(string) error
+	Scratchpad() map[any]any
 	SubRender(string) ([]byte, error)
+	Session() *sessions.Session
 	SetOutputType(string)
 	SetRC(int)
 	URLPath() string
@@ -36,6 +40,8 @@ type amContext struct {
 	httprc      int
 	rendervars  jet.VarMap
 	outputType  string
+	scratchpad  map[any]any
+	session     *sessions.Session
 }
 
 // RC returns the HTTP result code for the current operation.
@@ -58,6 +64,14 @@ func (c *amContext) Render(name string) error {
 	return c.echoContext.Render(c.httprc, name, c)
 }
 
+// Scratchpad returns the per-request scratchpad for values.
+func (c *amContext) Scratchpad() map[any]any {
+	if c.scratchpad == nil {
+		c.scratchpad = make(map[any]any)
+	}
+	return c.scratchpad
+}
+
 /* SubRender renders a subtemplate to the output.
  * Parameters:
  *	   name = The name of the template to be rendered.
@@ -73,6 +87,11 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err = view.Execute(buf, c.VarMap(), c)
 	return buf.Bytes(), err
+}
+
+// Session returns the HTTP session.
+func (c *amContext) Session() *sessions.Session {
+	return c.session
 }
 
 // SetOutputType sets the MIME output type for the current operation.
@@ -95,21 +114,38 @@ func (c *amContext) VarMap() jet.VarMap {
 	return c.rendervars
 }
 
+// defoptions is the default options for the HTTP session.
+var defoptions *sessions.Options = &sessions.Options{
+	Path:     "/",
+	MaxAge:   86400,
+	HttpOnly: true,
+}
+
 /* NewAmContext creates a new AmContext wrapping the Echo context.
  * Parameters:
  *     ctxt - The Echo context to be wrapped.
  * Returns:
  *     A new Amsterdam context wrapping that context.
+ *     Standard Go error status.
  */
-func NewAmContext(ctxt echo.Context) AmContext {
+func NewAmContext(ctxt echo.Context) (AmContext, error) {
 	rc := amContext{
 		echoContext: ctxt,
 		httprc:      http.StatusOK,
 		rendervars:  make(jet.VarMap),
 		outputType:  "",
+		scratchpad:  nil,
 	}
 	ctxt.Set("amsterdam_context", &rc)
-	return &rc
+	sess, err := session.Get("amsterdam_session", ctxt)
+	if err == nil {
+		rc.session = sess
+		sess.Options = defoptions
+		if sess.IsNew {
+			SetupAmSession(sess)
+		}
+	}
+	return &rc, err
 }
 
 /* AmContextFromEchoContext returns the AmContext associated with an Echo context.

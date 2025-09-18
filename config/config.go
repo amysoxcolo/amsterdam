@@ -16,6 +16,7 @@ import (
 	"os"
 
 	argparse "github.com/alexflint/go-arg"
+	"github.com/labstack/gommon/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,6 +27,9 @@ const AMSTERDAM_VERSION = "0.0.1"
 type AmCLI struct {
 	ConfigFile string `arg:"-C,--config" help:"Location of the configuration file."`
 }
+
+// CommandLine is the command-line arguments passed to Amsterdam.
+var CommandLine AmCLI
 
 // Description (from argparse.Described) returns the description string for the application.
 func (*AmCLI) Description() string {
@@ -44,6 +48,7 @@ type AmConfig struct {
 	} `yaml:"site"`
 	Rendering struct {
 		TemplateDir string `yaml:"templatedir"`
+		CookieKey   string `yaml:"cookiekey"`
 	} `yaml:"rendering"`
 }
 
@@ -58,11 +63,9 @@ var GlobalConfig AmConfig
 
 // init prepares the default configuration for the application.
 func init() {
-	var defaultConfig AmConfig
 	if err := yaml.Unmarshal(defaultConfigData, &defaultConfig); err != nil {
 		panic(err) // can't happen
 	}
-	GlobalConfig = defaultConfig
 }
 
 /* overlayString is a helper that takes a loaded or defaulted string and returns it.
@@ -92,21 +95,21 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.
 func SetupConfig() {
-	var args AmCLI
-	argparse.MustParse(&args)
+	argparse.MustParse(&CommandLine)
 
-	if args.ConfigFile != "" {
+	if CommandLine.ConfigFile != "" {
 		// load the data and use it to unmarshal the loaded configuration
-		data, err := os.ReadFile(args.ConfigFile)
+		data, err := os.ReadFile(CommandLine.ConfigFile)
 		if err != nil {
-			panic(fmt.Sprintf("unable to load configuration file %s: %v", args.ConfigFile, err))
+			panic(fmt.Sprintf("unable to load configuration file %s: %v", CommandLine.ConfigFile, err))
 		}
 		var loadedConfig AmConfig
 		if err = yaml.Unmarshal(data, &loadedConfig); err != nil {
-			panic(fmt.Sprintf("unable to load configuration file %s: %v", args.ConfigFile, err))
+			panic(fmt.Sprintf("unable to load configuration file %s: %v", CommandLine.ConfigFile, err))
 		}
 		overlayConfig(&GlobalConfig, &loadedConfig, &defaultConfig)
 	} else {
 		GlobalConfig = defaultConfig // just copy over the defaults
 	}
+	log.Infof("Global config: %v", GlobalConfig)
 }
