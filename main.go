@@ -11,6 +11,12 @@
 package main
 
 import (
+	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo-contrib/session"
@@ -28,10 +34,7 @@ func setupEcho() *echo.Echo {
 	e.Use(session.Middleware(ui.SessionStore))
 
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
-	e.GET("/", ui.AmWrap(func(ctxt ui.AmContext) (string, any, error) {
-		ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
-		return "framed_template", "top.jet", nil
-	}))
+	e.GET("/", ui.AmWrap(TopPage))
 
 	return e
 }
@@ -43,7 +46,25 @@ func main() {
 	ui.SetupTemplates()
 	ui.SetupSessionManager()
 
-	// Set up Echo and start it. Won't return.
+	// Set up Echo.
 	e := setupEcho()
-	e.Logger.Fatal(e.Start(":1323"))
+
+	// Set up to trap SIGINT and shut down gracefully
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	// Start server
+	go func() {
+		if err := e.Start(":1323"); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatalf("shutting down the server: %v", err)
+		}
+	}()
+
+	// Wait for the interrupt signal and then gracefully shut the server down.
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
