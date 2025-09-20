@@ -31,7 +31,7 @@ func SetupAmSession(session *sessions.Session) {
 	session.Values["temp"] = "Active"
 	u, err := database.AmGetAnonUser()
 	if err == nil {
-		session.Values["user"] = u
+		session.Values["user_id"] = u.Uid
 	} else {
 		log.Errorf("Unable to load anon user: %v", err)
 	}

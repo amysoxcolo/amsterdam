@@ -49,7 +49,11 @@ type amContext struct {
 
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
-	return c.session.Values["user"].(*database.User)
+	u, err := database.AmGetUser(c.session.Values["user_id"].(int32))
+	if err != nil {
+		log.Errorf("unable to retrieve current user")
+	}
+	return u
 }
 
 // RC returns the HTTP result code for the current operation.

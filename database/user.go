@@ -10,7 +10,6 @@
 package database
 
 import (
-	"encoding/gob"
 	"fmt"
 	"time"
 )
@@ -35,11 +34,6 @@ type User struct {
 	DOB          *time.Time `db:"dob"`
 }
 
-// init registers data types from this module.
-func init() {
-	gob.Register(User{})
-}
-
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
  *     uid - The UID of the user.
@@ -59,7 +53,7 @@ func AmGetUser(uid int32) (*User, error) {
 	return &(rc[0]), err
 }
 
-/* AmGetAmonUser returns a reference to the anonymous user.
+/* AmGetAnonUser returns a reference to the anonymous user.
  * Returns:
  *     Pointer to User containing anonymous user data, or nil
  *     Standard Go error status
