@@ -440,16 +440,11 @@ CREATE TABLE ipban (
 # Set table access rights
 ##############################################################################
 
-# this is a test only - remove when we go to production
-GRANT ALL PRIVILEGES ON venice.*
-    TO erbo@localhost IDENTIFIED BY 'meesatest'
-    WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON venice.*
-    TO erbo@'10.29.99.%' IDENTIFIED BY 'meesatest'
-    WITH GRANT OPTION;
+CREATE USER IF NOT EXISTS 'amsdb'@'localhost'
+    IDENTIFIED WITH mysql_native_password BY 'x00yes2k';
 
-GRANT INSERT, DELETE, UPDATE, SELECT, LOCK TABLES ON venice.*
-    TO venicedb@localhost IDENTIFIED BY 'x00yes2K';
+GRANT INSERT, DELETE, UPDATE, SELECT, LOCK TABLES ON amsterdam.*
+    TO 'amsdb'@'localhost';
 
 ##############################################################################
 # Constant Data Population
