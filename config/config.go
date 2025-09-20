@@ -46,6 +46,10 @@ type AmConfig struct {
 	Site struct {
 		Title string `yaml:"title"`
 	} `yaml:"site"`
+	Database struct {
+		Driver string `yaml:"driver"`
+		Dsn    string `yaml:"dsn"`
+	} `yaml:"database"`
 	Rendering struct {
 		TemplateDir string `yaml:"templatedir"`
 		CookieKey   string `yaml:"cookiekey"`

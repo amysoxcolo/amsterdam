@@ -12,12 +12,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
+	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -43,6 +45,11 @@ func setupEcho() *echo.Echo {
 func main() {
 	// Configure the system.
 	config.SetupConfig()
+	err := database.SetupDb()
+	if err != nil {
+		panic(fmt.Sprintf("Database open failure: %v", err))
+	}
+	defer database.ClosedownDb()
 	ui.SetupTemplates()
 	ui.SetupSessionManager()
 

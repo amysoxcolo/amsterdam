@@ -12,6 +12,7 @@ package ui
 
 import (
 	"git.erbosoft.com/amy/amsterdam/config"
+	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,4 +29,10 @@ func SetupSessionManager() {
 // SetupAmSession sets up a newly created Amsterdam session.
 func SetupAmSession(session *sessions.Session) {
 	session.Values["temp"] = "Active"
+	u, err := database.AmGetAnonUser()
+	if err == nil {
+		session.Values["user"] = u
+	} else {
+		log.Errorf("Unable to load anon user: %v", err)
+	}
 }

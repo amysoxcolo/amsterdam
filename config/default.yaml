@@ -8,6 +8,9 @@
 #
 site:
   title: "Amsterdam Web Communities System"
+database:
+  driver: "mysql"
+  dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam"
 rendering:
   templatedir: custom_templates
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
