@@ -14,6 +14,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/gorilla/sessions"
+	"github.com/quasoft/memstore"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,8 +23,7 @@ var SessionStore sessions.Store
 
 // SetupSessionManager sets up the session manager.
 func SetupSessionManager() {
-	log.Infof("Cookie key is %s", config.GlobalConfig.Rendering.CookieKey)
-	SessionStore = sessions.NewCookieStore([]byte(config.GlobalConfig.Rendering.CookieKey))
+	SessionStore = memstore.NewMemStore([]byte(config.GlobalConfig.Rendering.CookieKey))
 }
 
 // SetupAmSession sets up a newly created Amsterdam session.

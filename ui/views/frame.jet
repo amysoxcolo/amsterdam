@@ -24,7 +24,7 @@
         <div class="flex items-center justify-between px-2 py-2">
             <!-- Site Logo -->
             <div class="w-1/5">
-                <a href="http://venice.sourceforge.net/">
+                <a href="https://git.erbosoft.com/amy/amsterdam">
                     <img src="/img/builtin/powered-by-amsterdam.png" 
                          alt="Amsterdam Test" 
                          class="w-35 h-20 mx-2 my-2">
@@ -34,14 +34,14 @@
             <!-- Navigation Links -->
             <div class="w-2/5 text-center">
                 <div class="text-white font-bold text-base mb-2">
-                    <a href="http://necrovenice:8080/venice/top.js.vs" class="text-yellow-300 hover:text-yellow-400">
+                    <a href="/" class="text-yellow-300 hover:text-yellow-400">
                         Front Page
                     </a>
                 </div>
                 <div class="text-white font-bold text-base">
-                    <a href="http://necrovenice:8080/TODO" class="text-yellow-300 hover:text-yellow-400">Help</a>
+                    <a href="/TODO/help" class="text-yellow-300 hover:text-yellow-400">Help</a>
                     <span class="mx-2">|</span>
-                    <a href="http://necrovenice:8080/venice/find.js.vs" class="text-yellow-300 hover:text-yellow-400">Find</a>
+                    <a href="/TODO/find" class="text-yellow-300 hover:text-yellow-400">Find</a>
                 </div>
             </div>
 
@@ -56,13 +56,19 @@
         <!-- Login Section -->
         <div class="bg-blue-600 text-center py-2">
             <span class="text-white text-base">
-                You are not logged in
-                <span class="mx-2">-</span>
-                <a href="http://necrovenice:8080/venice/login.js.vs?tgt=top.js.vs" 
-                   class="text-yellow-300 hover:text-yellow-400">Log In</a>
-                <span class="mx-2">|</span>
-                <a href="http://necrovenice:8080/venice/new_account.js.vs?tgt=top.js.vs" 
-                   class="text-yellow-300 hover:text-yellow-400">Create Account</a>
+                {{ if .CurrentUser().IsAnon }}
+                    You are not logged in
+                    <span class="mx-2">-</span>
+                    <a href="/TODO/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
+                    <span class="mx-2">|</span>
+                    <a href="/TODO/newaccount" class="text-yellow-300 hover:text-yellow-400">Create Account</a>
+                {{ else }}
+                    You are logged in as <b>{{ .CurrentUser().Username }}</b>
+                    <span class="mx-2">-</span>
+                    <a href="/TODO/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
+                    <span class="mx-2">|</span>
+                    <a href="/TODO/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
+                {{ end }}
             </span>
         </div>
     </div>
@@ -83,8 +89,8 @@
                 <div class="text-black text-sm">
                     <div class="font-bold mb-1">About This Site</div>
                     <div class="text-gray-500 mb-1">Documentation</div>
-                    <a href="http://necrovenice:8080/venice/frame/about-venice.html" 
-                       class="text-blue-700 hover:text-blue-900">About Venice</a>
+                    <a href="/TODO/aboutpage" 
+                       class="text-blue-700 hover:text-blue-900">About Amsterdam</a>
                 </div>
             </div>
         </div>
@@ -106,17 +112,15 @@
                 <div class="text-right text-xs text-black leading-relaxed">
                     All trademarks and copyrights on this page are owned by their respective companies.<br>
                     All messages posted by users on this page are owned by those users.<br>
-                    The rest: Copyright © 2001-2006 
-                    <a href="http://www.silverwrist.com/" class="text-blue-700 hover:text-blue-900">Silverwrist Design Studios</a>,
+                    The rest: Copyright © 2025 
+                    <a href="https://www.erbosoft.com/" class="text-blue-700 hover:text-blue-900">Erbosoft Metaverse Design Solutions</a>,
                     All Rights Reserved.<br>
-                    See our <a href="http://necrovenice:8080/TODO" class="text-blue-700 hover:text-blue-900">Policy Page</a> 
+                    See our <a href="/TODO/policypage" class="text-blue-700 hover:text-blue-900">Policy Page</a> 
                     for our copyright and privacy policies.
                 </div>
                 <div class="flex-shrink-0">
-                    <a href="http://venice.users.sf.net/" target="_blank">
-                        <img src="/img/builtin/powered-by-amsterdam.png" 
-                             alt="Powered By Amsterdam" 
-                             class="w-32 h-26">
+                    <a href="https://git.erbosoft.com/amy/amsterdam" target="_blank">
+                        <img src="/img/builtin/powered-by-amsterdam.png" alt="Powered By Amsterdam" class="w-32 h-26">
                     </a>
                 </div>
             </div>

@@ -10,7 +10,7 @@ site:
   title: "Amsterdam Web Communities System"
 database:
   driver: "mysql"
-  dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam"
+  dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=Local"
 rendering:
   templatedir: custom_templates
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz

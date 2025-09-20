@@ -14,14 +14,17 @@ import (
 	"bytes"
 	"net/http"
 
+	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 // AmContext is the interface for Amsterdam's wapper context that exposes the required functionality.
 type AmContext interface {
+	CurrentUser() *database.User
 	RC() int
 	OutputType() string
 	Render(string) error
@@ -42,6 +45,11 @@ type amContext struct {
 	outputType  string
 	scratchpad  map[any]any
 	session     *sessions.Session
+}
+
+// CurrentUser returns the current user from the session.
+func (c *amContext) CurrentUser() *database.User {
+	return c.session.Values["user"].(*database.User)
 }
 
 // RC returns the HTTP result code for the current operation.
@@ -143,6 +151,8 @@ func NewAmContext(ctxt echo.Context) (AmContext, error) {
 		sess.Options = defoptions
 		if sess.IsNew {
 			SetupAmSession(sess)
+		} else {
+			log.Debugf("took the not-new-session path")
 		}
 	}
 	return &rc, err
