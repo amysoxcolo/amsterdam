@@ -6,51 +6,53 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
-<!-- Content Area -->
-<div class="flex-1 p-4">
-    {{ if .CurrentUser().IsAnon }}
-        <!-- Welcome Section -->
-        <div class="mb-8">
-            <h1 class="text-blue-800 text-4xl font-bold mb-2">Welcome to Amsterdam</h1>
-            <hr class="border-2 border-gray-400 w-4/5 mb-4">
-            <p class="text-black text-sm mb-4">
-                Welcome to the <strong>Amsterdam Web Communities System</strong>. To get the most out of this site, you should log in or create an account, using one of the links above.
-            </p>
-        </div>
-    {{ end }}
-
-    <!-- Venice Currents Section -->
-    <div>
-        <h2 class="text-blue-800 text-4xl font-bold mb-2">Venice Currents</h2>
-        <hr class="border-2 border-gray-400 w-4/5 mb-4">
-        
-        <div class="text-black text-sm">
-            <div class="mb-2">
-                <strong>Amy, formerly Eric</strong>
-                (<em>
-                    <a href="http://necrovenice:8080/venice/user/Administrator" 
-                        target="_blank" 
-                        class="text-blue-700 hover:text-blue-900">Administrator</a>,
-                    Sep 8, 2025 5:17:02 PM
-                </em>)
+ <div class="flex">
+    <!-- Content Area -->
+    <div class="flex-1 p-4">
+        {{ if .CurrentUser().IsAnon }}
+            <!-- Welcome Section -->
+            <div class="mb-8">
+                <h1 class="text-blue-800 text-4xl font-bold mb-2">Welcome to Amsterdam</h1>
+                <hr class="border-2 border-gray-400 w-4/5 mb-4">
+                <p class="text-black text-sm mb-4">
+                    Welcome to the <strong>Amsterdam Web Communities System</strong>. To get the most out of this site, you should log in or create an account, using one of the links above.
+                </p>
             </div>
-            <pre class="mb-4 whitespace-pre-wrap">This is a test.
-This is only a test.
-If this had been an <em>actual</em> emergency, we would all be 
-dead by now.</pre>
-            <div class="text-xs italic">
-                (From the topic: <a href="http://necrovenice:8080/venice/go/Piazza!General.1" 
-                                    class="text-blue-700 hover:text-blue-900">It Works Again!</a>)
+        {{ end }}
+
+        <!-- Venice Currents Section -->
+        <div>
+            <h2 class="text-blue-800 text-4xl font-bold mb-2">Venice Currents</h2>
+            <hr class="border-2 border-gray-400 w-4/5 mb-4">
+            
+            <div class="text-black text-sm">
+                <div class="mb-2">
+                    <strong>Amy, formerly Eric</strong>
+                    (<em>
+                        <a href="http://necrovenice:8080/venice/user/Administrator" 
+                            target="_blank" 
+                            class="text-blue-700 hover:text-blue-900">Administrator</a>,
+                        Sep 8, 2025 5:17:02 PM
+                    </em>)
+                </div>
+                <pre class="mb-4 whitespace-pre-wrap">This is a test.
+    This is only a test.
+    If this had been an <em>actual</em> emergency, we would all be 
+    dead by now.</pre>
+                <div class="text-xs italic">
+                    (From the topic: <a href="http://necrovenice:8080/venice/go/Piazza!General.1" 
+                                        class="text-blue-700 hover:text-blue-900">It Works Again!</a>)
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- RIGHT SIDEBAR -->
-<div class="w-52 p-4">
-    {{ ctxt := . }}
-    {{ range sideboxes }}
-        {{ ctxt.SetScratch("__sidebox", .) }}
-        {{ ctxt.SubRender(.TemplateName) | raw }}
-    {{ end }}
+    <!-- RIGHT SIDEBAR -->
+    <div class="w-52 p-4">
+        {{ ctxt := . }}
+        {{ range sideboxes }}
+            {{ ctxt.SetScratch("__sidebox", .) }}
+            {{ ctxt.SubRender(.TemplateName) | raw }}
+        {{ end }}
+    </div>
 </div>

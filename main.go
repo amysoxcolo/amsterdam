@@ -36,6 +36,7 @@ func setupEcho() *echo.Echo {
 	e.Use(session.Middleware(ui.SessionStore))
 
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
+	e.GET("/about", ui.AmWrap(AboutPage))
 	e.GET("/", ui.AmWrap(TopPage))
 
 	return e

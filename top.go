@@ -79,3 +79,9 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("sideboxes", rc)
 	return "framed_template", "top.jet", nil
 }
+
+func AboutPage(ctxt ui.AmContext) (string, any, error) {
+	// Set the page title.
+	ctxt.VarMap().Set("amsterdam_pageTitle", "About Amsterdam")
+	return "framed_template", "about.jet", nil
+}

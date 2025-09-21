@@ -89,17 +89,14 @@
                 <div class="text-black text-sm">
                     <div class="font-bold mb-1">About This Site</div>
                     <div class="text-gray-500 mb-1">Documentation</div>
-                    <a href="/TODO/aboutpage" 
-                       class="text-blue-700 hover:text-blue-900">About Amsterdam</a>
+                    <a href="/about" class="text-blue-700 hover:text-blue-900">About Amsterdam</a>
                 </div>
             </div>
         </div>
 
         <!-- MAIN CONTENT -->
         <div class="flex-1 bg-white">
-            <div class="flex">
-                {{ .SubRender(amsterdam_innerPage) | raw }}
-            </div>
+            {{ .SubRender(amsterdam_innerPage) | raw }}
         </div>
     </div>
 
