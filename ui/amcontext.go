@@ -28,11 +28,12 @@ type AmContext interface {
 	RC() int
 	OutputType() string
 	Render(string) error
-	Scratchpad() map[any]any
+	Scratchpad() map[string]any
 	SubRender(string) ([]byte, error)
 	Session() *sessions.Session
 	SetOutputType(string)
 	SetRC(int)
+	SetScratch(string, any)
 	URLPath() string
 	VarMap() jet.VarMap
 }
@@ -43,7 +44,7 @@ type amContext struct {
 	httprc      int
 	rendervars  jet.VarMap
 	outputType  string
-	scratchpad  map[any]any
+	scratchpad  map[string]any
 	session     *sessions.Session
 }
 
@@ -77,9 +78,9 @@ func (c *amContext) Render(name string) error {
 }
 
 // Scratchpad returns the per-request scratchpad for values.
-func (c *amContext) Scratchpad() map[any]any {
+func (c *amContext) Scratchpad() map[string]any {
 	if c.scratchpad == nil {
-		c.scratchpad = make(map[any]any)
+		c.scratchpad = make(map[string]any)
 	}
 	return c.scratchpad
 }
@@ -114,6 +115,13 @@ func (c *amContext) SetOutputType(typ string) {
 // SetRC sets the HTTP result code for the current operation.
 func (c *amContext) SetRC(rc int) {
 	c.httprc = rc
+}
+
+func (c *amContext) SetScratch(name string, val any) {
+	if c.scratchpad == nil {
+		c.scratchpad = make(map[string]any)
+	}
+	c.scratchpad[name] = val
 }
 
 // URLPath returns the path component of the request URL.

@@ -1,0 +1,24 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<!-- Featured Conferences -->
+<div class="mb-4">
+    <div class="bg-blue-600 px-2 py-1 rounded-t">
+        <h3 class="text-white font-bold text-base">Featured Conferences:</h3>
+    </div>
+    <div class="bg-blue-400 px-2 py-2 rounded-b">
+        <div class="flex items-center">
+            <span class="mr-2">🟣</span>
+            <div class="text-sm">
+                <a href="http://necrovenice:8080/venice/conf/topics.js.vs?sig=2&conf=2" 
+                    class="text-blue-700 hover:text-blue-900 font-bold">General Discussion</a>
+                <span class="text-black"> (La Piazza)</span>
+            </div>
+        </div>
+    </div>
+</div>
