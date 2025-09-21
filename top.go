@@ -16,12 +16,14 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
+// RenderedSideboxItem is an item for display inside a rendered sidebox.
 type RenderedSideboxItem struct {
 	Text  string
 	Link  *string
 	Flags []string
 }
 
+// RenderedSidebox is the data for a single rendered sidebox.
 type RenderedSidebox struct {
 	TemplateName string
 	Title        string
@@ -29,21 +31,53 @@ type RenderedSidebox struct {
 	Items        []RenderedSideboxItem
 }
 
+/* buildFeaturedCommunities creates the data for the "Featured Communities" sidebox.
+ * Parameters:
+ *     uid - UID of the user rendering the page.
+ *     out - The RenderedSidebox to be built.
+ *     in - The sidebox data from the database.
+ * Returns:
+ *     Standard Go error status.
+ */
 func buildFeaturedCommunities(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
 	out.TemplateName = "sb_ftrcomm.jet"
 	return nil
 }
 
+/* buildFeaturedConferences creates the data for the "Featured Conferences" sidebox.
+ * Parameters:
+ *     uid - UID of the user rendering the page.
+ *     out - The RenderedSidebox to be built.
+ *     in - The sidebox data from the database.
+ * Returns:
+ *     Standard Go error status.
+ */
 func buildFeaturedConferences(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
 	out.TemplateName = "sb_ftrconf.jet"
 	return nil
 }
 
+/* buildUsersOnline creates the data for the "Users Online" sidebox.
+ * Parameters:
+ *     uid - UID of the user rendering the page.
+ *     out - The RenderedSidebox to be built.
+ *     in - The sidebox data from the database.
+ * Returns:
+ *     Standard Go error status.
+ */
 func buildUsersOnline(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
 	out.TemplateName = "sb_online.jet"
 	return nil
 }
 
+/* buildRenderedSidebox creates a RenderedSidebox for the data in the database.
+ * Parameters:
+ *     uid - UID of the user rendering the page.
+ *     out - The RenderedSidebox to be built.
+ *     in - The sidebox data from the database.
+ * Returns:
+ *     Standard Go error status.
+ */
 func buildRenderedSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
 	switch in.Boxid {
 	case 1:
@@ -57,6 +91,14 @@ func buildRenderedSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox)
 	}
 }
 
+/* TopPage renders the "top level" Amsterdam page (the "home page").
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func TopPage(ctxt ui.AmContext) (string, any, error) {
 	// Set the page title.
 	ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
@@ -80,6 +122,14 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "top.jet", nil
 }
 
+/* AboutPage renders the "About Amsterdam" page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func AboutPage(ctxt ui.AmContext) (string, any, error) {
 	// Set the page title.
 	ctxt.VarMap().Set("amsterdam_pageTitle", "About Amsterdam")
