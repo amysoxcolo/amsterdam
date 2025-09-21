@@ -12,8 +12,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ amsterdam_pageTitle }} - {{ GlobalConfig.Site.Title }}</title>
-    <link rel="icon" href="http://necrovenice:8080/venice/images/venice-icon.png" type="image/png">
-    <link rel="shortcut icon" href="http://necrovenice:8080/venice/images/venice-favicon.ico">
+    <link rel="icon" href="/img/builtin/AmsterdamIcon32.png" type="image/png" />
+    <link rel="shortcut icon" href="/img/builtin/AmsterdamIcon32.ico" />
     <meta http-equiv="refresh" content="300">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
