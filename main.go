@@ -54,6 +54,7 @@ func main() {
 	defer database.ClosedownDb()
 	ui.SetupTemplates()
 	ui.SetupSessionManager()
+	ui.SetupLeftMenus()
 
 	// Set up Echo.
 	e := setupEcho()

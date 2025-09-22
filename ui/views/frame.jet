@@ -75,21 +75,18 @@
     <div class="flex">
         <!-- LEFT SIDEBAR -->
         <div class="w-32 bg-blue-400 p-2">
-            <div class="mb-4">
-                <div class="text-black text-sm">
-                    <div class="font-bold mb-1">Front Page</div>
-                    <div class="text-gray-500 mb-1">Calendar</div>
-                    <div class="text-gray-500">Chat</div>
+            {{ range amsterdam_leftMenus }}
+                <div class="mb-2 mt-2">
+                    <div class="font-bold mb-1">{{ .Title }}</div>
+                    {{ range .Items }}
+                        {{ if .Link != "" }}
+                            <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900">{{ .Text }}</a>
+                        {{ else }}
+                            <div class="text-gray-500 mb-1">{{ .Text }}</div>
+                        {{ end }}
+                    {{ end }}
                 </div>
-            </div>
-
-            <div class="mt-4">
-                <div class="text-black text-sm">
-                    <div class="font-bold mb-1">About This Site</div>
-                    <div class="text-gray-500 mb-1">Documentation</div>
-                    <a href="/about" class="text-blue-700 hover:text-blue-900">About Amsterdam</a>
-                </div>
-            </div>
+            {{ end }}
         </div>
 
         <!-- MAIN CONTENT -->

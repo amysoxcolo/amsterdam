@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// AmContext is the interface for Amsterdam's wapper context that exposes the required functionality.
+// AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
 	CurrentUser() *database.User
 	RC() int

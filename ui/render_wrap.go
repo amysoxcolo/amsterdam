@@ -27,6 +27,7 @@ func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any)
 		err = amctxt.Render(fmt.Sprintf("%v", data))
 	case "framed_template":
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
+		augmentWithLeftMenus(amctxt)
 		err = amctxt.Render("frame.jet")
 	default:
 		err = fmt.Errorf("unknown rendering type: %s", command)
