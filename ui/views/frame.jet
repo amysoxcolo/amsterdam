@@ -74,7 +74,7 @@
     <!-- MAIN CONTENT AREA -->
     <div class="flex">
         <!-- LEFT SIDEBAR -->
-        <div class="w-32 bg-blue-400 p-2">
+        <div class="w-48 bg-blue-400 p-2">
             {{ range amsterdam_leftMenus }}
                 <div class="mb-2 mt-2">
                     <div class="font-bold mb-1">{{ .Title }}</div>
@@ -97,7 +97,7 @@
 
     <!-- FOOTER -->
     <div class="flex">
-        <div class="w-32 bg-blue-400">&nbsp;</div>
+        <div class="w-48 bg-blue-400">&nbsp;</div>
         <div class="flex-1 bg-white p-4">
             <hr class="border-gray-400 w-4/5 mx-auto mb-4">
             <div class="flex justify-center items-start gap-6">
