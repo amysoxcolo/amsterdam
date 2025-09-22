@@ -47,9 +47,7 @@
 
             <!-- Banner Ad -->
             <div class="w-2/5 flex justify-end">
-                <img src="./venice-frontpage_files/midler.gif" 
-                     alt="" 
-                     class="w-96 h-15 mx-2 my-2">
+                <img src="/img/builtin/placeholder_ad.gif" alt="" class="w-96 h-15 mx-2 my-2">
             </div>
         </div>
 
