@@ -23,6 +23,9 @@ import (
 // AMSTERDAM_VERSION contains the version number of Amsterdam.
 const AMSTERDAM_VERSION = "0.0.1"
 
+// AMSTERDAM_COPYRIGHT contains the copyright dates for Amsterdam.
+const AMSTERDAM_COPYRIGHT = "2025"
+
 // AmCLI is the command-line interface arguments structure.
 type AmCLI struct {
 	ConfigFile string `arg:"-C,--config" help:"Location of the configuration file."`

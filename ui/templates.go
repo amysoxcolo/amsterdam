@@ -37,6 +37,7 @@ func SetupTemplates() {
 		jet.DevelopmentMode(true),
 	)
 	views.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
+	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
 }
 
