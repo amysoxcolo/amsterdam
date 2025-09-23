@@ -48,7 +48,7 @@
     </div>
 
     <!-- RIGHT SIDEBAR -->
-    <div class="w-52 p-4">
+    <div class="w-80 p-4">
         {{ ctxt := . }}
         {{ range sideboxes }}
             {{ ctxt.SetScratch("__sidebox", .) }}
