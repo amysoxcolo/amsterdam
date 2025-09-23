@@ -10,8 +10,11 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
 )
 
 // User represents a user in the Amsterdam database.
@@ -34,6 +37,12 @@ type User struct {
 	DOB          *time.Time `db:"dob"`
 }
 
+// userCache is the cache for User objects.
+var userCache *lru.TwoQueueCache = nil
+
+// anonUid is the UID of the "anonymous" user.
+var anonUid int32 = -1
+
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
  *     uid - The UID of the user.
@@ -42,15 +51,27 @@ type User struct {
  *     Standard Go error status
  */
 func AmGetUser(uid int32) (*User, error) {
-	var rc []User
-	err := amdb.Select(&rc, "SELECT * from users WHERE uid = ?", uid)
-	if err != nil {
-		return nil, err
+	var err error = nil
+	if userCache == nil {
+		userCache, err = lru.New2Q(100)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if len(rc) > 1 {
-		return nil, fmt.Errorf("AmGetUser(%d): too many responses(%d)", uid, len(rc))
+	rc, ok := userCache.Get(uid)
+	if !ok {
+		var dbdata []User
+		err = amdb.Select(&dbdata, "SELECT * from users WHERE uid = ?", uid)
+		if err != nil {
+			return nil, err
+		}
+		if len(dbdata) > 1 {
+			return nil, fmt.Errorf("AmGetUser(%d): too many responses(%d)", uid, len(dbdata))
+		}
+		rc = &(dbdata[0])
+		userCache.Add(uid, rc)
 	}
-	return &(rc[0]), err
+	return rc.(*User), err
 }
 
 /* AmGetAnonUser returns a reference to the anonymous user.
@@ -59,13 +80,25 @@ func AmGetUser(uid int32) (*User, error) {
  *     Standard Go error status
  */
 func AmGetAnonUser() (*User, error) {
-	var rc []User
-	err := amdb.Select(&rc, "SELECT * from users WHERE is_anon = 1")
-	if err != nil {
-		return nil, err
+	var err error = nil
+	if anonUid < 0 {
+		var rows *sql.Rows
+		rows, err = amdb.Query("SELECT uid FROM users WHERE is_anon = 1")
+		if err == nil {
+			defer rows.Close()
+			if rows.Next() {
+				err = rows.Scan(&anonUid)
+				if err == nil && rows.Next() {
+					err = fmt.Errorf("should be only one anonymous user in Amsterdam database")
+				}
+			} else {
+				err = fmt.Errorf("no anonymous user in Amsterdam database")
+			}
+		}
 	}
-	if len(rc) > 1 {
-		return nil, fmt.Errorf("AmGetAnonUser: too many responses(%d)", len(rc))
+	var rc *User = nil
+	if err == nil {
+		rc, err = AmGetUser(anonUid)
 	}
-	return &(rc[0]), err
+	return rc, err
 }

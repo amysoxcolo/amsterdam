@@ -9,7 +9,11 @@
 <!-- Featured Communities -->
 <div class="mb-4">
     <div class="bg-blue-600 px-2 py-1 rounded-t">
-        <h3 class="text-white font-bold text-base">Featured Communities:</h3>
+        {{ if .CurrentUser().IsAnon }}
+            <h3 class="text-white font-bold text-base">Featured Communities:</h3>
+        {{ else }}
+            <h3 class="text-white font-bold text-base">Your Communities:</h3>
+        {{ end }}
     </div>
     <div class="bg-blue-400 px-2 py-2 rounded-b">
         <div class="flex items-center">
