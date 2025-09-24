@@ -31,7 +31,7 @@ type RenderedSidebox struct {
 	Items        []RenderedSideboxItem
 }
 
-/* buildFeaturedCommunities creates the data for the "Featured Communities" sidebox.
+/* buildCommunitiesSidebox creates the data for the "My/Featured Communities" sidebox.
  * Parameters:
  *     uid - UID of the user rendering the page.
  *     out - The RenderedSidebox to be built.
@@ -39,9 +39,30 @@ type RenderedSidebox struct {
  * Returns:
  *     Standard Go error status.
  */
-func buildFeaturedCommunities(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	out.TemplateName = "sb_ftrcomm.jet"
-	return nil
+func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
+	var err error
+	var anon bool
+	anon, err = database.AmIsUserAnon(uid)
+	if err == nil {
+		if anon {
+			out.Title = "Featured Communities"
+		} else {
+			out.Title = "Your Communities"
+		}
+		var l []*database.Community
+		l, err = database.AmGetCommunitiesForUser(uid)
+		if err == nil {
+			out.Items = make([]RenderedSideboxItem, len(l))
+			for i, c := range l {
+				out.Items[i].Text = c.Name
+				out.Items[i].Link = new(string)
+				*out.Items[i].Link = "/TODO/community/" + c.Alias
+				out.Items[i].Flags = make([]string, 0)
+			}
+			out.TemplateName = "sb_ftrcomm.jet"
+		}
+	}
+	return err
 }
 
 /* buildFeaturedConferences creates the data for the "Featured Conferences" sidebox.
@@ -81,7 +102,7 @@ func buildUsersOnline(uid int32, out *RenderedSidebox, in *database.Sidebox) err
 func buildRenderedSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
 	switch in.Boxid {
 	case 1:
-		return buildFeaturedCommunities(uid, out, in)
+		return buildCommunitiesSidebox(uid, out, in)
 	case 2:
 		return buildFeaturedConferences(uid, out, in)
 	case 3:

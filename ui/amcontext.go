@@ -28,11 +28,11 @@ type AmContext interface {
 	RC() int
 	OutputType() string
 	Render(string) error
-	Scratchpad() map[string]any
 	SubRender(string) ([]byte, error)
 	Session() *sessions.Session
 	SetOutputType(string)
 	SetRC(int)
+	GetScratch(string) any
 	SetScratch(string, any)
 	URLPath() string
 	VarMap() jet.VarMap
@@ -115,6 +115,13 @@ func (c *amContext) SetOutputType(typ string) {
 // SetRC sets the HTTP result code for the current operation.
 func (c *amContext) SetRC(rc int) {
 	c.httprc = rc
+}
+
+func (c *amContext) GetScratch(name string) any {
+	if c.scratchpad == nil {
+		return nil
+	}
+	return c.scratchpad[name]
 }
 
 func (c *amContext) SetScratch(name string, val any) {

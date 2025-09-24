@@ -10,8 +10,8 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
+	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -19,6 +19,7 @@ import (
 
 // User represents a user in the Amsterdam database.
 type User struct {
+	Mutex        sync.RWMutex
 	Uid          int32      `db:"uid"`
 	Username     string     `db:"username"`
 	Passhash     string     `db:"passhash"`
@@ -40,8 +41,20 @@ type User struct {
 // userCache is the cache for User objects.
 var userCache *lru.TwoQueueCache = nil
 
+// getUserMutex is a mutex on AmGetUser.
+var getUserMutex sync.Mutex
+
 // anonUid is the UID of the "anonymous" user.
 var anonUid int32 = -1
+
+// init initializes the user cache.
+func init() {
+	var err error
+	userCache, err = lru.New2Q(100)
+	if err != nil {
+		panic(err)
+	}
+}
 
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
@@ -52,12 +65,8 @@ var anonUid int32 = -1
  */
 func AmGetUser(uid int32) (*User, error) {
 	var err error = nil
-	if userCache == nil {
-		userCache, err = lru.New2Q(100)
-		if err != nil {
-			return nil, err
-		}
-	}
+	getUserMutex.Lock()
+	defer getUserMutex.Unlock()
 	rc, ok := userCache.Get(uid)
 	if !ok {
 		var dbdata []User
@@ -74,16 +83,10 @@ func AmGetUser(uid int32) (*User, error) {
 	return rc.(*User), err
 }
 
-/* AmGetAnonUser returns a reference to the anonymous user.
- * Returns:
- *     Pointer to User containing anonymous user data, or nil
- *     Standard Go error status
- */
-func AmGetAnonUser() (*User, error) {
-	var err error = nil
+// getAnonUserID retrieves the UID of the "anonymous" user from the database.
+func getAnonUserID() (int32, error) {
 	if anonUid < 0 {
-		var rows *sql.Rows
-		rows, err = amdb.Query("SELECT uid FROM users WHERE is_anon = 1")
+		rows, err := amdb.Query("SELECT uid FROM users WHERE is_anon = 1")
 		if err == nil {
 			defer rows.Close()
 			if rows.Next() {
@@ -95,10 +98,35 @@ func AmGetAnonUser() (*User, error) {
 				err = fmt.Errorf("no anonymous user in Amsterdam database")
 			}
 		}
+		if err != nil {
+			return -1, err
+		}
 	}
+	return anonUid, nil
+}
+
+/* AmIsUserAnon returns true if the specified user ID is the anonymous one.
+ * Parameters:
+ *     uid = The user ID to test.
+ * Returns:
+ *     true if the user is anonymous, false if not
+ *     Standard Go error status
+ */
+func AmIsUserAnon(uid int32) (bool, error) {
+	auid, err := getAnonUserID()
+	return (uid == auid), err
+}
+
+/* AmGetAnonUser returns a reference to the anonymous user.
+ * Returns:
+ *     Pointer to User containing anonymous user data, or nil
+ *     Standard Go error status
+ */
+func AmGetAnonUser() (*User, error) {
 	var rc *User = nil
+	auid, err := getAnonUserID()
 	if err == nil {
-		rc, err = AmGetUser(anonUid)
+		rc, err = AmGetUser(auid)
 	}
 	return rc, err
 }

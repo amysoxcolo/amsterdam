@@ -11,6 +11,7 @@ package database
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -18,6 +19,7 @@ import (
 
 // Community struct contains the high level data for a community.
 type Community struct {
+	Mutex             sync.RWMutex
 	Id                int32      `db:"commid"`
 	CreateDate        time.Time  `db:"createdate"`
 	LastAccess        *time.Time `db:"lastaccess"`
@@ -25,6 +27,7 @@ type Community struct {
 	ReadLevel         uint16     `db:"read_lvl"`
 	WriteLevel        uint16     `db:"write_lvl"`
 	CreateLevel       uint16     `db:"create_lvl"`
+	DeleteLevel       uint16     `db:"delete_lvl"`
 	JoinLevel         uint16     `db:"join_lvl"`
 	ContactId         int32      `db:"contactid"`
 	HostUid           *int32     `db:"host_uid"`
@@ -45,6 +48,18 @@ type Community struct {
 // communityCache is the cache for Community objects.
 var communityCache *lru.TwoQueueCache = nil
 
+// getCommunityMutex is a mutex on AmGetCommunity.
+var getCommunityMutex sync.Mutex
+
+// init initializes the community cache.
+func init() {
+	var err error
+	communityCache, err = lru.New2Q(50)
+	if err != nil {
+		panic(err)
+	}
+}
+
 /* AmGetCommunity returns a reference to the specified community.
  * Parameters:
  *     id - The ID of the community.
@@ -54,12 +69,8 @@ var communityCache *lru.TwoQueueCache = nil
  */
 func AmGetCommunity(id int32) (*Community, error) {
 	var err error = nil
-	if communityCache == nil {
-		communityCache, err = lru.New2Q(50)
-		if err != nil {
-			return nil, err
-		}
-	}
+	getCommunityMutex.Lock()
+	defer getCommunityMutex.Unlock()
 	rc, ok := communityCache.Get(id)
 	if !ok {
 		var dbdata []Community
@@ -74,4 +85,29 @@ func AmGetCommunity(id int32) (*Community, error) {
 		communityCache.Add(id, rc)
 	}
 	return rc.(*Community), err
+}
+
+/* AmGetCommunitiesForUser returns a list of communities the user is a member of.
+ * Parameters:
+ *     uid - The ID of the user.
+ * Returns:
+ *	   Array of pointers to communities for the user
+ *     Standard Go error status
+ */
+func AmGetCommunitiesForUser(uid int32) ([]*Community, error) {
+	var rc []*Community = make([]*Community, 0)
+	rows, err := amdb.Queryx("SELECT commid FROM commmember WHERE uid = ?", uid)
+	if err == nil {
+		defer rows.Close()
+		for err == nil && rows.Next() {
+			var cid int32
+			var c *Community
+			rows.Scan(&cid)
+			c, err = AmGetCommunity(cid)
+			if err == nil {
+				rc = append(rc, c)
+			}
+		}
+	}
+	return rc, err
 }
