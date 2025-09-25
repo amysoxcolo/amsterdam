@@ -27,3 +27,16 @@ func LoginForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	return ui.ErrorPage(ctxt, err)
 }
+
+/* NewAccountUserAgreement renders the Amsterdam user agreement for new accounts.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
+	ctxt.VarMap().Set("amsterdam_pageTitle", "New Account User Agreement")
+	return "framed_template", "agreement.jet", nil
+}

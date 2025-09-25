@@ -43,6 +43,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/", ui.AmWrap(TopPage))
 	e.GET("/about", ui.AmWrap(AboutPage))
 	e.GET("/login", ui.AmWrap(LoginForm))
+	e.GET("/newacct", ui.AmWrap(NewAccountUserAgreement))
 
 	return e
 }

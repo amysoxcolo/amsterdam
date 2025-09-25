@@ -47,8 +47,12 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
-		Title      string `yaml:"title"`
-		TopRefresh int    `yaml:"topRefresh"`
+		Title         string `yaml:"title"`
+		TopRefresh    int    `yaml:"topRefresh"`
+		UserAgreement struct {
+			Title string `yaml:"title"`
+			Text  string `yaml:"text"`
+		} `yaml:"userAgreement"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`
@@ -90,6 +94,13 @@ func overlayString(loaded string, defaulted string) string {
 	return loaded
 }
 
+func overlayInt(loaded int, defaulted int) int {
+	if loaded != 0 {
+		return loaded
+	}
+	return defaulted
+}
+
 /* overlayConfig takes two configuration structures and overlays them to create the third.
  * Parameters:
  *     dest - Points to the destination copnfiguration structure.
@@ -98,7 +109,13 @@ func overlayString(loaded string, defaulted string) string {
  */
 func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Site.Title = overlayString(loaded.Site.Title, defaults.Site.Title)
+	dest.Site.TopRefresh = overlayInt(loaded.Site.TopRefresh, defaults.Site.TopRefresh)
+	dest.Site.UserAgreement.Title = overlayString(loaded.Site.UserAgreement.Title, defaults.Site.UserAgreement.Title)
+	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
+	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)
+	dest.Database.Dsn = overlayString(loaded.Database.Dsn, defaults.Database.Dsn)
 	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)
+	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
 }
 
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.

@@ -61,7 +61,7 @@
                     <span class="mx-2">-</span>
                     <a href="/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
                     <span class="mx-2">|</span>
-                    <a href="/TODO/newaccount" class="text-yellow-300 hover:text-yellow-400">Create Account</a>
+                    <a href="/newacct" class="text-yellow-300 hover:text-yellow-400">Create Account</a>
                 {{ else }}
                     You are logged in as <b>{{ .CurrentUser().Username }}</b>
                     <span class="mx-2">-</span>

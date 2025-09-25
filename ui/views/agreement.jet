@@ -1,0 +1,25 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="flex">
+    <div class="flex-1 p-4">
+        <div class="mb-8">
+            <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ GlobalConfig.Site.UserAgreement.Title }}</h1>
+            <hr class="border-2 border-gray-400 w-4/5 mb-4">
+            <p class="text-black text-sm mb-4">
+                {{ GlobalConfig.Site.UserAgreement.Text | raw }}
+            </p>
+            <div class="flex justify-center gap-4 mt-6">
+                <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors"
+                        onclick="window.location.assign('/TODO/newacct2')">I Accept</button>
+                <button type="button" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-medium transition-colors"
+                        onclick="window.location.assign('/')">I Decline</button>
+            </div>
+        </div>
+    </div>
+</div>
