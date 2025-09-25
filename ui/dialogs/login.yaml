@@ -1,0 +1,45 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+name: "login"
+formName: "loginform"
+menuSelector: "top"
+title: "Log In"
+action: "/TODO/login"
+instructions: >
+  Forgot your password?  Enter your user name and click the <b>Reminder</b> button to receive
+  a password reminder via E-mail.
+fields:
+  - type: "hidden"
+    name: "tgt"
+    value: ""
+  - type: "veniceid"
+    name: "user"
+    caption: "User Name"
+    size: 32
+    maxlength: 64
+  - type: "password"
+    name: "pass"
+    caption: "Password"
+    size: 32
+    maxlength: 128
+  - type: "checkbox"
+    name: "saveme"
+    caption: "Remember me for next time so I can log in automatically"
+  - type: "button"
+    name: "login"
+    caption: "Log In"
+    tone: "blue"
+  - type: "button"
+    name: "remind"
+    caption: "Password Reminder"
+    tone: "gray"
+  - type: "button"
+    name: "cancel"
+    caption: "Cancel"
+    tone: "red"

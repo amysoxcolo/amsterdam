@@ -35,10 +35,14 @@ func setupEcho() *echo.Echo {
 	e.Use(LogrusMiddleware)
 	e.Use(session.Middleware(ui.SessionStore))
 
-	e.GET("/TODO/*", ui.AmWrap(NotImplPage))
+	fn := ui.AmWrap(NotImplPage)
+	e.GET("/TODO/*", fn)
+	e.POST("/TODO/*", fn)
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
-	e.GET("/about", ui.AmWrap(AboutPage))
+
 	e.GET("/", ui.AmWrap(TopPage))
+	e.GET("/about", ui.AmWrap(AboutPage))
+	e.GET("/login", ui.AmWrap(LoginForm))
 
 	return e
 }

@@ -1,0 +1,68 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ amsterdam_dialog.Title }}</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+    </div>
+    <form name="{{ amsterdam_dialog.FormName }}" method="POST" action="{{ amsterdam_dialog.Action }}" class="max-w-2xl">
+    {{ range amsterdam_dialog.Fields }}
+        {{ if .Type == "hidden" }}
+            <input type="hidden" name="{{ .Name }}" value="{{ .Value }}" />
+        {{ end }}
+    {{ end }}
+
+    {{ if amsterdam_dialog.Instructions != "" }}
+        <p class="text-black text-sm mb-6">{{ amsterdam_dialog.Instructions | raw }}</p>
+    {{ end }}
+
+        <div class="bg-gray-50 p-6 rounded-lg">
+            <div class="space-y-4">
+                {{ range amsterdam_dialog.Fields }}
+                    {{ if .Type == "veniceid" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" class="w-24 text-right pr-4 text-black text-sm">{{ .Caption }}:</label>
+                            <input type="text" id="{{ .Name }}" name="{{ .Name }}" 
+                                {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
+                                {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
+                                value="{{ .Value }}"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                    {{ else if .Type == "password" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" class="w-24 text-right pr-4 text-black text-sm">{{ .Caption }}:</label>
+                            <input type="password" id="{{ .Name }}" name="{{ .Name }}" 
+                                {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
+                                {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
+                                value="{{ .Value }}"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                    {{ else if .Type == "checkbox" }}
+                        <div class="flex items-center">
+                            <div class="w-24 text-right pr-4">
+                                <input type="checkbox" id="{{ .Name }}" name="{{ .Name }}" 
+                                    value="Y" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                            </div>
+                            <label for="{{ .Name }}" class="flex-1 text-black text-sm">{{ .Caption }}</label>
+                        </div>
+                    {{ end }}
+                {{ end }}
+            </div>
+            <div class="flex justify-center gap-4 mt-6">
+                {{ range amsterdam_dialog.Fields }}
+                    {{ if .Type == "button" }}
+                        {{ clstmp := "bg-" + .Tone + "-600 hover:bg-" + .Tone + "-700" }}
+                        <button type="submit" name="{{ .Name }}"
+                                class="{{ clstmp }} text-white px-6 py-2 rounded font-medium transition-colors">{{ .Caption }}</button>
+                    {{ end }}
+                {{ end }}
+            </div>
+        </div>
+    </form>
+</div>

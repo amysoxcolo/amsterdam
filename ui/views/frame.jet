@@ -59,7 +59,7 @@
                 {{ if .CurrentUser().IsAnon }}
                     You are not logged in
                     <span class="mx-2">-</span>
-                    <a href="/TODO/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
+                    <a href="/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
                     <span class="mx-2">|</span>
                     <a href="/TODO/newaccount" class="text-yellow-300 hover:text-yellow-400">Create Account</a>
                 {{ else }}
