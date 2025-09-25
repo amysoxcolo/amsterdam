@@ -15,3 +15,4 @@ database:
 rendering:
   templatedir: custom_templates
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+  buttonSet: classic
