@@ -8,6 +8,7 @@
 #
 site:
   title: "Amsterdam Web Communities System"
+  topRefresh: 300
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=Local"

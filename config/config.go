@@ -47,7 +47,8 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
-		Title string `yaml:"title"`
+		Title      string `yaml:"title"`
+		TopRefresh int    `yaml:"topRefresh"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`

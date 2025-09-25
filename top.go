@@ -138,8 +138,10 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 			return "string", "Unable to render sideboxes", err
 		}
 	}
-
 	ctxt.VarMap().Set("sideboxes", rc)
+
+	// Final data set.
+	ctxt.VarMap().Set("amsterdam_genRefresh", true)
 	return "framed_template", "top.jet", nil
 }
 
