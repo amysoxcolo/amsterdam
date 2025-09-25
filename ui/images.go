@@ -17,15 +17,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-
-	"git.erbosoft.com/amy/amsterdam/config"
 )
 
 //go:embed static_images/*
 var static_images embed.FS
-
-//go:embed buttons/*
-var buttons embed.FS
 
 /* mimeTypeFromFilenane returns the MIME type of a file, given its filename.
  * Parameters:
@@ -52,14 +47,6 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 	if len(components) == 4 {
 		if components[2] == "builtin/" {
 			b, err = static_images.ReadFile(filepath.Join("static_images", components[3]))
-			if err == nil {
-				ctxt.SetOutputType(mimeTypeFromFilename(components[3]))
-				return "bytes", b, nil
-			}
-		}
-		if components[2] == "button/" {
-			b, err = buttons.ReadFile(filepath.Join("buttons", config.GlobalConfig.Rendering.ButtonSet,
-				components[3]))
 			if err == nil {
 				ctxt.SetOutputType(mimeTypeFromFilename(components[3]))
 				return "bytes", b, nil

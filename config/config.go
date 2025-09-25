@@ -57,7 +57,6 @@ type AmConfig struct {
 	Rendering struct {
 		TemplateDir string `yaml:"templatedir"`
 		CookieKey   string `yaml:"cookiekey"`
-		ButtonSet   string `yaml:"buttonSet"`
 	} `yaml:"rendering"`
 }
 
