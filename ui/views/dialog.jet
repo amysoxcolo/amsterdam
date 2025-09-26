@@ -21,13 +21,19 @@
     {{ if amsterdam_dialog.Instructions != "" }}
         <p class="text-black text-sm mb-6">{{ amsterdam_dialog.Instructions | raw }}</p>
     {{ end }}
+    {{ if amsterdam_required }}
+        <p class="text-black text-sm mb-6">Required fields are marked with a <span class="text-red-600">*</span>.</p>
+    {{ end }}
 
         <div class="bg-gray-50 p-6 rounded-lg">
             <div class="space-y-4">
                 {{ range amsterdam_dialog.Fields }}
-                    {{ if .Type == "veniceid" }}
+                    {{ if .Type == "text" || .Type == "ams_id" || .Type == "email" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-24 text-right pr-4 text-black text-sm">{{ .Caption }}:</label>
+                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}:
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
                             <input type="text" id="{{ .Name }}" name="{{ .Name }}" 
                                 {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
                                 {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
@@ -36,7 +42,10 @@
                         </div>
                     {{ else if .Type == "password" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-24 text-right pr-4 text-black text-sm">{{ .Caption }}:</label>
+                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}:
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
                             <input type="password" id="{{ .Name }}" name="{{ .Name }}" 
                                 {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
                                 {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
@@ -49,15 +58,66 @@
                                 <input type="checkbox" id="{{ .Name }}" name="{{ .Name }}" 
                                     value="Y" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                             </div>
-                            <label for="{{ .Name }}" class="flex-1 text-black text-sm">{{ .Caption }}</label>
+                            <label for="{{ .Name }}" class="flex-1 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
                         </div>
+                    {{ else if .Type == "countrylist" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            {{ v := .Value }}
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="XX" {{ if v == "XX" }}selected{{ end }}>🏳️ (unknown)</option>
+                                {{ range GetCountryList() }}
+                                    {{ cc := .Alpha2() }}
+                                    <option value="{{ cc }}" {{ if cc == v }}selected{{ end }}>{{ .Emoji() }} {{ .Info().Name }}</option>
+                                {{ end }}
+                            </select>
+                        </div>
+                    {{ else if .Type == "date" }}
+                        <div class="flex items-center">
+                            <label class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            <div class="flex gap-2">
+                                <select name="{{ .Name }}_month"
+                                        class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="-1" selected>---</option>
+                                    {{ range i := GetMonthList() }}
+                                        <option value="{{ i + 1 }}">{{ . }}</option>
+                                    {{ end }}
+                                </select>
+                                <select name="{{ .Name }}_day" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="-1" selected>---</option>
+                                    {{ range MakeIntRange(1, 32, 1) }}
+                                        <option value="{{ . }}">{{ . }}</option>
+                                    {{ end }}
+                                </select>
+                                <select name="{{ .Name }}_year" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="-1" selected>---</option>
+                                    {{ range MakeYearRange(.Param) }}
+                                        <option value="{{ . }}">{{ . }}</option>
+                                    {{ end }}
+                                </select>
+                            </div>
+                        </div>
+                    {{ else if .Type == "header" }}
+                        <h2 class="text-lg font-bold text-black mb-4">{{ .Caption }}</h2>
+                    {{ else if .Type != "hidden" && .Type != "button" }}
+                        BARF! I don't understand {{ .Type }} (field {{ .Name }})
                     {{ end }}
                 {{ end }}
             </div>
             <div class="flex justify-center gap-4 mt-6">
                 {{ range amsterdam_dialog.Fields }}
                     {{ if .Type == "button" }}
-                        {{ clstmp := "bg-" + .Tone + "-600 hover:bg-" + .Tone + "-700" }}
+                        {{ clstmp := "bg-" + .Param + "-600 hover:bg-" + .Param + "-700" }}
                         <button type="submit" name="{{ .Name }}"
                                 class="{{ clstmp }} text-white px-6 py-2 rounded font-medium transition-colors">{{ .Caption }}</button>
                     {{ end }}

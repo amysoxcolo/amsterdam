@@ -1,0 +1,127 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+name: "newaccount"
+formName: "createform"
+menuSelector: "top"
+title: "Create Account"
+action: "/TODO/newacct2"
+instructions: >
+  To create a new account, please enter your information below.
+fields:
+  - type: "hidden"
+    name: "tgt"
+    value: ""
+  - type: "header"
+    name: "header1"
+    caption: "Name"
+  - type: "text"
+    name: "prefix"
+    caption: "Prefix"
+    subcaption: "(Mr., Ms., etc.)"
+    size: 8
+    maxlength: 8
+  - type: "text"
+    name: "first"
+    caption: "First Name"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "mid"
+    caption: "Middle Initial"
+    size: 1
+    maxlength: 1
+  - type: "text"
+    name: "last"
+    caption: "Last Name"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "suffix"
+    caption: "Suffix"
+    subcaption: "(Jr., III, etc.)"
+    size: 8
+    maxlength: 8
+  - type: "header"
+    name: "header2"
+    caption: "Location"
+  - type: "text"
+    name: "loc"
+    caption: "City"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "reg"
+    caption: "State/Province"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "pcode"
+    caption: "Zip/Postal Code"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "countrylist"
+    name: "country"
+    caption: "Country"
+    required: true
+  - type: "header"
+    name: "header3"
+    caption: "E-Mail"
+  - type: "email"
+    name: "email"
+    caption: "E-Mail Address"
+    required: true
+    size: 32
+    maxlength: 255
+  - type: "header"
+    name: "header4"
+    caption: "Other Information"
+  - type: "date"
+    name: "dob"
+    caption: "Date of Birth"
+    param: "year:-100"
+  - type: "header"
+    name: "header5"
+    caption: "Account Information"
+  - type: "ams_id"
+    name: "user"
+    caption: "User Name"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "password"
+    name: "pass1"
+    caption: "Password"
+    required: true
+    size: 32
+    maxlength: 128
+  - type: "password"
+    name: "pass2"
+    caption: "Password"
+    subcaption: "(retype)"
+    required: true
+    size: 32
+    maxlength: 128
+  - type: "text"
+    name: "remind"
+    caption: "Password reminder phrase"
+    size: 32
+    maxlength: 255
+  - type: "button"
+    name: "create"
+    caption: "Create"
+    param: "blue"
+  - type: "button"
+    name: "cancel"
+    caption: "Cancel"
+    param: "red"

@@ -9,7 +9,9 @@
 // Package main contains the high-level Amsterdam logic.
 package main
 
-import "git.erbosoft.com/amy/amsterdam/ui"
+import (
+	"git.erbosoft.com/amy/amsterdam/ui"
+)
 
 /* NotImplPage is used for all TODO links, to show that something hasn't yet been implemented.
  * Parameters:

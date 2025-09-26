@@ -19,13 +19,15 @@ import (
 
 // DialogItem holds the dialog item definition.
 type DialogItem struct {
-	Type      string `yaml:"type"`
-	Name      string `yaml:"name"`
-	Caption   string `yaml:"caption,omitempty"`
-	Size      int    `yaml:"size,omitempty"`
-	MaxLength int    `yaml:"maxlength,omitempty"`
-	Value     string `yaml:"value,omitempty"`
-	Tone      string `yaml:"tone,omitempty"`
+	Type       string `yaml:"type"`
+	Name       string `yaml:"name"`
+	Caption    string `yaml:"caption,omitempty"`
+	Subcaption string `yaml:"subcaption,omitempty"`
+	Required   bool   `yaml:"required,omitempty"`
+	Size       int    `yaml:"size,omitempty"`
+	MaxLength  int    `yaml:"maxlength,omitempty"`
+	Value      string `yaml:"value,omitempty"`
+	Param      string `yaml:"param,omitempty"`
 }
 
 // Dialog holds the dialog definition.
@@ -52,13 +54,37 @@ func AmLoadDialog(name string) (*Dialog, error) {
 		var d Dialog
 		err = yaml.Unmarshal(b, &d)
 		if err == nil {
+			// "nil-patch" certain fields
 			if d.MenuSelector == "" {
 				d.MenuSelector = "nochange"
+			}
+			for _, fld := range d.Fields {
+				if fld.Type == "button" && fld.Param == "" {
+					fld.Param = "blue"
+				}
+				if fld.Type == "date" && fld.Param == "" {
+					fld.Param = "year:-100"
+				}
 			}
 			return &d, nil
 		}
 	}
 	return nil, err
+}
+
+/* Field returns a pointer to a dialog's field, given its name.
+ * Parameters:
+ *     name - The name of the field to find.
+ * Returns:
+ *     Pointer to the field, or nil.
+ */
+func (d *Dialog) Field(name string) *DialogItem {
+	for i := 0; i < len(d.Fields); i++ {
+		if d.Fields[i].Name == name {
+			return &(d.Fields[i])
+		}
+	}
+	return nil
 }
 
 /* Render sets up the rendering parameters to send this dialog to the output.
@@ -70,6 +96,14 @@ func AmLoadDialog(name string) (*Dialog, error) {
  *     Standard Go error status.
  */
 func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
+	required := false
+	for _, fld := range d.Fields {
+		if fld.Required {
+			required = true
+			break
+		}
+	}
+	ctxt.VarMap().Set("amsterdam_required", required)
 	ctxt.VarMap().Set("amsterdam_dialog", d)
 	return "framed_template", "dialog.jet", nil
 }
