@@ -28,6 +28,7 @@ type AmContext interface {
 	CurrentUser() *database.User
 	FormField(string) string
 	FormFieldInt(string) (int, error)
+	FormFieldIsSet(string) bool
 	RC() int
 	OutputType() string
 	Parameter(string) string
@@ -71,7 +72,7 @@ func (c *amContext) FormField(name string) string {
 	return c.echoContext.FormValue(name)
 }
 
-/* FormField returns the value of a form field from the request, as an integer.
+/* FormFieldInt returns the value of a form field from the request, as an integer.
  * Parameters:
  *     name - The name of the field to retrieve.
  * Returns:
@@ -80,6 +81,20 @@ func (c *amContext) FormField(name string) string {
  */
 func (c *amContext) FormFieldInt(name string) (int, error) {
 	return strconv.Atoi(c.echoContext.FormValue(name))
+}
+
+/* FormFieldIsSet returns true if a given form field is set.
+ * Parameters:
+ *     name - The name of the field to test.
+ * Returns:
+ *     true if the field is set, false if not.
+ */
+func (c *amContext) FormFieldIsSet(name string) bool {
+	req := c.echoContext.Request()
+	if req.Form == nil {
+		_ = req.FormValue(name) // force form to be loaded
+	}
+	return req.Form.Has(name)
 }
 
 // RC returns the HTTP result code for the current operation.

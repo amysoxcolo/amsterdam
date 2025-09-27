@@ -38,8 +38,37 @@ func LoginForm(ctxt ui.AmContext) (string, any, error) {
 	dlg, err := ui.AmLoadDialog("login")
 	if err == nil {
 		dlg.Field("tgt").Value = target
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Log In")
 		return dlg.Render(ctxt)
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+/* Login handles logging in to Amsterdam.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func Login(ctxt ui.AmContext) (string, any, error) {
+	dlg, err := ui.AmLoadDialog("login")
+	if err == nil {
+		dlg.LoadFromForm(ctxt)
+		target := dlg.Field("tgt").Value
+		if target == "" {
+			target = "/"
+		}
+
+		action := dlg.WhichButton(ctxt)
+		if action == "cancel" {
+			return "redirect", target, nil
+		}
+		if action == "remind" {
+			// TODO: send password reminder
+			return dlg.Render(ctxt)
+		}
+
 	}
 	return ui.ErrorPage(ctxt, err)
 }
@@ -61,7 +90,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a bew account while logged in on an existing one. You must log out first."))
+		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a new account while logged in on an existing one. You must log out first."))
 	}
 
 	ctxt.VarMap().Set("target", target)
@@ -86,14 +115,13 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a bew account while logged in on an existing one. You must log out first."))
+		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a new account while logged in on an existing one. You must log out first."))
 	}
 
 	dlg, err := ui.AmLoadDialog("newaccount")
 	if err == nil {
 		dlg.Field("tgt").Value = target
 		dlg.Field("country").Value = "XX"
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Account")
 		return dlg.Render(ctxt)
 	}
 	return ui.ErrorPage(ctxt, err)

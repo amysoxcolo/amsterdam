@@ -10,7 +10,7 @@ name: "login"
 formName: "loginform"
 menuSelector: "top"
 title: "Log In"
-action: "/TODO/login"
+action: "/login"
 instructions: >
   Forgot your password?  Enter your user name and click the <b>Reminder</b> button to receive
   a password reminder via E-mail.

@@ -61,12 +61,12 @@ func AmLoadDialog(name string) (*Dialog, error) {
 			if d.MenuSelector == "" {
 				d.MenuSelector = "nochange"
 			}
-			for _, fld := range d.Fields {
+			for i, fld := range d.Fields {
 				if fld.Type == "button" && fld.Param == "" {
-					fld.Param = "blue"
+					d.Fields[i].Param = "blue"
 				}
 				if fld.Type == "date" && fld.Param == "" {
-					fld.Param = "year:-100"
+					d.Fields[i].Param = "year:-100"
 				}
 			}
 			return &d, nil
@@ -94,8 +94,8 @@ func (fld *DialogItem) DateValues() []int {
  *     Pointer to the field, or nil.
  */
 func (d *Dialog) Field(name string) *DialogItem {
-	for i := 0; i < len(d.Fields); i++ {
-		if d.Fields[i].Name == name {
+	for i, f := range d.Fields {
+		if f.Name == name {
 			return &(d.Fields[i])
 		}
 	}
@@ -120,6 +120,7 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("amsterdam_required", required)
 	ctxt.VarMap().Set("amsterdam_dialog", d)
+	ctxt.VarMap().Set("amsterdam_pageTitle", d.Title)
 	return "framed_template", "dialog.jet", nil
 }
 
@@ -128,46 +129,74 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
  *     ctxt - The AmContext for this request.
  */
 func (d *Dialog) LoadFromForm(ctxt AmContext) {
-	for _, fld := range d.Fields {
+	for i, fld := range d.Fields {
+		d.Fields[i].Value = ""
+		if fld.Type == "header" || fld.Type == "button" {
+			continue
+		}
 		if fld.Type == "date" {
-			fld.Value = ""
+			d.Fields[i].Value = ""
 			dvals := make([]int, 3)
 			var err error
 			dvals[0], err = ctxt.FormFieldInt(fmt.Sprintf("%s_month", fld.Name))
 			if err != nil {
 				dvals[0] = -1
-				fld.Value = fmt.Sprintf("!undefined month %s: %v", fld.Name, err)
+				d.Fields[i].Value = fmt.Sprintf("!undefined month %s: %v", fld.Name, err)
 			}
 			dvals[1], err = ctxt.FormFieldInt(fmt.Sprintf("%s_day", fld.Name))
 			if err != nil {
 				dvals[1] = -1
-				if fld.Value == "" {
-					fld.Value = fmt.Sprintf("!undefined day %s: %v", fld.Name, err)
+				if d.Fields[i].Value == "" {
+					d.Fields[i].Value = fmt.Sprintf("!undefined day %s: %v", fld.Name, err)
 				}
 			}
 			dvals[2], err = ctxt.FormFieldInt(fmt.Sprintf("%s_year", fld.Name))
 			if err != nil {
 				dvals[2] = -1
-				if fld.Value == "" {
-					fld.Value = fmt.Sprintf("!undefined year %s: %v", fld.Name, err)
+				if d.Fields[i].Value == "" {
+					d.Fields[i].Value = fmt.Sprintf("!undefined year %s: %v", fld.Name, err)
 				}
 			}
 			if dvals[0] > 0 && dvals[1] > 0 && dvals[2] > 0 {
-				fld.Value = fmt.Sprintf("%04d%02d%02d", dvals[2], dvals[0], dvals[1])
-			} else if fld.Value == "" && fld.Required {
+				d.Fields[i].Value = fmt.Sprintf("%04d%02d%02d", dvals[2], dvals[0], dvals[1])
+			} else if d.Fields[i].Value == "" && fld.Required {
 				if dvals[0] <= 0 {
-					fld.Value = fmt.Sprintf("!month not set %s", fld.Name)
+					d.Fields[i].Value = fmt.Sprintf("!month not set %s", fld.Name)
 				} else if dvals[1] <= 0 {
-					fld.Value = fmt.Sprintf("!day not set %s", fld.Name)
+					d.Fields[i].Value = fmt.Sprintf("!day not set %s", fld.Name)
 				} else if dvals[2] <= 0 {
-					fld.Value = fmt.Sprintf("!year not set %s", fld.Name)
+					d.Fields[i].Value = fmt.Sprintf("!year not set %s", fld.Name)
 				}
 			}
-			fld.AuxData = dvals
+			d.Fields[i].AuxData = dvals
 		} else {
-			fld.Value = ctxt.FormField(fld.Name)
+			d.Fields[i].Value = ctxt.FormField(fld.Name)
 		}
 	}
+}
+
+// Values returns all a dialog's values as a map.
+func (d *Dialog) Values() map[string]string {
+	rc := map[string]string{}
+	for _, fld := range d.Fields {
+		rc[fld.Name] = fld.Value
+	}
+	return rc
+}
+
+/* WhichButton returns an indication of which button on the dialog was clicked.
+ * Parameters:
+ *     ctxt - The AmContext associated with the request.
+ * Returns:
+ *     The name of the button field on this dialog that was clicked. If none were, the empty string is returned.
+ */
+func (d *Dialog) WhichButton(ctxt AmContext) string {
+	for _, fld := range d.Fields {
+		if fld.Type == "button" && ctxt.FormFieldIsSet(fld.Name) {
+			return fld.Name
+		}
+	}
+	return ""
 }
 
 // validatorFunc is a function that validates the contents of a dialog item.
