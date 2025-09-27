@@ -13,6 +13,7 @@ package ui
 import (
 	"bytes"
 	"net/http"
+	"strconv"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/CloudyKit/jet/v6"
@@ -25,8 +26,11 @@ import (
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
 	CurrentUser() *database.User
+	FormField(string) string
+	FormFieldInt(string) (int, error)
 	RC() int
 	OutputType() string
+	Parameter(string) string
 	Render(string) error
 	SubRender(string) ([]byte, error)
 	Session() *sessions.Session
@@ -57,6 +61,27 @@ func (c *amContext) CurrentUser() *database.User {
 	return u
 }
 
+/* FormField returns the value of a form field from the request.
+ * Parameters:
+ *     name - The name of the field to retrieve.
+ * Returns:
+ *     The value given to that named field.
+ */
+func (c *amContext) FormField(name string) string {
+	return c.echoContext.FormValue(name)
+}
+
+/* FormField returns the value of a form field from the request, as an integer.
+ * Parameters:
+ *     name - The name of the field to retrieve.
+ * Returns:
+ *     The value given to that named field.
+ *     Standard Go error status.
+ */
+func (c *amContext) FormFieldInt(name string) (int, error) {
+	return strconv.Atoi(c.echoContext.FormValue(name))
+}
+
 // RC returns the HTTP result code for the current operation.
 func (c *amContext) RC() int {
 	return c.httprc
@@ -65,6 +90,20 @@ func (c *amContext) RC() int {
 // OutputType returns the MIME output type set for the current operation.
 func (c *amContext) OutputType() string {
 	return c.outputType
+}
+
+/* Parameter returns the value of a parameter (query parameter or form field) from the request.
+ * Parameters:
+ *     name - The name of the field to retrieve.
+ * Returns:
+ *     The value given to that named field.
+ */
+func (c *amContext) Parameter(name string) string {
+	rc := c.echoContext.QueryParam(name)
+	if rc == "" && c.echoContext.Request().Method == "POST" {
+		rc = c.echoContext.FormValue(name)
+	}
+	return rc
 }
 
 /* Render renders a template to the output. Called at the top level only.

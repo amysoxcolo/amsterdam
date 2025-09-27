@@ -12,7 +12,9 @@ package ui
 
 import (
 	"fmt"
+	"net/http"
 
+	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,6 +23,8 @@ func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any)
 	switch command {
 	case "bytes":
 		err = ctxt.Blob(amctxt.RC(), amctxt.OutputType(), data.([]byte))
+	case "redirect":
+		err = ctxt.Redirect(http.StatusFound, data.(string))
 	case "string":
 		err = ctxt.String(amctxt.RC(), fmt.Sprintf("%v", data))
 	case "template":
@@ -63,6 +67,15 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 		if aerr != nil {
 			ctxt.Logger().Errorf("Session creation error: %v", aerr)
 			return aerr
+		}
+		banmsg, banerr := database.AmTestIPBan(ctxt.RealIP())
+		if banerr != nil {
+			ctxt.Logger().Warnf("address %s could not be tested: %v", ctxt.RealIP(), banerr)
+			// but let the request pass anyway
+		} else if banmsg != "" {
+			amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
+			amctxt.VarMap().Set("message", banmsg)
+			return sendPageData(ctxt, amctxt, "framed_template", "ipban.jet")
 		}
 		what, rc, err := myfunc(amctxt)
 		if err == nil {

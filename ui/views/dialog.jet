@@ -80,6 +80,7 @@
                             </select>
                         </div>
                     {{ else if .Type == "date" }}
+                        {{ dv := .DateValues() }}
                         <div class="flex items-center">
                             <label class="w-64 text-right pr-4 text-black text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
@@ -88,21 +89,21 @@
                             <div class="flex gap-2">
                                 <select name="{{ .Name }}_month"
                                         class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="-1" selected>---</option>
+                                    <option value="-1" {{ if dv[0] == -1 }}selected{{ end }}>---</option>
                                     {{ range i := GetMonthList() }}
-                                        <option value="{{ i + 1 }}">{{ . }}</option>
+                                        <option value="{{ i + 1 }}" {{ if dv[0] == i + 1 }}selected{{ end }}>{{ . }}</option>
                                     {{ end }}
                                 </select>
                                 <select name="{{ .Name }}_day" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="-1" selected>---</option>
+                                    <option value="-1" {{ if dv[1] == -1 }}selected{{ end }}>---</option>
                                     {{ range MakeIntRange(1, 32, 1) }}
-                                        <option value="{{ . }}">{{ . }}</option>
+                                        <option value="{{ . }}" {{ if dv[1] == . }}selected{{ end }}>{{ . }}</option>
                                     {{ end }}
                                 </select>
                                 <select name="{{ .Name }}_year" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="-1" selected>---</option>
+                                    <option value="-1" {{ if dv[2] == -1 }}selected{{ end }}>---</option>
                                     {{ range MakeYearRange(.Param) }}
-                                        <option value="{{ . }}">{{ . }}</option>
+                                        <option value="{{ . }}" {{ if dv[2] == . }}selected{{ end }}>{{ . }}</option>
                                     {{ end }}
                                 </select>
                             </div>

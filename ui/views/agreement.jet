@@ -16,7 +16,7 @@
             </p>
             <div class="flex justify-center gap-4 mt-6">
                 <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors"
-                        onclick="window.location.assign('/newacct2')">I Accept</button>
+                        onclick="window.location.assign('/newacct2?tgt={{ target | url }}')">I Accept</button>
                 <button type="button" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-medium transition-colors"
                         onclick="window.location.assign('/')">I Decline</button>
             </div>

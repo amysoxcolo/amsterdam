@@ -425,14 +425,16 @@ CREATE TABLE imagestore (
 # Table listing IP addresses that are banned from logging in or registering.
 CREATE TABLE ipban (
     id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    address BIGINT NOT NULL,
-    mask BIGINT NOT NULL,
+    address_lo BIGINT UNSIGNED NOT NULL,
+    address_hi BIGINT UNSIGNED NOT NULL,
+    mask_lo BIGINT UNSIGNED NOT NULL,
+    mask_hi BIGINT UNSIGNED NOT NULL,
     enable TINYINT NOT NULL DEFAULT 1,
     expire DATETIME,
     message VARCHAR(255) NOT NULL,
     block_by INT NOT NULL,
     block_on DATETIME NOT NULL,
-    INDEX by_mask (mask),
+    INDEX by_mask (mask_hi, mask_lo),
     INDEX by_date (block_on)
 );
 

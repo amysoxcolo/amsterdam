@@ -9,7 +9,11 @@
 // Package main contains the high-level Amsterdam logic.
 package main
 
-import "git.erbosoft.com/amy/amsterdam/ui"
+import (
+	"fmt"
+
+	"git.erbosoft.com/amy/amsterdam/ui"
+)
 
 /* LoginForm renders the Amsterdam login form.
  * Parameters:
@@ -20,8 +24,20 @@ import "git.erbosoft.com/amy/amsterdam/ui"
  *     Standard Go error status.
  */
 func LoginForm(ctxt ui.AmContext) (string, any, error) {
+	// Get target URI.
+	target := ctxt.Parameter("tgt")
+	if target == "" {
+		target = "/"
+	}
+
+	// If user is already logged in, this is a no-op.
+	if !ctxt.CurrentUser().IsAnon {
+		return "redirect", target, nil
+	}
+
 	dlg, err := ui.AmLoadDialog("login")
 	if err == nil {
+		dlg.Field("tgt").Value = target
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Log In")
 		return dlg.Render(ctxt)
 	}
@@ -37,6 +53,18 @@ func LoginForm(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
+	// Get target URI.
+	target := ctxt.Parameter("tgt")
+	if target == "" {
+		target = "/"
+	}
+
+	// If user is already logged in, this is an error.
+	if !ctxt.CurrentUser().IsAnon {
+		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a bew account while logged in on an existing one. You must log out first."))
+	}
+
+	ctxt.VarMap().Set("target", target)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "New Account User Agreement")
 	return "framed_template", "agreement.jet", nil
 }
@@ -50,8 +78,20 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
+	// Get target URI.
+	target := ctxt.Parameter("tgt")
+	if target == "" {
+		target = "/"
+	}
+
+	// If user is already logged in, this is an error.
+	if !ctxt.CurrentUser().IsAnon {
+		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a bew account while logged in on an existing one. You must log out first."))
+	}
+
 	dlg, err := ui.AmLoadDialog("newaccount")
 	if err == nil {
+		dlg.Field("tgt").Value = target
 		dlg.Field("country").Value = "XX"
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Account")
 		return dlg.Render(ctxt)
