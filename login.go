@@ -83,7 +83,9 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 				return dlg.RenderError(ctxt, uerr.Error())
 			}
 			ctxt.ReplaceUser(user)
-			// TODO: cookie set if required
+			if dlg.Field("saveme").IsChecked() {
+				// TODO: cookie set
+			}
 			// TODO: bounce to E-mail verify if we can do so
 			return "redirect", target, nil
 		}

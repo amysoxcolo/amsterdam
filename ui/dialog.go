@@ -87,6 +87,14 @@ func (fld *DialogItem) DateValues() []int {
 	return rc
 }
 
+// IsChecked returns true if a dialog checkbox is checked.
+func (fld *DialogItem) IsChecked() bool {
+	if fld.Type == "checkbox" {
+		return len(fld.Value) > 0
+	}
+	return false
+}
+
 /* Field returns a pointer to a dialog's field, given its name.
  * Parameters:
  *     name - The name of the field to find.
