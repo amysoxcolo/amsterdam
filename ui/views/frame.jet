@@ -65,7 +65,7 @@
                 {{ else }}
                     You are logged in as <b>{{ .CurrentUser().Username }}</b>
                     <span class="mx-2">-</span>
-                    <a href="/TODO/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
+                    <a href="/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
                     <span class="mx-2">|</span>
                     <a href="/TODO/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
                 {{ end }}

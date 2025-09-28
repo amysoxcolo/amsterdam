@@ -94,6 +94,28 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* Logout handles logging out from Amsterdam.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func Logout(ctxt ui.AmContext) (string, any, error) {
+	// Get target URI.
+	target := ctxt.Parameter("tgt")
+	if target == "" {
+		target = "/"
+	}
+
+	if !ctxt.CurrentUser().IsAnon {
+		// TODO: erase login cookie
+		ctxt.ClearSession()
+	}
+	return "redirect", target, nil
+}
+
 /* NewAccountUserAgreement renders the Amsterdam user agreement for new accounts.
  * Parameters:
  *     ctxt - The AmContext for the request.

@@ -28,7 +28,6 @@ func SetupSessionManager() {
 
 // SetupAmSession sets up a newly created Amsterdam session.
 func SetupAmSession(session *sessions.Session) {
-	session.Values["temp"] = "Active"
 	u, err := database.AmGetAnonUser()
 	if err == nil {
 		session.Values["user_id"] = u.Uid

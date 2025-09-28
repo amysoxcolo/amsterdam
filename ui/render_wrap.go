@@ -79,7 +79,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 		}
 		what, rc, err := myfunc(amctxt)
 		if err == nil {
-			if err = amctxt.Session().Save(ctxt.Request(), ctxt.Response()); err != nil {
+			if err = amctxt.SaveSession(); err != nil {
 				ctxt.Logger().Errorf("Session save error: %v", err)
 				return err
 			}

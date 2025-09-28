@@ -25,7 +25,9 @@ import (
 
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
+	ClearSession()
 	CurrentUser() *database.User
+	CurrentUserId() int32
 	FormField(string) string
 	FormFieldInt(string) (int, error)
 	FormFieldIsSet(string) bool
@@ -35,8 +37,8 @@ type AmContext interface {
 	RemoteIP() string
 	Render(string) error
 	ReplaceUser(*database.User)
+	SaveSession() error
 	SubRender(string) ([]byte, error)
-	Session() *sessions.Session
 	SetOutputType(string)
 	SetRC(int)
 	GetScratch(string) any
@@ -55,6 +57,14 @@ type amContext struct {
 	session     *sessions.Session
 }
 
+// ClearSession clears the current session.
+func (c *amContext) ClearSession() {
+	for k := range c.session.Values {
+		delete(c.session.Values, k)
+	}
+	SetupAmSession(c.session)
+}
+
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
 	u, err := database.AmGetUser(c.session.Values["user_id"].(int32))
@@ -62,6 +72,11 @@ func (c *amContext) CurrentUser() *database.User {
 		log.Errorf("unable to retrieve current user")
 	}
 	return u
+}
+
+// CurrentUserId returns the current user ID.
+func (c *amContext) CurrentUserId() int32 {
+	return c.session.Values["user_id"].(int32)
 }
 
 /* FormField returns the value of a form field from the request.
@@ -146,6 +161,11 @@ func (c *amContext) ReplaceUser(u *database.User) {
 	c.session.Values["user_id"] = u.Uid
 }
 
+// SaveSession saves the session link to cookies.
+func (c *amContext) SaveSession() error {
+	return c.session.Save(c.echoContext.Request(), c.echoContext.Response())
+}
+
 // Scratchpad returns the per-request scratchpad for values.
 func (c *amContext) Scratchpad() map[string]any {
 	if c.scratchpad == nil {
@@ -169,11 +189,6 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err = view.Execute(buf, c.VarMap(), c)
 	return buf.Bytes(), err
-}
-
-// Session returns the HTTP session.
-func (c *amContext) Session() *sessions.Session {
-	return c.session
 }
 
 // SetOutputType sets the MIME output type for the current operation.

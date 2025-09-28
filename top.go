@@ -125,7 +125,7 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
 
 	// Retrieve the sideboxes and create the data to be presented.
-	uid := ctxt.Session().Values["user_id"].(int32)
+	uid := ctxt.CurrentUserId()
 	sboxes, err := database.AmGetSideboxes(uid)
 	if err != nil {
 		return "string", "Unable to retrieve sideboxes", err
