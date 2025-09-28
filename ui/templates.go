@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/CloudyKit/jet/v6"
@@ -36,10 +37,13 @@ var static_views embed.FS
 // views is the main Jet template repository.
 var views *jet.Set
 
+// cachedCountryList is the cached country list after sorting.
 var cachedCountryList []countries.CountryCode = nil
 
+// countryListMutex control access to internalGetCountryList.
 var countryListMutex sync.Mutex
 
+// internalGetCountryList is a wrapper around countries.All() that sorts it by country name.
 func internalGetCountryList() []countries.CountryCode {
 	countryListMutex.Lock()
 	defer countryListMutex.Unlock()
@@ -126,6 +130,21 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	}
 }
 
+/* CapitalizeString changes the first character of trhe string to a capital.
+ * Parameters:
+ *     s - The string to be capitalized.
+ * Returns:
+ *     The capitalized string.
+ */
+func CapitalizeString(s string) string {
+	runes := []rune(s)
+	if len(runes) > 0 {
+		runes[0] = unicode.ToUpper(runes[0])
+		return string(runes)
+	}
+	return ""
+}
+
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -142,6 +161,11 @@ func SetupTemplates() {
 	views.AddGlobalFunc("GetMonthList", getMonthList)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
+
+	views.AddGlobalFunc("CapitalizeString", func(a jet.Arguments) reflect.Value {
+		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
+		return reflect.ValueOf(CapitalizeString(s))
+	})
 
 	// preload the country list in the background
 	go internalGetCountryList()

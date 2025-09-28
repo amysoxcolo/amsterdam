@@ -12,7 +12,7 @@
             <h1 class="text-blue-800 text-4xl font-bold mb-2">Amsterdam Internal Server Error</h1>
             <hr class="border-2 border-gray-400 w-4/5 mb-4">
             <p class="text-black text-sm mb-4">
-                The Amsterdam server encountered an error: {{ error }}
+                The Amsterdam server encountered an error: {{ CapitalizeString(error) }}.
             </p>
             <p class="text-black text-sm mb-4">
                 <a href="/">Click here</a> to return to the home page.

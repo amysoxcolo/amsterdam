@@ -10,11 +10,15 @@
 package database
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	log "github.com/sirupsen/logrus"
 )
 
 // User represents a user in the Amsterdam database.
@@ -83,6 +87,32 @@ func AmGetUser(uid int32) (*User, error) {
 	return rc.(*User), err
 }
 
+/* AmGetUserByName returns a reference to the specified user.
+ * Parameters:
+ *     name - The username of the user.
+ * Returns:
+ *     Pointer to User containing user data, or nil
+ *     Standard Go error status
+ */
+func AmGetUserByName(name string) (*User, error) {
+	var dbdata []User
+	err := amdb.Select(&dbdata, "SELECT * FROM users WHERE username = ?", name)
+	if err != nil {
+		return nil, err
+	}
+	if len(dbdata) > 1 {
+		return nil, fmt.Errorf("AmGetUserByName(\"%s\"): too many responses(%d)", name, len(dbdata))
+	}
+	getUserMutex.Lock()
+	defer getUserMutex.Unlock()
+	rc, ok := userCache.Get(dbdata[0].Uid)
+	if !ok {
+		rc = &(dbdata[0])
+		userCache.Add(dbdata[0].Uid, rc)
+	}
+	return rc.(*User), nil
+}
+
 // getAnonUserID retrieves the UID of the "anonymous" user from the database.
 func getAnonUserID() (int32, error) {
 	if anonUid < 0 {
@@ -129,4 +159,70 @@ func AmGetAnonUser() (*User, error) {
 		rc, err = AmGetUser(auid)
 	}
 	return rc, err
+}
+
+// hashPassword hashes the password value.
+func hashPassword(password string) string {
+	if len(password) == 0 {
+		return ""
+	}
+	hasher := sha1.New()
+	hasher.Write([]byte(password))
+	hashBytes := hasher.Sum(nil)
+	return hex.EncodeToString(hashBytes)
+}
+
+// touchUser updates the last access time for the user.
+func touchUser(user *User) {
+	user.Mutex.Lock()
+	defer user.Mutex.Unlock()
+	moment := time.Now()
+	_, _ = amdb.Exec("UPDATE user SET lastaccess = ? WHERE uid = ?", moment, user.Uid)
+	user.LastAccess = &moment
+}
+
+/* AmAuthenticateUser authenticates a user by name and password.
+ * Parameters:
+ *     name - The user name to try.
+ *     password - The password to try.
+ *     remote_ip - The remote IP address, for audit records.
+ * Returns:
+ *     The User pointer if authenticated, or nil if not.
+ *     Standard Go error status.
+ */
+func AmAuthenticateUser(name string, password string, remote_ip string) (*User, error) {
+	log.Debugf("AmAuthenicate() authenticating user %s...", name)
+	var ar *AuditRecord = nil
+	defer func() {
+		if ar != nil {
+			go ar.Store()
+		}
+	}()
+
+	user, err := AmGetUserByName(name)
+	if err != nil {
+		log.Error("...user not found")
+		ar = AmNewAudit(AuditLoginFail, 0, remote_ip, fmt.Sprintf("Bad username: %s", name))
+		return nil, errors.New("the user account you have specified does not exist; please try again")
+	}
+	if user.IsAnon {
+		log.Error("...user is the Anonymous Honyak, can't explicitly log in")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remote_ip, "Anonymous user")
+		return nil, errors.New("this account cannot be explicitly logged into; please try again")
+	}
+	if user.Lockout {
+		log.Error("...user is locked out by the admin")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remote_ip, "Account locked out")
+		return nil, errors.New("this account has been administratively locked; please contact the system administrator for assistance")
+	}
+	h := hashPassword(password)
+	if h != user.Passhash {
+		log.Warn("...invalid password")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remote_ip, "Bad password")
+		return nil, errors.New("the password you have specified is incorrect; please try again")
+	}
+	log.Debug("...authenticated")
+	touchUser(user)
+	ar = AmNewAudit(AuditLoginOK, user.Uid, remote_ip)
+	return user, nil
 }

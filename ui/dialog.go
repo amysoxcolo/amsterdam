@@ -124,6 +124,20 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 	return "framed_template", "dialog.jet", nil
 }
 
+/* RenderError sets up the rendering parameters to send this dialog to the output with an error message.
+ * Parameters:
+ *     ctxt - The AmContext for this request.
+ *     errormessage - The error message to be displayed.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any, error) {
+	ctxt.VarMap().Set("amsterdam_errorMessage", errormessage)
+	return d.Render(ctxt)
+}
+
 /* LoadFromForm loads the values in a dialog from the form fields in the request.
  * Parameters:
  *     ctxt - The AmContext for this request.

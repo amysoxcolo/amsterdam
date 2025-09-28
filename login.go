@@ -10,8 +10,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
+	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
@@ -59,6 +61,10 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		if target == "" {
 			target = "/"
 		}
+		// If user is already logged in, this is a no-op.
+		if !ctxt.CurrentUser().IsAnon {
+			return "redirect", target, nil
+		}
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" {
@@ -66,9 +72,22 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		}
 		if action == "remind" {
 			// TODO: send password reminder
-			return dlg.Render(ctxt)
+			dlg.Field("pass").Value = ""
+			return dlg.RenderError(ctxt, "Password reminder has been sent to your E-mail address.")
 		}
-
+		if action == "login" {
+			// authenticate the user
+			user, uerr := database.AmAuthenticateUser(dlg.Field("user").Value, dlg.Field("pass").Value, ctxt.RemoteIP())
+			if uerr != nil {
+				dlg.Field("pass").Value = ""
+				return dlg.RenderError(ctxt, uerr.Error())
+			}
+			ctxt.ReplaceUser(user)
+			// TODO: cookie set if required
+			// TODO: bounce to E-mail verify if we can do so
+			return "redirect", target, nil
+		}
+		err = errors.New("no known button click on POST to login function")
 	}
 	return ui.ErrorPage(ctxt, err)
 }
@@ -90,7 +109,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a new account while logged in on an existing one. You must log out first."))
+		return ui.ErrorPage(ctxt, fmt.Errorf("you cannot create a new account while logged in on an existing one. You must log out first"))
 	}
 
 	ctxt.VarMap().Set("target", target)
@@ -115,7 +134,7 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("You cannot create a new account while logged in on an existing one. You must log out first."))
+		return ui.ErrorPage(ctxt, fmt.Errorf("you cannot create a new account while logged in on an existing one. You must log out first"))
 	}
 
 	dlg, err := ui.AmLoadDialog("newaccount")

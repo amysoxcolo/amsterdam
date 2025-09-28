@@ -32,7 +32,9 @@ type AmContext interface {
 	RC() int
 	OutputType() string
 	Parameter(string) string
+	RemoteIP() string
 	Render(string) error
+	ReplaceUser(*database.User)
 	SubRender(string) ([]byte, error)
 	Session() *sessions.Session
 	SetOutputType(string)
@@ -121,6 +123,11 @@ func (c *amContext) Parameter(name string) string {
 	return rc
 }
 
+// RemoteIP returns the remote IP address.
+func (c *amContext) RemoteIP() string {
+	return c.echoContext.RealIP()
+}
+
 /* Render renders a template to the output. Called at the top level only.
  * Parameters:
  *     name = The name of the tempate to be rendered.
@@ -129,6 +136,14 @@ func (c *amContext) Parameter(name string) string {
  */
 func (c *amContext) Render(name string) error {
 	return c.echoContext.Render(c.httprc, name, c)
+}
+
+/* ReplaceUser replaces the current user in the context.
+ * Parameters:
+ *     u - New user to associate with the context.
+ */
+func (c *amContext) ReplaceUser(u *database.User) {
+	c.session.Values["user_id"] = u.Uid
 }
 
 // Scratchpad returns the per-request scratchpad for values.
