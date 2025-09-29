@@ -20,7 +20,7 @@ import (
 type RenderedSideboxItem struct {
 	Text  string
 	Link  *string
-	Flags []string
+	Flags map[string]bool
 }
 
 // RenderedSidebox is the data for a single rendered sidebox.
@@ -57,7 +57,12 @@ func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sideb
 				out.Items[i].Text = c.Name
 				out.Items[i].Link = new(string)
 				*out.Items[i].Link = "/TODO/community/" + c.Alias
-				out.Items[i].Flags = make([]string, 0)
+				out.Items[i].Flags = make(map[string]bool)
+				var level uint16
+				level, err = database.AmGetCommunityAccessLevel(uid, c.Id)
+				if err == nil && database.AmTestPermission("Community.ShowAdmin", level) {
+					out.Items[i].Flags["admin"] = true
+				}
 			}
 			out.TemplateName = "sb_ftrcomm.jet"
 		}

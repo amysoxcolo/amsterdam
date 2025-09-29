@@ -111,3 +111,25 @@ func AmGetCommunitiesForUser(uid int32) ([]*Community, error) {
 	}
 	return rc, err
 }
+
+/* AmGetCommunityAccessLevel returns the access level of the specified user with respect to the community.
+ * This may reflect the user's admin status as well as their status within the community.
+ * Parameters:
+ *     uid - The UID of the user.
+ *     commid - The ID of the community.
+ * Returns:
+ *     Access level within the community, or 0 if the user is not a member.
+ *     Standard Go error status.
+ */
+func AmGetCommunityAccessLevel(uid int32, commid int32) (uint16, error) {
+	var rc uint16 = 0
+	rows, err := amdb.Queryx(`SELECT GREATEST(m.granted_lvl, u.base_lvl) AS level FROM users u, commmember m
+	    WHERE u.uid = m.uid AND m.uid = ? AND m.commid = ?`, uid, commid)
+	if err == nil {
+		defer rows.Close()
+		if rows.Next() {
+			rows.Scan(&rc)
+		}
+	}
+	return rc, err
+}
