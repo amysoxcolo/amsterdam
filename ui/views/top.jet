@@ -54,5 +54,12 @@
             {{ ctxt.SetScratch("__sidebox", .) }}
             {{ ctxt.SubRender(.TemplateName) | raw }}
         {{ end }}
+
+        {{ if !.CurrentUser().IsAnon }}
+            <div class="text-center">
+                <a href="/TODO/config-sideboxes"
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors inline-block">Configure</a>
+            </div>
+        {{ end }}
     </div>
 </div>
