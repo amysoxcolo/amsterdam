@@ -58,6 +58,14 @@ type AmConfig struct {
 		Driver string `yaml:"driver"`
 		Dsn    string `yaml:"dsn"`
 	} `yaml:"database"`
+	Email struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Tls      string `yaml:"tls"`
+		AuthType string `yaml:"authType"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
+	} `yaml:"email"`
 	Rendering struct {
 		TemplateDir string `yaml:"templatedir"`
 		CookieKey   string `yaml:"cookiekey"`
@@ -114,6 +122,12 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
 	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)
 	dest.Database.Dsn = overlayString(loaded.Database.Dsn, defaults.Database.Dsn)
+	dest.Email.Host = overlayString(loaded.Email.Host, defaults.Email.Host)
+	dest.Email.Port = overlayInt(loaded.Email.Port, defaults.Email.Port)
+	dest.Email.Tls = overlayString(loaded.Email.Tls, defaults.Email.Tls)
+	dest.Email.AuthType = overlayString(loaded.Email.AuthType, defaults.Email.AuthType)
+	dest.Email.User = overlayString(loaded.Email.User, defaults.Email.User)
+	dest.Email.Password = overlayString(loaded.Email.Password, defaults.Email.Password)
 	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)
 	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
 }
