@@ -1,0 +1,20 @@
+{{ .SetSubject("Amsterdam Password Reminder Message") }}
+Here is the password reminder for your account "{{ username }}" as you requested:
+
+{{ reminder }}
+
+If this reminder is not sufficient for you to remember what your password is,
+then the system can change your password for you.  To do so, please visit
+the following URL:
+
+http://example.com/passrecovery/{{ change_uid }}.{{ change.auth }}
+
+Your password will be changed and a new password will be E-mailed to you
+at this address.
+
+If you did NOT request a password reminder, then this message was sent
+by someone attempting to access your account without your knowledge.  Do
+not panic!  Nothing has happened to your account or password yet, but
+please do notify the system administrator.
+
+- The Management

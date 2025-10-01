@@ -23,6 +23,12 @@ email:
   authType: plain
   user: jrn
   password: foobiebletch
+  signature: |-
+    Amsterdam - community services, conferencing and more.  <http://git.erbosoft.com/amy/amsterdam>
+  disclaimer: |-
+    Message sent via Amsterdam Web Communities System - <http://git.erbosoft.com/amy/amsterdam>
+    The Amsterdam Project is not responsible for the contents of this message
+    Report abuses to: <abuse@example.com>
 rendering:
   templatedir: custom_templates
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz

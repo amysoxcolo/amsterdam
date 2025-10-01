@@ -10,7 +10,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -67,15 +66,21 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		}
 
 		action := dlg.WhichButton(ctxt)
-		if action == "cancel" {
+		if action == "cancel" { // Cancel button pressed
 			return "redirect", target, nil
 		}
-		if action == "remind" {
-			// TODO: send password reminder
+		if action == "remind" { // Password Reminder button pressed
+			user, uerr := database.AmGetUserByName(dlg.Field("user").Value)
+			if uerr == nil {
+				_ = user
+				// TODO: send password reminder
+
+			}
+
 			dlg.Field("pass").Value = ""
 			return dlg.RenderError(ctxt, "Password reminder has been sent to your E-mail address.")
 		}
-		if action == "login" {
+		if action == "login" { // Login button pressed
 			// authenticate the user
 			user, uerr := database.AmAuthenticateUser(dlg.Field("user").Value, dlg.Field("pass").Value, ctxt.RemoteIP())
 			if uerr != nil {
@@ -89,7 +94,8 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 			// TODO: bounce to E-mail verify if we can do so
 			return "redirect", target, nil
 		}
-		err = errors.New("no known button click on POST to login function")
+		dlg.Field("pass").Value = ""
+		return dlg.RenderError(ctxt, "No known button click on POST to login function.")
 	}
 	return ui.ErrorPage(ctxt, err)
 }

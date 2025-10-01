@@ -1,0 +1,13 @@
+{{ .SetSubject("Amsterdam Email Confirmation") }}
+Welcome to the Amsterdam conferencing system!  In order to fully activate your
+account after you register or change your E-mail address, you must provide a
+confirmation number to the system.  Please enter this number into the "Confirm
+E-mail Address" dialog on the system when indicated.
+
+Your confirmation number for your account "{{ username }}" is {{ confnum }}.
+
+Access the E-mail verification dialog at <http://example.com/verifyemail>.
+
+Thank you, and enjoy the Amsterdam conferencing system!
+
+- The Management

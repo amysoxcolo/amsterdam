@@ -20,6 +20,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -60,6 +61,8 @@ func main() {
 		panic(fmt.Sprintf("Database open failure: %v", err))
 	}
 	defer database.ClosedownDb()
+	email.SetupMailSender()
+	defer email.EndMailServer()
 	ui.SetupTemplates()
 	ui.SetupSessionManager()
 	ui.SetupLeftMenus()

@@ -1,0 +1,12 @@
+{{ .SetSubject("Amsterdam Password Changed") }}
+The password for your account "{{ username }}" has been changed.  The new
+password is "{{ password }}".
+
+You should log into Amsterdam immediately and change the password to something
+else.  You can change the password for your account, once you are logged in,
+by clicking on the "Profile" link in the top bar.
+
+If you did NOT request a password change on your account, please notify the
+system administrator IMMEDIATELY.
+
+- The Management
