@@ -23,6 +23,8 @@ email:
   authType: plain
   user: jrn
   password: foobiebletch
+  mailFromAddr: "nobody@example.com"
+  mailFromName: "Amsterdam E-Mail Service"
   signature: |-
     Amsterdam - community services, conferencing and more.  <http://git.erbosoft.com/amy/amsterdam>
   disclaimer: |-

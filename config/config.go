@@ -59,14 +59,16 @@ type AmConfig struct {
 		Dsn    string `yaml:"dsn"`
 	} `yaml:"database"`
 	Email struct {
-		Host       string `yaml:"host"`
-		Port       int    `yaml:"port"`
-		Tls        string `yaml:"tls"`
-		AuthType   string `yaml:"authType"`
-		User       string `yaml:"user"`
-		Password   string `yaml:"password"`
-		Signature  string `yaml:"signature"`
-		Disclaimer string `yaml:"disclaimer"`
+		Host         string `yaml:"host"`
+		Port         int    `yaml:"port"`
+		Tls          string `yaml:"tls"`
+		AuthType     string `yaml:"authType"`
+		User         string `yaml:"user"`
+		Password     string `yaml:"password"`
+		MailFromAddr string `yaml:"mailFromAddr"`
+		MailFromName string `yaml:"mailFromName"`
+		Signature    string `yaml:"signature"`
+		Disclaimer   string `yaml:"disclaimer"`
 	} `yaml:"email"`
 	Rendering struct {
 		TemplateDir string `yaml:"templatedir"`
@@ -130,6 +132,8 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Email.AuthType = overlayString(loaded.Email.AuthType, defaults.Email.AuthType)
 	dest.Email.User = overlayString(loaded.Email.User, defaults.Email.User)
 	dest.Email.Password = overlayString(loaded.Email.Password, defaults.Email.Password)
+	dest.Email.MailFromAddr = overlayString(loaded.Email.MailFromAddr, defaults.Email.MailFromAddr)
+	dest.Email.MailFromName = overlayString(loaded.Email.MailFromName, defaults.Email.MailFromName)
 	dest.Email.Signature = overlayString(loaded.Email.Signature, defaults.Email.Signature)
 	dest.Email.Disclaimer = overlayString(loaded.Email.Disclaimer, defaults.Email.Disclaimer)
 	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)

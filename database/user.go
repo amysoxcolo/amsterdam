@@ -60,6 +60,14 @@ func init() {
 	}
 }
 
+// ContactInfo returns the contact info structure for the user.
+func (u *User) ContactInfo() (*ContactInfo, error) {
+	if u.ContactID < 0 {
+		return nil, nil
+	}
+	return AmGetContactInfo(u.ContactID)
+}
+
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
  *     uid - The UID of the user.

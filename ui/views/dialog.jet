@@ -38,6 +38,19 @@
             </div>
         </div>
     {{ end }}
+    {{ if isset(amsterdam_infoMessage) }}
+        <!-- Info Message Banner -->
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 hidden" id="info-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-blue-500 text-xl">ℹ️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="info-message">{{ amsterdam_infoMessage }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
 
         <div class="bg-gray-50 p-6 rounded-lg">
             <div class="space-y-4">

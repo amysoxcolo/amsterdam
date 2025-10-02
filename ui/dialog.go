@@ -146,6 +146,20 @@ func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any, 
 	return d.Render(ctxt)
 }
 
+/* RenderInfo sets up the rendering parameters to send this dialog to the output with an info message.
+ * Parameters:
+ *     ctxt - The AmContext for this request.
+ *     infoMessage - The info message to be displayed.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func (d *Dialog) RenderInfo(ctxt AmContext, infoMessage string) (string, any, error) {
+	ctxt.VarMap().Set("amsterdam_infoMessage", infoMessage)
+	return d.Render(ctxt)
+}
+
 /* LoadFromForm loads the values in a dialog from the form fields in the request.
  * Parameters:
  *     ctxt - The AmContext for this request.

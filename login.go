@@ -10,9 +10,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
@@ -72,13 +74,30 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		if action == "remind" { // Password Reminder button pressed
 			user, uerr := database.AmGetUserByName(dlg.Field("user").Value)
 			if uerr == nil {
-				_ = user
-				// TODO: send password reminder
-
+				var ci *database.ContactInfo
+				ci, uerr = user.ContactInfo()
+				if uerr == nil {
+					if ci != nil && ci.Email != nil && *ci.Email != "" {
+						msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())
+						msg.AddTo(*ci.Email, "")
+						msg.SetTemplate("pass_remind.jet")
+						msg.AddVariable("username", user.Username)
+						msg.AddVariable("reminder", user.PassReminder)
+						msg.AddVariable("change_uid", user.Uid)
+						msg.AddVariable("change_auth", "TODO") // TODO: add change auth link
+						msg.Send()
+					} else {
+						uerr = errors.New("cannot find email address")
+					}
+				}
 			}
 
 			dlg.Field("pass").Value = ""
-			return dlg.RenderError(ctxt, "Password reminder has been sent to your E-mail address.")
+			if uerr == nil {
+				return dlg.RenderInfo(ctxt, "Password reminder has been sent to your E-mail address.")
+			} else {
+				return dlg.RenderError(ctxt, uerr.Error())
+			}
 		}
 		if action == "login" { // Login button pressed
 			// authenticate the user

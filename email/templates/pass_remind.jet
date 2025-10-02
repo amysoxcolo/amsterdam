@@ -7,7 +7,7 @@ If this reminder is not sufficient for you to remember what your password is,
 then the system can change your password for you.  To do so, please visit
 the following URL:
 
-http://example.com/passrecovery/{{ change_uid }}.{{ change.auth }}
+http://example.com/passrecovery/{{ change_uid }}.{{ change_auth }}
 
 Your password will be changed and a new password will be E-mailed to you
 at this address.

@@ -13,6 +13,7 @@ package email
 import (
 	"fmt"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
 )
@@ -126,6 +127,7 @@ func AmNewEmailMessage(sender int32, ip string) Message {
 	}
 	rc.uid = sender
 	rc.ip = ip
+	rc.SetFrom(config.GlobalConfig.Email.MailFromAddr, config.GlobalConfig.Email.MailFromName)
 	return rc
 }
 
