@@ -78,7 +78,7 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 				ci, uerr = user.ContactInfo()
 				if uerr == nil {
 					if ci != nil && ci.Email != nil && *ci.Email != "" {
-						msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())
+						msg := email.AmNewEmailMessage(ctxt.CurrentUserId(), ctxt.RemoteIP())
 						msg.AddTo(*ci.Email, "")
 						msg.SetTemplate("pass_remind.jet")
 						msg.AddVariable("username", user.Username)

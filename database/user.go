@@ -14,9 +14,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	log "github.com/sirupsen/logrus"
 )
@@ -66,6 +68,23 @@ func (u *User) ContactInfo() (*ContactInfo, error) {
 		return nil, nil
 	}
 	return AmGetContactInfo(u.ContactID)
+}
+
+/* NewAuthToken generates and returns a new authentication token for the user.
+ * Returns:
+ *     Authentication token value
+ *	   Standard Go error status.
+ */
+func (u *User) NewAuthToken() (string, error) {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	newToken := util.GenerateRandomAuthString()
+	if _, err := amdb.Exec("UPDATE users SET tokenauth = ? WHERE uid = ?", newToken, u.Uid); err != nil {
+		return "", err
+	}
+	u.Tokenauth = &newToken
+	checkValue := uint32(u.Uid) ^ crc32.ChecksumIEEE([]byte(newToken))
+	return fmt.Sprintf("AQAT:%d|%s|%d|", u.Uid, newToken, checkValue), nil
 }
 
 /* AmGetUser returns a reference to the specified user.
