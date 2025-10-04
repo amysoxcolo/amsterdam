@@ -15,20 +15,17 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// amdb is the reference to the Amsterdam database.
+// amdb is the reference to the Amsterdam database.  Returns a function to close it down.
 var amdb *sqlx.DB
 
 // SetupDb sets up the database and associated items.
-func SetupDb() error {
+func SetupDb() (func(), error) {
 	db, err := sqlx.Open(config.GlobalConfig.Database.Driver, config.GlobalConfig.Database.Dsn)
 	if err == nil {
 		amdb = db
 		// TODO: additional initialization
 	}
-	return err
-}
-
-// ClosedownDb closes down the database and associated items.
-func ClosedownDb() {
-	amdb.Close()
+	return func() {
+		amdb.Close()
+	}, err
 }

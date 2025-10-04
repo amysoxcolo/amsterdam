@@ -186,7 +186,7 @@ var sendChan chan *amMessage
 var doneChan chan bool
 
 // SetupMailSender starts the mail-sending goroutine.
-func SetupMailSender() {
+func SetupMailSender() func() {
 	// Initialize mail host and authentication.
 	mailHost = fmt.Sprintf("%s:%d", config.GlobalConfig.Email.Host, config.GlobalConfig.Email.Port)
 	switch config.GlobalConfig.Email.AuthType {
@@ -211,10 +211,8 @@ func SetupMailSender() {
 	sendChan = make(chan *amMessage, 16)
 	doneChan = make(chan bool)
 	go senderLoop(sendChan, doneChan)
-}
-
-// EndMailServer shuts down the mail-sending goroutine.
-func EndMailServer() {
-	close(sendChan) // will break the loop in senderLoop
-	<-doneChan      // wait for routine to complete
+	return func() {
+		close(sendChan) // will break the loop in senderLoop
+		<-doneChan      // wait for routine to complete
+	}
 }

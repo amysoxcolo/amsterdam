@@ -56,13 +56,13 @@ func setupEcho() *echo.Echo {
 func main() {
 	// Configure the system.
 	config.SetupConfig()
-	err := database.SetupDb()
+	closer, err := database.SetupDb()
 	if err != nil {
 		panic(fmt.Sprintf("Database open failure: %v", err))
 	}
-	defer database.ClosedownDb()
-	email.SetupMailSender()
-	defer email.EndMailServer()
+	defer closer()
+	closer = email.SetupMailSender()
+	defer closer()
 	ui.SetupTemplates()
 	ui.SetupSessionManager()
 	ui.SetupLeftMenus()
