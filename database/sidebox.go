@@ -16,6 +16,21 @@ type Sidebox struct {
 	Param    *string `db:"param"`
 }
 
+// copySideboxes copies sideboxes from one user to another.
+func copySideboxes(toUid int32, fromUid int32) error {
+	sbox := make([]Sidebox, 0, 3)
+	err := amdb.Select(sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
+	if err == nil {
+		for _, sb := range sbox {
+			_, err := amdb.Exec("INSERT INTO sideboxes (uid, boxid, sequence, param) VALUES (?, ?, ?, ?)", toUid, sb.Boxid, sb.Sequence, sb.Param)
+			if err != nil {
+				break
+			}
+		}
+	}
+	return err
+}
+
 /* AmGetSideboxes returns all the configured sideboxes for a user.
  * Parameters:
  *     uid = The ID of the user to retrieve sideboxes for.

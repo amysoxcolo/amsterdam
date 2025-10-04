@@ -16,6 +16,7 @@ import (
 	"net/mail"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"gopkg.in/yaml.v3"
@@ -106,6 +107,16 @@ func (fld *DialogItem) ValueRange() (int, int) {
 		return low, high
 	}
 	return -1, -1
+}
+
+// AsDate returns the value of a date field as a Go date.
+func (fld *DialogItem) AsDate() *time.Time {
+	if fld.Type == "date" && fld.AuxData != nil {
+		v := fld.AuxData.([]int)
+		rc := time.Date(v[2], time.Month(v[0]), v[1], 0, 0, 0, 0, time.Now().Location())
+		return &rc
+	}
+	return nil
 }
 
 /* Field returns a pointer to a dialog's field, given its name.

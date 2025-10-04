@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +45,13 @@ type User struct {
 	PassReminder string     `db:"passreminder"`
 	Description  *string    `db:"description"`
 	DOB          *time.Time `db:"dob"`
+}
+
+// UserProperties represents a property entry for a user.
+type UserProperties struct {
+	Uid   int32   `db:"uid"`
+	Index int32   `db:"ndx"`
+	Data  *string `db:"data"`
 }
 
 // userCache is the cache for User objects.
@@ -361,5 +369,88 @@ func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error
 	log.Debug("...authenticated")
 	touchUser(user)
 	ar = AmNewAudit(AuditLoginOK, user.Uid, remoteIP)
+	return user, nil
+}
+
+// newEmailConfirmationNumber returns a new E-mail confirmation number.
+func newEmailConfirmationNumber() int32 {
+	return rand.Int31n(9000000) + 1000000
+}
+
+/* AmCreateNewUser creates a new user record in the database.
+ * Parameters:
+ *     username - New user name.
+ *     password - New password.
+ *     reminder - Password reminder string.
+ *     dob - User date of birth.
+ *     remoteIP - Remote IP address for audit record.
+ * Returns:
+ *     Pointer to new user record.
+ *     Standard Go error status.
+ */
+func AmCreateNewUser(username string, password string, reminder string, dob *time.Time, remoteIP string) (*User, error) {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+
+	amdb.Exec("LOCK TABLES users WRITE, userprefs WRITE, propuser WRITE, commmember WRITE, sideboxes WRITE, confhotlist WRITE;")
+	defer amdb.Exec("UNLOCK TABLES;")
+
+	// Test if the user name is already taken.
+	rs, err := amdb.Query("SELECT uid FROM users WHERE username = ?", username)
+	if err != nil {
+		return nil, err
+	} else if rs.Next() {
+		log.Warnf("username \"%s\" already exists", username)
+		return nil, errors.New("that user name already exists. Please try again")
+	}
+
+	// Insert the user record.
+	_, err2 := amdb.Exec(`INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
+		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
+		username, hashPassword(password), newEmailConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(), reminder, *dob)
+	if err2 != nil {
+		return nil, err2
+	}
+	// Read back the user, which also puts it in the cache.
+	user, err3 := AmGetUserByName(username)
+	if err3 != nil {
+		return nil, err3
+	}
+	log.Debugf("...created new user \"%s\" with UID %d", username, user.Uid)
+
+	// add user preferences
+	_, err = amdb.Exec("INSERT INTO userprefs (uid) VALUES (?)", user.Uid)
+	if err != nil {
+		return nil, err
+	}
+
+	// add user properties
+	props := make([]UserProperties, 0)
+	anon, _ := getAnonUserID()
+	err = amdb.Select(props, "SELECT * FROM propuser WHERE uid = ?", anon)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range props {
+		_, err := amdb.Exec("INSTERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// add user sideboxes
+	err = copySideboxes(user.Uid, anon)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: auto-join communities
+
+	// TODO: copy conference hotlists
+
+	// operation was a success - add an audit record
+	ar = AmNewAudit(AuditAccountCreated, user.Uid, remoteIP)
 	return user, nil
 }

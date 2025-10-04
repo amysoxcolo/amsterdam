@@ -187,6 +187,14 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* VerifyEmail handles E-mail address verification.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
@@ -297,6 +305,53 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("tgt").Value = target
 		dlg.Field("country").Value = "XX"
 		return dlg.Render(ctxt)
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+func NewAccount(ctxt ui.AmContext) (string, any, error) {
+	// If user is already logged in, this is an error.
+	if !ctxt.CurrentUser().IsAnon {
+		return ui.ErrorPage(ctxt, fmt.Errorf("you cannot create a new account while logged in on an existing one. You must log out first"))
+	}
+
+	dlg, err := ui.AmLoadDialog("newaccount")
+	if err == nil {
+		dlg.LoadFromForm(ctxt)
+		target := dlg.Field("tgt").Value
+		if target == "" {
+			target = "/"
+		}
+
+		action := dlg.WhichButton(ctxt)
+		if action == "cancel" { // Cancel button pressed
+			return "redirect", target, nil
+		}
+		if action == "create" {
+			err = dlg.Validate()
+			if err == nil {
+				if dlg.Field("pass1").Value != dlg.Field("pass2").Value {
+					return dlg.RenderError(ctxt, "The typed passwords do not match.")
+				}
+				var banned bool
+				banned, err = database.AmIsEmailAddressBanned(dlg.Field("email").Value)
+				if err == nil {
+					if banned {
+						return dlg.RenderError(ctxt, "This E-mail address may not register a new account.")
+					}
+					// Create new user account
+					var user *database.User
+					user, err = database.AmCreateNewUser(dlg.Field("user").Value, dlg.Field("pass1").Value,
+						dlg.Field("remind").Value, dlg.Field("dob").AsDate(), ctxt.RemoteIP())
+					if err == nil {
+						// TODO: set up contact info
+						_ = user
+					}
+				}
+			}
+			return dlg.RenderError(ctxt, err.Error())
+		}
+		return dlg.RenderError(ctxt, "No known button click on POST to new account.")
 	}
 	return ui.ErrorPage(ctxt, err)
 }
