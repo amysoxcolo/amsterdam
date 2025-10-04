@@ -14,6 +14,8 @@ import (
 	"embed"
 	"fmt"
 	"net/mail"
+	"strconv"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"gopkg.in/yaml.v3"
@@ -93,6 +95,17 @@ func (fld *DialogItem) IsChecked() bool {
 		return len(fld.Value) > 0
 	}
 	return false
+}
+
+// ValueRange returns the minimum and maximum values for an integer field.
+func (fld *DialogItem) ValueRange() (int, int) {
+	if fld.Type == "integer" && fld.Param != "" {
+		parms := strings.Split(fld.Param, "-")
+		low, _ := strconv.Atoi(parms[0])
+		high, _ := strconv.Atoi(parms[1])
+		return low, high
+	}
+	return -1, -1
 }
 
 /* Field returns a pointer to a dialog's field, given its name.
@@ -259,6 +272,34 @@ func validateTextField(fld *DialogItem) error {
 	return nil
 }
 
+/* validateIntegerField validates an integer field.
+ * Parameters:
+ *     fld - The field to be validated.
+ * Returns:
+ *     Standard Go error status.
+ */
+func validateIntegerField(fld *DialogItem) error {
+	err := validateTextField(fld)
+	if err == nil {
+		var v int
+		v, err = strconv.Atoi(fld.Value)
+		if err == nil {
+			fld.AuxData = v // cache parsed value
+			lo, hi := fld.ValueRange()
+			if lo != -1 && hi != -1 {
+				if v < lo {
+					return fmt.Errorf("value of field \"%s\" cannot be less than %d", fld.Caption, lo)
+				} else if v > hi {
+					return fmt.Errorf("value of field \"%s\" cannot be greater than %d", fld.Caption, hi)
+				}
+			}
+		} else {
+			return fmt.Errorf("value of field \"%s\" is not a valid integer", fld.Caption)
+		}
+	}
+	return nil
+}
+
 /* validateAmsIdField validates an Amsterdam ID field.
  * Parameters:
  *     fld - The field to be validated.
@@ -339,6 +380,7 @@ var validators = map[string]validatorFunc{
 	"email":       validateEmailField,
 	"header":      nilValidator,
 	"hidden":      nilValidator,
+	"integer":     validateIntegerField,
 	"password":    validateTextField,
 	"text":        validateTextField,
 }

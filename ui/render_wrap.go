@@ -13,6 +13,7 @@ package ui
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -98,6 +99,11 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 						amctxt.SetLoginCookie(newToken)
 					} else {
 						log.Warnf("unable to rotate login cookie: %v", cerr)
+					}
+					if !user.VerifyEMail {
+						// bounce to E-mail verification before we go anywhere
+						return sendPageData(ctxt, amctxt, "redirect",
+							"/verify?tgt="+url.PathEscape(ctxt.Request().URL.Path))
 					}
 				} else {
 					log.Errorf("login cookie bogus, do not use: %v", cerr)

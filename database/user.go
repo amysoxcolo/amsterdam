@@ -92,6 +92,42 @@ func (u *User) NewAuthToken() (string, error) {
 	return fmt.Sprintf("AQAT:%d|%s|%d|", u.Uid, newToken, checkValue), nil
 }
 
+/* ConfirmEMailAddress checks the E-mail confirmation number and sets "verified" status if it's OK.
+ * Parameters:
+ *     confnum - The entered confirmation number.
+ *     remoteIP - The remote IP address for audit messages.
+ * Returns:
+ *     Standard Go error status.
+ */
+func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+
+	log.Debugf("ConfirmEMailAddress for UID %d", u.Uid)
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	if u.VerifyEMail || AmTestPermission("Global.NoEmailVerify", u.BaseLevel) {
+		log.Debug("...user has either already confirmed or is exempt")
+		return nil
+	}
+	if confnum != u.EmailConfNum {
+		log.Warn("...confirmation number incorrect")
+		ar = AmNewAudit(AuditVerifyEmailFail, u.Uid, remoteIP, "Invalid confirmation number")
+		return errors.New("confirmation number is incorrect. Please try again")
+	}
+	_, err := amdb.Exec("UPDATE users SET verify_email = 1, base_lvl = ? WHERE uid = ?",
+		AmDefaultRole("Global.AfterVerify").Level(), u.Uid)
+	if err == nil {
+		u.VerifyEMail = true
+		u.BaseLevel = AmDefaultRole("Global.AfterVerify").Level()
+		// TODO: auto-join communities if necessary
+		ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
+	}
+	return err
+}
+
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
  *     uid - The UID of the user.

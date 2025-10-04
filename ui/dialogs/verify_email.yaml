@@ -1,0 +1,39 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+name: "verify"
+formName: "verifyform"
+menuSelector: "top"
+title: "Verify E-mail Address"
+action: "/verify"
+instructions: >
+  Check your E-mail, then enter the confirmation number that was E-mailed to you in the field below.
+  (The E-mail might take a few minutes or so to get to you, so be patient.) Once you do so, your account
+  will be fully validated.  If you have not received your confirmation within a few minutes, click on the
+  <b>Send Again</b> button below.
+fields:
+  - type: "hidden"
+    name: "tgt"
+    value: ""
+  - type: "integer"
+    name: "num"
+    caption: "Confirmation Number"
+    size: 7
+    param: "1000000-9999999"
+  - type: "button"
+    name: "ok"
+    caption: "OK"
+    param: "blue"
+  - type: "button"
+    name: "sendagain"
+    caption: "Send Again"
+    param: "gray"
+  - type: "button"
+    name: "cancel"
+    caption: "Cancel"
+    param: "red"

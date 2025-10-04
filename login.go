@@ -12,6 +12,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
@@ -118,8 +119,11 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 					log.Errorf("unable to generate auth string for uid %d: %v", user.Uid, cerr)
 				}
 			}
-			// TODO: bounce to E-mail verify if we can do so
-			return "redirect", target, nil
+			if user.VerifyEMail {
+				return "redirect", target, nil
+			} else {
+				return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
+			}
 		}
 		dlg.Field("pass").Value = ""
 		return dlg.RenderError(ctxt, "No known button click on POST to login function.")
@@ -149,6 +153,100 @@ func Logout(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", target, nil
 }
 
+/* VerifyEmailForm renders the E-mail address verification form.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
+	// Get target URI.
+	target := ctxt.Parameter("tgt")
+	if target == "" {
+		target = "/"
+	}
+
+	// If user is not logged in, this is an error.
+	user := ctxt.CurrentUser()
+	if !user.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you must log in before you can verify your account's E-mail address"))
+	}
+
+	// If user is already verified, this is a no-op.
+	if user.VerifyEMail {
+		return "redirect", target, nil
+	}
+
+	dlg, err := ui.AmLoadDialog("verify_email")
+	if err == nil {
+		dlg.Field("tgt").Value = target
+		return dlg.Render(ctxt)
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
+	// If user is not logged in, this is an error.
+	user := ctxt.CurrentUser()
+	if !user.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you must log in before you can verify your account's E-mail address"))
+	}
+
+	dlg, err := ui.AmLoadDialog("verify_email")
+	if err == nil {
+		dlg.LoadFromForm(ctxt)
+		target := dlg.Field("tgt").Value
+		if target == "" {
+			target = "/"
+		}
+
+		// If user is already verified, this is a no-op.
+		if user.VerifyEMail {
+			return "redirect", target, nil
+		}
+
+		action := dlg.WhichButton(ctxt)
+		if action == "cancel" { // Cancel button pressed
+			return "redirect", target, nil
+		}
+		if action == "sendagain" {
+			var ci *database.ContactInfo
+			ci, err = user.ContactInfo()
+			if err == nil {
+				if ci != nil && ci.Email != nil && *ci.Email != "" {
+					msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())
+					msg.AddTo(*ci.Email, "")
+					msg.SetTemplate("verify_email.jet")
+					msg.AddVariable("username", user.Username)
+					msg.AddVariable("confnum", user.EmailConfNum)
+					msg.Send()
+				} else {
+					err = errors.New("cannot find email address")
+				}
+			}
+			if err == nil {
+				return dlg.RenderInfo(ctxt, "Verification message has been sent to your E-mail address.")
+			} else {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+		}
+		if action == "ok" {
+			err = dlg.Validate()
+			if err == nil {
+				err = user.ConfirmEMailAddress(dlg.Field("num").AuxData.(int32), ctxt.RemoteIP())
+				if err == nil {
+					return "redirect", target, nil
+				}
+			}
+			return dlg.RenderError(ctxt, err.Error())
+		}
+		return dlg.RenderError(ctxt, "No known button click on POST to verify function.")
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
 /* NewAccountUserAgreement renders the Amsterdam user agreement for new accounts.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -166,7 +264,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("you cannot create a new account while logged in on an existing one. You must log out first"))
+		return ui.ErrorPage(ctxt, errors.New("you cannot create a new account while logged in on an existing one. You must log out first"))
 	}
 
 	ctxt.VarMap().Set("target", target)

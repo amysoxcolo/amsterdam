@@ -48,6 +48,8 @@ func setupEcho() *echo.Echo {
 	e.GET("/logout", ui.AmWrap(Logout))
 	e.GET("/newacct", ui.AmWrap(NewAccountUserAgreement))
 	e.GET("/newacct2", ui.AmWrap(NewAccountForm))
+	e.GET("/verify", ui.AmWrap(VerifyEmailForm))
+	e.POST("/verify", ui.AmWrap(VerifyEMail))
 
 	return e
 }

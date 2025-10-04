@@ -67,6 +67,22 @@
                                 value="{{ .Value }}"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                         </div>
+                    {{ else if .Type == "integer" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}:
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            <input type="text" id="{{ .Name }}" name="{{ .Name }}" 
+                                {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
+                                {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
+                                value="{{ .Value }}"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                {{ lo, hi := .ValueRange() }}
+                                {{ if lo != -1 && hi != -1 }}
+                                    <span class="text-sm">({{ lo }}-{{ hi }})</span>
+                                {{ end }}
+                        </div>
                     {{ else if .Type == "password" }}
                         <div class="flex items-center">
                             <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
