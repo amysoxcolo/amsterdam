@@ -12,6 +12,8 @@ package database
 import (
 	"fmt"
 	"time"
+
+	"github.com/labstack/gommon/log"
 )
 
 // AuditRecord holds an audit record instance.
@@ -45,6 +47,9 @@ const (
 	AuditAdminSetAccountSecurity = 112
 	AuditAdminLockUnlockAccount  = 113
 )
+
+// auditWriteQueue is a channel to store audit records in the background.
+var auditWriteQueue chan *AuditRecord
 
 /* AmNewAudit creates a new audit record.
  * Parameters:
@@ -93,4 +98,33 @@ func (ar *AuditRecord) Store() error {
 	ar.Record, _ = rs.LastInsertId()
 	ar.OnDate = moment
 	return nil
+}
+
+// auditWriter is the routine that stores audit records in trhe background.
+func auditWriter(workChan chan *AuditRecord, doneChan chan bool) {
+	for ar := range workChan {
+		err := ar.Store()
+		if err != nil {
+			log.Errorf("dropped audit record on the floor: %v", err)
+		}
+	}
+	doneChan <- true
+}
+
+// AmStoreAudit stores the audit record in the background.
+func AmStoreAudit(rec *AuditRecord) {
+	if rec != nil {
+		auditWriteQueue <- rec
+	}
+}
+
+// setupAuditWriter sets up the background audit writer.
+func setupAuditWriter() func() {
+	auditWriteQueue = make(chan *AuditRecord, 16)
+	doneChan := make(chan bool)
+	go auditWriter(auditWriteQueue, doneChan)
+	return func() {
+		close(auditWriteQueue)
+		<-doneChan
+	}
 }

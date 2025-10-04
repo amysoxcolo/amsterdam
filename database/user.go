@@ -226,9 +226,7 @@ func AmAuthenticateUser(name string, password string, remoteIP string) (*User, e
 	log.Debugf("AmAuthenicate() authenticating user %s...", name)
 	var ar *AuditRecord = nil
 	defer func() {
-		if ar != nil {
-			go ar.Store()
-		}
+		AmStoreAudit(ar)
 	}()
 
 	user, err := AmGetUserByName(name)
@@ -294,9 +292,7 @@ func crackAuthString(authString string) (int32, string, error) {
 func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error) {
 	var ar *AuditRecord = nil
 	defer func() {
-		if ar != nil {
-			go ar.Store()
-		}
+		AmStoreAudit(ar)
 	}()
 
 	uid, token, err := crackAuthString(authString)

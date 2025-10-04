@@ -174,16 +174,13 @@ func senderLoop(sent chan *amMessage, done chan bool) {
 		} else {
 			log.Errorf("unable to format message: %v", err)
 		}
-		go recycleMessage(m)
+		messageRecycleBin <- m
 	}
 	done <- true // signal done for synchronization
 }
 
 // sendChan is the channel we put E-mail messages on to be sent.
 var sendChan chan *amMessage
-
-// doneChan is the channel that gets signaled when the senderLoop breaks.
-var doneChan chan bool
 
 // SetupMailSender starts the mail-sending goroutine.
 func SetupMailSender() func() {
@@ -207,12 +204,20 @@ func SetupMailSender() func() {
 		jet.DevelopmentMode(true),
 	)
 
+	// Start the recycler.
+	messageRecycleBin = make(chan *amMessage, 16)
+	doneChan1 := make(chan bool)
+	go recycleMessages(messageRecycleBin, doneChan1)
+
 	// Start the sender loop.
 	sendChan = make(chan *amMessage, 16)
-	doneChan = make(chan bool)
-	go senderLoop(sendChan, doneChan)
+	doneChan2 := make(chan bool)
+	go senderLoop(sendChan, doneChan2)
+
 	return func() {
-		close(sendChan) // will break the loop in senderLoop
-		<-doneChan      // wait for routine to complete
+		close(sendChan)
+		<-doneChan2
+		close(messageRecycleBin)
+		<-doneChan1
 	}
 }

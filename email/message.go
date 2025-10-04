@@ -131,22 +131,28 @@ func AmNewEmailMessage(sender int32, ip string) Message {
 	return rc
 }
 
-// recycleMessage cleans out a message and puts it back on the free list.
-func recycleMessage(m *amMessage) {
-	m.from = ""
-	m.fromAddr = ""
-	m.to = make([]string, 0)
-	m.toAddrs = make([]string, 0)
-	m.cc = make([]string, 0)
-	m.bcc = make([]string, 0)
-	m.subject = ""
-	m.text = ""
-	for k := range m.headers {
-		delete(m.headers, k)
+// The "recycle bin" for messages.
+var messageRecycleBin chan *amMessage
+
+// recycleMessages is a goroutine that recycles the messages on its queue.
+func recycleMessages(messages chan *amMessage, done chan bool) {
+	for m := range messages {
+		m.from = ""
+		m.fromAddr = ""
+		m.to = make([]string, 0)
+		m.toAddrs = make([]string, 0)
+		m.cc = make([]string, 0)
+		m.bcc = make([]string, 0)
+		m.subject = ""
+		m.text = ""
+		for k := range m.headers {
+			delete(m.headers, k)
+		}
+		m.template = ""
+		for k := range m.vars {
+			delete(m.vars, k)
+		}
+		freeMessages.Put(m)
 	}
-	m.template = ""
-	for k := range m.vars {
-		delete(m.vars, k)
-	}
-	freeMessages.Put(m)
+	done <- true
 }

@@ -20,12 +20,16 @@ var amdb *sqlx.DB
 
 // SetupDb sets up the database and associated items.
 func SetupDb() (func(), error) {
+	var fn1 func() = nil
 	db, err := sqlx.Open(config.GlobalConfig.Database.Driver, config.GlobalConfig.Database.Dsn)
 	if err == nil {
 		amdb = db
-		// TODO: additional initialization
+		fn1 = setupAuditWriter()
 	}
 	return func() {
+		if fn1 != nil {
+			fn1()
+		}
 		amdb.Close()
 	}, err
 }
