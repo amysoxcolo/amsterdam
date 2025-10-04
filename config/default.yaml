@@ -9,6 +9,8 @@
 site:
   title: "Amsterdam Web Communities System"
   topRefresh: 300
+  loginCookieName: AmsterdamAuth
+  loginCookieAge: 365
   userAgreement:
     title: "Amsterdam User Agreement"
     text: >

@@ -14,7 +14,9 @@ import (
 	"bytes"
 	"net/http"
 	"strconv"
+	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/gorilla/sessions"
@@ -25,6 +27,7 @@ import (
 
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
+	ClearLoginCookie()
 	ClearSession()
 	CurrentUser() *database.User
 	CurrentUserId() int32
@@ -39,6 +42,7 @@ type AmContext interface {
 	ReplaceUser(*database.User)
 	SaveSession() error
 	SubRender(string) ([]byte, error)
+	SetLoginCookie(string)
 	SetOutputType(string)
 	SetRC(int)
 	GetScratch(string) any
@@ -57,12 +61,22 @@ type amContext struct {
 	session     *sessions.Session
 }
 
+// ClearLoginCookie overwrites and removes the login cookie.
+func (c *amContext) ClearLoginCookie() {
+	cookie := new(http.Cookie)
+	cookie.Name = config.GlobalConfig.Site.LoginCookieName
+	cookie.Value = ""
+	cookie.Path = "/"
+	cookie.Expires = time.Now()
+	c.echoContext.SetCookie(cookie)
+}
+
 // ClearSession clears the current session.
 func (c *amContext) ClearSession() {
 	for k := range c.session.Values {
 		delete(c.session.Values, k)
 	}
-	SetupAmSession(c.session)
+	setupAmSession(c.session)
 }
 
 // CurrentUser returns the current user from the session.
@@ -191,6 +205,19 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
+/* SetLoginCookie adds the login cookie to the result output.
+ * Parameters:
+ *     auth - The auth string to set.
+ */
+func (c *amContext) SetLoginCookie(auth string) {
+	cookie := new(http.Cookie)
+	cookie.Name = config.GlobalConfig.Site.LoginCookieName
+	cookie.Value = auth
+	cookie.Path = "/"
+	cookie.Expires = time.Now().AddDate(0, 0, config.GlobalConfig.Site.LoginCookieAge)
+	c.echoContext.SetCookie(cookie)
+}
+
 // SetOutputType sets the MIME output type for the current operation.
 func (c *amContext) SetOutputType(typ string) {
 	c.outputType = typ
@@ -253,7 +280,7 @@ func NewAmContext(ctxt echo.Context) (AmContext, error) {
 		rc.session = sess
 		sess.Options = defoptions
 		if sess.IsNew {
-			SetupAmSession(sess)
+			setupAmSession(sess)
 		} else {
 			log.Debugf("took the not-new-session path")
 		}

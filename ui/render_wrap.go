@@ -14,8 +14,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/gommon/log"
 )
 
 func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
@@ -63,11 +65,14 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
  */
 func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 	return func(ctxt echo.Context) error {
+		// Create the AmContext.
 		amctxt, aerr := NewAmContext(ctxt)
 		if aerr != nil {
 			ctxt.Logger().Errorf("Session creation error: %v", aerr)
 			return aerr
 		}
+
+		// Check IP banning.
 		banmsg, banerr := database.AmTestIPBan(ctxt.RealIP())
 		if banerr != nil {
 			ctxt.Logger().Warnf("address %s could not be tested: %v", ctxt.RealIP(), banerr)
@@ -75,8 +80,33 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 		} else if banmsg != "" {
 			amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
 			amctxt.VarMap().Set("message", banmsg)
+			amctxt.SetRC(http.StatusForbidden)
 			return sendPageData(ctxt, amctxt, "framed_template", "ipban.jet")
 		}
+
+		// Check for cookie login.
+		if amctxt.CurrentUser().IsAnon {
+			cookie, cerr := ctxt.Cookie(config.GlobalConfig.Site.LoginCookieName)
+			if cerr == nil {
+				var user *database.User
+				user, cerr = database.AmAuthenticateUserByToken(cookie.Value, ctxt.RealIP())
+				if cerr == nil {
+					// log the user in and rotate login cookie
+					amctxt.ReplaceUser(user)
+					var newToken string
+					if newToken, cerr = user.NewAuthToken(); cerr == nil {
+						amctxt.SetLoginCookie(newToken)
+					} else {
+						log.Warnf("unable to rotate login cookie: %v", cerr)
+					}
+				} else {
+					log.Errorf("login cookie bogus, do not use: %v", cerr)
+					amctxt.ClearLoginCookie()
+				}
+			}
+		}
+
+		// Exec the wrapped function.
 		what, rc, err := myfunc(amctxt)
 		if err == nil {
 			if err = amctxt.SaveSession(); err != nil {
@@ -90,6 +120,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 		} else {
 			ctxt.Logger().Errorf("Page function error: %v", err)
 			_, rc, _ = ErrorPage(amctxt, err)
+			amctxt.SetRC(http.StatusInternalServerError)
 			newerr := sendPageData(ctxt, amctxt, "framed_template", rc)
 			err = newerr
 		}

@@ -16,6 +16,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"github.com/labstack/gommon/log"
 )
 
 /* LoginForm renders the Amsterdam login form.
@@ -108,7 +109,14 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 			}
 			ctxt.ReplaceUser(user)
 			if dlg.Field("saveme").IsChecked() {
-				// TODO: cookie set
+				// create and save an authentication token
+				authString, cerr := user.NewAuthToken()
+				if cerr == nil {
+					ctxt.SetLoginCookie(authString)
+
+				} else {
+					log.Errorf("unable to generate auth string for uid %d: %v", user.Uid, cerr)
+				}
 			}
 			// TODO: bounce to E-mail verify if we can do so
 			return "redirect", target, nil
@@ -135,7 +143,7 @@ func Logout(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	if !ctxt.CurrentUser().IsAnon {
-		// TODO: erase login cookie
+		ctxt.ClearLoginCookie()
 		ctxt.ClearSession()
 	}
 	return "redirect", target, nil

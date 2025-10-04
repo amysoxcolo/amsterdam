@@ -47,9 +47,11 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
-		Title         string `yaml:"title"`
-		TopRefresh    int    `yaml:"topRefresh"`
-		UserAgreement struct {
+		Title           string `yaml:"title"`
+		TopRefresh      int    `yaml:"topRefresh"`
+		LoginCookieName string `yaml:"loginCookieName"`
+		LoginCookieAge  int    `yaml:"loginCookieAge"`
+		UserAgreement   struct {
 			Title string `yaml:"title"`
 			Text  string `yaml:"text"`
 		} `yaml:"userAgreement"`
@@ -106,6 +108,13 @@ func overlayString(loaded string, defaulted string) string {
 	return loaded
 }
 
+/* overlayInt is a helper that takes a loaded or defaulted integer and returns it.
+ * Parameters:
+ *     loaded - The integer loaded from a configuration file.
+ *     defaulted - The default value of this integer.
+ * Returns:
+ *     loaded if it's not empty, otherwise defaulted.
+ */
 func overlayInt(loaded int, defaulted int) int {
 	if loaded != 0 {
 		return loaded
@@ -122,6 +131,8 @@ func overlayInt(loaded int, defaulted int) int {
 func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Site.Title = overlayString(loaded.Site.Title, defaults.Site.Title)
 	dest.Site.TopRefresh = overlayInt(loaded.Site.TopRefresh, defaults.Site.TopRefresh)
+	dest.Site.LoginCookieName = overlayString(loaded.Site.LoginCookieName, defaults.Site.LoginCookieName)
+	dest.Site.LoginCookieAge = overlayInt(loaded.Site.LoginCookieAge, defaults.Site.LoginCookieAge)
 	dest.Site.UserAgreement.Title = overlayString(loaded.Site.UserAgreement.Title, defaults.Site.UserAgreement.Title)
 	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
 	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)

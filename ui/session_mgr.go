@@ -26,8 +26,8 @@ func SetupSessionManager() {
 	SessionStore = memstore.NewMemStore([]byte(config.GlobalConfig.Rendering.CookieKey))
 }
 
-// SetupAmSession sets up a newly created Amsterdam session.
-func SetupAmSession(session *sessions.Session) {
+// setupAmSession sets up a newly created Amsterdam session.
+func setupAmSession(session *sessions.Session) {
 	u, err := database.AmGetAnonUser()
 	if err == nil {
 		session.Values["user_id"] = u.Uid

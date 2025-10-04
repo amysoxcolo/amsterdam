@@ -15,6 +15,8 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,6 +78,9 @@ func (u *User) ContactInfo() (*ContactInfo, error) {
  *	   Standard Go error status.
  */
 func (u *User) NewAuthToken() (string, error) {
+	if u.IsAnon {
+		return "", errors.New("cannot generate token for anonymous user")
+	}
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	newToken := util.GenerateRandomAuthString()
@@ -217,7 +222,7 @@ func touchUser(user *User) {
  *     The User pointer if authenticated, or nil if not.
  *     Standard Go error status.
  */
-func AmAuthenticateUser(name string, password string, remote_ip string) (*User, error) {
+func AmAuthenticateUser(name string, password string, remoteIP string) (*User, error) {
 	log.Debugf("AmAuthenicate() authenticating user %s...", name)
 	var ar *AuditRecord = nil
 	defer func() {
@@ -229,27 +234,100 @@ func AmAuthenticateUser(name string, password string, remote_ip string) (*User, 
 	user, err := AmGetUserByName(name)
 	if err != nil {
 		log.Error("...user not found")
-		ar = AmNewAudit(AuditLoginFail, 0, remote_ip, fmt.Sprintf("Bad username: %s", name))
+		ar = AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad username: %s", name))
 		return nil, errors.New("the user account you have specified does not exist; please try again")
 	}
 	if user.IsAnon {
 		log.Error("...user is the Anonymous Honyak, can't explicitly log in")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remote_ip, "Anonymous user")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Anonymous user")
 		return nil, errors.New("this account cannot be explicitly logged into; please try again")
 	}
 	if user.Lockout {
 		log.Error("...user is locked out by the admin")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remote_ip, "Account locked out")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out")
 		return nil, errors.New("this account has been administratively locked; please contact the system administrator for assistance")
 	}
 	h := hashPassword(password)
 	if h != user.Passhash {
 		log.Warn("...invalid password")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remote_ip, "Bad password")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Bad password")
 		return nil, errors.New("the password you have specified is incorrect; please try again")
 	}
 	log.Debug("...authenticated")
 	touchUser(user)
-	ar = AmNewAudit(AuditLoginOK, user.Uid, remote_ip)
+	ar = AmNewAudit(AuditLoginOK, user.Uid, remoteIP)
+	return user, nil
+}
+
+// crackAuthString validates an auth string and returns its UID and auth token.
+func crackAuthString(authString string) (int32, string, error) {
+	log.Debug("Decoding authString " + authString)
+	if !strings.HasPrefix(authString, "AQAT:") {
+		return 0, "", errors.New("prefix not valid")
+	}
+	parms := strings.Split(authString[5:], "|")
+	n1, err := strconv.ParseInt(parms[0], 10, 32)
+	if err != nil {
+		return 0, "", fmt.Errorf("invalid UID field: %v", err)
+	}
+	uid := int32(n1)
+	n2, err2 := strconv.ParseUint(parms[2], 10, 32)
+	if err2 != nil {
+		return 0, "", fmt.Errorf("invalid checkvalue field: %v", err2)
+	}
+	cv1 := uint32(n2)
+	cv2 := uint32(uid) ^ crc32.ChecksumIEEE([]byte(parms[1]))
+	if cv1 != cv2 {
+		return 0, "", errors.New("checkvalues do not match")
+	}
+	return uid, parms[1], nil
+}
+
+/* AmAuthenticateUserByToken authenticates a user via the stored cookie authentication string.
+ * Parameters:
+ *     authString - The stored cookie authentication string.
+ *     remoteIP - The remote IP address wheter trhe user is logging in from.
+ * Returns:
+ *     Pointer to the authenticated User, or nil.
+ *     Standard Go error status.
+ */
+func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error) {
+	var ar *AuditRecord = nil
+	defer func() {
+		if ar != nil {
+			go ar.Store()
+		}
+	}()
+
+	uid, token, err := crackAuthString(authString)
+	if err != nil {
+		return nil, fmt.Errorf("authString not valid, ignored: %v", err)
+	}
+	var user *User
+	user, err = AmGetUser(uid)
+	if err != nil {
+		log.Error("...user not found")
+		ar = AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad uid: %d", uid))
+		return nil, fmt.Errorf("uid %d not found, ignore: %v", uid, err)
+	}
+	log.Debugf("AmAuthenicateUserByToken() authenticating user %d...", uid)
+	if user.IsAnon {
+		log.Error("...user is the Anonymous Honyak, can't explicitly log in")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Anonymous user")
+		return nil, errors.New("this account cannot be explicitly logged into; please try again")
+	}
+	if user.Lockout {
+		log.Error("...user is locked out by the admin")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out")
+		return nil, errors.New("this account has been administratively locked; please contact the system administrator for assistance")
+	}
+	if user.Tokenauth == nil || *(user.Tokenauth) != token {
+		log.Error("...token mismatch")
+		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Token mismatch")
+		return nil, errors.New("token mismatch")
+	}
+	log.Debug("...authenticated")
+	touchUser(user)
+	ar = AmNewAudit(AuditLoginOK, user.Uid, remoteIP)
 	return user, nil
 }
