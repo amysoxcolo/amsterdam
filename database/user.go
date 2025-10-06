@@ -136,6 +136,18 @@ func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
 	return err
 }
 
+// NewEmailConfirmationNumber creates a new confirmation number for a user and saves it off.
+func (u *User) NewEmailConfirmationNumber() error {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	newnum := newEmailConfirmationNumber()
+	_, err := amdb.Exec("UPDATE user SET email_confnum = ? WHERE uid = ?", newnum, u.Uid)
+	if err != nil {
+		u.EmailConfNum = newnum
+	}
+	return err
+}
+
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
  *     uid - The UID of the user.

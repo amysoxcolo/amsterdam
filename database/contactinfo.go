@@ -10,6 +10,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -19,32 +20,132 @@ import (
 
 // ContactInfo stores the contact information for a user or community.
 type ContactInfo struct {
-	ContactId    int32   `db:"contactid"`
-	GivenName    string  `db:"given_name"`
-	FamilyName   string  `db:"family_name"`
-	MiddleInit   string  `db:"middle_init"`
-	Prefix       *string `db:"prefix"`
-	Suffix       *string `db:"suffix"`
-	Company      *string `db:"company"`
-	Addr1        *string `db:"addr1"`
-	Addr2        *string `db:"addr2"`
-	Locality     *string `db:"locality"`
-	Region       *string `db:"region"`
-	PostalCode   *string `db:"pcode"`
-	Country      *string `db:"country"`
-	Phone        *string `db:"phone"`
-	Fax          *string `db:"fax"`
-	Mobile       *string `db:"mobile"`
-	Email        *string `db:"email"`
-	PrivateAddr  bool    `db:"pvt_addr"`
-	PrivatePhone bool    `db:"pvt_phone"`
-	PrivateFax   bool    `db:"pvt_fax"`
-	PrivateEmail bool    `db:"pvt_email"`
-	OwnerUid     int32   `db:"owner_uid"`
-	OwnerCommId  int32   `db:"owner_commid"`
-	PhotoURL     *string `db:"photo_url"`
-	URL          *string `db:"url"`
-	LastUpdate   *time.Time
+	Mutex        sync.Mutex
+	ContactId    int32      `db:"contactid"`
+	GivenName    string     `db:"given_name"`
+	FamilyName   string     `db:"family_name"`
+	MiddleInit   string     `db:"middle_init"`
+	Prefix       *string    `db:"prefix"`
+	Suffix       *string    `db:"suffix"`
+	Company      *string    `db:"company"`
+	Addr1        *string    `db:"addr1"`
+	Addr2        *string    `db:"addr2"`
+	Locality     *string    `db:"locality"`
+	Region       *string    `db:"region"`
+	PostalCode   *string    `db:"pcode"`
+	Country      *string    `db:"country"`
+	Phone        *string    `db:"phone"`
+	Fax          *string    `db:"fax"`
+	Mobile       *string    `db:"mobile"`
+	Email        *string    `db:"email"`
+	PrivateAddr  bool       `db:"pvt_addr"`
+	PrivatePhone bool       `db:"pvt_phone"`
+	PrivateFax   bool       `db:"pvt_fax"`
+	PrivateEmail bool       `db:"pvt_email"`
+	OwnerUid     int32      `db:"owner_uid"`
+	OwnerCommId  int32      `db:"owner_commid"`
+	PhotoURL     *string    `db:"photo_url"`
+	URL          *string    `db:"url"`
+	LastUpdate   *time.Time `db:"lastupdate"`
+}
+
+// lookupCommunityContact looks up the ID of a contact for a community.
+func lookupCommunityContact(id int32) (int32, error) {
+	var rc int32 = -1
+	rs, err := amdb.Query("SELECT contactid FROM contacts WHERE onwer_commid = ?", id)
+	if err == nil {
+		if rs.Next() {
+			rs.Scan(&rc)
+		}
+	}
+	return rc, err
+}
+
+// lookupUserContact looks up the ID of a contact for a user.
+func lookupUserContact(uid int32) (int32, error) {
+	var rc int32 = -1
+	rs, err := amdb.Query("SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
+	if err == nil {
+		if rs.Next() {
+			rs.Scan(&rc)
+		}
+	}
+	return rc, err
+}
+
+/* Save saves the contact info to the database.
+ * Returns:
+ *     true if the E-mail address on this account has been changed, false if not.
+ *     Standard Go error status.
+ */
+func (ci *ContactInfo) Save() (bool, error) {
+	ci.Mutex.Lock()
+	defer ci.Mutex.Unlock()
+	updateMode := false
+	emailChange := true
+	if ci.ContactId <= 0 {
+		var nx int32
+		var err error
+		if ci.OwnerCommId > 0 {
+			nx, err = lookupCommunityContact(ci.OwnerCommId)
+		} else {
+			nx, err = lookupUserContact(ci.OwnerUid)
+		}
+		if err != nil {
+			return false, err
+		}
+		if nx > 0 {
+			ci.ContactId = nx
+			updateMode = true
+			emailChange = false
+		}
+	} else {
+		updateMode = true
+		emailChange = false
+	}
+	if !emailChange {
+		rs, err := amdb.Query("SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
+		if err != nil {
+			return false, err
+		}
+		if !rs.Next() {
+			emailChange = true
+		}
+	}
+	if updateMode {
+		_, err := amdb.Exec(`UPDATE contacts SET given_name = ?, family_name = ?, middle_init = ?, prefix = ?, suffix = ?, company = ?,
+			addr1 = ?, addr2 = ?, locality = ?, region = ?, pcode = ?, country = ?, phone = ?, fax = ?, mobile = ?, email = ?, 
+			pvt_addr = ?, pvt_phone = ?, pvt_fax = ?, pvt_email = ?, photo_url = ?, url = ?, lastupdate = NOW()
+			WHERE contactid = ?`, ci.GivenName, ci.FamilyName, ci.MiddleInit, ci.Prefix, ci.Suffix, ci.Company,
+			ci.Addr1, ci.Addr2, ci.Locality, ci.Region, ci.PostalCode, ci.Country, ci.Phone, ci.Fax, ci.Mobile, ci.Email,
+			ci.PrivateAddr, ci.PrivatePhone, ci.PrivateFax, ci.PrivateEmail, ci.PhotoURL, ci.URL, ci.ContactId)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		res, err := amdb.Exec(`INSERT INTO contacts (given_name, family_name, middle_init, prefix, suffix, company, addr1,
+        	addr2, locality, region, pcode, country, phone, fax, mobile, email, pvt_addr, pvt_phone, pvt_fax,
+    		pvt_email, owner_uid, owner_commid, photo_url, url, lastupdate)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+			ci.GivenName, ci.FamilyName, ci.MiddleInit, ci.Prefix, ci.Suffix, ci.Company, ci.Addr1, ci.Addr2,
+			ci.Locality, ci.Region, ci.PostalCode, ci.Country, ci.Phone, ci.Fax, ci.Mobile, ci.Email,
+			ci.PrivateAddr, ci.PrivatePhone, ci.PrivateFax, ci.PrivateEmail, ci.OwnerUid, ci.OwnerCommId, ci.PhotoURL, ci.URL)
+		if err != nil {
+			return false, err
+		}
+		lii, _ := res.LastInsertId()
+		ci.ContactId = int32(lii)
+		contactCache.Add(ci.ContactId, ci)
+	}
+	rs, err := amdb.Query("SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
+	if err != nil {
+		return false, err
+	}
+	if !rs.Next() {
+		return false, errors.New("internal error rereading update timestamp")
+	}
+	rs.Scan(&ci.LastUpdate)
+	return emailChange, nil
 }
 
 // contactCache is the cache for ContactInfo objects.
@@ -82,7 +183,8 @@ func internalContactInfo(id int32) (*ContactInfo, error) {
  * Parameters:
  *     id - The contact info ID top retrieve.
  * Returns:
- *
+ *	   ContactInfo retrieved, or nil.
+ *     Standard Go error status.
  */
 func AmGetContactInfo(id int32) (*ContactInfo, error) {
 	getContactMutex.Lock()
@@ -99,4 +201,15 @@ func AmGetContactInfo(id int32) (*ContactInfo, error) {
 		return rc2, nil
 	}
 	return nil, err
+}
+
+/* AmNewUserContactInfo creates a new contact info record for the user.
+ * Parameters:
+ *     uid - The UID of the owner of this contact info.
+ * Returns:
+ *     New ContactInfo structure.
+ */
+func AmNewUserContactInfo(uid int32) *ContactInfo {
+	rc := ContactInfo{OwnerUid: uid, OwnerCommId: -1}
+	return &rc
 }

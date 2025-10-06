@@ -119,6 +119,14 @@ func (fld *DialogItem) AsDate() *time.Time {
 	return nil
 }
 
+// ValPtr returns the value of a field as a string pointer, or nil if the field is empty.
+func (fld *DialogItem) ValPtr() *string {
+	if fld.Value == "" {
+		return nil
+	}
+	return &fld.Value
+}
+
 /* Field returns a pointer to a dialog's field, given its name.
  * Parameters:
  *     name - The name of the field to find.

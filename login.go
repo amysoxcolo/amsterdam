@@ -187,6 +187,20 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+func sendEmailConfirmationEmail(user *database.User, ci *database.ContactInfo, remoteIP string) error {
+	if ci != nil && ci.Email != nil && *ci.Email != "" {
+		msg := email.AmNewEmailMessage(user.Uid, remoteIP)
+		msg.AddTo(*ci.Email, "")
+		msg.SetTemplate("verify_email.jet")
+		msg.AddVariable("username", user.Username)
+		msg.AddVariable("confnum", user.EmailConfNum)
+		msg.Send()
+		return nil
+	} else {
+		return errors.New("cannot find email address")
+	}
+}
+
 /* VerifyEmail handles E-mail address verification.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -223,15 +237,9 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 			var ci *database.ContactInfo
 			ci, err = user.ContactInfo()
 			if err == nil {
-				if ci != nil && ci.Email != nil && *ci.Email != "" {
-					msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())
-					msg.AddTo(*ci.Email, "")
-					msg.SetTemplate("verify_email.jet")
-					msg.AddVariable("username", user.Username)
-					msg.AddVariable("confnum", user.EmailConfNum)
-					msg.Send()
-				} else {
-					err = errors.New("cannot find email address")
+				err = user.NewEmailConfirmationNumber()
+				if err == nil {
+					err = sendEmailConfirmationEmail(user, ci, ctxt.RemoteIP())
 				}
 			}
 			if err == nil {
@@ -309,6 +317,14 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* NewAccount handles creating a new Amsterdam account.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func NewAccount(ctxt ui.AmContext) (string, any, error) {
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
@@ -344,8 +360,30 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 					user, err = database.AmCreateNewUser(dlg.Field("user").Value, dlg.Field("pass1").Value,
 						dlg.Field("remind").Value, dlg.Field("dob").AsDate(), ctxt.RemoteIP())
 					if err == nil {
-						// TODO: set up contact info
-						_ = user
+						// create and save contact info
+						ci := database.AmNewUserContactInfo(user.Uid)
+						ci.Prefix = dlg.Field("prefix").ValPtr()
+						ci.GivenName = dlg.Field("first").Value
+						ci.MiddleInit = dlg.Field("mid").Value
+						if ci.MiddleInit == "" {
+							ci.MiddleInit = " "
+						}
+						ci.FamilyName = dlg.Field("last").Value
+						ci.Suffix = dlg.Field("suffix").ValPtr()
+						ci.Locality = dlg.Field("loc").ValPtr()
+						ci.Region = dlg.Field("reg").ValPtr()
+						ci.PostalCode = dlg.Field("pcode").ValPtr()
+						ci.Country = dlg.Field("country").ValPtr()
+						ci.Email = dlg.Field("email").ValPtr()
+						_, err = ci.Save()
+						if err == nil {
+							err = sendEmailConfirmationEmail(user, ci, ctxt.RemoteIP())
+						}
+						if err == nil {
+							// user is now logged in! redirect to E-mail verification
+							ctxt.ReplaceUser(user)
+							return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
+						}
 					}
 				}
 			}
