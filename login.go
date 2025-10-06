@@ -80,13 +80,14 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 				ci, uerr = user.ContactInfo()
 				if uerr == nil {
 					if ci != nil && ci.Email != nil && *ci.Email != "" {
+						pchange := database.AmNewPasswordChangeRequest(user.Uid, user.Username, *ci.Email)
 						msg := email.AmNewEmailMessage(ctxt.CurrentUserId(), ctxt.RemoteIP())
 						msg.AddTo(*ci.Email, "")
 						msg.SetTemplate("pass_remind.jet")
 						msg.AddVariable("username", user.Username)
 						msg.AddVariable("reminder", user.PassReminder)
 						msg.AddVariable("change_uid", user.Uid)
-						msg.AddVariable("change_auth", "TODO") // TODO: add change auth link
+						msg.AddVariable("change_auth", pchange.Authentication)
 						msg.Send()
 					} else {
 						uerr = errors.New("cannot find email address")

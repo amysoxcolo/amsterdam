@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
-	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,6 +24,33 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	log "github.com/sirupsen/logrus"
 )
+
+// PasswordChangeRequest represents a temporary password change request.
+type PasswordChangeRequest struct {
+	Uid            int32
+	Username       string
+	Email          string
+	Authentication int32
+	Expires        time.Time
+}
+
+// passwordRequests contains a map of password change requests currently managed.
+var passwordRequests map[int32]*PasswordChangeRequest = make(map[int32]*PasswordChangeRequest)
+
+/* AmNewPasswordChangeRequest creates a new password change request and enrolls it.
+ * Parameters:
+ *     uid - The UID of the user.
+ *     username - The user name of the user.
+ *     email - The E-mail address of the user.
+ * Returns:
+ *     Pointer to the new PasswordChangeRequest.
+ */
+func AmNewPasswordChangeRequest(uid int32, username string, email string) *PasswordChangeRequest {
+	rc := PasswordChangeRequest{Uid: uid, Username: username, Email: email,
+		Authentication: util.GenerateRandomConfirmationNumber(), Expires: time.Now().Add(time.Hour)}
+	passwordRequests[uid] = &rc
+	return &rc
+}
 
 // User represents a user in the Amsterdam database.
 type User struct {
@@ -140,7 +166,7 @@ func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
 func (u *User) NewEmailConfirmationNumber() error {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
-	newnum := newEmailConfirmationNumber()
+	newnum := util.GenerateRandomConfirmationNumber()
 	_, err := amdb.Exec("UPDATE user SET email_confnum = ? WHERE uid = ?", newnum, u.Uid)
 	if err != nil {
 		u.EmailConfNum = newnum
@@ -384,11 +410,6 @@ func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error
 	return user, nil
 }
 
-// newEmailConfirmationNumber returns a new E-mail confirmation number.
-func newEmailConfirmationNumber() int32 {
-	return rand.Int31n(9000000) + 1000000
-}
-
 /* AmCreateNewUser creates a new user record in the database.
  * Parameters:
  *     username - New user name.
@@ -421,7 +442,8 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	// Insert the user record.
 	_, err2 := amdb.Exec(`INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
 		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
-		username, hashPassword(password), newEmailConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(), reminder, *dob)
+		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
+		reminder, *dob)
 	if err2 != nil {
 		return nil, err2
 	}

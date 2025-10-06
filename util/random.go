@@ -11,8 +11,9 @@
 package util
 
 import (
-	"crypto/rand"
+	crand "crypto/rand"
 	"io"
+	mrand "math/rand"
 )
 
 // authAlphabet is the set of characters from which we generate auth strings.
@@ -24,7 +25,7 @@ const authStringLen = 32
 // GenerateRandomAuthString generates a random authentication string.
 func GenerateRandomAuthString() string {
 	b := make([]byte, authStringLen)
-	if _, err := io.ReadFull(rand.Reader, b); err != nil {
+	if _, err := io.ReadFull(crand.Reader, b); err != nil {
 		// can't happen (at least on a modern OS)
 		panic("failed to read random: " + err.Error())
 	}
@@ -32,4 +33,9 @@ func GenerateRandomAuthString() string {
 		b[i] = authAlphabet[int(b[i])%len(authAlphabet)]
 	}
 	return string(b)
+}
+
+// GenerateRandomConfirmationNumber generates a random 7-digit confirmation number.
+func GenerateRandomConfirmationNumber() int32 {
+	return mrand.Int31n(9000000) + 1000000
 }
