@@ -52,7 +52,7 @@ type ContactInfo struct {
 // lookupCommunityContact looks up the ID of a contact for a community.
 func lookupCommunityContact(id int32) (int32, error) {
 	var rc int32 = -1
-	rs, err := amdb.Query("SELECT contactid FROM contacts WHERE onwer_commid = ?", id)
+	rs, err := amdb.Query("SELECT contactid FROM contacts WHERE owner_commid = ?", id)
 	if err == nil {
 		if rs.Next() {
 			rs.Scan(&rc)
@@ -81,6 +81,8 @@ func lookupUserContact(uid int32) (int32, error) {
 func (ci *ContactInfo) Save() (bool, error) {
 	ci.Mutex.Lock()
 	defer ci.Mutex.Unlock()
+
+	// Determine whether we're doing an UPDATE or an INSERT, and whether the E-mail address is changing.
 	updateMode := false
 	emailChange := true
 	if ci.ContactId <= 0 {
@@ -104,6 +106,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 		emailChange = false
 	}
 	if !emailChange {
+		// we don't THINK the E-mail address is changing, but we could be wrong...
 		rs, err := amdb.Query("SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
 		if err != nil {
 			return false, err
@@ -112,24 +115,23 @@ func (ci *ContactInfo) Save() (bool, error) {
 			emailChange = true
 		}
 	}
+	// Handle the database heavy lifting.
 	if updateMode {
-		_, err := amdb.Exec(`UPDATE contacts SET given_name = ?, family_name = ?, middle_init = ?, prefix = ?, suffix = ?, company = ?,
-			addr1 = ?, addr2 = ?, locality = ?, region = ?, pcode = ?, country = ?, phone = ?, fax = ?, mobile = ?, email = ?, 
-			pvt_addr = ?, pvt_phone = ?, pvt_fax = ?, pvt_email = ?, photo_url = ?, url = ?, lastupdate = NOW()
-			WHERE contactid = ?`, ci.GivenName, ci.FamilyName, ci.MiddleInit, ci.Prefix, ci.Suffix, ci.Company,
-			ci.Addr1, ci.Addr2, ci.Locality, ci.Region, ci.PostalCode, ci.Country, ci.Phone, ci.Fax, ci.Mobile, ci.Email,
-			ci.PrivateAddr, ci.PrivatePhone, ci.PrivateFax, ci.PrivateEmail, ci.PhotoURL, ci.URL, ci.ContactId)
+		_, err := amdb.NamedExec(`UPDATE contacts SET given_name = :given_name, family_name = :family_name, middle_init = :middle_init,
+		    prefix = :prefix, suffix = :suffix, company = :company, addr1 = :addr1, addr2 = :addr2, locality = :locality, region = :region,
+			pcode = :pcode, country = :country, phone = :phone, fax = :fax, mobile = :mobile, email = :email, pvt_addr = :pvt_addr,
+			pvt_phone = :pvt_phone, pvt_fax = :pvt_fax, pvt_email = :pvt_email, photo_url = :photo_url, url = :url, lastupdate = NOW()
+			WHERE contactid = :contactid`, ci)
 		if err != nil {
 			return false, err
 		}
 	} else {
-		res, err := amdb.Exec(`INSERT INTO contacts (given_name, family_name, middle_init, prefix, suffix, company, addr1,
+		res, err := amdb.NamedExec(`INSERT INTO contacts (given_name, family_name, middle_init, prefix, suffix, company, addr1,
         	addr2, locality, region, pcode, country, phone, fax, mobile, email, pvt_addr, pvt_phone, pvt_fax,
     		pvt_email, owner_uid, owner_commid, photo_url, url, lastupdate)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-			ci.GivenName, ci.FamilyName, ci.MiddleInit, ci.Prefix, ci.Suffix, ci.Company, ci.Addr1, ci.Addr2,
-			ci.Locality, ci.Region, ci.PostalCode, ci.Country, ci.Phone, ci.Fax, ci.Mobile, ci.Email,
-			ci.PrivateAddr, ci.PrivatePhone, ci.PrivateFax, ci.PrivateEmail, ci.OwnerUid, ci.OwnerCommId, ci.PhotoURL, ci.URL)
+			VALUES (:given_name, :family_name, :middle_init, :prefix, :suffix, :company, :addr1, :addr2, :locality,
+			:region:, :pcode, :country, :phone, :fax, :mobile, :email, :pvt_addr, :pvt_phone, :pvt_fax, :pvt_email,
+			:owner_uid, :owner_commid, :photo_url, :url, NOW())`, ci)
 		if err != nil {
 			return false, err
 		}
@@ -137,6 +139,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 		ci.ContactId = int32(lii)
 		contactCache.Add(ci.ContactId, ci)
 	}
+	// Refresh the last update date.
 	rs, err := amdb.Query("SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
 	if err != nil {
 		return false, err
