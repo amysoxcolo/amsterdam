@@ -52,6 +52,20 @@ func AmNewPasswordChangeRequest(uid int32, username string, email string) *Passw
 	return &rc
 }
 
+/* AmGetPasswordChangeRequest retrieves the password change request for a UID.
+ * Parameters:
+ *     uid - The UID to retrieve the request for.
+ * Returns:
+ *     The PasswordChangeRequest pointer, or nil.
+ */
+func AmGetPasswordChangeRequest(uid int32) *PasswordChangeRequest {
+	rc := passwordRequests[uid]
+	if rc != nil {
+		delete(passwordRequests, uid)
+	}
+	return rc
+}
+
 // User represents a user in the Amsterdam database.
 type User struct {
 	Mutex        sync.RWMutex
@@ -167,9 +181,27 @@ func (u *User) NewEmailConfirmationNumber() error {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	newnum := util.GenerateRandomConfirmationNumber()
-	_, err := amdb.Exec("UPDATE user SET email_confnum = ? WHERE uid = ?", newnum, u.Uid)
+	_, err := amdb.Exec("UPDATE users SET email_confnum = ? WHERE uid = ?", newnum, u.Uid)
 	if err != nil {
 		u.EmailConfNum = newnum
+	}
+	return err
+}
+
+// ChangePassword resets a user's password.
+func (u *User) ChangePassword(password string, remoteIP string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	pval := hashPassword(password)
+	_, err := amdb.Exec("UPDATE users SET passhash = ? WHERE uid = ?", pval, u.Uid)
+	if err == nil {
+		u.Passhash = pval
+		ar = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
 	}
 	return err
 }

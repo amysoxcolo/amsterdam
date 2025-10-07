@@ -13,10 +13,12 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/labstack/gommon/log"
 )
 
@@ -391,6 +393,47 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 			return dlg.RenderError(ctxt, err.Error())
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to new account.")
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
+	var emailaddy string
+	uid, err := ctxt.URLParamInt("uid")
+	if err == nil {
+		auth, err := ctxt.URLParamInt("auth")
+		if err == nil {
+			pchange := database.AmGetPasswordChangeRequest(int32(uid))
+			if pchange == nil {
+				return ui.ErrorPage(ctxt, errors.New("password change request not found"))
+			}
+			if auth != int(pchange.Authentication) {
+				return ui.ErrorPage(ctxt, errors.New("invalid password change request"))
+			}
+			if time.Now().Compare(pchange.Expires) > 0 {
+				return ui.ErrorPage(ctxt, errors.New("password change request has expired"))
+			}
+			emailaddy = pchange.Email
+		}
+	}
+
+	if err == nil {
+		user, err := database.AmGetUser(int32(uid))
+		if err == nil {
+			newpass := util.GenerateRandomPassword()
+			err = user.ChangePassword(newpass, ctxt.RemoteIP())
+			if err == nil {
+				// send the password change message
+				msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())
+				msg.AddTo(emailaddy, "")
+				msg.SetTemplate("pass_change.jet")
+				msg.AddVariable("username", user.Username)
+				msg.AddVariable("password", newpass)
+				msg.Send()
+				ctxt.VarMap().Set("amsterdam_pageTitle", "Your Password Has Been Changed")
+				return "framed_template", "password_changed.jet", nil
+			}
+		}
 	}
 	return ui.ErrorPage(ctxt, err)
 }

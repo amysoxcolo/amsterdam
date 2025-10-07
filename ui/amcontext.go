@@ -47,6 +47,8 @@ type AmContext interface {
 	SetRC(int)
 	GetScratch(string) any
 	SetScratch(string, any)
+	URLParam(string) string
+	URLParamInt(string) (int, error)
 	URLPath() string
 	VarMap() jet.VarMap
 }
@@ -228,6 +230,7 @@ func (c *amContext) SetRC(rc int) {
 	c.httprc = rc
 }
 
+// GetScratch returns a value in the per-request scratchpad.
 func (c *amContext) GetScratch(name string) any {
 	if c.scratchpad == nil {
 		return nil
@@ -235,11 +238,22 @@ func (c *amContext) GetScratch(name string) any {
 	return c.scratchpad[name]
 }
 
+// SetScratch sets a value in the per-request scratchpad.
 func (c *amContext) SetScratch(name string, val any) {
 	if c.scratchpad == nil {
 		c.scratchpad = make(map[string]any)
 	}
 	c.scratchpad[name] = val
+}
+
+// URLParam returns the value of a URL parameter.
+func (c *amContext) URLParam(name string) string {
+	return c.echoContext.Param(name)
+}
+
+// URLParamINt returns the value of a URL parameter parsed as an integer.
+func (c *amContext) URLParamInt(name string) (int, error) {
+	return strconv.Atoi(c.echoContext.Param(name))
 }
 
 // URLPath returns the path component of the request URL.
