@@ -19,10 +19,10 @@ database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=Local"
 email:
-  host: smtp.example.com
-  port: 587
-  tls: starttls
-  authType: plain
+  host: localhost
+  port: 1025
+  tls: none
+  authType: none
   user: jrn
   password: foobiebletch
   mailFromAddr: "nobody@example.com"
