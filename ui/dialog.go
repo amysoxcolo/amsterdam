@@ -47,6 +47,12 @@ type Dialog struct {
 	Fields       []DialogItem `yaml:"fields"`
 }
 
+// VRange is used as a return type for ValueRange.
+type VRange struct {
+	Low  int
+	High int
+}
+
 //go:embed dialogs/*
 var dialogs embed.FS
 
@@ -99,14 +105,14 @@ func (fld *DialogItem) IsChecked() bool {
 }
 
 // ValueRange returns the minimum and maximum values for an integer field.
-func (fld *DialogItem) ValueRange() (int, int) {
+func (fld *DialogItem) ValueRange() VRange {
 	if fld.Type == "integer" && fld.Param != "" {
 		parms := strings.Split(fld.Param, "-")
 		low, _ := strconv.Atoi(parms[0])
 		high, _ := strconv.Atoi(parms[1])
-		return low, high
+		return VRange{Low: low, High: high}
 	}
-	return -1, -1
+	return VRange{Low: -1, High: -1}
 }
 
 // AsDate returns the value of a date field as a Go date.
@@ -152,10 +158,12 @@ func (d *Dialog) Field(name string) *DialogItem {
  */
 func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 	required := false
-	for _, fld := range d.Fields {
+	for i, fld := range d.Fields {
 		if fld.Required {
-			required = true
-			break
+			required = true // display the "required" blurb
+		}
+		if fld.Type == "password" { // clear all "password" fields as a security measure
+			d.Fields[i].Value = ""
 		}
 	}
 	ctxt.VarMap().Set("amsterdam_required", required)
@@ -304,12 +312,12 @@ func validateIntegerField(fld *DialogItem) error {
 		v, err = strconv.Atoi(fld.Value)
 		if err == nil {
 			fld.AuxData = v // cache parsed value
-			lo, hi := fld.ValueRange()
-			if lo != -1 && hi != -1 {
-				if v < lo {
-					return fmt.Errorf("value of field \"%s\" cannot be less than %d", fld.Caption, lo)
-				} else if v > hi {
-					return fmt.Errorf("value of field \"%s\" cannot be greater than %d", fld.Caption, hi)
+			vr := fld.ValueRange()
+			if vr.Low != -1 && vr.High != -1 {
+				if v < vr.Low {
+					return fmt.Errorf("value of field \"%s\" cannot be less than %d", fld.Caption, vr.Low)
+				} else if v > vr.High {
+					return fmt.Errorf("value of field \"%s\" cannot be greater than %d", fld.Caption, vr.High)
 				}
 			}
 		} else {

@@ -200,6 +200,7 @@ func (c *amContext) Scratchpad() map[string]any {
 func (c *amContext) SubRender(name string) ([]byte, error) {
 	view, err := views.GetTemplate(name)
 	if err != nil {
+		log.Errorf("unable to load template \"%s\": %v", name, err)
 		return nil, err
 	}
 	buf := new(bytes.Buffer)

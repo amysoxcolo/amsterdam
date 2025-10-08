@@ -6,6 +6,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
+<!-- BEGIN DIALOG {{ amsterdam_dialog.Name }} -->
 <div class="p-4">
     <div class="mb-6">
         <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ amsterdam_dialog.Title }}</h1>
@@ -78,9 +79,9 @@
                                 {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
                                 value="{{ .Value }}"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-                                {{ lo, hi := .ValueRange() }}
-                                {{ if lo != -1 && hi != -1 }}
-                                    <span class="text-sm">({{ lo }}-{{ hi }})</span>
+                                {{ vr := .ValueRange() }}
+                                {{ if vr.Low != -1 && vr.High != -1 }}
+                                    <span class="text-sm">({{ vr.Low }}-{{ vr.High }})</span>
                                 {{ end }}
                         </div>
                     {{ else if .Type == "password" }}
@@ -170,3 +171,4 @@
         </div>
     </form>
 </div>
+<!-- END DIALOG {{ amsterdam_dialog.Name }} -->

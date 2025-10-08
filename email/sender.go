@@ -120,7 +120,10 @@ func transmitMessage(m *amMessage, body []byte) {
 				}
 			}
 			if err == nil {
-				if err = cl.Auth(auth); err == nil {
+				if auth != nil {
+					err = cl.Auth(auth)
+				}
+				if err == nil {
 					if err = cl.Mail(m.fromAddr); err == nil {
 						for _, addr := range m.toAddrs {
 							if err = cl.Rcpt(addr); err != nil {
@@ -187,6 +190,8 @@ func SetupMailSender() func() {
 	// Initialize mail host and authentication.
 	mailHost = fmt.Sprintf("%s:%d", config.GlobalConfig.Email.Host, config.GlobalConfig.Email.Port)
 	switch config.GlobalConfig.Email.AuthType {
+	case "none":
+		auth = nil
 	case "plain":
 		auth = smtp.PlainAuth("", config.GlobalConfig.Email.User, config.GlobalConfig.Email.Password,
 			config.GlobalConfig.Email.Host)

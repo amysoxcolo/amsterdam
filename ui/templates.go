@@ -29,6 +29,7 @@ import (
 	"github.com/CloudyKit/jet/v6/loaders/multi"
 	"github.com/biter777/countries"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 //go:embed views/*
@@ -130,7 +131,7 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	}
 }
 
-/* CapitalizeString changes the first character of trhe string to a capital.
+/* CapitalizeString changes the first character of the string to a capital.
  * Parameters:
  *     s - The string to be capitalized.
  * Returns:
@@ -187,6 +188,7 @@ func (r *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Con
 	view, err := views.GetTemplate(name)
 
 	if err != nil {
+		log.Errorf("Unable to load template \"%s\": %v", name, err)
 		return err
 	}
 	var vmap jet.VarMap = nil

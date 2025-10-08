@@ -18,7 +18,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
@@ -38,6 +38,9 @@ func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any)
 		err = amctxt.Render("frame.jet")
 	default:
 		err = fmt.Errorf("unknown rendering type: %s", command)
+	}
+	if err != nil {
+		log.Errorf("sendPageData() barfed with %v", err)
 	}
 	return err
 }

@@ -19,7 +19,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 /* LoginForm renders the Amsterdam login form.
@@ -75,8 +75,12 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		if action == "cancel" { // Cancel button pressed
 			return "redirect", target, nil
 		}
+		username := dlg.Field("user").Value // since the dialog won't check this for us
+		if len(username) == 0 {
+			return dlg.RenderError(ctxt, "User name not specified.")
+		}
 		if action == "remind" { // Password Reminder button pressed
-			user, uerr := database.AmGetUserByName(dlg.Field("user").Value)
+			user, uerr := database.AmGetUserByName(username)
 			if uerr == nil {
 				var ci *database.ContactInfo
 				ci, uerr = user.ContactInfo()
@@ -97,7 +101,6 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 				}
 			}
 
-			dlg.Field("pass").Value = ""
 			if uerr == nil {
 				return dlg.RenderInfo(ctxt, "Password reminder has been sent to your E-mail address.")
 			} else {
@@ -106,9 +109,8 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		}
 		if action == "login" { // Login button pressed
 			// authenticate the user
-			user, uerr := database.AmAuthenticateUser(dlg.Field("user").Value, dlg.Field("pass").Value, ctxt.RemoteIP())
+			user, uerr := database.AmAuthenticateUser(username, dlg.Field("pass").Value, ctxt.RemoteIP())
 			if uerr != nil {
-				dlg.Field("pass").Value = ""
 				return dlg.RenderError(ctxt, uerr.Error())
 			}
 			ctxt.ReplaceUser(user)
@@ -128,7 +130,6 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 				return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
 			}
 		}
-		dlg.Field("pass").Value = ""
 		return dlg.RenderError(ctxt, "No known button click on POST to login function.")
 	}
 	return ui.ErrorPage(ctxt, err)
@@ -190,6 +191,7 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+// sendEmailConfirmationEmail sends the "E-mail confirmation number" E-mail message.
 func sendEmailConfirmationEmail(user *database.User, ci *database.ContactInfo, remoteIP string) error {
 	if ci != nil && ci.Email != nil && *ci.Email != "" {
 		msg := email.AmNewEmailMessage(user.Uid, remoteIP)
@@ -397,6 +399,14 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* PasswordRecovery handles a click on a "password recovery" link to fix the user's password.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
 	var emailaddy string
 	uid, err := ctxt.URLParamInt("uid")
