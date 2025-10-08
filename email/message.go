@@ -123,7 +123,7 @@ func AmNewEmailMessage(sender int32, ip string) Message {
 	rc := freeMessages.Get()
 	if rc == nil {
 		rc = &amMessage{to: make([]string, 0), cc: make([]string, 0), bcc: make([]string, 0),
-			headers: make(map[string]string)}
+			headers: make(map[string]string), vars: make(jet.VarMap)}
 	}
 	rc.uid = sender
 	rc.ip = ip

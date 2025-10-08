@@ -47,6 +47,7 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
+		BaseURL         string `yaml:"baseURL"`
 		Title           string `yaml:"title"`
 		TopRefresh      int    `yaml:"topRefresh"`
 		LoginCookieName string `yaml:"loginCookieName"`
@@ -129,6 +130,7 @@ func overlayInt(loaded int, defaulted int) int {
  *     defaults - Points to the default configuration structure.
  */
 func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
+	dest.Site.BaseURL = overlayString(loaded.Site.BaseURL, defaults.Site.BaseURL)
 	dest.Site.Title = overlayString(loaded.Site.Title, defaults.Site.Title)
 	dest.Site.TopRefresh = overlayInt(loaded.Site.TopRefresh, defaults.Site.TopRefresh)
 	dest.Site.LoginCookieName = overlayString(loaded.Site.LoginCookieName, defaults.Site.LoginCookieName)

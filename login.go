@@ -369,10 +369,11 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 						ci := database.AmNewUserContactInfo(user.Uid)
 						ci.Prefix = dlg.Field("prefix").ValPtr()
 						ci.GivenName = dlg.Field("first").Value
-						ci.MiddleInit = dlg.Field("mid").Value
-						if ci.MiddleInit == "" {
-							ci.MiddleInit = " "
+						mid := dlg.Field("mid").Value
+						if mid == "" {
+							mid = " "
 						}
+						ci.MiddleInit = &mid
 						ci.FamilyName = dlg.Field("last").Value
 						ci.Suffix = dlg.Field("suffix").ValPtr()
 						ci.Locality = dlg.Field("loc").ValPtr()

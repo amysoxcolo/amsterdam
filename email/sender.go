@@ -68,16 +68,22 @@ func formatMessage(m *amMessage) ([]byte, error) {
 		hdrs := make(map[string]string)
 		maps.Copy(hdrs, m.headers)
 		hdrs["From"] = m.from
-		hdrs["To"] = strings.Join(m.to, ", ")
-		hdrs["Cc"] = strings.Join(m.cc, ", ")
-		hdrs["Bcc"] = strings.Join(m.bcc, ", ")
+		if len(m.to) > 0 {
+			hdrs["To"] = strings.Join(m.to, ", ")
+		}
+		if len(m.cc) > 0 {
+			hdrs["Cc"] = strings.Join(m.cc, ", ")
+		}
+		if len(m.bcc) > 0 {
+			hdrs["Bcc"] = strings.Join(m.bcc, ", ")
+		}
 		hdrs["Subject"] = m.subject
 		hdrs["Content-Type"] = "text/plain; charset=UTF-8"
 		me, _ := os.Hostname()
 		hdrs["X-Amsterdam-Server-Info"] = fmt.Sprintf("%s (Amsterdam/%s)", me, config.AMSTERDAM_VERSION)
 		hdrs["X-Amsterdam-Sender-Info"] = fmt.Sprintf("uid %d, name %s, ip [%s]", m.uid, user.Username, m.ip)
 		for i, v := range disclaimerLines {
-			hdrs[fmt.Sprintf("X-Disclaimer-%d", i)] = v
+			hdrs[fmt.Sprintf("X-Disclaimer-%d", i+1)] = v
 		}
 
 		// Sort the header keys tro make for a better presentation.
@@ -208,6 +214,9 @@ func SetupMailSender() func() {
 		embedfs.NewLoader("templates/", emailTemplates),
 		jet.DevelopmentMode(true),
 	)
+	emailRenderer.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
+	emailRenderer.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
+	emailRenderer.AddGlobal("GlobalConfig", config.GlobalConfig)
 
 	// Start the recycler.
 	messageRecycleBin = make(chan *amMessage, 16)
