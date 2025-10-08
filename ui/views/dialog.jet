@@ -28,7 +28,7 @@
 
     {{ if isset(amsterdam_errorMessage) }}
         <!-- Error Message Banner -->
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 hidden" id="error-banner">
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <span class="text-red-500 text-xl">⚠️</span>
@@ -41,7 +41,7 @@
     {{ end }}
     {{ if isset(amsterdam_infoMessage) }}
         <!-- Info Message Banner -->
-        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6 hidden" id="info-banner">
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6" id="info-banner">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <span class="text-blue-500 text-xl">ℹ️</span>
