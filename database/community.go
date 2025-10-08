@@ -11,6 +11,7 @@ package database
 
 import (
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -96,16 +97,15 @@ func AmGetCommunity(id int32) (*Community, error) {
  */
 func AmGetCommunitiesForUser(uid int32) ([]*Community, error) {
 	var rc []*Community = make([]*Community, 0)
-	rows, err := amdb.Queryx("SELECT commid FROM commmember WHERE uid = ?", uid)
+	var ids []int32 = make([]int32, 0)
+	err := amdb.Select(&ids, "SELECT commid FROM commmember WHERE uid = ?", uid)
 	if err == nil {
-		defer rows.Close()
-		for err == nil && rows.Next() {
-			var cid int32
-			var c *Community
-			rows.Scan(&cid)
-			c, err = AmGetCommunity(cid)
+		for _, id := range ids {
+			c, err := AmGetCommunity(id)
 			if err == nil {
 				rc = append(rc, c)
+			} else {
+				break
 			}
 		}
 	}
@@ -132,4 +132,40 @@ func AmGetCommunityAccessLevel(uid int32, commid int32) (uint16, error) {
 		}
 	}
 	return rc, err
+}
+
+/* AmAutoJoinCommunities joins the specified user to any communities they're not yet a part of.
+ * Parameters:
+ *     user - The user to be auto-joined to communities.
+ * Returns:
+ *     Standard Go error status.
+ */
+func AmAutoJoinCommunities(user *User) error {
+	// get list of current communities
+	var current []int32 = make([]int32, 0)
+	err := amdb.Select(&current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid)
+	if err != nil {
+		return err
+	}
+
+	// look for candidate communities
+	rows, err := amdb.Queryx(`SELECT m.commid, m.locked FROM users u, communities c, commmember m
+		WHERE m.uid = u.uid AND m.commid = c.commid AND u.is_anon = 1 AND c.join_lvl <= ?`, user.BaseLevel)
+	if err == nil {
+		defer rows.Close()
+		grantLevel := AmDefaultRole("Community.NewUser").Level()
+		for rows.Next() {
+			var cid int32
+			var lock bool
+			rows.Scan(&cid, &lock)
+			if !slices.Contains(current, cid) {
+				_, err = amdb.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?. ?, ?, ?)",
+					cid, user.Uid, grantLevel, lock)
+				if err != nil {
+					break
+				}
+			}
+		}
+	}
+	return err
 }

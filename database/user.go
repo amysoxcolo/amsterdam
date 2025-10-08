@@ -181,8 +181,10 @@ func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
 	if err == nil {
 		u.VerifyEMail = true
 		u.BaseLevel = AmDefaultRole("Global.AfterVerify").Level()
-		// TODO: auto-join communities if necessary
-		ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
+		err = AmAutoJoinCommunities(u)
+		if err == nil {
+			ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
+		}
 	}
 	return err
 }
@@ -523,7 +525,11 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 		return nil, err
 	}
 
-	// TODO: auto-join communities
+	// auto-join communities
+	err = AmAutoJoinCommunities(user)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO: copy conference hotlists
 
