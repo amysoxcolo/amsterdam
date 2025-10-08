@@ -40,6 +40,7 @@ type DialogItem struct {
 type Dialog struct {
 	Name         string       `yaml:"name"`
 	FormName     string       `yaml:"formName"`
+	Options      string       `yaml:"options,omitempty"`
 	MenuSelector string       `yaml:"menuSelector,omitempty"`
 	Title        string       `yaml:"title"`
 	Action       string       `yaml:"action"`
@@ -102,6 +103,11 @@ func (fld *DialogItem) IsChecked() bool {
 		return len(fld.Value) > 0
 	}
 	return false
+}
+
+// ValueInt returns the value of the field as an integer.
+func (fld *DialogItem) ValueInt() (int, error) {
+	return strconv.Atoi(fld.Value)
 }
 
 // ValueRange returns the minimum and maximum values for an integer field.
@@ -169,6 +175,9 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 	ctxt.VarMap().Set("amsterdam_required", required)
 	ctxt.VarMap().Set("amsterdam_dialog", d)
 	ctxt.VarMap().Set("amsterdam_pageTitle", d.Title)
+	if strings.Contains(d.Options, "suppresslogin") {
+		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+	}
 	return "framed_template", "dialog.jet", nil
 }
 
@@ -417,11 +426,11 @@ var validators = map[string]validatorFunc{
  *     Standard Go error status.
  */
 func (d *Dialog) Validate() error {
-	for _, fld := range d.Fields {
+	for i, fld := range d.Fields {
 		if len(fld.Value) > 0 || fld.Required {
 			vfunc := validators[fld.Type]
 			if vfunc != nil {
-				err := vfunc(&fld)
+				err := vfunc(&(d.Fields[i]))
 				if err != nil {
 					return err
 				}

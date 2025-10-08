@@ -10,6 +10,7 @@ name: "newaccount"
 formName: "createform"
 menuSelector: "top"
 title: "Create New Account"
+options: "suppresslogin"
 action: "/newacct2"
 instructions: >
   To create a new account, please enter your information below.

@@ -19,7 +19,7 @@ type Sidebox struct {
 // copySideboxes copies sideboxes from one user to another.
 func copySideboxes(toUid int32, fromUid int32) error {
 	sbox := make([]Sidebox, 0, 3)
-	err := amdb.Select(sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
+	err := amdb.Select(&sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
 	if err == nil {
 		for _, sb := range sbox {
 			_, err := amdb.Exec("INSERT INTO sideboxes (uid, boxid, sequence, param) VALUES (?, ?, ?, ?)", toUid, sb.Boxid, sb.Sequence, sb.Param)
@@ -39,23 +39,7 @@ func copySideboxes(toUid int32, fromUid int32) error {
  *     Standard Go error status
  */
 func AmGetSideboxes(uid int32) ([]*Sidebox, error) {
-	stmt, err := amdb.Preparex("SELECT * FROM sideboxes WHERE uid = ? ORDER BY SEQUENCE")
-	if err == nil {
-		defer stmt.Close()
-		rows, err := stmt.Queryx(uid)
-		if err == nil {
-			defer rows.Close()
-			sboxes := make([]*Sidebox, 0, 3)
-			for i := 0; rows.Next(); i++ {
-				box := Sidebox{}
-				rows.StructScan(&box)
-				sboxes = append(sboxes, &box)
-			}
-			if rows.Err() == nil {
-				return sboxes, nil
-			}
-			return nil, rows.Err()
-		}
-	}
-	return nil, err
+	sboxes := make([]*Sidebox, 0, 3)
+	err := amdb.Select(&sboxes, "SELECT * FROM sideboxes WHERE uid = ? ORDER BY SEQUENCE", uid)
+	return sboxes, err
 }

@@ -6,7 +6,7 @@ E-mail Address" dialog on the system when indicated.
 
 Your confirmation number for your account "{{ username }}" is {{ confnum }}.
 
-Access the E-mail verification dialog at <http://example.com/verifyemail>.
+Access the E-mail verification dialog at <{{ GlobalConfig.Site.BaseURL }}/verify>.
 
 Thank you, and enjoy the Amsterdam conferencing system!
 

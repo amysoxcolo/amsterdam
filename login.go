@@ -174,7 +174,7 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
-	if !user.IsAnon {
+	if user.IsAnon {
 		return ui.ErrorPage(ctxt, errors.New("you must log in before you can verify your account's E-mail address"))
 	}
 
@@ -196,7 +196,7 @@ func sendEmailConfirmationEmail(user *database.User, ci *database.ContactInfo, r
 	if ci != nil && ci.Email != nil && *ci.Email != "" {
 		msg := email.AmNewEmailMessage(user.Uid, remoteIP)
 		msg.AddTo(*ci.Email, "")
-		msg.SetTemplate("verify_email.jet")
+		msg.SetTemplate("email_confirm.jet")
 		msg.AddVariable("username", user.Username)
 		msg.AddVariable("confnum", user.EmailConfNum)
 		msg.Send()
@@ -217,7 +217,7 @@ func sendEmailConfirmationEmail(user *database.User, ci *database.ContactInfo, r
 func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
-	if !user.IsAnon {
+	if user.IsAnon {
 		return ui.ErrorPage(ctxt, errors.New("you must log in before you can verify your account's E-mail address"))
 	}
 
@@ -256,7 +256,8 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 		if action == "ok" {
 			err = dlg.Validate()
 			if err == nil {
-				err = user.ConfirmEMailAddress(dlg.Field("num").AuxData.(int32), ctxt.RemoteIP())
+				cn, _ := dlg.Field("num").ValueInt()
+				err = user.ConfirmEMailAddress(int32(cn), ctxt.RemoteIP())
 				if err == nil {
 					return "redirect", target, nil
 				}
@@ -290,6 +291,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
 
 	ctxt.VarMap().Set("target", target)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "New Account User Agreement")
+	ctxt.VarMap().Set("amsterdam_suppressLogin", true)
 	return "framed_template", "agreement.jet", nil
 }
 
@@ -382,6 +384,9 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 						ci.Country = dlg.Field("country").ValPtr()
 						ci.Email = dlg.Field("email").ValPtr()
 						_, err = ci.Save()
+						if err == nil {
+							err = user.SetContactID(ci.ContactId)
+						}
 						if err == nil {
 							err = sendEmailConfirmationEmail(user, ci, ctxt.RemoteIP())
 						}

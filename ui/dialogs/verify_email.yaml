@@ -10,6 +10,7 @@ name: "verify"
 formName: "verifyform"
 menuSelector: "top"
 title: "Verify E-mail Address"
+options: "suppresslogin"
 action: "/verify"
 instructions: >
   Check your E-mail, then enter the confirmation number that was E-mailed to you in the field below.

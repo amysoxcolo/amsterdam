@@ -120,6 +120,17 @@ func (u *User) ContactInfo() (*ContactInfo, error) {
 	return AmGetContactInfo(u.ContactID)
 }
 
+// SetContactID sets the contact ID of a user.
+func (u *User) SetContactID(cid int32) error {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	if _, err := amdb.Exec("UPDATE users SET contactid = ? WHERE uid = ?", cid, u.Uid); err != nil {
+		return err
+	}
+	u.ContactID = cid
+	return nil
+}
+
 /* NewAuthToken generates and returns a new authentication token for the user.
  * Returns:
  *     Authentication token value
@@ -495,12 +506,12 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	// add user properties
 	props := make([]UserProperties, 0)
 	anon, _ := getAnonUserID()
-	err = amdb.Select(props, "SELECT * FROM propuser WHERE uid = ?", anon)
+	err = amdb.Select(&props, "SELECT * FROM propuser WHERE uid = ?", anon)
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range props {
-		_, err := amdb.Exec("INSTERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data)
+		_, err := amdb.Exec("INSERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data)
 		if err != nil {
 			return nil, err
 		}

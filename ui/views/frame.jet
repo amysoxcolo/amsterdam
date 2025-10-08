@@ -58,16 +58,20 @@
             <span class="text-white text-base">
                 {{ if .CurrentUser().IsAnon }}
                     You are not logged in
-                    <span class="mx-2">-</span>
-                    <a href="/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
-                    <span class="mx-2">|</span>
-                    <a href="/newacct" class="text-yellow-300 hover:text-yellow-400">Create Account</a>
+                    {{ if !isset(amsterdam_suppressLogin) || !amsterdam_suppressLogin }}
+                        <span class="mx-2">-</span>
+                        <a href="/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
+                        <span class="mx-2">|</span>
+                        <a href="/newacct" class="text-yellow-300 hover:text-yellow-400">Create Account</a>
+                    {{ end }}
                 {{ else }}
                     You are logged in as <b>{{ .CurrentUser().Username }}</b>
-                    <span class="mx-2">-</span>
-                    <a href="/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
-                    <span class="mx-2">|</span>
-                    <a href="/TODO/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
+                    {{ if !isset(amsterdam_suppressLogin) || !amsterdam_suppressLogin }}
+                        <span class="mx-2">-</span>
+                        <a href="/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
+                        <span class="mx-2">|</span>
+                        <a href="/TODO/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
+                    {{ end }}
                 {{ end }}
             </span>
         </div>

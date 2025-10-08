@@ -130,7 +130,7 @@ func (ci *ContactInfo) Save() (bool, error) {
         	addr2, locality, region, pcode, country, phone, fax, mobile, email, pvt_addr, pvt_phone, pvt_fax,
     		pvt_email, owner_uid, owner_commid, photo_url, url, lastupdate)
 			VALUES (:given_name, :family_name, :middle_init, :prefix, :suffix, :company, :addr1, :addr2, :locality,
-			:region:, :pcode, :country, :phone, :fax, :mobile, :email, :pvt_addr, :pvt_phone, :pvt_fax, :pvt_email,
+			:region, :pcode, :country, :phone, :fax, :mobile, :email, :pvt_addr, :pvt_phone, :pvt_fax, :pvt_email,
 			:owner_uid, :owner_commid, :photo_url, :url, NOW())`, ci)
 		if err != nil {
 			return false, err
