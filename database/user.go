@@ -493,7 +493,7 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	_, err2 := amdb.Exec(`INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
 		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
 		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
-		reminder, *dob)
+		reminder, dob)
 	if err2 != nil {
 		return nil, err2
 	}
