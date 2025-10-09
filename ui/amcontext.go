@@ -296,8 +296,6 @@ func NewAmContext(ctxt echo.Context) (AmContext, error) {
 		sess.Options = defoptions
 		if sess.IsNew {
 			setupAmSession(sess)
-		} else {
-			log.Debugf("took the not-new-session path")
 		}
 	}
 	return &rc, err

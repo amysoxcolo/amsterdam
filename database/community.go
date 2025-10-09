@@ -159,7 +159,7 @@ func AmAutoJoinCommunities(user *User) error {
 			var lock bool
 			rows.Scan(&cid, &lock)
 			if !slices.Contains(current, cid) {
-				_, err = amdb.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?. ?, ?, ?)",
+				_, err = amdb.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
 					cid, user.Uid, grantLevel, lock)
 				if err != nil {
 					break

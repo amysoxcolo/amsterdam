@@ -472,8 +472,13 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 		AmStoreAudit(ar)
 	}()
 
+	unlock := true
 	amdb.Exec("LOCK TABLES users WRITE, userprefs WRITE, propuser WRITE, commmember WRITE, sideboxes WRITE, confhotlist WRITE;")
-	defer amdb.Exec("UNLOCK TABLES;")
+	defer func() {
+		if unlock {
+			amdb.Exec("UNLOCK TABLES;")
+		}
+	}()
 
 	// Test if the user name is already taken.
 	rs, err := amdb.Query("SELECT uid FROM users WHERE username = ?", username)
@@ -524,6 +529,9 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	if err != nil {
 		return nil, err
 	}
+
+	amdb.Exec("UNLOCK TABLES;")
+	unlock = false
 
 	// auto-join communities
 	err = AmAutoJoinCommunities(user)
