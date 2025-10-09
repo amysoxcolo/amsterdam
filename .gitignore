@@ -1,2 +1,4 @@
 # Ignore the executable
 amsterdam
+__debug_bin*
+

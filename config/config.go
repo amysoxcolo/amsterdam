@@ -76,6 +76,9 @@ type AmConfig struct {
 	Rendering struct {
 		TemplateDir string `yaml:"templatedir"`
 		CookieKey   string `yaml:"cookiekey"`
+		CountryList struct {
+			Prioritize string `yaml:"prioritize"`
+		} `yaml:"countryList"`
 	} `yaml:"rendering"`
 }
 
@@ -151,6 +154,7 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Email.Disclaimer = overlayString(loaded.Email.Disclaimer, defaults.Email.Disclaimer)
 	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)
 	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
+	dest.Rendering.CountryList.Prioritize = overlayString(loaded.Rendering.CountryList.Prioritize, defaults.Rendering.CountryList.Prioritize)
 }
 
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.

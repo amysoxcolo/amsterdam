@@ -49,11 +49,22 @@ func internalGetCountryList() []countries.CountryCode {
 	countryListMutex.Lock()
 	defer countryListMutex.Unlock()
 	if cachedCountryList == nil {
-		c := countries.All()
-		slices.SortFunc(c, func(a countries.CountryCode, b countries.CountryCode) int {
+		countryList := countries.All()
+		slices.SortFunc(countryList, func(a countries.CountryCode, b countries.CountryCode) int {
 			return strings.Compare(a.Info().Name, b.Info().Name)
 		})
-		cachedCountryList = c
+		if config.GlobalConfig.Rendering.CountryList.Prioritize != "" {
+			for i, c := range countryList {
+				if c.Info().Alpha2 == config.GlobalConfig.Rendering.CountryList.Prioritize {
+					newList := make([]countries.CountryCode, len(countryList))
+					newList[0] = c
+					copy(newList[1:], countryList[:i])
+					copy(newList[i+1:], countryList[i+1:])
+					countryList = newList
+				}
+			}
+		}
+		cachedCountryList = countryList
 	}
 	return cachedCountryList
 }
