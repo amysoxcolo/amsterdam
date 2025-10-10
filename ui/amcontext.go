@@ -287,7 +287,7 @@ func NewAmContext(ctxt echo.Context) (AmContext, error) {
 		scratchpad:  nil,
 	}
 	ctxt.Set("amsterdam_context", &rc)
-	sess, err := session.Get("amsterdam_session", ctxt)
+	sess, err := session.Get("AMSTERDAM_SESSION", ctxt)
 	if err == nil {
 		rc.session = sess
 		sess.Options = defoptions

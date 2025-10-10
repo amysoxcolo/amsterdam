@@ -18,7 +18,7 @@
                 {{ range sb.Items }}
                     <div class="flex items-center">
                         {{ if ! .Flags["nobullet"] }}<span class="mr-2">🟣</span>{{ end }}
-                        {{ if .Link != nil }}
+                        {{ if .LinkX() == "" }}
                             {{ if .Flags["bold"] }}
                                 <span class="font-bold text-sm">{{ .Text }}</span>
                             {{ else }}
@@ -26,9 +26,9 @@
                             {{ end }}
                         {{ else }}
                             {{ if .Flags["bold"] }}
-                                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
+                                <a href="{{ .LinkX() }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
                             {{ else }}
-                                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 text-sm">{{ .Text }}</a>
+                                <a href="{{ .LinkX() }}" class="text-blue-700 hover:text-blue-900 text-sm">{{ .Text }}</a>
                             {{ end }}
                         {{ end }}
                     </div>

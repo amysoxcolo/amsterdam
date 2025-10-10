@@ -23,6 +23,14 @@ type RenderedSideboxItem struct {
 	Flags map[string]bool
 }
 
+// LinkX dereferences the Link pointer safely.
+func (item *RenderedSideboxItem) LinkX() string {
+	if item.Link == nil {
+		return ""
+	}
+	return *item.Link
+}
+
 // RenderedSidebox is the data for a single rendered sidebox.
 type RenderedSidebox struct {
 	TemplateName string

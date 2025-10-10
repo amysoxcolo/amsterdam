@@ -11,7 +11,10 @@
 package ui
 
 import (
+	"crypto/rand"
 	"encoding/gob"
+	"encoding/hex"
+	"net/http"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -19,54 +22,124 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
-	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
-	"github.com/quasoft/memstore"
 	log "github.com/sirupsen/logrus"
 )
 
-// SessionStore is the Gorilla session store used by Amsterdam.
-var SessionStore sessions.Store
+// AmsterdamStore is our implewmentation of the Gorilla session store that works close to HttpSession in Java.
+type AmsterdamStore struct {
+	mutex        sync.RWMutex
+	sessions     map[string]*sessions.Session
+	maxEntries   int
+	expiry       time.Duration
+	sweepRunning atomic.Bool
+}
 
-// sessionTable is the global map of all sessions.
-var sessionTable map[string]*sessions.Session
+func createAmsterdamStore(exp time.Duration) *AmsterdamStore {
+	rc := AmsterdamStore{
+		sessions:   make(map[string]*sessions.Session),
+		maxEntries: 0,
+		expiry:     exp,
+	}
+	rc.sweepRunning.Store(true)
+	return &rc
+}
 
-// sessionTableMax is the maximum number of entries in the session table.
-var sessionTableMax int = 0
+/* Get (from Store interface) retrieves a new or existing session for the request.
+ * Parameters:
+ *     r - The HTTP request object.
+ *     name - The name of the session.
+ * Returns:
+ *     Session pointer (new or existing)
+ *     Standard Go error status.
+ */
+func (st *AmsterdamStore) Get(r *http.Request, name string) (*sessions.Session, error) {
+	cookie, err := r.Cookie(name)
+	if err == nil {
+		st.mutex.RLock()
+		session, ok := st.sessions[cookie.Value]
+		if ok {
+			session.IsNew = false
+		}
+		st.mutex.RUnlock()
+		if ok {
+			return session, nil
+		}
+	}
+	return st.New(r, name)
+}
 
-// sessionTableMutex is the mutex for the session table.
-var sessionTableMutex sync.RWMutex
+/* New (from Store interface) creates and returns a new session object.
+ * Parameters:
+ *     r - The HTTP request object.
+ *     name - The name of the session.
+ * Returns:
+ *     New session pointer
+ *     Standard Go error status.
+ */
+func (st *AmsterdamStore) New(r *http.Request, name string) (*sessions.Session, error) {
+	session := sessions.NewSession(st, name)
+	session.IsNew = true
+	idBytes := make([]byte, 32)
+	if _, err := rand.Read(idBytes); err != nil {
+		return nil, err
+	}
+	session.ID = hex.EncodeToString(idBytes)
+	st.mutex.Lock()
+	st.sessions[session.ID] = session
+	if len(st.sessions) > st.maxEntries {
+		st.maxEntries = len(st.sessions)
+	}
+	st.mutex.Unlock()
+	return session, nil
+}
 
-// sessionExpiry is the amount of time before a session expires.
-var sessionExpiry time.Duration
+/* Save (from Store interface) saves off the sessin information to the response.
+ * Parameters:
+ *     r - The HTTP request object.
+ *     w - The response writer object.
+ *     session - The session pointer to be saved.
+ * Returns:
+ *     Standard Go error status.
+ */
+func (st *AmsterdamStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
+	st.mutex.Lock()
+	defer st.mutex.Unlock()
+	cookie := sessions.NewCookie(session.Name(), session.ID, session.Options)
+	http.SetCookie(w, cookie)
+	return nil
+}
 
-// sweepRunning is the running flag for session sweeping.
-var sweepRunning atomic.Bool
-
-// sweepSessions sweeps through the sessions table and removes any expired sessions.
-func sweepSessions(tick <-chan time.Time, done chan bool) {
+/* sweep sweeps sessions to remove expired ones.
+ * Parameters:
+ *     tick - Channel that "pulses" periodically to run the task.
+ *     done - Channel we write to when we're done.
+ */
+func (st *AmsterdamStore) sweep(tick <-chan time.Time, done chan bool) {
 	for range tick {
-		if sweepRunning.Load() {
+		if st.sweepRunning.Load() {
 			// phase 1 - identify expired sessions
-			sessionTableMutex.RLock()
-			zap := make([]string, 0, len(sessionTable))
-			for k, v := range sessionTable {
-				lastTime := v.Values["lasthit"].(time.Time)
-				if time.Since(lastTime) > sessionExpiry {
+			st.mutex.RLock()
+			zap := make([]string, 0, len(st.sessions))
+			for k, v := range st.sessions {
+				lastTime, ok := v.Values["lasthit"]
+				if ok && time.Since(lastTime.(time.Time)) > st.expiry {
 					zap = append(zap, k)
 				}
 			}
-			sessionTableMutex.RUnlock()
+			st.mutex.RUnlock()
 
 			// phase 2 - get rid of the expired sessions
 			for _, k := range zap {
-				sessionTableMutex.Lock()
-				s := sessionTable[k]
-				delete(sessionTable, k)
-				sessionTableMutex.Unlock()
-				for q := range s.Values {
-					delete(s.Values, q)
+				st.mutex.Lock()
+				s, ok := st.sessions[k]
+				if ok {
+					delete(st.sessions, k)
+					for q := range s.Values {
+						delete(s.Values, q)
+					}
 				}
+				st.mutex.Unlock()
 			}
 		} else {
 			break
@@ -75,6 +148,26 @@ func sweepSessions(tick <-chan time.Time, done chan bool) {
 	done <- true
 }
 
+// sessioninfo returns information about the sessions in the store.
+func (st *AmsterdamStore) sessionInfo() (int, []string, int) {
+	anons := 0
+	users := make([]string, 0, len(st.sessions))
+	st.mutex.RLock()
+	for _, s := range st.sessions {
+		if s.Values["user_anon"].(bool) {
+			anons++
+		} else {
+			users = append(users, s.Values["user_name"].(string))
+		}
+	}
+	st.mutex.RUnlock()
+	slices.Sort(users)
+	return anons, users, st.maxEntries
+}
+
+// SessionStore is the Gorilla session store used by Amsterdam.
+var SessionStore *AmsterdamStore
+
 // init registers the time.Time value to be gobbed.
 func init() {
 	gob.Register(time.Time{})
@@ -82,12 +175,6 @@ func init() {
 
 // SetupSessionManager sets up the session manager.
 func SetupSessionManager() func() {
-	// create session store
-	SessionStore = memstore.NewMemStore([]byte(config.GlobalConfig.Rendering.CookieKey))
-
-	// create session table
-	sessionTable = make(map[string]*sessions.Session)
-
 	// get the time for the session to expire
 	d, err := time.ParseDuration(config.GlobalConfig.Site.SessionExpire)
 	if err != nil {
@@ -96,7 +183,9 @@ func SetupSessionManager() func() {
 			panic(err.Error())
 		}
 	}
-	sessionExpiry = d
+
+	// create session store
+	SessionStore = createAmsterdamStore(d)
 
 	// get the clock value to run sweeps
 	d, err = time.ParseDuration("1s")
@@ -105,13 +194,12 @@ func SetupSessionManager() func() {
 	}
 
 	// set up the sweep runner
-	sweepRunning.Store(true)
 	tkr := time.NewTicker(d)
 	done := make(chan bool)
-	go sweepSessions(tkr.C, done)
+	go SessionStore.sweep(tkr.C, done)
 	return func() {
 		// stop the sweep runner
-		sweepRunning.Store(false)
+		SessionStore.sweepRunning.Store(false)
 		<-done
 		tkr.Stop()
 	}
@@ -145,25 +233,15 @@ func setSessionAnon(session *sessions.Session) {
 
 // AmSessionFirstTime initializes the session after it's first created.
 func AmSessionFirstTime(session *sessions.Session) {
-	key := uuid.NewString()
-	session.Values["key"] = key
 	setSessionAnon(session)
-	sessionTableMutex.Lock()
-	sessionTable[key] = session
-	if len(sessionTable) > sessionTableMax {
-		sessionTableMax = len(sessionTable)
-	}
 	session.Values["lasthit"] = time.Now()
-	sessionTableMutex.Unlock()
 }
 
 // AmResetSession clears the specified session.
 func AmResetSession(session *sessions.Session) {
-	key := session.Values["key"]
 	for k := range session.Values {
 		delete(session.Values, k)
 	}
-	session.Values["key"] = key
 	setSessionAnon(session)
 	session.Values["lasthit"] = time.Now()
 }
@@ -180,17 +258,5 @@ func AmHitSession(session *sessions.Session) {
  *     Maximum number of users ever in session table.
  */
 func AmSessions() (int, []string, int) {
-	anons := 0
-	users := make([]string, 0, len(sessionTable))
-	sessionTableMutex.RLock()
-	for _, s := range sessionTable {
-		if s.Values["user_anon"].(bool) {
-			anons++
-		} else {
-			users = append(users, s.Values["user_name"].(string))
-		}
-	}
-	sessionTableMutex.RUnlock()
-	slices.Sort(users)
-	return anons, users, sessionTableMax
+	return SessionStore.sessionInfo()
 }
