@@ -52,6 +52,7 @@ type AmConfig struct {
 		TopRefresh      int    `yaml:"topRefresh"`
 		LoginCookieName string `yaml:"loginCookieName"`
 		LoginCookieAge  int    `yaml:"loginCookieAge"`
+		SessionExpire   string `yaml:"sessionExpire"`
 		UserAgreement   struct {
 			Title string `yaml:"title"`
 			Text  string `yaml:"text"`
@@ -138,6 +139,7 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Site.TopRefresh = overlayInt(loaded.Site.TopRefresh, defaults.Site.TopRefresh)
 	dest.Site.LoginCookieName = overlayString(loaded.Site.LoginCookieName, defaults.Site.LoginCookieName)
 	dest.Site.LoginCookieAge = overlayInt(loaded.Site.LoginCookieAge, defaults.Site.LoginCookieAge)
+	dest.Site.SessionExpire = overlayString(loaded.Site.SessionExpire, defaults.Site.SessionExpire)
 	dest.Site.UserAgreement.Title = overlayString(loaded.Site.UserAgreement.Title, defaults.Site.UserAgreement.Title)
 	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
 	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)

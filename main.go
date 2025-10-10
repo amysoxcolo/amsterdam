@@ -68,7 +68,8 @@ func main() {
 	closer = email.SetupMailSender()
 	defer closer()
 	ui.SetupTemplates()
-	ui.SetupSessionManager()
+	closer = ui.SetupSessionManager()
+	defer closer()
 	ui.SetupLeftMenus()
 
 	// Set up Echo.

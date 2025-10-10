@@ -55,8 +55,8 @@ func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sideb
 			out.Items = make([]RenderedSideboxItem, len(l))
 			for i, c := range l {
 				out.Items[i].Text = c.Name
-				out.Items[i].Link = new(string)
-				*out.Items[i].Link = "/TODO/community/" + c.Alias
+				lk := fmt.Sprintf("/TODO/community/%s", c.Alias)
+				out.Items[i].Link = &lk
 				out.Items[i].Flags = make(map[string]bool)
 				var level uint16
 				level, err = database.AmGetCommunityAccessLevel(uid, c.Id)
@@ -67,6 +67,7 @@ func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sideb
 			out.TemplateName = "sb_ftrcomm.jet"
 		}
 	}
+	_ = in
 	return err
 }
 
@@ -92,7 +93,33 @@ func buildFeaturedConferences(uid int32, out *RenderedSidebox, in *database.Side
  *     Standard Go error status.
  */
 func buildUsersOnline(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
+	out.Title = "Users Online"
 	out.TemplateName = "sb_online.jet"
+	anons, users, maxUsers := ui.AmSessions()
+	cap := len(users) + 1
+	if anons > 0 {
+		cap++
+	}
+	out.Items = make([]RenderedSideboxItem, cap)
+	out.Items[0].Text = fmt.Sprintf("%d total (max %d)", len(users)+anons, maxUsers)
+	out.Items[0].Flags = make(map[string]bool)
+	out.Items[0].Flags["nobullet"] = true
+	out.Items[0].Flags["bold"] = true
+	b := 1
+	if anons > 0 {
+		out.Items[1].Text = fmt.Sprintf("Not logged in (%d)", anons)
+		out.Items[1].Flags = make(map[string]bool)
+		b++
+	}
+	for i, n := range users {
+		out.Items[b+i].Text = n
+		lk := fmt.Sprintf("/TODO/user/%s", n)
+		out.Items[b+i].Link = &lk
+		out.Items[b+i].Flags = make(map[string]bool)
+		out.Items[b+i].Flags["bold"] = true
+	}
+	_ = uid
+	_ = in
 	return nil
 }
 

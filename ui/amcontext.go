@@ -75,15 +75,12 @@ func (c *amContext) ClearLoginCookie() {
 
 // ClearSession clears the current session.
 func (c *amContext) ClearSession() {
-	for k := range c.session.Values {
-		delete(c.session.Values, k)
-	}
-	setupAmSession(c.session)
+	AmResetSession(c.session)
 }
 
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
-	u, err := database.AmGetUser(c.session.Values["user_id"].(int32))
+	u, err := database.AmGetUser(AmSessionUid(c.session))
 	if err != nil {
 		log.Errorf("unable to retrieve current user")
 	}
@@ -92,7 +89,7 @@ func (c *amContext) CurrentUser() *database.User {
 
 // CurrentUserId returns the current user ID.
 func (c *amContext) CurrentUserId() int32 {
-	return c.session.Values["user_id"].(int32)
+	return AmSessionUid(c.session)
 }
 
 /* FormField returns the value of a form field from the request.
@@ -174,7 +171,7 @@ func (c *amContext) Render(name string) error {
  *     u - New user to associate with the context.
  */
 func (c *amContext) ReplaceUser(u *database.User) {
-	c.session.Values["user_id"] = u.Uid
+	AmSetSessionUser(c.session, u)
 }
 
 // SaveSession saves the session link to cookies.
@@ -295,7 +292,9 @@ func NewAmContext(ctxt echo.Context) (AmContext, error) {
 		rc.session = sess
 		sess.Options = defoptions
 		if sess.IsNew {
-			setupAmSession(sess)
+			AmSessionFirstTime(sess)
+		} else {
+			AmHitSession(sess)
 		}
 	}
 	return &rc, err

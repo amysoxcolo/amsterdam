@@ -7,15 +7,35 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
 <!-- Users Online -->
+{{ sb := .GetScratch("__sidebox") }}
 <div class="mb-4">
     <div class="bg-blue-600 px-2 py-1 rounded-t">
-        <h3 class="text-white font-bold text-base">Users Online:</h3>
+        <h3 class="text-white font-bold text-base">{{ sb.Title }}:</h3>
     </div>
     <div class="bg-blue-400 px-2 py-2 rounded-b">
-        <div class="text-black text-sm font-bold mb-2">1 total (max 1)</div>
-        <div class="flex items-center">
-            <span class="mr-2">🟣</span>
-            <span class="text-black text-sm">Not logged in (1)</span>
+        <div class="space-y-1">
+            {{ if len(sb.Items) > 0 }}
+                {{ range sb.Items }}
+                    <div class="flex items-center">
+                        {{ if ! .Flags["nobullet"] }}<span class="mr-2">🟣</span>{{ end }}
+                        {{ if .Link != nil }}
+                            {{ if .Flags["bold"] }}
+                                <span class="font-bold text-sm">{{ .Text }}</span>
+                            {{ else }}
+                                <span class="text-sm">{{ .Text }}</span>
+                            {{ end }}
+                        {{ else }}
+                            {{ if .Flags["bold"] }}
+                                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
+                            {{ else }}
+                                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 text-sm">{{ .Text }}</a>
+                            {{ end }}
+                        {{ end }}
+                    </div>
+                {{ end }}
+            {{ else }}
+                <div class="text-small">You are not a member of any communities.</div>
+            {{ end }}
         </div>
     </div>
 </div>
