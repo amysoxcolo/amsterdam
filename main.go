@@ -52,6 +52,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/verify", ui.AmWrap(VerifyEmailForm))
 	e.POST("/verify", ui.AmWrap(VerifyEMail))
 	e.GET("/passrecovery/:uid/:auth", ui.AmWrap(PasswordRecovery))
+	e.GET("/profile", ui.AmWrap(EditProfileForm))
 
 	return e
 }

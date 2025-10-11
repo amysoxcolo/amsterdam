@@ -70,7 +70,7 @@
                         <span class="mx-2">-</span>
                         <a href="/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
                         <span class="mx-2">|</span>
-                        <a href="/TODO/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
+                        <a href="/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
                     {{ end }}
                 {{ end }}
             </span>

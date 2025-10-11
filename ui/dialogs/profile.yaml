@@ -1,0 +1,200 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+name: "profile"
+formName: "profform"
+menuSelector: "nochange"
+title: "Edit Your Profile"
+action: "/profile"
+fields:
+  - type: "hidden"
+    name: "tgt"
+    value: ""
+  - type: "header"
+    name: "header1"
+    caption: "Name"
+    subcaption: "To change your password, enter a new password into the fields below."
+  - type: "password"
+    name: "pass1"
+    caption: "Password"
+    required: true
+    size: 32
+    maxlength: 128
+  - type: "password"
+    name: "pass2"
+    caption: "Password"
+    subcaption: "(retype)"
+    required: true
+    size: 32
+    maxlength: 128
+  - type: "text"
+    name: "remind"
+    caption: "Password reminder phrase"
+    size: 32
+    maxlength: 255
+  - type: "header"
+    name: "header2"
+    caption: "Name"
+  - type: "text"
+    name: "prefix"
+    caption: "Prefix"
+    subcaption: "(Mr., Ms., etc.)"
+    size: 8
+    maxlength: 8
+  - type: "text"
+    name: "first"
+    caption: "First Name"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "mid"
+    caption: "Middle Initial"
+    size: 1
+    maxlength: 1
+  - type: "text"
+    name: "last"
+    caption: "Last Name"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "suffix"
+    caption: "Suffix"
+    subcaption: "(Jr., III, etc.)"
+    size: 8
+    maxlength: 8
+  - type: "header"
+    name: "header3"
+    caption: "Location"
+  - type: "text"
+    name: "company"
+    caption: "Company"
+    size: 32
+    maxlength: 255
+  - type: "text"
+    name: "addr1"
+    caption: "Address"
+    size: 32
+    maxlength: 255
+  - type: "text"
+    name: "addr2"
+    caption: "Address"
+    subcaption: "(line 2)"
+    size: 32
+    maxlength: 255
+  - type: "checkbox"
+    name: "pvt_addr"
+    caption: "Hide address in profile"
+  - type: "text"
+    name: "loc"
+    caption: "City"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "reg"
+    caption: "State/Province"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "pcode"
+    caption: "Zip/Postal Code"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "countrylist"
+    name: "country"
+    caption: "Country"
+    required: true
+  - type: "header"
+    name: "header4"
+    caption: "Phone Numbers"
+  - type: "text"
+    name: "phone"
+    caption: "Telephone"
+    size: 32
+    maxlength: 32
+  - type: "text"
+    name: "mobile"
+    caption: "Mobile/cellphone"
+    size: 32
+    maxlength: 32
+  - type: "checkbox"
+    name: "pvt_phone"
+    caption: "Hide phone/mobile numbers in profile"
+  - type: "text"
+    name: "fax"
+    caption: "Fax"
+    size: 32
+    maxlength: 32
+  - type: "checkbox"
+    name: "pvt_fax"
+    caption: "Hide fax number in profile"
+  - type: "header"
+    name: "header5"
+    caption: "Internet"
+  - type: "email"
+    name: "email"
+    caption: "E-Mail Address"
+    required: true
+    size: 32
+    maxlength: 255
+  - type: "checkbox"
+    name: "pvt_email"
+    caption: "Hide E-mail address in profile"
+  - type: "text"
+    name: "url"
+    caption: "Home Page"
+    subcaption: "(URL)"
+    size: 32
+    maxlength: 255
+  - type: "header"
+    name: "header6"
+    caption: "Personal"
+  - type: "date"
+    name: "dob"
+    caption: "Date of Birth"
+    param: "year:-100"
+  - type: "text"
+    name: "descr"
+    caption: "Personal description"
+    size: 32
+    maxlength: 255
+  - type: "userphoto"
+    name: "photo"
+    caption: "User Photo"
+    param: "/profile_photo"
+  - type: "header"
+    name: "header7"
+    caption: "User Preferences"
+  - type: "checkbox"
+    name: "pic_in_post"
+    caption: "Display user photos next to conference posts"
+    subcaption: "(where applicable)"
+  - type: "checkbox"
+    name: "no_mass_mail"
+    caption: "Don't send me mass E-mail from community/conference hosts"
+  - type: "localelist"
+    name: "locale"
+    caption: "Default locale"
+    subcaption: "(for formatting dates/times)"
+    required: true
+  - type: "tzlist"
+    name: "tz"
+    caption: "Default time zone"
+    required: true
+  - type: "button"
+    name: "update"
+    caption: "Update"
+    param: "blue"
+  - type: "button"
+    name: "cancel"
+    caption: "Cancel"
+    param: "red"

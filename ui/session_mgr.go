@@ -103,8 +103,6 @@ func (st *AmsterdamStore) New(r *http.Request, name string) (*sessions.Session, 
  *     Standard Go error status.
  */
 func (st *AmsterdamStore) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
-	st.mutex.Lock()
-	defer st.mutex.Unlock()
 	cookie := sessions.NewCookie(session.Name(), session.ID, session.Options)
 	http.SetCookie(w, cookie)
 	return nil

@@ -218,11 +218,12 @@ func (d *Dialog) RenderInfo(ctxt AmContext, infoMessage string) (string, any, er
 func (d *Dialog) LoadFromForm(ctxt AmContext) {
 	for i, fld := range d.Fields {
 		d.Fields[i].Value = ""
-		if fld.Type == "header" || fld.Type == "button" {
+		switch fld.Type {
+		case "header":
 			continue
-		}
-		if fld.Type == "date" {
-			d.Fields[i].Value = ""
+		case "button":
+			continue
+		case "date":
 			dvals := make([]int, 3)
 			var err error
 			dvals[0], err = ctxt.FormFieldInt(fmt.Sprintf("%s_month", fld.Name))
@@ -256,7 +257,9 @@ func (d *Dialog) LoadFromForm(ctxt AmContext) {
 				}
 			}
 			d.Fields[i].AuxData = dvals
-		} else {
+		case "userphoto":
+			d.Fields[i].Value = ctxt.FormField(fmt.Sprintf("%s_data", fld.Name))
+		default:
 			d.Fields[i].Value = ctxt.FormField(fld.Name)
 		}
 	}
@@ -419,8 +422,11 @@ var validators = map[string]validatorFunc{
 	"header":      nilValidator,
 	"hidden":      nilValidator,
 	"integer":     validateIntegerField,
+	"localelist":  nilValidator, // TODO
 	"password":    validateTextField,
 	"text":        validateTextField,
+	"tzlist":      nilValidator, // TODO
+	"userphoto":   nilValidator,
 }
 
 /* Validate validates the values in the dialog.

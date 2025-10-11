@@ -100,7 +100,8 @@
                         <div class="flex items-center">
                             <div class="w-24 text-right pr-4">
                                 <input type="checkbox" id="{{ .Name }}" name="{{ .Name }}" 
-                                    value="Y" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                                    value="Y" {{ if .Value != "" }}checked{{ end }}
+                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                             </div>
                             <label for="{{ .Name }}" class="flex-1 text-black text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
@@ -121,6 +122,28 @@
                                     {{ cc := .Alpha2() }}
                                     <option value="{{ cc }}" {{ if cc == v }}selected{{ end }}>{{ .Emoji() }} {{ .Info().Name }}</option>
                                 {{ end }}
+                            </select>
+                        </div>
+                    {{ else if .Type == "localelist" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
+                                    class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="XX">Unknown</option>{* TODO *}
+                            </select>
+                        </div>
+                    {{ else if .Type == "tzlist" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
+                                    class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="XX">Unknown</option>{* TODO *}
                             </select>
                         </div>
                     {{ else if .Type == "date" }}
@@ -151,6 +174,16 @@
                                     {{ end }}
                                 </select>
                             </div>
+                        </div>
+                    {{ else if .Type == "userphoto" }}
+                        <div class="flex items-start">
+                            <label class="w-64 text-right pr-4 text-black text-sm pt-2">{{ .Caption }}
+                                {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} (click to change):</label>
+                            <input type="hidden" name="{{ .Name }}_data" value="{{ .Value }}"/>
+                            <a href="{{ .Param }}" class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
+                                <img src="/img/builtin/no-user.png" 
+                                     alt="Click to upload photo" class="w-25 h-25">
+                            </a>                                
                         </div>
                     {{ else if .Type == "header" }}
                         <h2 class="text-lg font-bold text-black mb-4">{{ .Caption }}</h2>
