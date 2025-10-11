@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 	"unicode"
+	_ "unsafe" // HACK HACK HACK
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/CloudyKit/jet/v6"
@@ -30,6 +31,8 @@ import (
 	"github.com/biter777/countries"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 )
 
 //go:embed views/*
@@ -37,6 +40,56 @@ var static_views embed.FS
 
 // views is the main Jet template repository.
 var views *jet.Set
+
+//go:embed languages.txt
+var knownLanguages string
+
+// Language is a type for a list of all supportred languages.
+type Language struct {
+	Tag  string // the BCP 47 tag, such as "en-US"
+	Name string // the human-readable name, like "American English"
+}
+
+// cachedLanguageList is the cached language list.
+var cachedLanguageList []Language = nil
+
+// languageListMutex controls access to internalGetLanguageList.
+var languageListMutex sync.Mutex
+
+// internalGetLanguageList is a wrapper around "allTags" that sorts it by language name.
+func internalGetLanguageList() []Language {
+	languageListMutex.Lock()
+	defer languageListMutex.Unlock()
+	if cachedLanguageList == nil {
+		langs := strings.Split(knownLanguages, "\n")
+		enNamer := display.English.Tags()
+		cachedLanguageList = make([]Language, 0, len(langs))
+		for _, l := range langs {
+			tag, err := language.Parse(l)
+			if err == nil {
+				cachedLanguageList = append(cachedLanguageList, Language{
+					Tag:  tag.String(),
+					Name: enNamer.Name(tag),
+				})
+			} else {
+				log.Errorf("*** PUKE on parsing language tag %s: %v", l, err)
+			}
+		}
+
+		slices.SortFunc(cachedLanguageList, func(a Language, b Language) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		log.Infof("internalGetLanguageList() loaded %d languages", len(cachedLanguageList))
+	}
+	return cachedLanguageList
+}
+
+// getLanguageList is a wrapper around the list of languages that can be added to the template context.
+func getLanguageList(a jet.Arguments) reflect.Value {
+	rc := internalGetLanguageList()
+	log.Infof("GetLanguageList() provides %d items", len(rc))
+	return reflect.ValueOf(rc)
+}
 
 // cachedCountryList is the cached country list after sorting.
 var cachedCountryList []countries.CountryCode = nil
@@ -170,6 +223,7 @@ func SetupTemplates() {
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
 	views.AddGlobalFunc("GetCountryList", getCountryList)
+	views.AddGlobalFunc("GetLanguageList", getLanguageList)
 	views.AddGlobalFunc("GetMonthList", getMonthList)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
@@ -179,8 +233,9 @@ func SetupTemplates() {
 		return reflect.ValueOf(CapitalizeString(s))
 	})
 
-	// preload the country list in the background
+	// preload the lists in the background
 	go internalGetCountryList()
+	go internalGetLanguageList()
 }
 
 // TemplateRenderer is the Renderer instance set into the Echo context at creation time, to render Jet templates.

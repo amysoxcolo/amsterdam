@@ -130,9 +130,12 @@
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
+                            {{ v := .Value }}
                             <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
                                     class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="XX">Unknown</option>{* TODO *}
+                                {{ range GetLanguageList() }}
+                                    <option value="{{ .Tag }}" {{ if .Tag == v }}selected{{ end }}>{{ .Name }}</option>
+                                {{ end }}
                             </select>
                         </div>
                     {{ else if .Type == "tzlist" }}

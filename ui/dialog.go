@@ -170,8 +170,13 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 		if fld.Required {
 			required = true // display the "required" blurb
 		}
-		if fld.Type == "password" { // clear all "password" fields as a security measure
+		switch fld.Type {
+		case "password": // clear all "password" fields as a security measure
 			d.Fields[i].Value = ""
+		case "localelist": // default locale to en-US if we don't have one
+			if d.Fields[i].Value == "" {
+				d.Fields[i].Value = "en-US"
+			}
 		}
 	}
 	ctxt.VarMap().Set("amsterdam_required", required)
