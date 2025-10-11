@@ -125,6 +125,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		contactCache.Add(ci.ContactId, ci)
 	} else {
 		res, err := amdb.NamedExec(`INSERT INTO contacts (given_name, family_name, middle_init, prefix, suffix, company, addr1,
         	addr2, locality, region, pcode, country, phone, fax, mobile, email, pvt_addr, pvt_phone, pvt_fax,
@@ -149,6 +150,39 @@ func (ci *ContactInfo) Save() (bool, error) {
 	}
 	rs.Scan(&ci.LastUpdate)
 	return emailChange, nil
+}
+
+// Clone makes a copy of the ContactInfo.
+func (ci *ContactInfo) Clone() *ContactInfo {
+	newstr := ContactInfo{
+		ContactId:    ci.ContactId,
+		GivenName:    ci.GivenName,
+		FamilyName:   ci.FamilyName,
+		MiddleInit:   ci.MiddleInit,
+		Prefix:       ci.Prefix,
+		Suffix:       ci.Suffix,
+		Company:      ci.Company,
+		Addr1:        ci.Addr1,
+		Addr2:        ci.Addr2,
+		Locality:     ci.Locality,
+		Region:       ci.Region,
+		PostalCode:   ci.PostalCode,
+		Country:      ci.Country,
+		Phone:        ci.Phone,
+		Fax:          ci.Fax,
+		Mobile:       ci.Mobile,
+		Email:        ci.Mobile,
+		PrivateAddr:  ci.PrivateAddr,
+		PrivatePhone: ci.PrivatePhone,
+		PrivateFax:   ci.PrivateFax,
+		PrivateEmail: ci.PrivateEmail,
+		OwnerUid:     ci.OwnerUid,
+		OwnerCommId:  ci.OwnerCommId,
+		PhotoURL:     ci.PhotoURL,
+		URL:          ci.URL,
+		LastUpdate:   ci.LastUpdate,
+	}
+	return &newstr
 }
 
 // contactCache is the cache for ContactInfo objects.

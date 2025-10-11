@@ -47,6 +47,7 @@ type Dialog struct {
 	Action       string       `yaml:"action"`
 	Instructions string       `yaml:"instructions,omitempty"`
 	Fields       []DialogItem `yaml:"fields"`
+	fldmap       map[string]*DialogItem
 }
 
 // VRange is used as a return type for ValueRange.
@@ -68,11 +69,13 @@ func AmLoadDialog(name string) (*Dialog, error) {
 		var d Dialog
 		err = yaml.Unmarshal(b, &d)
 		if err == nil {
-			// "nil-patch" certain fields
+			// "nil-patch" certain fields and create the fast-lookup map
 			if d.MenuSelector == "" {
 				d.MenuSelector = "nochange"
 			}
+			d.fldmap = make(map[string]*DialogItem)
 			for i, fld := range d.Fields {
+				d.fldmap[fld.Name] = &(d.Fields[i])
 				if fld.Type == "button" && fld.Param == "" {
 					d.Fields[i].Param = "blue"
 				}
@@ -106,6 +109,17 @@ func (fld *DialogItem) IsChecked() bool {
 	return false
 }
 
+// SetChecked sets the value of a checkbox.
+func (fld *DialogItem) SetChecked(val bool) {
+	if fld.Type == "checkbox" {
+		if val {
+			fld.Value = "Y"
+		} else {
+			fld.Value = ""
+		}
+	}
+}
+
 // ValueInt returns the value of the field as an integer.
 func (fld *DialogItem) ValueInt() (int, error) {
 	return strconv.Atoi(fld.Value)
@@ -134,12 +148,45 @@ func (fld *DialogItem) AsDate() *time.Time {
 	return nil
 }
 
+// SetDate sets the value of the dialog item as a date.
+func (fld *DialogItem) SetDate(d *time.Time) {
+	if fld.Type == "date" {
+		dvs := make([]int, 3)
+		if d == nil {
+			dvs[0] = -1
+			dvs[1] = -1
+			dvs[2] = -1
+			fld.Value = ""
+		} else {
+			dvs[0] = int(d.Month()) - int(time.January) + 1
+			dvs[1] = d.Day()
+			dvs[2] = d.Year()
+			fld.Value = fmt.Sprintf("%04d%02d%02d", dvs[2], dvs[0], dvs[1])
+		}
+		fld.AuxData = dvs
+	}
+}
+
 // ValPtr returns the value of a field as a string pointer, or nil if the field is empty.
 func (fld *DialogItem) ValPtr() *string {
 	if fld.Value == "" {
 		return nil
 	}
 	return &fld.Value
+}
+
+// SetVal sets the value of a field from a string pointer.
+func (fld *DialogItem) SetVal(p *string) {
+	if p == nil {
+		fld.Value = ""
+	} else {
+		fld.Value = *p
+	}
+}
+
+// IsEmpty returns true if the field is empty.
+func (fld *DialogItem) IsEmpty() bool {
+	return len(fld.Value) == 0
 }
 
 /* Field returns a pointer to a dialog's field, given its name.
@@ -149,12 +196,7 @@ func (fld *DialogItem) ValPtr() *string {
  *     Pointer to the field, or nil.
  */
 func (d *Dialog) Field(name string) *DialogItem {
-	for i, f := range d.Fields {
-		if f.Name == name {
-			return &(d.Fields[i])
-		}
-	}
-	return nil
+	return d.fldmap[name]
 }
 
 /* Render sets up the rendering parameters to send this dialog to the output.

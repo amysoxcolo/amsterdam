@@ -6,6 +6,7 @@ require (
 	github.com/CloudyKit/jet/v6 v6.3.1
 	github.com/alexflint/go-arg v1.6.0
 	github.com/biter777/countries v1.7.5
+	github.com/bits-and-blooms/bitset v1.24.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gorilla/sessions v1.4.0
 	github.com/hashicorp/golang-lru v1.0.2

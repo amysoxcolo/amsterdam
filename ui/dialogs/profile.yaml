@@ -17,7 +17,7 @@ fields:
     value: ""
   - type: "header"
     name: "header1"
-    caption: "Name"
+    caption: "Password"
     subcaption: "To change your password, enter a new password into the fields below."
   - type: "password"
     name: "pass1"

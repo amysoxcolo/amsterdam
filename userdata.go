@@ -11,8 +11,11 @@ package main
 
 import (
 	"errors"
+	"net/url"
 
+	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"git.erbosoft.com/amy/amsterdam/util"
 )
 
 /* EditProfileForm renders the Amsterdam profile editing form.
@@ -36,8 +39,138 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
 		dlg.Field("tgt").Value = target
-		// TODO: load fields from current user
-		return dlg.Render(ctxt)
+		var ci *database.ContactInfo
+		ci, err = u.ContactInfo()
+		if err == nil {
+			var prefs *database.UserPrefs
+			prefs, err = u.Prefs()
+			if err == nil {
+				dlg.Field("remind").Value = u.PassReminder
+				dlg.Field("prefix").SetVal(ci.Prefix)
+				dlg.Field("first").Value = ci.GivenName
+				dlg.Field("mid").SetVal(ci.MiddleInit)
+				dlg.Field("last").Value = ci.FamilyName
+				dlg.Field("suffix").SetVal(ci.Suffix)
+				dlg.Field("company").SetVal(ci.Company)
+				dlg.Field("addr1").SetVal(ci.Addr1)
+				dlg.Field("addr2").SetVal(ci.Addr2)
+				dlg.Field("pvt_addr").SetChecked(ci.PrivateAddr)
+				dlg.Field("loc").SetVal(ci.Locality)
+				dlg.Field("reg").SetVal(ci.Region)
+				dlg.Field("pcode").SetVal(ci.PostalCode)
+				dlg.Field("country").SetVal(ci.Country)
+				dlg.Field("phone").SetVal(ci.Phone)
+				dlg.Field("mobile").SetVal(ci.Mobile)
+				dlg.Field("pvt_phone").SetChecked(ci.PrivatePhone)
+				dlg.Field("fax").SetVal(ci.Fax)
+				dlg.Field("pvt_fax").SetChecked(ci.PrivateFax)
+				dlg.Field("email").SetVal(ci.Email)
+				dlg.Field("pvt_email").SetChecked(ci.PrivateEmail)
+				dlg.Field("url").SetVal(ci.URL)
+				dlg.Field("dob").SetDate(u.DOB)
+				dlg.Field("descr").SetVal(u.Description)
+				// TODO: do something for user photo
+				dlg.Field("pic_in_post").SetChecked(u.FlagValue(database.UserFlagPicturesInPosts))
+				dlg.Field("no_mass_mail").SetChecked(u.FlagValue(database.UserFlagMassMailOptOut))
+				dlg.Field("locale").Value = prefs.ReadLocale()
+				dlg.Field("tz").Value = prefs.TimeZoneID
+				return dlg.Render(ctxt)
+			}
+		}
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+func EditProfile(ctxt ui.AmContext) (string, any, error) {
+	u := ctxt.CurrentUser()
+	if u.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+	}
+	dlg, err := ui.AmLoadDialog("profile")
+	if err == nil {
+		dlg.LoadFromForm(ctxt)
+		target := dlg.Field("tgt").Value
+		if target == "" {
+			target = "/"
+		}
+
+		action := dlg.WhichButton(ctxt)
+		if action == "cancel" { // Cancel button pressed
+			return "redirect", target, nil
+		}
+		if action == "update" {
+			var ci *database.ContactInfo
+			ci, err = u.ContactInfo()
+			if err == nil {
+				var prefs *database.UserPrefs
+				emailChange := false
+				prefs, err = u.Prefs()
+				if err == nil && !(dlg.Field("pass1").IsEmpty() && dlg.Field("pass2").IsEmpty()) {
+					p1 := dlg.Field("pass1").Value
+					if p1 == dlg.Field("pass2").Value {
+						err = u.ChangePassword(p1, ctxt.RemoteIP())
+					} else {
+						err = errors.New("passwords do not match")
+					}
+				}
+				if err == nil {
+					nci := ci.Clone()
+					nci.Prefix = dlg.Field("prefix").ValPtr()
+					nci.GivenName = dlg.Field("first").Value
+					nci.MiddleInit = dlg.Field("mid").ValPtr()
+					nci.FamilyName = dlg.Field("last").Value
+					nci.Suffix = dlg.Field("suffix").ValPtr()
+					nci.Company = dlg.Field("company").ValPtr()
+					nci.Addr1 = dlg.Field("addr1").ValPtr()
+					nci.Addr2 = dlg.Field("addr2").ValPtr()
+					nci.PrivateAddr = dlg.Field("pvt_addr").IsChecked()
+					nci.Locality = dlg.Field("loc").ValPtr()
+					nci.Region = dlg.Field("reg").ValPtr()
+					nci.PostalCode = dlg.Field("pcode").ValPtr()
+					nci.Country = dlg.Field("country").ValPtr()
+					nci.Phone = dlg.Field("phone").ValPtr()
+					nci.Mobile = dlg.Field("mobile").ValPtr()
+					nci.PrivatePhone = dlg.Field("pvt_phone").IsChecked()
+					nci.Fax = dlg.Field("fax").ValPtr()
+					nci.PrivateFax = dlg.Field("pvt_fax").IsChecked()
+					nci.Email = dlg.Field("email").ValPtr()
+					nci.PrivateEmail = dlg.Field("pvt_email").IsChecked()
+					nci.URL = dlg.Field("url").ValPtr()
+					emailChange, err = nci.Save()
+					ci = nci
+				}
+				if err == nil {
+					nprefs := prefs.Clone()
+					nprefs.WriteLocale(dlg.Field("locale").Value)
+					nprefs.TimeZoneID = dlg.Field("tz").Value
+					err = nprefs.Save(u)
+				}
+				if err == nil {
+					var f *util.OptionSet
+					f, err = u.Flags()
+					if err == nil {
+						nf := f.Clone()
+						nf.Set(database.UserFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
+						nf.Set(database.UserFlagMassMailOptOut, dlg.Field("no_mass_mail").IsChecked())
+						err = u.SaveFlags(nf)
+					}
+				}
+				if err == nil {
+					err = u.SetProfileData(dlg.Field("remind").Value, dlg.Field("dob").AsDate(), dlg.Field("descr").ValPtr())
+				}
+				if err == nil {
+					if emailChange {
+						err = sendEmailConfirmationEmail(u, ci, ctxt.RemoteIP())
+						if err == nil {
+							return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
+						}
+					} else {
+						return "redirect", target, nil
+					}
+				}
+			}
+		}
+		return dlg.RenderError(ctxt, "No known button click on POST to profile.")
 	}
 	return ui.ErrorPage(ctxt, err)
 }

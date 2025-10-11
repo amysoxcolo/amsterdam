@@ -25,45 +25,39 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PasswordChangeRequest represents a temporary password change request.
-type PasswordChangeRequest struct {
-	Uid            int32
-	Username       string
-	Email          string
-	Authentication int32
-	Expires        time.Time
+// UserPrefs represents the user's preferences in a table (one row per user).
+type UserPrefs struct {
+	Uid        int32  `db:"uid"`
+	TimeZoneID string `db:"tzid"`
+	LocaleID   string `db:"localeid"`
 }
 
-// passwordRequests contains a map of password change requests currently managed.
-var passwordRequests map[int32]*PasswordChangeRequest = make(map[int32]*PasswordChangeRequest)
+// ReadLocale reads the locale out of the prefs, adjusting for Go use.
+func (p *UserPrefs) ReadLocale() string {
+	return strings.Replace(p.LocaleID, "_", "-", -1)
+}
 
-/* AmNewPasswordChangeRequest creates a new password change request and enrolls it.
- * Parameters:
- *     uid - The UID of the user.
- *     username - The user name of the user.
- *     email - The E-mail address of the user.
- * Returns:
- *     Pointer to the new PasswordChangeRequest.
- */
-func AmNewPasswordChangeRequest(uid int32, username string, email string) *PasswordChangeRequest {
-	rc := PasswordChangeRequest{Uid: uid, Username: username, Email: email,
-		Authentication: util.GenerateRandomConfirmationNumber(), Expires: time.Now().Add(time.Hour)}
-	passwordRequests[uid] = &rc
+// WriteLocale writes the locale into the prefs, adjusting for backward compatibility.
+func (p *UserPrefs) WriteLocale(loc string) {
+	p.LocaleID = strings.Replace(loc, "-", "_", -1)
+}
+
+// Clone duplicates the user preferences.
+func (p *UserPrefs) Clone() *UserPrefs {
+	rc := *p
 	return &rc
 }
 
-/* AmGetPasswordChangeRequest retrieves the password change request for a UID.
- * Parameters:
- *     uid - The UID to retrieve the request for.
- * Returns:
- *     The PasswordChangeRequest pointer, or nil.
- */
-func AmGetPasswordChangeRequest(uid int32) *PasswordChangeRequest {
-	rc := passwordRequests[uid]
-	if rc != nil {
-		delete(passwordRequests, uid)
+// Save saves off the user preferences, replacing the prefs on the user if necessary.
+func (p *UserPrefs) Save(u *User) error {
+	if u != nil && u.Uid != p.Uid {
+		return errors.New("internal mismatch of IDs")
 	}
-	return rc
+	_, err := amdb.NamedExec("UPDATE userprefs SET localeid = :localeid, tzid = :tzid WHERE uid = :uid", p)
+	if err == nil && u != nil {
+		u.prefs = p
+	}
+	return err
 }
 
 // User represents a user in the Amsterdam database.
@@ -85,6 +79,8 @@ type User struct {
 	PassReminder string     `db:"passreminder"`
 	Description  *string    `db:"description"`
 	DOB          *time.Time `db:"dob"`
+	flags        *util.OptionSet
+	prefs        *UserPrefs
 }
 
 // UserProperties represents a property entry for a user.
@@ -94,19 +90,41 @@ type UserProperties struct {
 	Data  *string `db:"data"`
 }
 
+// User property indexes defined.
+const (
+	UserPropFlags = int32(0) // "flags" user property
+)
+
+// Flag values for user property index UserPropFlags defined.
+const (
+	UserFlagPicturesInPosts  = uint(0)
+	UserFlagDisallowSetPhoto = uint(1)
+	UserFlagMassMailOptOut   = uint(2)
+)
+
 // userCache is the cache for User objects.
 var userCache *lru.TwoQueueCache = nil
 
 // getUserMutex is a mutex on AmGetUser.
 var getUserMutex sync.Mutex
 
+// userPropCache is the cache for UserProperties objects.
+var userPropCache *lru.Cache = nil
+
+// getUserPropMutex is a mutex on AmGetUserProperty.
+var getUserPropMutex sync.Mutex
+
 // anonUid is the UID of the "anonymous" user.
 var anonUid int32 = -1
 
-// init initializes the user cache.
+// init initializes the caches.
 func init() {
 	var err error
 	userCache, err = lru.New2Q(100)
+	if err != nil {
+		panic(err)
+	}
+	userPropCache, err = lru.New(100)
 	if err != nil {
 		panic(err)
 	}
@@ -215,6 +233,83 @@ func (u *User) ChangePassword(password string, remoteIP string) error {
 	if err == nil {
 		u.Passhash = pval
 		ar = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
+	}
+	return err
+}
+
+// GetFlags retrieves the flags from the properties.
+func (u *User) Flags() (*util.OptionSet, error) {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	if u.flags == nil {
+		s, err := AmGetUserProperty(u.Uid, UserPropFlags)
+		if err != nil {
+			return nil, err
+		}
+		if s == nil {
+			return nil, fmt.Errorf("missing flags for user %d", u.Uid)
+		}
+		u.flags = util.OptionSetFromString(*s)
+	}
+	return u.flags, nil
+}
+
+// SaveFlags writes the flags to the database and stores them.
+func (u *User) SaveFlags(f *util.OptionSet) error {
+	s := f.AsString()
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	err := AmSetUserProperty(u.Uid, UserPropFlags, &s)
+	if err == nil {
+		u.flags = f
+	}
+	return err
+}
+
+// FlagValue returns the boolean value of one of the user flags.
+func (u *User) FlagValue(ndx uint) bool {
+	f, err := u.Flags()
+	if err != nil {
+		log.Errorf("flag retrieval error for user %d: %v", u.Uid, err)
+		return false
+	}
+	return f.Get(ndx)
+}
+
+// Prefs returns the user's preferences record.
+func (u *User) Prefs() (*UserPrefs, error) {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	if u.prefs == nil {
+		var dbdata []UserPrefs
+		err := amdb.Select(&dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
+		if err != nil {
+			return nil, err
+		}
+		if len(dbdata) != 1 {
+			return nil, fmt.Errorf("invalid preferences records for user %d", u.Uid)
+		}
+		u.prefs = &(dbdata[0])
+	}
+	return u.prefs, nil
+}
+
+/* SetProfileData sets the "profile" variables for this user.
+ * Parameters:
+ *     reminder - Password reminder string.
+ *     dob - Date of birth field.
+ *     descr - Description string.
+ * Returns:
+ *     Standard Go error status.
+ */
+func (u *User) SetProfileData(reminder string, dob *time.Time, descr *string) error {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	_, err := amdb.Exec("UPDATE users SET passreminder = ?, dob = ?, description = ? WHERE uid = ?", reminder, dob, descr, u.Uid)
+	if err == nil {
+		u.PassReminder = reminder
+		u.DOB = dob
+		u.Description = descr
 	}
 	return err
 }
@@ -544,4 +639,74 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	// operation was a success - add an audit record
 	ar = AmNewAudit(AuditAccountCreated, user.Uid, remoteIP)
 	return user, nil
+}
+
+func internalGetProp(uid int32, ndx int32) (*UserProperties, error) {
+	var err error = nil
+	key := fmt.Sprintf("%d:%d", uid, ndx)
+	getUserPropMutex.Lock()
+	defer getUserPropMutex.Unlock()
+	rc, ok := userPropCache.Get(key)
+	if !ok {
+		var dbdata []UserProperties
+		err = amdb.Select(&dbdata, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx)
+		if err != nil {
+			return nil, err
+		}
+		if len(dbdata) == 0 {
+			return nil, nil
+		}
+		if len(dbdata) > 1 {
+			return nil, fmt.Errorf("AmGetUserProperty(%d): too many responses(%d)", uid, len(dbdata))
+		}
+		rc = &(dbdata[0])
+		userPropCache.Add(key, rc)
+	}
+	return rc.(*UserProperties), nil
+}
+
+/* AmGetUserProperty retrieves the value of a user property.
+ * Parameters:
+ *     uid - The UID of the user to get the property for.
+ *     ndx - The index of the property to retrieve.
+ * Returns:
+ *     Value of the property string.
+ *     Standard Go error status.
+ */
+func AmGetUserProperty(uid int32, ndx int32) (*string, error) {
+	p, err := internalGetProp(uid, ndx)
+	if err != nil {
+		return nil, err
+	}
+	return p.Data, nil
+}
+
+/* AmSetUserProperty sets the value of a user property.
+ * Parameters:
+ *     uid - The UID of the user to set the property for.
+ *     ndx - The index of the property to set.
+ *     val - The new value of the property.
+ * Returns:
+ *     Standard Go error status.
+ */
+func AmSetUserProperty(uid int32, ndx int32, val *string) error {
+	p, err := internalGetProp(uid, ndx)
+	if err != nil {
+		return err
+	}
+	getUserPropMutex.Lock()
+	defer getUserPropMutex.Unlock()
+	if p != nil {
+		_, err = amdb.Exec("UPDATE propuser SET data = ? WHERE uid = ? AND ndx = ?", val, uid, ndx)
+		if err == nil {
+			p.Data = val
+		}
+	} else {
+		prop := UserProperties{Uid: uid, Index: ndx, Data: val}
+		_, err := amdb.NamedExec("INSERT INTO propuser (uid, ndx, data) VALUES(:uid, :ndx, :data)", prop)
+		if err == nil {
+			userPropCache.Add(fmt.Sprintf("%d:%d", uid, ndx), prop)
+		}
+	}
+	return err
 }
