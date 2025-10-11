@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 	"unicode"
-	_ "unsafe" // HACK HACK HACK
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/CloudyKit/jet/v6"
@@ -31,6 +30,7 @@ import (
 	"github.com/biter777/countries"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
+	"github.com/tkuchiki/go-timezone"
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 )
@@ -79,16 +79,42 @@ func internalGetLanguageList() []Language {
 		slices.SortFunc(cachedLanguageList, func(a Language, b Language) int {
 			return strings.Compare(a.Name, b.Name)
 		})
-		log.Infof("internalGetLanguageList() loaded %d languages", len(cachedLanguageList))
 	}
 	return cachedLanguageList
 }
 
 // getLanguageList is a wrapper around the list of languages that can be added to the template context.
 func getLanguageList(a jet.Arguments) reflect.Value {
-	rc := internalGetLanguageList()
-	log.Infof("GetLanguageList() provides %d items", len(rc))
-	return reflect.ValueOf(rc)
+	return reflect.ValueOf(internalGetLanguageList())
+}
+
+// cachedTimeZoneList is a wrapper around timezone.Timezones() that produces it by timezone name.
+var cachedTimeZoneList []string = nil
+
+// timeZoneListMutex controls access to internalGetTimeZoneList.
+var timeZoneListMutex sync.Mutex
+
+// internalGetTimeZoneList is a wrapper around TimeZone.TimeZones() that sorts and compacts the list.
+func internalGetTimeZoneList() []string {
+	timeZoneListMutex.Lock()
+	defer timeZoneListMutex.Unlock()
+	if cachedTimeZoneList == nil {
+		timezones := timezone.New().Timezones()
+		ilist := make([]string, 0, len(timezones)*5)
+		for k, v := range timezones {
+			ilist = append(ilist, k)
+			ilist = append(ilist, v...)
+		}
+
+		slices.Sort(ilist)
+		cachedTimeZoneList = slices.Compact(ilist)
+	}
+	return cachedTimeZoneList
+}
+
+// getTimeZoneList is a wrapper around internalGetTimeZoneList that can be added to the template context.
+func getTimeZoneList(a jet.Arguments) reflect.Value {
+	return reflect.ValueOf(internalGetTimeZoneList())
 }
 
 // cachedCountryList is the cached country list after sorting.
@@ -224,6 +250,7 @@ func SetupTemplates() {
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
 	views.AddGlobalFunc("GetCountryList", getCountryList)
 	views.AddGlobalFunc("GetLanguageList", getLanguageList)
+	views.AddGlobalFunc("GetTimeZoneList", getTimeZoneList)
 	views.AddGlobalFunc("GetMonthList", getMonthList)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
@@ -236,6 +263,7 @@ func SetupTemplates() {
 	// preload the lists in the background
 	go internalGetCountryList()
 	go internalGetLanguageList()
+	go internalGetTimeZoneList()
 }
 
 // TemplateRenderer is the Renderer instance set into the Echo context at creation time, to render Jet templates.

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"gopkg.in/yaml.v3"
 )
@@ -173,9 +174,13 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 		switch fld.Type {
 		case "password": // clear all "password" fields as a security measure
 			d.Fields[i].Value = ""
-		case "localelist": // default locale to en-US if we don't have one
+		case "localelist": // default locale if we don't have one
 			if d.Fields[i].Value == "" {
-				d.Fields[i].Value = "en-US"
+				d.Fields[i].Value = config.GlobalConfig.Defaults.Language
+			}
+		case "tzlist": // default timezone if we don't have any
+			if d.Fields[i].Value == "" {
+				d.Fields[i].Value = config.GlobalConfig.Defaults.TimeZone
 			}
 		}
 	}

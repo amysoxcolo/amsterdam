@@ -62,6 +62,10 @@ type AmConfig struct {
 		Driver string `yaml:"driver"`
 		Dsn    string `yaml:"dsn"`
 	} `yaml:"database"`
+	Defaults struct {
+		Language string `yaml:"language"`
+		TimeZone string `yaml:"timezone"`
+	} `yaml:"defaults"`
 	Email struct {
 		Host         string `yaml:"host"`
 		Port         int    `yaml:"port"`
@@ -144,6 +148,8 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
 	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)
 	dest.Database.Dsn = overlayString(loaded.Database.Dsn, defaults.Database.Dsn)
+	dest.Defaults.Language = overlayString(loaded.Defaults.Language, defaults.Defaults.Language)
+	dest.Defaults.TimeZone = overlayString(loaded.Defaults.TimeZone, defaults.Defaults.TimeZone)
 	dest.Email.Host = overlayString(loaded.Email.Host, defaults.Email.Host)
 	dest.Email.Port = overlayInt(loaded.Email.Port, defaults.Email.Port)
 	dest.Email.Tls = overlayString(loaded.Email.Tls, defaults.Email.Tls)

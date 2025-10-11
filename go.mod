@@ -14,6 +14,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
 	github.com/sirupsen/logrus v1.9.3
+	github.com/tkuchiki/go-timezone v0.2.3
 	golang.org/x/text v0.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
