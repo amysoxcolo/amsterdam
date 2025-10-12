@@ -22,6 +22,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// userPhotoURL returns the photo URL from the contact info, or a default.
+func userPhotoURL(ci *database.ContactInfo) string {
+	if ci.PhotoURL != nil && *ci.PhotoURL != "" {
+		return *ci.PhotoURL
+	}
+	return "/img/builtin/no-user.png"
+}
+
 /* EditProfileForm renders the Amsterdam profile editing form.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -74,7 +82,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 				dlg.Field("url").SetVal(ci.URL)
 				dlg.Field("dob").SetDate(u.DOB)
 				dlg.Field("descr").SetVal(u.Description)
-				// TODO: do something for user photo
+				dlg.Field("photo").Value = userPhotoURL(ci)
 				dlg.Field("pic_in_post").SetChecked(u.FlagValue(database.UserFlagPicturesInPosts))
 				dlg.Field("no_mass_mail").SetChecked(u.FlagValue(database.UserFlagMassMailOptOut))
 				dlg.Field("locale").Value = prefs.ReadLocale()
@@ -86,6 +94,14 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* EditProfile handles profile editing.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func EditProfile(ctxt ui.AmContext) (string, any, error) {
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
@@ -201,15 +217,22 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	ci, err := u.ContactInfo()
 	if err == nil {
-		_ = ci
 		ctxt.VarMap().Set("target", target)
-		ctxt.VarMap().Set("photo_url", "/img/builtin/no-user.png")
+		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
 		return "framed_template", "photo_upload.jet", nil
 	}
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* ProfilePhoto handles processing the uploaded user photo..
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
@@ -229,7 +252,10 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 	if ctxt.FormFieldIsSet("upload") {
 		file, err := ctxt.FormFile("thepic")
 		if err == nil {
-			imageData, mimeType, err := ui.AmProcessUploadedImage(file, 200, 200)
+			var imageData []byte
+			var mimeType string
+			imageData, mimeType, err = ui.AmProcessUploadedImage(file, ui.UserPhotoWidth, ui.UserPhotoHeight,
+				ui.UserPhotoMaxBytes)
 			if err == nil {
 				var img *database.ImageStore
 				img, err = database.AmStoreImage(database.ImageTypeUserPhoto, u.Uid, mimeType, imageData)
@@ -245,12 +271,13 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 		}
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("target", target)
-		ctxt.VarMap().Set("photo_url", "/img/builtin/no-user.png")
+		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
 		return "framed_template", "photo_upload.jet", nil
 	}
 	if ctxt.FormFieldIsSet("remove") {
 		purl := ci.PhotoURL
+		happy := false
 		if purl == nil || *purl == "" {
 			// this is a no-op
 			return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
@@ -261,12 +288,14 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 				return ui.ErrorPage(ctxt, err)
 			}
 			defer func() {
-				go func() {
-					err := database.AmDeleteImage(int32(id))
-					if err != nil {
-						log.Errorf("unable to delete image ID %d: %v", id, err)
-					}
-				}()
+				if happy {
+					go func() {
+						err := database.AmDeleteImage(int32(id))
+						if err != nil {
+							log.Errorf("unable to delete image ID %d: %v", id, err)
+						}
+					}()
+				}
 			}()
 		}
 		ci.PhotoURL = nil
@@ -274,6 +303,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
+		happy = true
 		return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
 	}
 	return ui.ErrorPage(ctxt, errors.New("invalid button detected in photo upload"))

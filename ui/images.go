@@ -13,7 +13,7 @@ package ui
 import (
 	"bytes"
 	"embed"
-	"fmt"
+	"errors"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -31,6 +31,15 @@ import (
 
 //go:embed static_images/*
 var static_images embed.FS
+
+// Constants for default photo sizes.
+const (
+	UserPhotoWidth      = 100
+	UserPhotoHeight     = 100
+	UserPhotoMaxBytes   = 2097152 // 2 Mb
+	CommunityLogoWidth  = 110
+	CommunityLogoHeight = 60
+)
 
 /* mimeTypeFromFilenane returns the MIME type of a file, given its filename.
  * Parameters:
@@ -76,11 +85,26 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 		}
 	}
 	ctxt.SetRC(http.StatusNotFound)
-	// TODO: improve this error reporting
-	return "string", fmt.Sprintf("File not found: %s", ctxt.URLPath()), err
+	return ErrorPage(ctxt, err)
 }
 
-func AmProcessUploadedImage(fileheader *multipart.FileHeader, width, height int) ([]byte, string, error) {
+/* AmProcessUploadedImage takes an image and resizes it to a specified size, returning its data.
+ * Parameters:
+ *     fileheader - The multipart file header from the uploaded file.
+ *     width - New image width in pizels.
+ *     height - New image height in pixels.
+ *     maxbytes - The maximum size of the user photo.
+ * Returns:
+ *     Image data as a byte array.
+ *     The MIME type of the image data.
+ *     Standard Go error status.
+ */
+func AmProcessUploadedImage(fileheader *multipart.FileHeader, width, height, maxbytes int) ([]byte, string, error) {
+	// test size
+	if fileheader.Size > int64(maxbytes) {
+		return nil, "", errors.New("file is too large; please try again")
+	}
+
 	// open the file
 	file, err := fileheader.Open()
 	if err != nil {

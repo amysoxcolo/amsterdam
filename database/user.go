@@ -641,6 +641,7 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	return user, nil
 }
 
+// internalGetProp is a helper used by the property functions.
 func internalGetProp(uid int32, ndx int32) (*UserProperties, error) {
 	var err error = nil
 	key := fmt.Sprintf("%d:%d", uid, ndx)
