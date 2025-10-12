@@ -11,6 +11,7 @@ formName: "profform"
 menuSelector: "nochange"
 title: "Edit Your Profile"
 action: "/profile"
+options: "suppresslogin"
 fields:
   - type: "hidden"
     name: "tgt"

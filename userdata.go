@@ -220,6 +220,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
+		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
 		return "framed_template", "photo_upload.jet", nil
 	}
 	return ui.ErrorPage(ctxt, err)
@@ -273,6 +274,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
+		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
 		return "framed_template", "photo_upload.jet", nil
 	}
 	if ctxt.FormFieldIsSet("remove") {
