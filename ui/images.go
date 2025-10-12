@@ -11,12 +11,22 @@
 package ui
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
+
+	"git.erbosoft.com/amy/amsterdam/database"
+	"github.com/disintegration/imaging"
 )
 
 //go:embed static_images/*
@@ -43,17 +53,69 @@ func mimeTypeFromFilename(filename string) string {
 func AmServeImage(ctxt AmContext) (string, any, error) {
 	components := strings.SplitAfter(ctxt.URLPath(), "/")
 	var err error = nil
-	var b []byte
 	if len(components) == 4 {
-		if components[2] == "builtin/" {
+		switch components[2] {
+		case "builtin/":
+			var b []byte
 			b, err = static_images.ReadFile(filepath.Join("static_images", components[3]))
 			if err == nil {
 				ctxt.SetOutputType(mimeTypeFromFilename(components[3]))
 				return "bytes", b, nil
+			}
+		case "store/":
+			var id int
+			id, err = strconv.Atoi(components[3])
+			if err == nil {
+				var img *database.ImageStore
+				img, err = database.AmLoadImage(int32(id))
+				if err == nil {
+					ctxt.SetOutputType(img.MimeType)
+					return "bytes", img.Data, nil
+				}
 			}
 		}
 	}
 	ctxt.SetRC(http.StatusNotFound)
 	// TODO: improve this error reporting
 	return "string", fmt.Sprintf("File not found: %s", ctxt.URLPath()), err
+}
+
+func AmProcessUploadedImage(fileheader *multipart.FileHeader, width, height int) ([]byte, string, error) {
+	// open the file
+	file, err := fileheader.Open()
+	if err != nil {
+		return nil, "", err
+	}
+	defer file.Close()
+
+	// load the image from the file
+	img, format, err := image.Decode(file)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// resize the image using high-quality Lanczos filter
+	resized := imaging.Resize(img, width, height, imaging.Lanczos)
+
+	// re-encode it to the original format, or JPEG if that's not possible
+	var buf bytes.Buffer
+	var outType string
+	switch strings.ToLower(format) {
+	case "jpeg", "jpg":
+		err = jpeg.Encode(&buf, resized, &jpeg.Options{Quality: 90})
+		outType = "image/jpeg"
+	case "gif":
+		err = gif.Encode(&buf, resized, &gif.Options{NumColors: 256})
+		outType = "image/gif"
+	case "png":
+		err = png.Encode(&buf, resized)
+		outType = "image/png"
+	default:
+		err = jpeg.Encode(&buf, resized, &jpeg.Options{Quality: 90})
+		outType = "image/jpeg"
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	return buf.Bytes(), outType, nil
 }

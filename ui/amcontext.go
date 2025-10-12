@@ -12,6 +12,7 @@ package ui
 
 import (
 	"bytes"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"time"
@@ -34,6 +35,7 @@ type AmContext interface {
 	FormField(string) string
 	FormFieldInt(string) (int, error)
 	FormFieldIsSet(string) bool
+	FormFile(string) (*multipart.FileHeader, error)
 	RC() int
 	OutputType() string
 	Parameter(string) string
@@ -125,6 +127,11 @@ func (c *amContext) FormFieldIsSet(name string) bool {
 		_ = req.FormValue(name) // force form to be loaded
 	}
 	return req.Form.Has(name)
+}
+
+// FormFile returns a "file" parameter from a multipart upload form.
+func (c *amContext) FormFile(name string) (*multipart.FileHeader, error) {
+	return c.echoContext.FormFile(name)
 }
 
 // RC returns the HTTP result code for the current operation.

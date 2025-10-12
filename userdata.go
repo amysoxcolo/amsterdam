@@ -11,11 +11,15 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 )
 
 /* EditProfileForm renders the Amsterdam profile editing form.
@@ -204,4 +208,73 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 		return "framed_template", "photo_upload.jet", nil
 	}
 	return ui.ErrorPage(ctxt, err)
+}
+
+func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
+	u := ctxt.CurrentUser()
+	if u.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+	}
+	ci, err := u.ContactInfo()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	target := ctxt.FormField("tgt")
+	if target == "" {
+		target = "/"
+	}
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+	}
+	if ctxt.FormFieldIsSet("upload") {
+		file, err := ctxt.FormFile("thepic")
+		if err == nil {
+			imageData, mimeType, err := ui.AmProcessUploadedImage(file, 200, 200)
+			if err == nil {
+				var img *database.ImageStore
+				img, err = database.AmStoreImage(database.ImageTypeUserPhoto, u.Uid, mimeType, imageData)
+				if err == nil {
+					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
+					ci.PhotoURL = &photourl
+					_, err = ci.Save()
+					if err == nil {
+						return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+					}
+				}
+			}
+		}
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.VarMap().Set("target", target)
+		ctxt.VarMap().Set("photo_url", "/img/builtin/no-user.png")
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
+		return "framed_template", "photo_upload.jet", nil
+	}
+	if ctxt.FormFieldIsSet("remove") {
+		purl := ci.PhotoURL
+		if purl == nil || *purl == "" {
+			// this is a no-op
+			return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+		}
+		if strings.HasPrefix(*purl, "/img/store/") {
+			id, err := strconv.Atoi((*purl)[11:])
+			if err != nil {
+				return ui.ErrorPage(ctxt, err)
+			}
+			defer func() {
+				go func() {
+					err := database.AmDeleteImage(int32(id))
+					if err != nil {
+						log.Errorf("unable to delete image ID %d: %v", id, err)
+					}
+				}()
+			}()
+		}
+		ci.PhotoURL = nil
+		_, err := ci.Save()
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+	}
+	return ui.ErrorPage(ctxt, errors.New("invalid button detected in photo upload"))
 }

@@ -55,6 +55,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/profile", ui.AmWrap(EditProfileForm))
 	e.POST("/profile", ui.AmWrap(EditProfile))
 	e.GET("/profile_photo", ui.AmWrap(ProfilePhotoForm))
+	e.POST("/profile_photo", ui.AmWrap(ProfilePhoto))
 
 	return e
 }

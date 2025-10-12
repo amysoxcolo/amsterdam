@@ -13,6 +13,20 @@
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>
 
+    {{ if isset(errorMessage) }}
+        <!-- Error Message Banner -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-red-500 text-xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(errorMessage) }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+
     <!-- Upload Form -->
     <form method="POST" enctype="multipart/form-data" action="/profile_photo" class="max-w-2xl">
         <input type="hidden" name="tgt" value="{{ target }}">
