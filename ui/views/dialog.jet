@@ -186,7 +186,8 @@
                             <label class="w-64 text-right pr-4 text-black text-sm pt-2">{{ .Caption }}
                                 {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} (click to change):</label>
                             <input type="hidden" name="{{ .Name }}_data" value="{{ .Value }}"/>
-                            <a href="{{ .Param }}" class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
+                            <a href="/profile_photo?tgt={{ target | url }}"
+                               class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
                                 <img src="/img/builtin/no-user.png" 
                                      alt="Click to upload photo" class="w-25 h-25">
                             </a>                                

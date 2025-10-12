@@ -54,6 +54,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/passrecovery/:uid/:auth", ui.AmWrap(PasswordRecovery))
 	e.GET("/profile", ui.AmWrap(EditProfileForm))
 	e.POST("/profile", ui.AmWrap(EditProfile))
+	e.GET("/profile_photo", ui.AmWrap(ProfilePhotoForm))
 
 	return e
 }

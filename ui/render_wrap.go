@@ -106,7 +106,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 					if !user.VerifyEMail {
 						// bounce to E-mail verification before we go anywhere
 						return sendPageData(ctxt, amctxt, "redirect",
-							"/verify?tgt="+url.PathEscape(ctxt.Request().URL.Path))
+							"/verify?tgt="+url.QueryEscape(ctxt.Request().URL.Path))
 					}
 				} else {
 					log.Errorf("login cookie bogus, do not use: %v", cerr)

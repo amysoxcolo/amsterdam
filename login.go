@@ -127,7 +127,7 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 			if user.VerifyEMail {
 				return "redirect", target, nil
 			} else {
-				return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
+				return "redirect", "/verify?tgt=" + url.QueryEscape(target), nil
 			}
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to login function.")
@@ -393,7 +393,7 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 						if err == nil {
 							// user is now logged in! redirect to E-mail verification
 							ctxt.ReplaceUser(user)
-							return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
+							return "redirect", "/verify?tgt=" + url.QueryEscape(target), nil
 						}
 					}
 				}

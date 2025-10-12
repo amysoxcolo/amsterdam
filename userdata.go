@@ -39,6 +39,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
 		dlg.Field("tgt").Value = target
+		ctxt.VarMap().Set("target", target)
 		var ci *database.ContactInfo
 		ci, err = u.ContactInfo()
 		if err == nil {
@@ -93,6 +94,7 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 		if target == "" {
 			target = "/"
 		}
+		ctxt.VarMap().Set("target", target)
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
@@ -162,7 +164,7 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 					if emailChange {
 						err = sendEmailConfirmationEmail(u, ci, ctxt.RemoteIP())
 						if err == nil {
-							return "redirect", "/verify?tgt=" + url.PathEscape(target), nil
+							return "redirect", "/verify?tgt=" + url.QueryEscape(target), nil
 						}
 					} else {
 						return "redirect", target, nil
@@ -171,6 +173,35 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to profile.")
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+/* ProfilePhotoForm renders the Amsterdam profile photo upload form.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
+	// Get target URI.
+	target := ctxt.Parameter("tgt")
+	if target == "" {
+		target = "/"
+	}
+	u := ctxt.CurrentUser()
+	if u.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+	}
+	ci, err := u.ContactInfo()
+	if err == nil {
+		_ = ci
+		ctxt.VarMap().Set("target", target)
+		ctxt.VarMap().Set("photo_url", "/img/builtin/no-user.png")
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
+		return "framed_template", "photo_upload.jet", nil
 	}
 	return ui.ErrorPage(ctxt, err)
 }
