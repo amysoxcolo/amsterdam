@@ -87,6 +87,16 @@ func (p *UserPrefs) MessagePrinter() *message.Printer {
 	return message.NewPrinter(*p.LanguageTag())
 }
 
+// Location returns the time.Location for these user prefs.
+func (p *UserPrefs) Location() *time.Location {
+	rc, err := time.LoadLocation(p.TimeZoneID)
+	if err != nil {
+		log.Fatalf("BOGUS TIMEZONE TAG %s in user prefs for uid %d", p.TimeZoneID, p.Uid)
+		return time.Local
+	}
+	return rc
+}
+
 // User represents a user in the Amsterdam database.
 type User struct {
 	Mutex        sync.RWMutex
@@ -613,7 +623,7 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 
 	// Insert the user record.
 	_, err2 := amdb.Exec(`INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
-		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), ?, '', ?)`,
+		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
 		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
 		reminder, dob)
 	if err2 != nil {

@@ -19,7 +19,7 @@ site:
       Text of this agreement is TBD.
 database:
   driver: "mysql"
-  dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=Local"
+  dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"
 defaults:
   language: "en-US"
   timezone: "America/Denver"

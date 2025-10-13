@@ -344,13 +344,14 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("uid", user.Uid)
 	ctxt.VarMap().Set("username", user.Username)
 	ctxt.VarMap().Set("photoURL", userPhotoURL(ci))
+	tz := prefs.Location()
 	loc := prefs.Localizer()
-	ctxt.VarMap().Set("dateCreated", loc.Strftime("%x %X", user.Created))
+	ctxt.VarMap().Set("dateCreated", loc.Strftime("%x %X", user.Created.In(tz)))
 	if user.LastAccess != nil {
-		ctxt.VarMap().Set("dateLastLogin", loc.Strftime("%x %X", *user.LastAccess))
+		ctxt.VarMap().Set("dateLastLogin", loc.Strftime("%x %X", (*user.LastAccess).In(tz)))
 	}
 	if ci.LastUpdate != nil {
-		ctxt.VarMap().Set("dateLastUpdate", loc.Strftime("%x %X", *ci.LastUpdate))
+		ctxt.VarMap().Set("dateLastUpdate", loc.Strftime("%x %X", (*ci.LastUpdate).In(tz)))
 	}
 	var b strings.Builder
 	if ci.Prefix != nil && *ci.Prefix != "" {
