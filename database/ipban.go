@@ -66,7 +66,7 @@ func AmTestIPBan(ip_address string) (string, error) {
 	rows, err := amdb.Query(`
 		SELECT message FROM ipban WHERE (address_lo & mask_lo) = (? & mask_lo)
 			AND (address_hi & mask_hi) = (? & mask_hi) AND (expire IS NULL OR expire >= ?)
-			AND enable <> 0 ORDER BY mask_hi DESC, mask_lo DESC`, iv_lo, iv_hi, time.Now())
+			AND enable <> 0 ORDER BY mask_hi DESC, mask_lo DESC`, iv_lo, iv_hi, time.Now().UTC())
 	if err != nil {
 		return "", err
 	}

@@ -88,7 +88,7 @@ func (ar *AuditRecord) Store() error {
 	if ar.Record > 0 {
 		return fmt.Errorf("audit record %d already stored", ar.Record)
 	}
-	moment := time.Now()
+	moment := time.Now().UTC()
 	rs, err := amdb.Exec(`INSERT INTO audit (on_date, event, uid, commid, ip, data1, data2, data3, data4)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`, moment, ar.Event, ar.Uid, ar.CommId, ar.IP,
 		ar.Data1, ar.Data2, ar.Data3, ar.Data4)

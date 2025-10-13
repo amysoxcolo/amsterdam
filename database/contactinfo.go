@@ -120,7 +120,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 		_, err := amdb.NamedExec(`UPDATE contacts SET given_name = :given_name, family_name = :family_name, middle_init = :middle_init,
 		    prefix = :prefix, suffix = :suffix, company = :company, addr1 = :addr1, addr2 = :addr2, locality = :locality, region = :region,
 			pcode = :pcode, country = :country, phone = :phone, fax = :fax, mobile = :mobile, email = :email, pvt_addr = :pvt_addr,
-			pvt_phone = :pvt_phone, pvt_fax = :pvt_fax, pvt_email = :pvt_email, photo_url = :photo_url, url = :url, lastupdate = NOW()
+			pvt_phone = :pvt_phone, pvt_fax = :pvt_fax, pvt_email = :pvt_email, photo_url = :photo_url, url = :url, lastupdate = UTC_TIMESTAMP()
 			WHERE contactid = :contactid`, ci)
 		if err != nil {
 			return false, err
@@ -132,7 +132,7 @@ func (ci *ContactInfo) Save() (bool, error) {
     		pvt_email, owner_uid, owner_commid, photo_url, url, lastupdate)
 			VALUES (:given_name, :family_name, :middle_init, :prefix, :suffix, :company, :addr1, :addr2, :locality,
 			:region, :pcode, :country, :phone, :fax, :mobile, :email, :pvt_addr, :pvt_phone, :pvt_fax, :pvt_email,
-			:owner_uid, :owner_commid, :photo_url, :url, NOW())`, ci)
+			:owner_uid, :owner_commid, :photo_url, :url, UTC_TIMESTAMP())`, ci)
 		if err != nil {
 			return false, err
 		}

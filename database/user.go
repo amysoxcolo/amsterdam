@@ -457,7 +457,7 @@ func hashPassword(password string) string {
 func touchUser(user *User) {
 	user.Mutex.Lock()
 	defer user.Mutex.Unlock()
-	moment := time.Now()
+	moment := time.Now().UTC()
 	_, _ = amdb.Exec("UPDATE user SET lastaccess = ? WHERE uid = ?", moment, user.Uid)
 	user.LastAccess = &moment
 }
@@ -613,7 +613,7 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 
 	// Insert the user record.
 	_, err2 := amdb.Exec(`INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
-		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
+		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), ?, '', ?)`,
 		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
 		reminder, dob)
 	if err2 != nil {
