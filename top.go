@@ -121,7 +121,7 @@ func buildUsersOnline(uid int32, out *RenderedSidebox, in *database.Sidebox) err
 	}
 	for i, n := range users {
 		out.Items[b+i].Text = n
-		lk := fmt.Sprintf("/TODO/user/%s", n)
+		lk := fmt.Sprintf("/user/%s", n)
 		out.Items[b+i].Link = &lk
 		out.Items[b+i].Flags = make(map[string]bool)
 		out.Items[b+i].Flags["bold"] = true

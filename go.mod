@@ -12,6 +12,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/klauspost/lctime v0.1.0
 	github.com/labstack/echo-contrib v0.17.4
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2

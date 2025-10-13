@@ -1,0 +1,124 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+ <div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold inline">User Profile:</h1>
+        <span class="text-blue-800 text-2xl font-bold ml-2">{{ username }}</span>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Profile Information Card -->
+    <div class="bg-gray-50 p-6 rounded-lg mb-8 max-w-4xl">
+        <div class="flex gap-6">
+            <!-- Left Column: Photo and Metadata -->
+            <div class="flex-shrink-0 w-40">
+                <div class="border-2 border-gray-300 rounded mb-4">
+                    <img src="{{ photoURL }}" alt="{{ username }}'s photo" class="w-full h-auto">
+                </div>
+                <div class="text-xs text-gray-700 space-y-2">
+                    <div>
+                        <strong>Account created:</strong><br>{{ dateCreated }}
+                    </div>
+                    {{ if isset(dateLastLogin) }}
+                        <div>
+                            <strong>Last login:</strong><br>{{ dateLastLogin }}
+                        </div>
+                    {{ end }}
+                    {{ if isset(dateLastUpdate) }}
+                        <div>
+                            <strong>Profile last updated:</strong><br>{{ dateLastUpdate }}
+                        </div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Right Column: Contact Information -->
+            <div class="flex-1 text-sm text-black">
+                <div class="space-y-2">
+                    <div class="text-lg font-bold">{{ fullname }}</div>
+                    {{ if isset(description) }}<div>{{ description }}</div>{{ end }}
+                    {{ if isset(email) }}<div><strong>E-mail:</strong> {{ email }}</div>{{ end }}                  
+                    {{ if isset(url) }}
+                        <div>
+                            <strong>URL: </strong> 
+                            <a href="{{ url }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ url }}</a>
+                        </div>
+                    {{ end }}
+
+                    <div class="pt-2 border-t border-gray-300">
+                        {{ if isset(company) }}<div>{{ company }}</div>{{ end }}
+                        {{ if isset(addr1) }}<div>{{ addr1 }}</div>{{ end }}
+                        {{ if isset(addr2) }}<div>{{ addr2 }}</div>{{ end }}
+                        <div>{{ addrLast }}</div>
+                        {{ if isset(country) }}<div>{{ country }}</div>{{ end }}
+                    </div>
+
+                    {{ if isset(phone) || isset(fax) || isset(mobile) }}
+                        <div class="pt-2 border-t border-gray-300">
+                            {{ if isset(phone) }}<div><strong>Phone:</strong> {{ phone }}</div>{{ end }}
+                            {{ if isset(fax) }}<div><strong>Fax:</strong> {{ fax }}</div>{{ end }}
+                            {{ if isset(mobile) }}<div><strong>Mobile:</strong> {{ mobile }}</div>{{ end }}
+                        </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ if !.CurrentUser().IsAnon }}
+        <!-- Quick Email Section -->
+        <div class="max-w-4xl">
+            <hr class="border-gray-400 mb-4">
+            <h2 class="text-lg font-bold text-black mb-4">Send Quick E-Mail To {{ username }}:</h2>
+
+            <form method="POST" action="/quick_email">
+                <input type="hidden" name="to_uid" value="{{ uid }}">
+                
+                <div class="bg-gray-50 p-6 rounded-lg space-y-4">
+                    <!-- Subject Field -->
+                    <div>
+                        <label for="subj" class="block text-black text-sm font-medium mb-2">
+                            Subject:
+                        </label>
+                        <input type="text" 
+                                id="subj"
+                                name="subj" 
+                                size="65" 
+                                maxlength="255" 
+                                value=""
+                                class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Message Body -->
+                    <div>
+                        <label for="pb" class="block text-black text-sm font-medium mb-2">
+                            Message:
+                        </label>
+                        <textarea id="pb"
+                                    name="pb" 
+                                    wrap="hard" 
+                                    rows="7" 
+                                    cols="80"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+
+                    <!-- Send Button -->
+                    <div>
+                        <button type="submit" 
+                                name="send"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                            Send E-Mail
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    {{ end }}
+</div>

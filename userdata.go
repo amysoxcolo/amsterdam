@@ -12,13 +12,16 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
+	"github.com/biter777/countries"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -226,7 +229,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
-/* ProfilePhoto handles processing the uploaded user photo..
+/* ProfilePhoto handles processing the uploaded user photo.
  * Parameters:
  *     ctxt - The AmContext for the request.
  * Returns:
@@ -309,4 +312,145 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 		return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
 	}
 	return ui.ErrorPage(ctxt, errors.New("invalid button detected in photo upload"))
+}
+
+/* ShowProfile displays a user's profile.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ShowProfile(ctxt ui.AmContext) (string, any, error) {
+	me := ctxt.CurrentUser()
+	prefs, err := me.Prefs()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	// Gather the info on the current user.
+	user, err := database.AmGetUserByName(ctxt.URLParam("uname"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, err)
+	}
+	ci, err := user.ContactInfo()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	// Fill all the page variables for display.
+	ctxt.VarMap().Set("uid", user.Uid)
+	ctxt.VarMap().Set("username", user.Username)
+	ctxt.VarMap().Set("photoURL", userPhotoURL(ci))
+	loc := prefs.Localizer()
+	ctxt.VarMap().Set("dateCreated", loc.Strftime("%x %X", user.Created))
+	if user.LastAccess != nil {
+		ctxt.VarMap().Set("dateLastLogin", loc.Strftime("%x %X", *user.LastAccess))
+	}
+	if ci.LastUpdate != nil {
+		ctxt.VarMap().Set("dateLastUpdate", loc.Strftime("%x %X", *ci.LastUpdate))
+	}
+	var b strings.Builder
+	if ci.Prefix != nil && *ci.Prefix != "" {
+		b.WriteString(*ci.Prefix + " ")
+	}
+	b.WriteString(ci.GivenName)
+	if ci.MiddleInit != nil && *ci.MiddleInit != "" && *ci.MiddleInit != " " {
+		b.WriteString(" " + *ci.MiddleInit + ".")
+	}
+	b.WriteString(" " + ci.FamilyName)
+	if ci.Suffix != nil && *ci.Suffix != "" {
+		b.WriteString(" " + *ci.Suffix)
+	}
+	ctxt.VarMap().Set("fullname", b.String())
+	if user.Description != nil {
+		ctxt.VarMap().Set("description", *user.Description)
+	}
+	if !ci.PrivateEmail && ci.Email != nil {
+		ctxt.VarMap().Set("email", *ci.Email)
+	}
+	if ci.URL != nil {
+		ctxt.VarMap().Set("url", *ci.URL)
+	}
+	if ci.Company != nil {
+		ctxt.VarMap().Set("company", *ci.Company)
+	}
+	if !ci.PrivateAddr && ci.Addr1 != nil {
+		ctxt.VarMap().Set("addr1", *ci.Addr1)
+	}
+	if !ci.PrivateAddr && ci.Addr2 != nil {
+		ctxt.VarMap().Set("addr2", *ci.Addr2)
+	}
+	b.Reset()
+	if ci.Locality != nil {
+		b.WriteString(*ci.Locality)
+		if ci.Region != nil {
+			b.WriteString(", ")
+		}
+	}
+	if ci.Region != nil {
+		b.WriteString(*ci.Region)
+	}
+	if ci.PostalCode != nil {
+		b.WriteString("  " + *ci.PostalCode)
+	}
+	ctxt.VarMap().Set("addrLast", b.String())
+	if ci.Country != nil {
+		country := countries.ByName(*ci.Country)
+		ctxt.VarMap().Set("country", country.String())
+	}
+	if !ci.PrivatePhone && ci.Phone != nil {
+		ctxt.VarMap().Set("phone", *ci.Phone)
+	}
+	if !ci.PrivateFax && ci.Fax != nil {
+		ctxt.VarMap().Set("fax", *ci.Fax)
+	}
+	if !ci.PrivatePhone && ci.Mobile != nil {
+		ctxt.VarMap().Set("mobile", *ci.Mobile)
+	}
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("User Profile - %s", user.Username))
+	return "framed_template", "profile.jet", nil
+}
+
+/* QuickEMail sends quick E-mail to a user.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func QuickEMail(ctxt ui.AmContext) (string, any, error) {
+	me := ctxt.CurrentUser()
+	if me.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+	}
+	myCI, err := me.ContactInfo()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	toUid, err := ctxt.FormFieldInt("to_uid")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	user, err := database.AmGetUser(int32(toUid))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if user.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("cannot send quick E-mail to anonymous user"))
+	}
+	ci, err := user.ContactInfo()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	msg := email.AmNewEmailMessage(me.Uid, ctxt.RemoteIP())
+	msg.AddTo(*ci.Email, user.Username)
+	msg.AddHeader("X-Originally-From", fmt.Sprintf("%s <%s>", me.Username, *myCI.Email))
+	msg.SetSubject(ctxt.FormField("subj"))
+	msg.SetText(ctxt.FormField("pb"))
+	msg.Send()
+	return "redirect", "/user/" + user.Username, nil
 }

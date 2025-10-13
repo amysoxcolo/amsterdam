@@ -22,7 +22,10 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/klauspost/lctime"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // UserPrefs represents the user's preferences in a table (one row per user).
@@ -58,6 +61,30 @@ func (p *UserPrefs) Save(u *User) error {
 		u.prefs = p
 	}
 	return err
+}
+
+// Localizer returns a localizer for this locale.
+func (p *UserPrefs) Localizer() lctime.Localizer {
+	lc, err := lctime.NewLocalizer(p.LocaleID)
+	if err != nil {
+		log.Fatalf("BOGUS LANGUAGE TAG %s in user prefs for uid %d", p.LocaleID, p.Uid)
+	}
+	return lc
+}
+
+// LanguageTag returns the user's language tag.
+func (p *UserPrefs) LanguageTag() *language.Tag {
+	lt, err := language.Parse(p.ReadLocale())
+	if err != nil {
+		log.Fatalf("BOGUS LANGUAGE TAG %s in user prefs for uid %d", p.LocaleID, p.Uid)
+		return nil
+	}
+	return &lt
+}
+
+// MessagePrinter returns a message printer for the user's selected locale.
+func (p *UserPrefs) MessagePrinter() *message.Printer {
+	return message.NewPrinter(*p.LanguageTag())
 }
 
 // User represents a user in the Amsterdam database.
