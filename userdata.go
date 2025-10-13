@@ -371,8 +371,8 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	if !ci.PrivateEmail && ci.Email != nil {
 		ctxt.VarMap().Set("email", *ci.Email)
 	}
-	if ci.URL != nil {
-		ctxt.VarMap().Set("url", *ci.URL)
+	if ci.URL != nil && *ci.URL != "" {
+		ctxt.VarMap().Set("user_url", *ci.URL)
 	}
 	if ci.Company != nil {
 		ctxt.VarMap().Set("company", *ci.Company)

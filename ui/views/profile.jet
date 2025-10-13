@@ -45,10 +45,10 @@
                     <div class="text-lg font-bold">{{ fullname }}</div>
                     {{ if isset(description) }}<div>{{ description }}</div>{{ end }}
                     {{ if isset(email) }}<div><strong>E-mail:</strong> {{ email }}</div>{{ end }}                  
-                    {{ if isset(url) }}
+                    {{ if isset(user_url) }}
                         <div>
                             <strong>URL: </strong> 
-                            <a href="{{ url }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ url }}</a>
+                            <a href="{{ user_url }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ user_url }}</a>
                         </div>
                     {{ end }}
 
