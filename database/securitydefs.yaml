@@ -1,0 +1,186 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+scopes:
+  - name: Global
+    index: 0
+  - name: Community
+    index: 1
+roles:
+  - name: "NotInList"
+    display: "Not In List"
+    scope: Global
+    value: "0"
+  - name: "UnrestrictedUser"
+    display: "Unrestricted User"
+    scope: Global
+    value: "32500"
+  - name: "NoAccess"
+    display: "No Access"
+    scope: Global
+    value: "65500"
+  - name: "Global.Anonymous"
+    display: "Anonymous User"
+    scope: Global
+    value: "L+100"
+  - name: "Global.Unverified"
+    display: "Unauthenticated User"
+    scope: Global
+    value: "L+500"
+  - name: "Global.Normal"
+    display: "Normal User"
+    scope: Global
+    value: "L+1000"
+  - name: "Global.AnyAdmin"
+    display: "Any System Administrator"
+    scope: Global
+    value: "HMIN"
+  - name: "Global.PFY"
+    display: "System Assistant Administrator"
+    scope: Global
+    value: "H+1000"
+  - name: "Global.BOFH"
+    display: "Global System Administrator"
+    scope: Global
+    value: "HMAX"
+  - name: "Community.Member"
+    display: "Community Member"
+    scope: Community
+    value: "L+500"
+  - name: "Community.AnyAdmin"
+    display: "Any Community Administrator"
+    scope: Community
+    value: "HMIN"
+  - name: "Community.Cohost"
+    display: "Community Co-Host"
+    scope: Community
+    value: "H+1000"
+  - name: "Community.Host"
+    display: "Community Host"
+    scope: Community
+    value: "H+1500"
+defaults:
+  - name: "Global.NewUser"
+    role: "Global.Unverified"
+  - name: "Global.AfterVerify"
+    role: "Global.Normal"
+  - name: "Global.AfterEmailChange"
+    role: "Global.Unverified"
+  - name: "Community.NewUser"
+    role: "Community.Member"
+  - name: "Community.Creator"
+    role: "Community.Host"
+lists:
+  - name: "Global.UserLevels"
+    roles:
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+      - "UnrestrictedUser"
+  - name: "Global.UserLevelsPFY"
+    roles:
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+      - "UnrestrictedUser"
+      - "Global.PFY"
+  - name: "Global.CreateCommunity"
+    default: "Global.Normal"
+    roles:
+      - "Global.Normal"
+      - "UnrestrictedUser"
+      - "Global.AnyAdmin"
+      - "Global.PFY"
+      - "Global.BOFH"
+  - name: "Community.Read"
+    default: "Community.Member"
+    roles:
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+      - "Community.Member"
+      - "UnrestrictedUser"
+      - "Community.AnyAdmin"
+      - "Community.Cohost"
+      - "Community.Host"
+      - "Global.AnyAdmin"
+  - name: "Community.Write"
+    default: "Community.Cohost"
+    roles:
+      - "Community.AnyAdmin"
+      - "Community.Cohost"
+      - "Community.Host"
+      - "Global.AnyAdmin"
+      - "Global.PFY"
+      - "Global.BOFH"
+  - name: "Community.Create"
+    default: "Community.Cohost"
+    roles:
+      - "Global.Normal"
+      - "Community.Member"
+      - "UnrestrictedUser"
+      - "Community.AnyAdmin"
+      - "Community.Cohost"
+      - "Community.Host"
+      - "Global.AnyAdmin"
+  - name: "Community.Delete"
+    default: "Community.Host"
+    roles:
+      - "Community.AnyAdmin"
+      - "Community.Cohost"
+      - "Community.Host"
+      - "Global.AnyAdmin"
+      - "Global.PFY"
+      - "Global.BOFH"
+      - "NoAccess"
+  - name: "Community.Join"
+    default: "Global.Normal"
+    roles:
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+  - name: "Community.Userlevels"
+    roles:
+      - "NotInList"
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+      - "Community.Member"
+      - "UnrestrictedUser"
+      - "Community.Cohost"
+permissions:
+  - name: "Global.ShowHiddenCategories"
+    role: "Global.AnyAdmin"
+  - name: "Global.NoEmailVerify"
+    role: "Global.AnyAdmin"
+  - name: "Global.SeeHiddenContactInfo"
+    role: "Global.AnyAdmin"
+  - name: "Global.SearchHiddenCommunities"
+    role: "Global.AnyAdmin"
+  - name: "Global.ShowHiddenCommunities"
+    role: "Global.AnyAdmin"
+  - name: "Global.SearchHiddenCategories"
+    role: "Global.AnyAdmin"
+  - name: "Global.SysAdminAccess"
+    role: "Global.AnyAdmin"
+  - name: "Global.PublishFP"
+    role: "Global.AnyAdmin"
+  - name: "Global.DesignatePFY"
+    role: "Global.BOFH"
+  - name: "Community.ShowAdmin"
+    role: "Community.AnyAdmin"
+  - name: "Community.NoJoinRequired"
+    role: "Global.AnyAdmin"
+  - name: "Community.NoKeyRequired"
+    role: "Global.AnyAdmin"
+  - name: "Community.ShowHiddenMembers"
+    role: "Community.AnyAdmin"
+  - name: "Community.ShowHiddenObjects"
+    role: "Community.AnyAdmin"
+  - name: "Community.MassMail"
+    role: "Community.AnyAdmin"

@@ -10,7 +10,11 @@
 package database
 
 import (
-	"slices"
+	_ "embed"
+	"strconv"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 /* securityScope defines nested "scopes" within the security level system.  Each scope is numerically nested
@@ -44,11 +48,136 @@ var scopelist = []securityScope{
 	{30000, 31999, 33000, 34999},
 }
 
-// unrestrictedUserLevel is a user level that is above all "low" bands but below all "high" bands.
-const unrestrictedUserLevel uint16 = 32500
+// CfgScope is a configured scope.
+type CfgScope struct {
+	Name   string `yaml:"name"`
+	Index  int    `yaml:"index"`
+	bounds *securityScope
+}
 
-// noAccessLevel is the level used to specify "no access," as it's above the highest value in the topmost scope.
-const noAccessLevel uint16 = 65500
+// CfgRole is a configured role.
+type CfgRole struct {
+	Internal string `yaml:"name"`
+	Display  string `yaml:"display"`
+	Scope    string `yaml:"scope"`
+	Value    string `yaml:"value"`
+	level    uint16
+}
+
+// CfgDefault is a configured default value.
+type CfgDefault struct {
+	Name    string `yaml:"name"`
+	Role    string `yaml:"role"`
+	roleptr *CfgRole
+}
+
+// CfgRoleList is a configured role list.
+type CfgRoleList struct {
+	Name     string   `yaml:"name"`
+	DDefault string   `yaml:"default"`
+	DRoles   []string `yaml:"roles"`
+	defptr   *CfgRole
+	roleptrs []*CfgRole
+}
+
+// CfgPermission is a configured permission.
+type CfgPermission struct {
+	Name  string `yaml:"name"`
+	Role  string `yaml:"role"`
+	level uint16
+}
+
+// CfgSecurityDefs is the master structure for security definitions.
+type CfgSecurityDefs struct {
+	Scopes      []CfgScope      `yaml:"scopes"`
+	Roles       []CfgRole       `yaml:"roles"`
+	Defaults    []CfgDefault    `yaml:"defaults"`
+	Lists       []CfgRoleList   `yaml:"lists"`
+	Permissions []CfgPermission `yaml:"permissions"`
+	scopeMap    map[string]*CfgScope
+	roleMap     map[string]*CfgRole
+	defaultsMap map[string]*CfgDefault
+	listsMap    map[string]*CfgRoleList
+	permsMap    map[string]*CfgPermission
+}
+
+//go:embed securitydefs.yaml
+var initSecurityData []byte
+
+// securityRoot contains the root-level security information.
+var securityRoot CfgSecurityDefs
+
+// parseLevelValue is a helper which parses the role level definition strings.
+func parseLevelValue(scope *securityScope, value string) uint16 {
+	switch value {
+	case "LMIN":
+		return scope.lowbandLow
+	case "LMAX":
+		return scope.lowbandHigh
+	case "HMIN":
+		return scope.highbandLow
+	case "HMAX":
+		return scope.highbandHigh
+	}
+	if strings.HasPrefix(value, "L+") {
+		v, err := strconv.Atoi(value[2:])
+		if err != nil {
+			panic(err)
+		}
+		return scope.lowbandLow + uint16(v)
+	}
+	if strings.HasPrefix(value, "H+") {
+		v, err := strconv.Atoi(value[2:])
+		if err != nil {
+			panic(err)
+		}
+		return scope.highbandLow + uint16(v)
+	}
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		panic(err)
+	}
+	return uint16(v)
+}
+
+// init sets up all the security data.
+func init() {
+	if err := yaml.Unmarshal(initSecurityData, &securityRoot); err != nil {
+		panic(err) // can't happen
+	}
+	securityRoot.scopeMap = make(map[string]*CfgScope)
+	for i, sc := range securityRoot.Scopes {
+		securityRoot.Scopes[i].bounds = &(scopelist[sc.Index])
+		securityRoot.scopeMap[sc.Name] = &(securityRoot.Scopes[i])
+	}
+	securityRoot.roleMap = make(map[string]*CfgRole)
+	for i, ro := range securityRoot.Roles {
+		scope := securityRoot.scopeMap[ro.Scope]
+		securityRoot.Roles[i].level = parseLevelValue(scope.bounds, ro.Value)
+		securityRoot.roleMap[ro.Internal] = &(securityRoot.Roles[i])
+	}
+	securityRoot.defaultsMap = make(map[string]*CfgDefault)
+	for i, def := range securityRoot.Defaults {
+		securityRoot.Defaults[i].roleptr = securityRoot.roleMap[def.Role]
+		securityRoot.defaultsMap[def.Name] = &(securityRoot.Defaults[i])
+	}
+	securityRoot.listsMap = make(map[string]*CfgRoleList)
+	for i, li := range securityRoot.Lists {
+		if li.DDefault != "" {
+			securityRoot.Lists[i].defptr = securityRoot.roleMap[li.DDefault]
+		}
+		securityRoot.Lists[i].roleptrs = make([]*CfgRole, len(li.DRoles))
+		for j, rn := range li.DRoles {
+			securityRoot.Lists[i].roleptrs[j] = securityRoot.roleMap[rn]
+		}
+		securityRoot.listsMap[li.Name] = &(securityRoot.Lists[i])
+	}
+	securityRoot.permsMap = make(map[string]*CfgPermission)
+	for i, pm := range securityRoot.Permissions {
+		securityRoot.Permissions[i].level = securityRoot.roleMap[pm.Role].level
+		securityRoot.permsMap[pm.Name] = &(securityRoot.Permissions[i])
+	}
+}
 
 // Role defines a security role.
 type Role interface {
@@ -57,25 +186,15 @@ type Role interface {
 	Level() uint16
 }
 
-// amRole is the internal implementation of the Role.
-type amRole struct {
-	id    string
-	name  string
-	level uint16
+func (r *CfgRole) ID() string {
+	return r.Internal
 }
 
-// ID returns the string identifier of the role.
-func (r *amRole) ID() string {
-	return r.id
+func (r *CfgRole) Name() string {
+	return r.Display
 }
 
-// Name returns the textual name of the role.
-func (r *amRole) Name() string {
-	return r.name
-}
-
-// Level returns the access level of the role.
-func (r *amRole) Level() uint16 {
+func (r *CfgRole) Level() uint16 {
 	return r.level
 }
 
@@ -85,50 +204,16 @@ type RoleList interface {
 	Default() Role
 }
 
-// amRoleList is the internal implementation of RoleList.
-type amRoleList struct {
-	roleList    []Role
-	defaultRole Role
+func (r *CfgRoleList) Roles() []Role {
+	rc := make([]Role, len(r.roleptrs))
+	for i := range r.roleptrs {
+		rc[i] = r.roleptrs[i]
+	}
+	return rc
 }
 
-// Roles returns the list of roles for a given RoleList.
-func (rl *amRoleList) Roles() []Role {
-	return rl.roleList
-}
-
-// Default returns the default role in a given RoleList.
-func (rl *amRoleList) Default() Role {
-	return rl.defaultRole
-}
-
-// roles holds all the defined roles.
-var roles map[string]Role
-
-// roleDefaults assigns roles to symbolic default names.
-var roleDefaults map[string]Role
-
-// roleLists holds all the defined role lists.
-var roleLists map[string]RoleList
-
-// permissions assigns roles to specific named permissions.
-var permissions map[string]Role
-
-// defineRole defines a role and adds it to the roles map.
-func defineRole(id string, name string, level uint16) Role {
-	r := amRole{id: id, name: name, level: level}
-	roles[id] = &r
-	return &r
-}
-
-// defineRoleList defines a role list and adds it to the roleLists map.
-func defineRoleList(id string, roles []Role, defaultRole Role) {
-	slices.SortFunc(roles, func(a Role, b Role) int {
-		leva := int(a.Level())
-		levb := int(b.Level())
-		return leva - levb
-	})
-	rl := amRoleList{roleList: roles, defaultRole: defaultRole}
-	roleLists[id] = &rl
+func (r *CfgRoleList) Default() Role {
+	return r.defptr
 }
 
 /* AmRole returns a Role given a string ID.
@@ -138,17 +223,27 @@ func defineRoleList(id string, roles []Role, defaultRole Role) {
  *     The specified role.
  */
 func AmRole(id string) Role {
-	return roles[id]
+	return securityRoot.roleMap[id]
 }
 
-/* AmDefaultRole returns a Role diven a default ID.
+/* AmDefaultRole returns a Role given a default ID.
  * Parameters:
  *     id - ID of the default to look up.
  * Returns:
  *     The specified role.
  */
 func AmDefaultRole(id string) Role {
-	return roleDefaults[id]
+	return securityRoot.defaultsMap[id].roleptr
+}
+
+/* AmRoleList returns a RoleList given a list ID.
+ * Parameters:
+ *     id - ID of the list to look up.
+ * Returns:
+ *     The specified role list.
+ */
+func AmRoleList(id string) RoleList {
+	return securityRoot.listsMap[id]
 }
 
 /* AmTestPermission tests a specified access level to see if it satisfies the given permission.
@@ -159,62 +254,5 @@ func AmDefaultRole(id string) Role {
  *     true if the permission test is satisfied, false if not.
  */
 func AmTestPermission(id string, level uint16) bool {
-	return permissions[id].Level() < level
-}
-
-// init initializes all the security data.
-func init() {
-	// Initialize the roles.
-	roles = make(map[string]Role)
-	not := defineRole("NotInList", "Not in List", 0)
-	uu := defineRole("UnrestrictedUser", "Unrestricted User", unrestrictedUserLevel)
-	none := defineRole("NoAccess", "No Access", noAccessLevel)
-	g_anon := defineRole("Global.Anonymous", "Anonymous User", scopelist[0].lowbandLow+100)
-	g_unverf := defineRole("Global.Unverified", "Unauthenticated User", scopelist[0].lowbandLow+500)
-	g_normal := defineRole("Global.Normal", "Normal User", scopelist[0].lowbandLow+1000)
-	g_anyadmin := defineRole("Global.AnyAdmin", "Any System Administrator", scopelist[0].highbandLow)
-	g_PFY := defineRole("Global.PFY", "System Assistant Administrator", scopelist[0].highbandLow+1000)
-	g_BOFH := defineRole("Global.BOFH", "Global System Administrator", scopelist[0].highbandHigh)
-	com_member := defineRole("Community.Member", "Community Member", scopelist[1].lowbandLow+500)
-	com_anyadmin := defineRole("Community.AnyAdmin", "Any Community Administrator", scopelist[1].highbandLow)
-	com_cohost := defineRole("Community.Cohost", "Community Co-Host", scopelist[1].highbandLow+1000)
-	com_host := defineRole("Community.Host", "Community Host", scopelist[1].highbandLow+1500)
-
-	// Initialize the defaults list.
-	roleDefaults = make(map[string]Role)
-	roleDefaults["Global.NewUser"] = g_unverf
-	roleDefaults["Global.AfterVerify"] = g_normal
-	roleDefaults["Global.AfterEmailChange"] = g_unverf
-	roleDefaults["Community.NewUser"] = com_member
-	roleDefaults["Community.Creator"] = com_host
-
-	// Initialize the roles lists.
-	roleLists = make(map[string]RoleList)
-	defineRoleList("Global.UserLevels", []Role{g_anon, g_unverf, g_normal, uu}, nil)
-	defineRoleList("Global.UserLevelsPFY", []Role{g_anon, g_unverf, g_normal, uu, g_PFY}, nil)
-	defineRoleList("Global.CreateCommunity", []Role{g_normal, uu, g_anyadmin, g_PFY, g_BOFH}, g_normal)
-	defineRoleList("Community.Read", []Role{g_anon, g_unverf, g_normal, com_member, uu, com_anyadmin, com_cohost, com_host, g_anyadmin}, com_member)
-	defineRoleList("Community.Write", []Role{com_anyadmin, com_cohost, com_host, g_anyadmin, g_PFY, g_BOFH}, com_cohost)
-	defineRoleList("Community.Create", []Role{g_normal, com_member, uu, com_anyadmin, com_cohost, com_host, g_anyadmin}, com_cohost)
-	defineRoleList("Community.Delete", []Role{com_anyadmin, com_cohost, com_host, g_anyadmin, g_PFY, g_BOFH, none}, com_host)
-	defineRoleList("Community.Join", []Role{g_anon, g_unverf, g_normal}, g_normal)
-	defineRoleList("Community.UserLevels", []Role{not, g_anon, g_unverf, g_normal, com_member, uu, com_cohost}, nil)
-
-	// Initialize the permissions lists.
-	permissions = make(map[string]Role)
-	permissions["Global.ShowHiddenCategories"] = g_anyadmin
-	permissions["Global.NoEmailVerify"] = g_anyadmin
-	permissions["Global.SeeHiddenContactInfo"] = g_anyadmin
-	permissions["Global.SearchHiddenCommunities"] = g_anyadmin
-	permissions["Global.ShowHiddenCommunities"] = g_anyadmin
-	permissions["Global.SearchHiddenCategories"] = g_anyadmin
-	permissions["Global.SysAdminAccess"] = g_anyadmin
-	permissions["Global.PublishFP"] = g_anyadmin
-	permissions["Global.DesignatePFY"] = g_BOFH
-	permissions["Community.ShowAdmin"] = com_anyadmin
-	permissions["Community.NoJoinRequired"] = g_anyadmin
-	permissions["Community.NoKeyRequired"] = g_anyadmin
-	permissions["Community.ShowHiddenMembers"] = com_anyadmin
-	permissions["Community.ShowHiddenObjects"] = com_anyadmin
-	permissions["Community.MassMail"] = com_anyadmin
+	return securityRoot.permsMap[id].level < level
 }
