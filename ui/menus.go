@@ -25,6 +25,7 @@ type MenuItem struct {
 	P          *MenuDefinition
 }
 
+// Show checks permissions to see if we can display the menu item.
 func (mi *MenuItem) Show(ctxt AmContext) bool {
 	if mi.Permission == "" {
 		return true
@@ -45,6 +46,7 @@ type MenuDefinition struct {
 	ID      string     `yaml:"id"`
 	Title   string     `yaml:"title"`
 	PermSet string     `yaml:"permSet"`
+	Warning string     `yaml:"warning"`
 	Items   []MenuItem `yaml:"items"`
 }
 

@@ -58,6 +58,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/profile_photo", ui.AmWrap(ProfilePhoto))
 	e.GET("/user/:uname", ui.AmWrap(ShowProfile))
 	e.POST("/quick_email", ui.AmWrap(QuickEMail))
+	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 
 	return e
 }

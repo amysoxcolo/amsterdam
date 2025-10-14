@@ -1,0 +1,42 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+ <div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ menu.Title }}</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+    </div>
+
+    <!-- Administration Menu -->
+    <div class="max-w-2xl">
+        <div class="bg-gray-50 p-6 rounded-lg">
+            <nav class="space-y-3">
+                {{ ctxt := . }}
+                {{ range menu.Items }}
+                    {{ if .Show(ctxt) }}
+                        <div class="flex items-start gap-3">
+                            <span class="text-lg pt-0.5">🟣</span>
+                            {{ if .Disabled }}
+                                <span class="text-gray-500 font-medium">{{ .Text }}</span>
+                            {{ else }}
+                                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-medium">{{ .Text }}</a>
+                            {{ end }}
+                        </div>
+                    {{ end }}
+                {{ end }}
+            </nav>
+        </div>
+
+        {{ if menu.Warning != "" }}
+            <div class="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+                <p class="text-sm text-gray-700">{{ menu.Warning | raw }}</p>
+            </div>
+        {{ end }}
+    </div>
+ </div>

@@ -27,5 +27,31 @@ menudefs:
       - text: "About Amsterdam"
         link: "/about"
       - text: "System Administration"
-        link: "/TODO/sysadmin"
+        link: "/sysadmin"
+        permission: "Global.SysAdminAccess"
+  - id: "sysadmin"
+    title: "System Administration"
+    permSet: "user"
+    warning: >
+      <strong>Note:</strong> These tools provide access to sensitive system administration functions. 
+      Use with care and review all changes before applying them to the system.
+    items:
+      - text: "Edit Global Properties"
+        link: "/TODO/sysadmin/global"
+        permission: "Global.SysAdminAccess"
+      - text: "View/Edit IP Address Bans"
+        link: "/TODO/sysadmin/ip_bans"
+        permission: "Global.SysAdminAccess"
+      - text: "View/Edit Banned Users"
+        link: "/TODO/sysadmin/user_bans"
+        disabled: true
+        permission: "Global.SysAdminAccess"
+      - text: "User Account Management"
+        link: "/TODO/sysadmin/find_user"
+        permission: "Global.SysAdminAccess"
+      - text: "System Audit Logs"
+        link: "/TODO/sysadmin/audit"
+        permission: "Global.SysAdminAccess"
+      - text: "Import User Accounts"
+        link: "/TODO/sysadmin/import"
         permission: "Global.SysAdminAccess"
