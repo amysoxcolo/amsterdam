@@ -21,9 +21,9 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 
 	"git.erbosoft.com/amy/amsterdam/config"
+	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
 	"github.com/CloudyKit/jet/v6/loaders/multi"
@@ -83,11 +83,6 @@ func internalGetLanguageList() []Language {
 	return cachedLanguageList
 }
 
-// getLanguageList is a wrapper around the list of languages that can be added to the template context.
-func getLanguageList(a jet.Arguments) reflect.Value {
-	return reflect.ValueOf(internalGetLanguageList())
-}
-
 // cachedTimeZoneList is a wrapper around timezone.Timezones() that produces it by timezone name.
 var cachedTimeZoneList []string = nil
 
@@ -110,11 +105,6 @@ func internalGetTimeZoneList() []string {
 		cachedTimeZoneList = slices.Compact(ilist)
 	}
 	return cachedTimeZoneList
-}
-
-// getTimeZoneList is a wrapper around internalGetTimeZoneList that can be added to the template context.
-func getTimeZoneList(a jet.Arguments) reflect.Value {
-	return reflect.ValueOf(internalGetTimeZoneList())
 }
 
 // cachedCountryList is the cached country list after sorting.
@@ -146,11 +136,6 @@ func internalGetCountryList() []countries.CountryCode {
 		cachedCountryList = countryList
 	}
 	return cachedCountryList
-}
-
-// getCountryList is a wrapper around countries.All() to be added to the template context.
-func getCountryList(a jet.Arguments) reflect.Value {
-	return reflect.ValueOf(internalGetCountryList())
 }
 
 // getMonthList is a simple wrapper that returns the names of the months to the template context.
@@ -221,21 +206,6 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	}
 }
 
-/* CapitalizeString changes the first character of the string to a capital.
- * Parameters:
- *     s - The string to be capitalized.
- * Returns:
- *     The capitalized string.
- */
-func CapitalizeString(s string) string {
-	runes := []rune(s)
-	if len(runes) > 0 {
-		runes[0] = unicode.ToUpper(runes[0])
-		return string(runes)
-	}
-	return ""
-}
-
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -248,16 +218,26 @@ func SetupTemplates() {
 	views.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
-	views.AddGlobalFunc("GetCountryList", getCountryList)
-	views.AddGlobalFunc("GetLanguageList", getLanguageList)
-	views.AddGlobalFunc("GetTimeZoneList", getTimeZoneList)
 	views.AddGlobalFunc("GetMonthList", getMonthList)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 
+	views.AddGlobalFunc("GetCountryList", func(a jet.Arguments) reflect.Value {
+		return reflect.ValueOf(internalGetCountryList())
+	})
+	views.AddGlobalFunc("GetLanguageList", func(a jet.Arguments) reflect.Value {
+		return reflect.ValueOf(internalGetLanguageList())
+	})
+	views.AddGlobalFunc("GetTimeZoneList", func(a jet.Arguments) reflect.Value {
+		return reflect.ValueOf(internalGetTimeZoneList())
+	})
+	views.AddGlobalFunc("AmMenu", func(a jet.Arguments) reflect.Value {
+		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
+		return reflect.ValueOf(AmMenu(s))
+	})
 	views.AddGlobalFunc("CapitalizeString", func(a jet.Arguments) reflect.Value {
 		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
-		return reflect.ValueOf(CapitalizeString(s))
+		return reflect.ValueOf(util.CapitalizeString(s))
 	})
 
 	// preload the lists in the background

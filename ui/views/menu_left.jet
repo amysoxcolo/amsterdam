@@ -1,0 +1,22 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+{{ menu := .GetScratch("__menu") }}
+<div class="mb-2 mt-2">
+    <div class="font-bold mb-1">{{ menu.Title }}</div>
+    {{ ctxt := . }}
+    {{ range menu.Items }}
+        {{ if .Show(ctxt) }}
+            {{ if .Disabled }}
+                <div class="text-gray-500 mb-1">{{ .Text }}</div>
+            {{ else }}
+                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900">{{ .Text }}</a>
+            {{ end }}
+        {{ end }}
+    {{ end }}
+</div>

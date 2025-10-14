@@ -40,7 +40,6 @@ type AmContext interface {
 	OutputType() string
 	Parameter(string) string
 	RemoteIP() string
-	Render(string) error
 	ReplaceUser(*database.User)
 	SaveSession() error
 	SubRender(string) ([]byte, error)
@@ -161,16 +160,6 @@ func (c *amContext) Parameter(name string) string {
 // RemoteIP returns the remote IP address.
 func (c *amContext) RemoteIP() string {
 	return c.echoContext.RealIP()
-}
-
-/* Render renders a template to the output. Called at the top level only.
- * Parameters:
- *     name = The name of the tempate to be rendered.
- * Returns:
- *	   Standard Go error status.
- */
-func (c *amContext) Render(name string) error {
-	return c.echoContext.Render(c.httprc, name, c)
 }
 
 /* ReplaceUser replaces the current user in the context.

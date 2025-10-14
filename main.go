@@ -76,7 +76,6 @@ func main() {
 	ui.SetupTemplates()
 	closer = ui.SetupSessionManager()
 	defer closer()
-	ui.SetupLeftMenus()
 
 	// Set up Echo.
 	e := setupEcho()

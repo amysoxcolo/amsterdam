@@ -81,18 +81,11 @@
     <div class="flex">
         <!-- LEFT SIDEBAR -->
         <div class="w-48 bg-blue-400 p-2">
-            {{ range amsterdam_leftMenus }}
-                <div class="mb-2 mt-2">
-                    <div class="font-bold mb-1">{{ .Title }}</div>
-                    {{ range .Items }}
-                        {{ if .Link != "" }}
-                            <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900">{{ .Text }}</a>
-                        {{ else }}
-                            <div class="text-gray-500 mb-1">{{ .Text }}</div>
-                        {{ end }}
-                    {{ end }}
-                </div>
-            {{ end }}
+            {{ .SetScratch("__menu", AmMenu("top")) }}
+            {{ .SubRender("menu_left.jet") | raw }}
+            <div class="mb-2 mt-2">&nbsp;</div>
+            {{ .SetScratch("__menu", AmMenu("fixed")) }}
+            {{ .SubRender("menu_left.jet") | raw }}
         </div>
 
         <!-- MAIN CONTENT -->
