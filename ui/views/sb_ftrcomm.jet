@@ -26,5 +26,11 @@
                     <div class="text-small">You are not a member of any communities.</div>
                 {{ end }}
         </div>
+        <div class="mt-3 text-center">
+            <span class="text-black text-xs font-bold">
+                [ <a href="/TODO/manage_comms" class="text-blue-700 hover:text-blue-900">Manage</a> | 
+                <a href="/TODO/create_comm" class="text-blue-700 hover:text-blue-900">Create New</a> ]
+            </span>
+        </div>
     </div>
 </div>

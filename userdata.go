@@ -339,6 +339,18 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
+	var pvtAddr, pvtPhone, pvtFax, pvtEmail bool
+	if database.AmTestPermission("Global.SeeHiddenContactInfo", me.BaseLevel) {
+		pvtAddr = false
+		pvtPhone = false
+		pvtFax = false
+		pvtEmail = false
+	} else {
+		pvtAddr = ci.PrivateAddr
+		pvtPhone = ci.PrivatePhone
+		pvtFax = ci.PrivateFax
+		pvtEmail = ci.PrivateEmail
+	}
 
 	// Fill all the page variables for display.
 	ctxt.VarMap().Set("uid", user.Uid)
@@ -369,7 +381,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	if user.Description != nil {
 		ctxt.VarMap().Set("description", *user.Description)
 	}
-	if !ci.PrivateEmail && ci.Email != nil {
+	if !pvtEmail && ci.Email != nil {
 		ctxt.VarMap().Set("email", *ci.Email)
 	}
 	if ci.URL != nil && *ci.URL != "" {
@@ -378,10 +390,10 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	if ci.Company != nil {
 		ctxt.VarMap().Set("company", *ci.Company)
 	}
-	if !ci.PrivateAddr && ci.Addr1 != nil {
+	if !pvtAddr && ci.Addr1 != nil {
 		ctxt.VarMap().Set("addr1", *ci.Addr1)
 	}
-	if !ci.PrivateAddr && ci.Addr2 != nil {
+	if !pvtAddr && ci.Addr2 != nil {
 		ctxt.VarMap().Set("addr2", *ci.Addr2)
 	}
 	b.Reset()
@@ -402,13 +414,13 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 		country := countries.ByName(*ci.Country)
 		ctxt.VarMap().Set("country", country.String())
 	}
-	if !ci.PrivatePhone && ci.Phone != nil {
+	if !pvtPhone && ci.Phone != nil {
 		ctxt.VarMap().Set("phone", *ci.Phone)
 	}
-	if !ci.PrivateFax && ci.Fax != nil {
+	if !pvtFax && ci.Fax != nil {
 		ctxt.VarMap().Set("fax", *ci.Fax)
 	}
-	if !ci.PrivatePhone && ci.Mobile != nil {
+	if !pvtPhone && ci.Mobile != nil {
 		ctxt.VarMap().Set("mobile", *ci.Mobile)
 	}
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("User Profile - %s", user.Username))

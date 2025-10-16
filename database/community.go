@@ -12,10 +12,13 @@ package database
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
+	"golang.org/x/text/language"
 )
 
 // Community struct contains the high level data for a community.
@@ -52,6 +55,27 @@ var communityCache *lru.TwoQueueCache = nil
 // getCommunityMutex is a mutex on AmGetCommunity.
 var getCommunityMutex sync.Mutex
 
+// memberCacheData caches membership information for communities.
+type memberCacheData struct {
+	isMember bool
+	locked   bool
+	level    uint16
+}
+
+// memberCache contains the memberCacheData entries.
+var memberCache *lru.Cache = nil
+
+// memberMutex syncs access to the memberCache.
+var memberMutex sync.Mutex
+
+// stuffMembership stuffs a membership record into the cache.
+func stuffMembership(cid int32, uid int32, member bool, locked bool, level uint16) {
+	key := fmt.Sprintf("%d:%d", cid, uid)
+	memberMutex.Lock()
+	memberCache.Add(key, &memberCacheData{isMember: member, locked: locked, level: level})
+	memberMutex.Unlock()
+}
+
 // init initializes the community cache.
 func init() {
 	var err error
@@ -59,6 +83,98 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	memberCache, err = lru.New(250)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Public returns true if the community is public.
+func (c *Community) Public() bool {
+	return c.JoinKey == nil || *c.JoinKey == ""
+}
+
+// ContactInfo returns the contact info structure for the community.
+func (c *Community) ContactInfo() (*ContactInfo, error) {
+	if c.ContactId < 0 {
+		return nil, nil
+	}
+	return AmGetContactInfo(c.ContactId)
+}
+
+// Host returns the reference to the host of the community.
+func (c *Community) Host() (*User, error) {
+	if c.HostUid == nil {
+		return nil, nil
+	}
+	return AmGetUser(*c.HostUid)
+}
+
+func (c *Community) LanguageTag() (*language.Tag, error) {
+	if c.Language == nil {
+		return nil, nil
+	}
+	t, err := language.Parse(*c.Language)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+/* Membership returns the details of the specified user's membership in the community.
+ * Parameters:
+ *     u - The user to check the membership of.
+ * Returns:
+ *     true if the user is a member, false if not.
+ *     true if the user's membership is "locked" (cannot unjoin), false if not.
+ *	   User's access level in the community, or 0 if the user is not a member.
+ *     Standard Go error status.
+ */
+func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
+	key := fmt.Sprintf("%d:%d", c.Id, u.Uid)
+	memberMutex.Lock()
+	defer memberMutex.Unlock()
+	mbr, ok := memberCache.Get(key)
+	if ok {
+		m := mbr.(*memberCacheData)
+		return m.isMember, m.locked, m.level, nil
+	}
+	if AmTestPermission("Community.NoJoinRequired", u.BaseLevel) {
+		// "no join required" - they are effectively a member, but don't cache that
+		return true, false, u.BaseLevel, nil
+	}
+	rs, err := amdb.Query("SELECT locked, granted_lvl FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+	if err == nil {
+		if rs.Next() {
+			var locked bool
+			var level uint16
+			rs.Scan(&locked, &level)
+			memberCache.Add(key, &memberCacheData{isMember: true, locked: locked, level: level})
+			return true, locked, level, nil
+		}
+		memberCache.Add(key, &memberCacheData{isMember: false, locked: false, level: uint16(0)})
+	}
+	return false, false, uint16(0), err
+}
+
+/* TestPermission is shorthand that tests if a user has a permission with respect to the community.
+ * Parameters:
+ *     user - The user to be checked.
+ *     perm - The permission to be tested.
+ * Returns:
+ *     true if the user has the permission, false if not.
+ *     Standard Go error status.
+ */
+func (c *Community) TestPermission(user *User, perm string) (bool, error) {
+	member, _, level, err := c.Membership(user)
+	if err != nil {
+		return false, err
+	}
+	effectiveLevel := user.BaseLevel
+	if member && level > effectiveLevel {
+		effectiveLevel = level
+	}
+	return AmTestPermission(perm, effectiveLevel), nil
 }
 
 /* AmGetCommunity returns a reference to the specified community.
@@ -79,13 +195,46 @@ func AmGetCommunity(id int32) (*Community, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(dbdata) > 1 {
+		if len(dbdata) == 0 {
+			return nil, fmt.Errorf("community with ID %d not found", id)
+		} else if len(dbdata) > 1 {
 			return nil, fmt.Errorf("AmGetCommunity(%d): too many responses(%d)", id, len(dbdata))
 		}
 		rc = &(dbdata[0])
 		communityCache.Add(id, rc)
 	}
 	return rc.(*Community), err
+}
+
+/* AmGetCommunityFromParam returns a reference to the specified community based on the parameter.
+ * If the parameter is numeric, it's interpreted as a community ID. Otherwise, it's interpreted
+ * as a community alias.
+ * Parameters:
+ *     id - The ID of the community.
+ * Returns:
+ *     Pointer to Community containing community data, or nil
+ *     Standard Go error status
+ */
+func AmGetCommunityFromParam(param string) (*Community, error) {
+	if util.IsNumeric(param) {
+		v, _ := strconv.Atoi(param)
+		c, err := AmGetCommunity(int32(v))
+		if err == nil {
+			return c, nil
+		}
+		// else fall through to trying as alias
+	}
+	rs, err := amdb.Query("SELECT commid FROM communities WHERE alias = ?", param)
+	if err == nil {
+		if rs.Next() {
+			var cid int32
+			rs.Scan(&cid)
+			return AmGetCommunity(cid)
+		} else {
+			return nil, fmt.Errorf("community with alias \"%s\" not found", param)
+		}
+	}
+	return nil, err
 }
 
 /* AmGetCommunitiesForUser returns a list of communities the user is a member of.
@@ -164,6 +313,7 @@ func AmAutoJoinCommunities(user *User) error {
 				if err != nil {
 					break
 				}
+				stuffMembership(cid, user.Uid, true, lock, grantLevel)
 			}
 		}
 	}

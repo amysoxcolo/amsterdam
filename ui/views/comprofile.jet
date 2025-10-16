@@ -1,0 +1,141 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+ <div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold inline">Community Profile:</h1>
+        <span class="text-blue-800 text-2xl font-bold ml-2">{{ commName }}</span>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+    <!-- Community Profile Card -->
+    <div class="bg-gray-50 p-6 rounded-lg mb-8 max-w-4xl">
+        <div class="flex gap-6">
+            <!-- Left Column: Image and Metadata -->
+            <div class="flex-shrink-0 w-32">
+                <div class="border-2 border-gray-300 rounded mb-4">
+                    <img src="/img/static/default-community.jpg" 
+                         alt="{{ commName}} community logo" class="w-full h-auto">
+                </div>
+                <div class="text-xs text-gray-700 space-y-2 mb-4">
+                    <div><strong>Community created:</strong><br>{{ dateCreated }}</div>
+                    {{ if isset(dateLastAccess) }}
+                        <div><strong>Last accessed:</strong><br>{{ dateLastAccess }}</div>
+                    {{ end }}
+                    {{ if isset(dateLastUpdate) }}
+                        <div><strong>Profile last updated:</strong><br>{{ dateLastUpdate }}</div>
+                    {{ end }}
+                </div>
+                {{ if isset(canJoin) }}
+                    <div class="text-center">
+                        <a href="/TODO/comm/join"
+                            class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
+                            Join Now
+                        </a>
+                    </div>
+                {{ end }}
+                {{ if isset(canInvite) }}
+                    <div class="text-center">
+                        <a href="/TODO/comm/invite"
+                            class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
+                            Invite
+                        </a>
+                    </div>
+                {{ end }}
+            </div>
+
+            <!-- Right Column: Community Information -->
+            <div class="flex-1 text-sm text-black">
+                <div class="space-y-4">
+                    <!-- Community Type and Category -->
+                    <div>
+                        {{ if public }}
+                            <div class="text-lg font-bold underline mb-2">Public Community</div>
+                        {{ else }}
+                            <div class="text-lg font-bold underline mb-2">Private Community</div>
+                        {{ end }}
+                        {{ if isset(categories) }}
+                            <div>
+                                <strong>Category:</strong> 
+                                {{ range i := categories }}
+                                    {{ if i > 0 }}: {{ end }}
+                                    <a href="/TODO/find/communities-for-category" 
+                                       class="text-blue-700 hover:text-blue-900">{{ .Name }}</a>
+                                {{ end }}
+                            </div>
+                        {{ end }}
+                    </div>
+
+                    {{ if isset(description) }}
+                        <!-- Description -->
+                        <div class="italic text-gray-700">{{ description }}</div>
+                    {{ end }}
+
+                    <!-- Host -->
+                    <div>
+                        <strong>Host:</strong> 
+                        <a href="/users/{{ hostName }}" class="text-blue-700 hover:text-blue-900">{{ hostName }}</a>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="pt-2 border-t border-gray-300">
+                        <strong>Location:</strong>
+                        <div class="mt-1">
+                            {{ if isset(company) }}
+                                <div>{{ company }}</div>
+                            {{ end }}
+                            {{ if isset(addr1) }}
+                                <div>{{ addr1 }}</div>
+                            {{ end }}
+                            {{ if isset(addr2) }}
+                                <div>{{ addr2 }}</div>
+                            {{ end }}
+                            <div>{{ addrLast }}</div>
+                            {{ if isset(country) }}
+                                <div>{{ country }}</div>
+                            {{ end }}
+                        </div>
+                    </div>
+
+                    {{ if isset(language) || isset(rules) || isset(homePage) }}
+                        <!-- Additional Information -->
+                        <div class="pt-2 border-t border-gray-300 space-y-2">
+                            {{ if isset(language) }}
+                                <div><strong>Primary Language:</strong> {{ language }}</div>
+                            {{ end }}
+                            {{ if isset(rules) }}
+                                <div><strong>Standards of Conduct:</strong> {{ rules }}</div>
+                            {{ end }}
+                            {{ if isset(homePage) }}
+                                <div>
+                                    <strong>Homepage:</strong> 
+                                    <a href="{{ homepage }}" target="_blank"
+                                    class="text-blue-700 hover:text-blue-900">{{ homepage }}</a>
+                                </div>
+                            {{ end }}
+                        </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Community Information Note -->
+    <div class="max-w-4xl p-4 bg-blue-50 border-l-4 border-blue-400">
+        <p class="text-sm text-gray-700">
+            <strong>About This Community:</strong> 
+            {{ if public }}
+                This is a public community open to all users of the {{ GlobalConfig.Site.Title }} site. 
+                You can join discussions in the conferences, view member lists, and participate in community activities.
+            {{ else }}
+                This is a private community, open by invitation only.  You can only participate if you have been invited
+                by one of the community hosts.
+            {{ end }}
+        </p>
+    </div>
+ </div>

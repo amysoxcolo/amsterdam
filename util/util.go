@@ -10,7 +10,20 @@
 // Package util contains utility definitions.
 package util
 
-import "unicode"
+import (
+	"regexp"
+	"unicode"
+)
+
+var numeric *regexp.Regexp
+
+func init() {
+	re, err := regexp.Compile("^[0-9]+$")
+	if err != nil {
+		panic(err)
+	}
+	numeric = re
+}
 
 /* CapitalizeString changes the first character of the string to a capital.
  * Parameters:
@@ -25,4 +38,14 @@ func CapitalizeString(s string) string {
 		return string(runes)
 	}
 	return ""
+}
+
+/* IsNumeric returns true if the string is numeric (all digits).
+ * Parameters:
+ *     s - String to be tested.
+ * Returns:
+ *     true if string is numeric, false if not.
+ */
+func IsNumeric(s string) bool {
+	return numeric.MatchString(s)
 }

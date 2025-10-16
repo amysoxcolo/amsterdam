@@ -1,0 +1,47 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+domains:
+  - domain: "community"
+    services:
+      - id: "Profile"
+        index: 0
+        default: true
+        locked: true
+        requirePermission: ""
+        requireRole: ""
+        linkSequence: 4900
+        link: "/comm/[CID]/profile"
+        title: "Profile"
+      - id: "Admin"
+        index: 1
+        default: true
+        locked: true
+        requirePermission: "Community.Read"
+        requireRole: "Community.AnyAdmin"
+        linkSequence: 5000
+        link: "/TODO/comm/[CID]/admin"
+        title: "Administration"
+      - id: "Conference"
+        index: 3
+        default: true
+        locked: false
+        requirePermission: "Community.Read"
+        requireRole: ""
+        linkSequence: 500
+        link: "/TODO/comm/[CID]/conf"
+        title: "Conferences"
+      - id: "Members"
+        index: 4
+        default: true
+        locked: true
+        requirePermission: "Community.Read"
+        requireRole: "Community.Member"
+        linkSequence: 4800
+        link: "/TODO/comm/[CID]/members"
+        title: "Members"
