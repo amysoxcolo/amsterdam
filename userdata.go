@@ -416,7 +416,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("addrLast", b.String())
 	if ci.Country != nil {
 		country := countries.ByName(*ci.Country)
-		ctxt.VarMap().Set("country", country.String())
+		ctxt.VarMap().Set("country", country.Emoji()+" "+country.String())
 	}
 	if !pvtPhone && ci.Phone != nil {
 		ctxt.VarMap().Set("phone", *ci.Phone)

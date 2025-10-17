@@ -26,9 +26,6 @@ menudefs:
         disabled: true
       - text: "About Amsterdam"
         link: "/about"
-      - text: "System Administration"
-        link: "/sysadmin"
-        permission: "Global.SysAdminAccess"
   - id: "sysadmin"
     title: "System Administration"
     permSet: "user"

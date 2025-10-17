@@ -32,7 +32,6 @@ func SysAdminMenu(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to this page"))
 	}
-	ctxt.SetLeftMenu("top")
 	menu := ui.AmMenu("sysadmin")
 	ctxt.VarMap().Set("menu", menu)
 	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title)

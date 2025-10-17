@@ -19,6 +19,14 @@ import (
 	"golang.org/x/text/language/display"
 )
 
+/* ShowCommunity renders the community profile display.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	prefs, err := me.Prefs()
@@ -103,7 +111,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("addrLast", b.String())
 	if ci.Country != nil && *ci.Country != "" {
 		country := countries.ByName(*ci.Country)
-		ctxt.VarMap().Set("country", country.String())
+		ctxt.VarMap().Set("country", country.Emoji()+" "+country.String())
 	}
 	tag, err := comm.LanguageTag()
 	if err == nil && tag != nil {

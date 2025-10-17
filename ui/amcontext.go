@@ -12,6 +12,7 @@ package ui
 
 import (
 	"bytes"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -279,15 +280,20 @@ func (c *amContext) SetCommunityContext(param string) error {
 	if err != nil {
 		return err
 	}
-	mbr, lock, level, err := comm.Membership(c.CurrentUser())
-	if err != nil {
-		return err
-	}
-	c.community = comm
-	c.isMember = mbr
-	c.isMemberLocked = lock
-	if level > c.effectiveLevel {
-		c.effectiveLevel = level
+	if c.community == nil || c.community.Id != comm.Id {
+		mbr, lock, level, err := comm.Membership(c.CurrentUser())
+		if err != nil {
+			return err
+		}
+		c.community = comm
+		c.isMember = mbr
+		c.isMemberLocked = lock
+		if level > c.effectiveLevel {
+			c.effectiveLevel = level
+		}
+		if mbr {
+			c.session.Values["lastCommunity"] = comm.Id
+		}
 	}
 	return nil
 }
@@ -420,6 +426,12 @@ func AmCreateContext(ctxt echo.Context) (AmContext, error) {
 	} else {
 		rc.user = nil
 		rc.effectiveLevel = database.AmRole("NotInList").Level()
+	}
+	if !rc.user.IsAnon {
+		cp, ok := sess.Values["lastCommunity"]
+		if ok {
+			rc.SetCommunityContext(fmt.Sprintf("%d", cp))
+		}
 	}
 	return rc, err
 }

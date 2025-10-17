@@ -27,6 +27,15 @@ domains:
         linkSequence: 5000
         link: "/TODO/comm/[CID]/admin"
         title: "Administration"
+      - id: "SysAdmin"
+        index: 2
+        default: false
+        locked: true
+        requirePermission: "Global.SysAdminAccess"
+        requireRole: ""
+        linkSequence: 10000
+        link: "/sysadmin"
+        title: "System Administration"
       - id: "Conference"
         index: 3
         default: true
