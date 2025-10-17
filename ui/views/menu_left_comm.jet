@@ -20,12 +20,12 @@
             {{ if .Disabled }}
                 <div class="text-gray-500 mb-1">{{ .Text }}</div>
             {{ else }}
-                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900">{{ .Text }}</a>
+                <div class="mb-1"><a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900">{{ .Text }}</a></div>
             {{ end }}
         {{ end }}
     {{ end }}
-    {{ if .IsMember() }}
-    <div class="mb-1">&nbsp;</div>
-    <div class="mb-1"><a href="/TODO/comm/{{ comm.Alias }}/unjoin">Unjoin</a></div>
+    {{ if .IsMember() && !.IsMemberLocked() }}
+        <div class="mb-1">&nbsp;</div>
+        <div class="mb-1"><a href="/TODO/comm/{{ comm.Alias }}/unjoin" class="text-blue-700 hover:text-blue-900">Unjoin</a></div>
     {{ end }}   
 </div>

@@ -25,6 +25,7 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	log "github.com/sirupsen/logrus"
 )
 
 // setupEcho creates, configures, and returns a new Echo instance.
@@ -32,7 +33,11 @@ func setupEcho() *echo.Echo {
 	e := echo.New()
 	e.Logger = &EchoLogrusAdapter{}
 	e.Renderer = &ui.TemplateRenderer{}
-	e.Use(middleware.Recover())
+	if !config.CommandLine.DebugPanic {
+		e.Use(middleware.Recover())
+	} else {
+		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
+	}
 	e.Use(LogrusMiddleware)
 	e.Use(session.Middleware(ui.SessionStore))
 

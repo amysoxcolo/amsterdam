@@ -986,7 +986,7 @@ INSERT INTO communities (commid, createdate, read_lvl, write_lvl, create_lvl, de
                   host_uid, catid, membersonly, init_ftr, commname, language, synopsis, rules, alias)
     VALUES (2, '2000-12-01 00:00:00', 100, 58000, 58000, 65500, 500, 4, 2, 0, 1, 0, 'Coffeehouse', 'en-US',
             'A gathering place for news and information for all Amsterdam users.',
-	    'Like the man said, do unto others as you would have them do unto you.', 'Piazza');
+	    'Like the man said, do unto others as you would have them do unto you.', 'Coffeehouse');
 INSERT INTO contacts (contactid, locality, country, owner_uid, owner_commid)
     VALUES (4, 'Anywhere', 'US', 2, 2);
 INSERT INTO propcomm (cid, ndx, data) VALUES (2, 0, '');
@@ -1001,7 +1001,7 @@ INSERT INTO commftrs (commid, ftr_code)
 INSERT INTO commmember (commid, uid, granted_lvl, locked, hidden)
     VALUES (2, 1, 100, 1, 1);
 
-# Make the 'Administrator' user the host of La Piazza.
+# Make the 'Administrator' user the host of Coffeehouse.
 INSERT INTO commmember (commid, uid, granted_lvl, locked)
     VALUES (2, 2, 58500, 1);
 

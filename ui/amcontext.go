@@ -43,6 +43,7 @@ type AmContext interface {
 	Globals() *database.Globals
 	GlobalFlags() *util.OptionSet
 	IsMember() bool
+	IsMemberLocked() bool
 	LeftMenu() string
 	RC() int
 	OutputType() string
@@ -79,6 +80,7 @@ type amContext struct {
 	effectiveLevel uint16
 	community      *database.Community
 	isMember       bool
+	isMemberLocked bool
 }
 
 // ClearLoginCookie overwrites and removes the login cookie.
@@ -186,6 +188,11 @@ func (c *amContext) IsMember() bool {
 	return c.isMember
 }
 
+// IsMemberLocked returns true if the user is a "locked" member of the currentr community (cannot unjoin).
+func (c *amContext) IsMemberLocked() bool {
+	return c.isMemberLocked
+}
+
 // LeftMenu returns the current left menu selector.
 func (c *amContext) LeftMenu() string {
 	return c.session.Values["leftMenu"].(string)
@@ -272,12 +279,13 @@ func (c *amContext) SetCommunityContext(param string) error {
 	if err != nil {
 		return err
 	}
-	mbr, _, level, err := comm.Membership(c.CurrentUser())
+	mbr, lock, level, err := comm.Membership(c.CurrentUser())
 	if err != nil {
 		return err
 	}
 	c.community = comm
 	c.isMember = mbr
+	c.isMemberLocked = lock
 	if level > c.effectiveLevel {
 		c.effectiveLevel = level
 	}
@@ -454,6 +462,7 @@ func contextRecycler(incoming chan *amContext, done chan bool) {
 		c.effectiveLevel = 0
 		c.community = nil
 		c.isMember = false
+		c.isMemberLocked = false
 		freeContext.Put(c)
 	}
 	done <- true

@@ -135,10 +135,18 @@ func AmBuildCommunityMenu(comm *database.Community) (*MenuDefinition, error) {
 		return a.LinkSequence - b.LinkSequence
 	})
 	mia := make([]MenuItem, len(sdef))
+	md := MenuDefinition{
+		ID:      "community",
+		Title:   comm.Name,
+		PermSet: "community",
+		Tag:     "community",
+		Items:   mia,
+	}
 	for i, sd := range sdef {
 		mia[i].Text = sd.Title
 		mia[i].Link = strings.ReplaceAll(sd.Link, "[CID]", comm.Alias)
 		mia[i].Disabled = false
+		mia[i].P = &md
 		if sd.RequirePermission == "" {
 			if sd.RequireRole == "" {
 				mia[i].Permission = ""
@@ -155,13 +163,6 @@ func AmBuildCommunityMenu(comm *database.Community) (*MenuDefinition, error) {
 			}
 			mia[i].Permission = fmt.Sprintf("%d", v1)
 		}
-	}
-	md := MenuDefinition{
-		ID:      "community",
-		Title:   comm.Name,
-		PermSet: "community",
-		Items:   mia,
-		Tag:     "community",
 	}
 	menuCache.Add(comm.Id, &md)
 	return &md, nil

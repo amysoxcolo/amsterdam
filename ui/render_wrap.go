@@ -69,6 +69,9 @@ func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any)
  *     Standard Go error status.
  */
 func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
+	if input_err == nil {
+		log.Error("ErrorPage called with nil input error, WTF?")
+	}
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Internal Server Error")
 	ctxt.VarMap().Set("error", input_err.Error())
 	return "framed_template", "error.jet", nil

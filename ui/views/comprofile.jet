@@ -19,7 +19,7 @@
             <!-- Left Column: Image and Metadata -->
             <div class="flex-shrink-0 w-32">
                 <div class="border-2 border-gray-300 rounded mb-4">
-                    <img src="/img/static/default-community.jpg" 
+                    <img src="/img/builtin/default-community.jpg" 
                          alt="{{ commName}} community logo" class="w-full h-auto">
                 </div>
                 <div class="text-xs text-gray-700 space-y-2 mb-4">
@@ -79,7 +79,7 @@
                     <!-- Host -->
                     <div>
                         <strong>Host:</strong> 
-                        <a href="/users/{{ hostName }}" class="text-blue-700 hover:text-blue-900">{{ hostName }}</a>
+                        <a href="/user/{{ hostName }}" class="text-blue-700 hover:text-blue-900">{{ hostName }}</a>
                     </div>
 
                     <!-- Location -->

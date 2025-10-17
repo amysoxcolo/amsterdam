@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"embed"
 	"errors"
+	"fmt"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -85,6 +86,9 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 		}
 	}
 	ctxt.SetRC(http.StatusNotFound)
+	if err == nil {
+		err = fmt.Errorf("image not found: %s", ctxt.URLPath())
+	}
 	return ErrorPage(ctxt, err)
 }
 
