@@ -26,9 +26,9 @@
         <div class="flex items-center justify-between px-2 py-2">
             <!-- Site Logo -->
             <div class="w-1/5">
-                <a href="https://git.erbosoft.com/amy/amsterdam">
+                <a href="/">
                     <img src="/img/builtin/powered-by-amsterdam.png" 
-                         alt="Amsterdam Test" 
+                         alt="{{ GlobalConfig.Site.Title }}" 
                          class="w-35 h-20 mx-2 my-2">
                 </a>
             </div>
@@ -36,9 +36,7 @@
             <!-- Navigation Links -->
             <div class="w-2/5 text-center">
                 <div class="text-white font-bold text-base mb-2">
-                    <a href="/" class="text-yellow-300 hover:text-yellow-400">
-                        Front Page
-                    </a>
+                    <a href="/" class="text-yellow-300 hover:text-yellow-400">Front Page</a>
                 </div>
                 <div class="text-white font-bold text-base">
                     <a href="/TODO/help" class="text-yellow-300 hover:text-yellow-400">Help</a>
@@ -69,6 +67,10 @@
                     {{ if !isset(amsterdam_suppressLogin) || !amsterdam_suppressLogin }}
                         <span class="mx-2">-</span>
                         <a href="/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
+                        {{ if !.CurrentUser().VerifyEMail }}
+                            <span class="mx-2">|</span>
+                            <a href="/verify" class="text-yellow-300 hover:text-yellow-400">Verify E-Mail</a>
+                        {{ end }}
                         <span class="mx-2">|</span>
                         <a href="/profile" class="text-yellow-300 hover:text-yellow-400">Profile</a>
                     {{ end }}

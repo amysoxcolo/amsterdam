@@ -37,6 +37,7 @@ type RenderedSidebox struct {
 	Title        string
 	Subtext      *string
 	Items        []RenderedSideboxItem
+	Flags        map[string]bool
 }
 
 /* buildCommunitiesSidebox creates the data for the "My/Featured Communities" sidebox.
@@ -48,31 +49,41 @@ type RenderedSidebox struct {
  *     Standard Go error status.
  */
 func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	var err error
-	var anon bool
-	anon, err = database.AmIsUserAnon(uid)
+	user, err := database.AmGetUser(uid)
 	if err == nil {
-		if anon {
-			out.Title = "Featured Communities"
-		} else {
-			out.Title = "Your Communities"
-		}
-		var l []*database.Community
-		l, err = database.AmGetCommunitiesForUser(uid)
+		var g *database.Globals
+		g, err = database.AmGlobals()
 		if err == nil {
-			out.Items = make([]RenderedSideboxItem, len(l))
-			for i, c := range l {
-				out.Items[i].Text = c.Name
-				lk := fmt.Sprintf("/comm/%s/profile", c.Alias)
-				out.Items[i].Link = &lk
-				out.Items[i].Flags = make(map[string]bool)
-				var level uint16
-				level, err = database.AmGetCommunityAccessLevel(uid, c.Id)
-				if err == nil && database.AmTestPermission("Community.ShowAdmin", level) {
-					out.Items[i].Flags["admin"] = true
-				}
+			if user.IsAnon {
+				out.Title = "Featured Communities"
+			} else {
+				out.Title = "Your Communities"
 			}
-			out.TemplateName = "sb_ftrcomm.jet"
+			var l []*database.Community
+			l, err = database.AmGetCommunitiesForUser(uid)
+			if err == nil {
+				out.Items = make([]RenderedSideboxItem, len(l))
+				for i, c := range l {
+					out.Items[i].Text = c.Name
+					lk := fmt.Sprintf("/comm/%s/profile", c.Alias)
+					out.Items[i].Link = &lk
+					out.Items[i].Flags = make(map[string]bool)
+					var level uint16
+					level, err = database.AmGetCommunityAccessLevel(uid, c.Id)
+					if err == nil && database.AmTestPermission("Community.ShowAdmin", level) {
+						out.Items[i].Flags["admin"] = true
+					}
+				}
+				out.Flags = make(map[string]bool)
+				if user.IsAnon {
+					out.Flags["canManage"] = false
+					out.Flags["canCreate"] = false
+				} else {
+					out.Flags["canManage"] = true
+					out.Flags["canCreate"] = user.BaseLevel >= uint16(g.CommunityCreateLevel)
+				}
+				out.TemplateName = "sb_ftrcomm.jet"
+			}
 		}
 	}
 	_ = in
