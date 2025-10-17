@@ -52,3 +52,35 @@ menudefs:
       - text: "Import User Accounts"
         link: "/TODO/sysadmin/import"
         permission: "Global.SysAdminAccess"
+  - id: "communityadmin"
+    title: "Community Administration"
+    subtitle: "[CNAME]"
+    permSet: "community"
+    warning: >
+      <strong>Note:</strong> These tools provide access to sensitive administrative features for the
+      community. Use with care and review all changes before applying them to the community.
+    items:
+      - text: "Community Profile"
+        link: "/TODO/comm/[CID]/admin/profile"
+        permission: "Community.ShowAdmin"
+      - text: "Set Community Category"
+        link: "/TODO/comm/[CID]/admin/category"
+        permission: "Community.ShowAdmin"
+        ifdef: "USECAT"
+      - text: "Set Community Services"
+        link: "/TODO/comm/[CID]/admin/services"
+        permission: "Community.ShowAdmin"
+        disabled: true
+      - text: "Membership Control"
+        link: "/TODO/comm/[CID]/admin/members"
+        permission: "Community.ShowAdmin"
+      - text: "E-Mail to All Members"
+        link: "/TODO/comm/[CID]/admin/massmail"
+        permission: "Community.MassMail"
+      - text: "Display Audit Records"
+        link: "/TODO/comm/[CID]/admin/audit"
+        permission: "Community.ShowAdmin"
+      - text: "Delete Community"
+        link: "/TODO/comm/[CID]/admin/delete"
+        permission: "Community.Destroy"
+        hazard: true

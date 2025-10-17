@@ -184,3 +184,5 @@ permissions:
     role: "Community.AnyAdmin"
   - name: "Community.MassMail"
     role: "Community.AnyAdmin"
+  - name: "Community.Destroy"
+    role: "Community.Host"

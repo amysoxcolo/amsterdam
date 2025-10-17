@@ -18,7 +18,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
-/* SysAdminMenu renders the system administration menu.
+/* CommunityAdminMenu renders the community administration menu.
  * Parameters:
  *     ctxt - The AmContext for the request.
  * Returns:
@@ -26,15 +26,25 @@ import (
  *     Data as a parameter for the command string.
  *     Standard Go error status.
  */
-func SysAdminMenu(ctxt ui.AmContext) (string, any, error) {
-	u := ctxt.CurrentUser()
-	if !database.AmTestPermission("Global.SysAdminAccess", u.BaseLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to this page"))
+func CommunityAdminMenu(ctxt ui.AmContext) (string, any, error) {
+	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, err)
 	}
-	menu := ui.AmMenu("sysadmin")
-	ctxt.VarMap().Set("menu", menu)
-	ctxt.VarMap().Set("defs", make(map[string]bool))
-	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title)
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.ShowAdmin", ctxt.EffectiveLevel()) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+	}
+	menu := ui.AmMenu("communityadmin")
+	defs := make(map[string]bool)
+	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
+		defs["USECAT"] = true
+	}
+	ctxt.SetLeftMenu("community")
+	ctxt.VarMap().Set("menu", menu.FilterCommunity(comm))
+	ctxt.VarMap().Set("defs", defs)
+	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title+" - "+comm.Name)
 	return "framed_template", "menu.jet", nil
 }

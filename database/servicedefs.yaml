@@ -25,7 +25,7 @@ domains:
         requirePermission: "Community.Read"
         requireRole: "Community.AnyAdmin"
         linkSequence: 5000
-        link: "/TODO/comm/[CID]/admin"
+        link: "/comm/[CID]/admin"
         title: "Administration"
       - id: "SysAdmin"
         index: 2

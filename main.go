@@ -65,6 +65,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/quick_email", ui.AmWrap(QuickEMail))
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 	e.GET("/comm/:cid/profile", ui.AmWrap(ShowCommunity))
+	e.GET("/comm/:cid/admin", ui.AmWrap(CommunityAdminMenu))
 
 	return e
 }

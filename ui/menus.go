@@ -28,7 +28,9 @@ type MenuItem struct {
 	Text       string `yaml:"text"`
 	Link       string `yaml:"link"`
 	Disabled   bool   `yaml:"disabled"`
+	Hazard     bool   `yaml:"hazard"`
 	Permission string `yaml:"permission"`
+	Ifdef      string `yaml:"ifdef"`
 	P          *MenuDefinition
 }
 
@@ -63,12 +65,36 @@ func (mi *MenuItem) Show(ctxt AmContext) bool {
 
 // MenuDefinition represents a full menu definition.
 type MenuDefinition struct {
-	ID      string     `yaml:"id"`
-	Title   string     `yaml:"title"`
-	PermSet string     `yaml:"permSet"`
-	Warning string     `yaml:"warning"`
-	Items   []MenuItem `yaml:"items"`
-	Tag     string
+	ID       string     `yaml:"id"`
+	Title    string     `yaml:"title"`
+	Subtitle string     `yaml:"subtitle"`
+	PermSet  string     `yaml:"permSet"`
+	Warning  string     `yaml:"warning"`
+	Items    []MenuItem `yaml:"items"`
+	Tag      string
+}
+
+// FilterCommunity creates a copy of this menu filtered to the specified community.
+func (mdef *MenuDefinition) FilterCommunity(comm *database.Community) *MenuDefinition {
+	newmd := MenuDefinition{
+		ID:       mdef.ID,
+		Title:    mdef.Title,
+		Subtitle: strings.ReplaceAll(mdef.Subtitle, "[CNAME]", comm.Name),
+		PermSet:  mdef.PermSet,
+		Warning:  mdef.Warning,
+		Items:    make([]MenuItem, len(mdef.Items)),
+		Tag:      mdef.Tag,
+	}
+	for i, it := range mdef.Items {
+		newmd.Items[i].Text = it.Text
+		newmd.Items[i].Link = strings.ReplaceAll(it.Link, "[CID]", comm.Alias)
+		newmd.Items[i].Disabled = it.Disabled
+		newmd.Items[i].Hazard = it.Hazard
+		newmd.Items[i].Permission = it.Permission
+		newmd.Items[i].Ifdef = it.Ifdef
+		newmd.Items[i].P = &newmd
+	}
+	return &newmd
 }
 
 // MenuDefs represents the set of all menu definitions.

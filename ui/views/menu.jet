@@ -10,6 +10,9 @@
     <!-- Page Title -->
     <div class="mb-6">
         <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ menu.Title }}</h1>
+        {{ if menu.Subtitle != "" }}
+            <span class="text-blue-800 text-2xl font-bold ml-2">{{ menu.Subtitle }}</span>
+        {{ end }}
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>
 
@@ -19,13 +22,19 @@
             <nav class="space-y-3">
                 {{ ctxt := . }}
                 {{ range menu.Items }}
-                    {{ if .Show(ctxt) }}
+                    {{ vis := true }}
+                    {{ if .Ifdef != "" && !defs[.Ifdef] }}{{ vis = false }}{{ end }}
+                    {{ if vis && .Show(ctxt) }}
                         <div class="flex items-start gap-3">
                             <span class="text-lg pt-0.5">🟣</span>
                             {{ if .Disabled }}
                                 <span class="text-gray-500 font-medium">{{ .Text }}</span>
                             {{ else }}
-                                <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-medium">{{ .Text }}</a>
+                                {{ if .Hazard }}
+                                    <a href="{{ .Link }}" class="text-red-700 hover:text-red-900 font-medium">⚠️ {{ .Text }}</a>
+                                {{ else }}
+                                    <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-medium">{{ .Text }}</a>
+                                {{ end }}
                             {{ end }}
                         </div>
                     {{ end }}
