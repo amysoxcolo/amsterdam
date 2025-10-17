@@ -11,12 +11,19 @@ package ui
 
 import (
 	_ "embed"
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/util"
+	lru "github.com/hashicorp/golang-lru"
 	"gopkg.in/yaml.v3"
 )
 
-// MenuItem represents an itrem within a menu definition.
+// MenuItem represents an item within a menu definition.
 type MenuItem struct {
 	Text       string `yaml:"text"`
 	Link       string `yaml:"link"`
@@ -35,10 +42,23 @@ func (mi *MenuItem) Show(ctxt AmContext) bool {
 	switch mi.P.PermSet {
 	case "user":
 		eperm = u.BaseLevel
+	case "community":
+		eperm = ctxt.EffectiveLevel()
 	default:
 		eperm = database.AmRole("NotInList").Level()
 	}
-	return database.AmTestPermission(mi.Permission, eperm)
+	if util.IsNumeric(mi.Permission) {
+		v, _ := strconv.Atoi(mi.Permission)
+		return uint16(v) <= eperm
+	}
+	switch mi.P.PermSet {
+	case "user":
+		return database.AmTestPermission(mi.Permission, eperm)
+	case "community":
+		return ctxt.CurrentCommunity().TestPermission(mi.Permission, eperm)
+	default:
+		return false
+	}
 }
 
 // MenuDefinition represents a full menu definition.
@@ -48,6 +68,7 @@ type MenuDefinition struct {
 	PermSet string     `yaml:"permSet"`
 	Warning string     `yaml:"warning"`
 	Items   []MenuItem `yaml:"items"`
+	Tag     string
 }
 
 // MenuDefs represents the set of all menu definitions.
@@ -62,9 +83,19 @@ var initMenuData []byte
 // menuDefinitions gives the menu definitions.
 var menuDefinitions MenuDefs
 
+// Cache of community menus.
+var menuCache *lru.Cache
+
+// Mutex controlling access to the cache.
+var menuCacheMutex sync.Mutex
+
 // init loads the menu definitions.
 func init() {
-	if err := yaml.Unmarshal(initMenuData, &menuDefinitions); err != nil {
+	var err error
+	if menuCache, err = lru.New(100); err != nil {
+		panic(err)
+	}
+	if err = yaml.Unmarshal(initMenuData, &menuDefinitions); err != nil {
 		panic(err) // can't happen
 	}
 	menuDefinitions.table = make(map[string]*MenuDefinition)
@@ -73,10 +104,65 @@ func init() {
 		for j := range menuDefinitions.D[i].Items {
 			menuDefinitions.D[i].Items[j].P = &(menuDefinitions.D[i])
 		}
+		menuDefinitions.D[i].Tag = ""
 	}
 }
 
 // AmMenu returns a menu definition.
 func AmMenu(name string) *MenuDefinition {
 	return menuDefinitions.table[name]
+}
+
+/* AmBuildCommunityMenu buids a community menu for the specified community.
+ * Parameters:
+ *     comm - The community to build the menu for.
+ * Returns:
+ *     The new menu definition.
+ *     Standard Go error status.
+ */
+func AmBuildCommunityMenu(comm *database.Community) (*MenuDefinition, error) {
+	menuCacheMutex.Lock()
+	defer menuCacheMutex.Unlock()
+	m, ok := menuCache.Get(comm.Id)
+	if ok {
+		return m.(*MenuDefinition), nil
+	}
+	sdef, err := database.AmGetCommunityServices(comm.Id)
+	if err != nil {
+		return nil, err
+	}
+	slices.SortFunc(sdef, func(a, b *database.ServiceDef) int {
+		return a.LinkSequence - b.LinkSequence
+	})
+	mia := make([]MenuItem, len(sdef))
+	for i, sd := range sdef {
+		mia[i].Text = sd.Title
+		mia[i].Link = strings.ReplaceAll(sd.Link, "[CID]", comm.Alias)
+		mia[i].Disabled = false
+		if sd.RequirePermission == "" {
+			if sd.RequireRole == "" {
+				mia[i].Permission = ""
+			} else {
+				mia[i].Permission = fmt.Sprintf("%d", database.AmRole(sd.RequireRole).Level())
+			}
+		} else if sd.RequireRole == "" {
+			mia[i].Permission = sd.RequirePermission
+		} else {
+			v1 := comm.PermissionLevel(sd.RequirePermission)
+			v2 := database.AmRole(sd.RequireRole).Level()
+			if v2 > v1 {
+				v1 = v2
+			}
+			mia[i].Permission = fmt.Sprintf("%d", v1)
+		}
+	}
+	md := MenuDefinition{
+		ID:      "community",
+		Title:   comm.Name,
+		PermSet: "community",
+		Items:   mia,
+		Tag:     "community",
+	}
+	menuCache.Add(comm.Id, &md)
+	return &md, nil
 }

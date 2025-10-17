@@ -63,9 +63,9 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 			if err == nil {
 				dlg.Field("remind").Value = u.PassReminder
 				dlg.Field("prefix").SetVal(ci.Prefix)
-				dlg.Field("first").Value = ci.GivenName
+				dlg.Field("first").SetVal(ci.GivenName)
 				dlg.Field("mid").SetVal(ci.MiddleInit)
-				dlg.Field("last").Value = ci.FamilyName
+				dlg.Field("last").SetVal(ci.FamilyName)
 				dlg.Field("suffix").SetVal(ci.Suffix)
 				dlg.Field("company").SetVal(ci.Company)
 				dlg.Field("addr1").SetVal(ci.Addr1)
@@ -141,9 +141,9 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 				if err == nil {
 					nci := ci.Clone()
 					nci.Prefix = dlg.Field("prefix").ValPtr()
-					nci.GivenName = dlg.Field("first").Value
+					nci.GivenName = dlg.Field("first").ValPtr()
 					nci.MiddleInit = dlg.Field("mid").ValPtr()
-					nci.FamilyName = dlg.Field("last").Value
+					nci.FamilyName = dlg.Field("last").ValPtr()
 					nci.Suffix = dlg.Field("suffix").ValPtr()
 					nci.Company = dlg.Field("company").ValPtr()
 					nci.Addr1 = dlg.Field("addr1").ValPtr()
@@ -369,11 +369,15 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	if ci.Prefix != nil && *ci.Prefix != "" {
 		b.WriteString(*ci.Prefix + " ")
 	}
-	b.WriteString(ci.GivenName)
+	if ci.GivenName != nil {
+		b.WriteString(*ci.GivenName)
+	}
 	if ci.MiddleInit != nil && *ci.MiddleInit != "" && *ci.MiddleInit != " " {
 		b.WriteString(" " + *ci.MiddleInit + ".")
 	}
-	b.WriteString(" " + ci.FamilyName)
+	if ci.FamilyName != nil {
+		b.WriteString(" " + *ci.FamilyName)
+	}
 	if ci.Suffix != nil && *ci.Suffix != "" {
 		b.WriteString(" " + *ci.Suffix)
 	}

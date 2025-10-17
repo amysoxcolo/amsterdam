@@ -34,6 +34,21 @@ func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any)
 		err = ctxt.Render(amctxt.RC(), fmt.Sprintf("%v", data), amctxt)
 	case "framed_template":
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
+		menus := make([]*MenuDefinition, 2)
+		switch amctxt.LeftMenu() {
+		case "top":
+			menus[0] = AmMenu("top")
+		case "community":
+			md, err := AmBuildCommunityMenu(amctxt.CurrentCommunity())
+			if err != nil {
+				return err
+			}
+			menus[0] = md
+		default:
+			return fmt.Errorf("unknown left menu context: %s", amctxt.LeftMenu())
+		}
+		menus[1] = AmMenu("fixed")
+		amctxt.VarMap().Set("amsterdam_leftMenus", menus)
 		err = ctxt.Render(amctxt.RC(), "frame.jet", amctxt)
 	default:
 		err = fmt.Errorf("unknown rendering type: %s", command)
@@ -69,11 +84,12 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
 func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 	return func(ctxt echo.Context) error {
 		// Create the AmContext.
-		amctxt, aerr := NewAmContext(ctxt)
+		amctxt, aerr := AmCreateContext(ctxt)
 		if aerr != nil {
 			ctxt.Logger().Errorf("Session creation error: %v", aerr)
 			return aerr
 		}
+		defer amctxt.Done()
 
 		// Check IP banning.
 		banmsg, banerr := database.AmTestIPBan(ctxt.RealIP())

@@ -165,16 +165,39 @@ func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
  *     true if the user has the permission, false if not.
  *     Standard Go error status.
  */
-func (c *Community) TestPermission(user *User, perm string) (bool, error) {
-	member, _, level, err := c.Membership(user)
-	if err != nil {
-		return false, err
+func (c *Community) TestPermission(perm string, level uint16) bool {
+	switch perm {
+	case "Community.Read":
+		return level >= c.ReadLevel
+	case "Community.Write":
+		return level >= c.WriteLevel
+	case "Community.Create":
+		return level >= c.CreateLevel
+	case "Community.Delete":
+		return level >= c.DeleteLevel
+	case "Community.Join":
+		return level >= c.JoinLevel
+	default:
+		return AmTestPermission(perm, level)
 	}
-	effectiveLevel := user.BaseLevel
-	if member && level > effectiveLevel {
-		effectiveLevel = level
+}
+
+// PermissionLevel returns trhe permission level for a permission name.
+func (c *Community) PermissionLevel(perm string) uint16 {
+	switch perm {
+	case "Community.Read":
+		return c.ReadLevel
+	case "Community.Write":
+		return c.WriteLevel
+	case "Community.Create":
+		return c.CreateLevel
+	case "Community.Delete":
+		return c.DeleteLevel
+	case "Community.Join":
+		return c.JoinLevel
+	default:
+		return AmPermissionLevel(perm)
 	}
-	return AmTestPermission(perm, effectiveLevel), nil
 }
 
 /* AmGetCommunity returns a reference to the specified community.

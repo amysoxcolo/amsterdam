@@ -226,6 +226,9 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 			}
 		}
 	}
+	if d.MenuSelector != "" && d.MenuSelector != "nochange" {
+		ctxt.SetLeftMenu(d.MenuSelector)
+	}
 	ctxt.VarMap().Set("amsterdam_required", required)
 	ctxt.VarMap().Set("amsterdam_dialog", d)
 	ctxt.VarMap().Set("amsterdam_pageTitle", d.Title)

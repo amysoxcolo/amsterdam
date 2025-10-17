@@ -81,11 +81,17 @@
     <div class="flex">
         <!-- LEFT SIDEBAR -->
         <div class="w-48 bg-blue-400 p-2">
-            {{ .SetScratch("__menu", AmMenu("top")) }}
-            {{ .SubRender("menu_left.jet") | raw }}
-            <div class="mb-2 mt-2">&nbsp;</div>
-            {{ .SetScratch("__menu", AmMenu("fixed")) }}
-            {{ .SubRender("menu_left.jet") | raw }}
+            {{ range i, m := amsterdam_leftMenus }}
+                {{ if i > 0 }}
+                    <div class="mb-2 mt-2">&nbsp;</div>
+                {{ end }}
+                {{ .SetScratch("__menu", m) }}
+                {{ if m.Tag == "community" }}
+                    {{ .SubRender("menu_left_comm.jet") | raw }}
+                {{ else }}
+                    {{ .SubRender("menu_left.jet") | raw }}
+                {{ end }}
+            {{ end }}
         </div>
 
         <!-- MAIN CONTENT -->

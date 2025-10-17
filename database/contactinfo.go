@@ -22,8 +22,8 @@ import (
 type ContactInfo struct {
 	Mutex        sync.Mutex
 	ContactId    int32      `db:"contactid"`
-	GivenName    string     `db:"given_name"`
-	FamilyName   string     `db:"family_name"`
+	GivenName    *string    `db:"given_name"`
+	FamilyName   *string    `db:"family_name"`
 	MiddleInit   *string    `db:"middle_init"`
 	Prefix       *string    `db:"prefix"`
 	Suffix       *string    `db:"suffix"`

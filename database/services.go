@@ -27,7 +27,7 @@ type ServiceDef struct {
 	RequirePermission string `yaml:"requirePermission"`
 	RequireRole       string `yaml:"requireRole"`
 	LinkSequence      int    `yaml:"linkSequence"`
-	Link              int    `yaml:"link"`
+	Link              string `yaml:"link"`
 	Title             string `yaml:"title"`
 }
 

@@ -63,7 +63,7 @@ func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sideb
 			out.Items = make([]RenderedSideboxItem, len(l))
 			for i, c := range l {
 				out.Items[i].Text = c.Name
-				lk := fmt.Sprintf("/TODO/community/%s", c.Alias)
+				lk := fmt.Sprintf("/comm/%s/profile", c.Alias)
 				out.Items[i].Link = &lk
 				out.Items[i].Flags = make(map[string]bool)
 				var level uint16
@@ -181,6 +181,7 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("sideboxes", rc)
 
 	// Final data set.
+	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("amsterdam_genRefresh", true)
 	return "framed_template", "top.jet", nil
 }

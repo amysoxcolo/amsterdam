@@ -25,27 +25,12 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	globals, err := database.AmGlobals()
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
-	globalFlags, err := globals.Flags()
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm, err := database.AmGetCommunityFromParam(ctxt.URLParam("cid"))
+	err = ctxt.SetCommunityContext(ctxt.URLParam("cid"))
 	if err != nil {
 		ctxt.SetRC(http.StatusNotFound)
 		return ui.ErrorPage(ctxt, err)
 	}
-	member, _, level, err := comm.Membership(me)
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
-	effectiveLevel := me.BaseLevel
-	if member && level > effectiveLevel {
-		effectiveLevel = level
-	}
+	comm := ctxt.CurrentCommunity()
 	ci, err := comm.ContactInfo()
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -55,14 +40,14 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 	var cats []*database.Category
-	if !globalFlags.Get(database.GlobalFlagNoCategories) {
+	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
 		cats, err = database.AmGetCategoryHierarchy(comm.CategoryId)
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
 	}
 	var pvtAddr bool
-	if database.AmTestPermission("Global.SeeHiddenContactInfo", effectiveLevel) {
+	if ctxt.TestPermission("Global.SeeHiddenContactInfo") {
 		pvtAddr = false
 	} else {
 		pvtAddr = ci.PrivateAddr
@@ -79,14 +64,14 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	if comm.LastUpdate != nil {
 		ctxt.VarMap().Set("dateLastUpdate", loc.Strftime("%x %X", (*comm.LastUpdate).In(tz)))
 	}
-	if !member && effectiveLevel >= comm.JoinLevel {
+	if !ctxt.IsMember() && ctxt.EffectiveLevel() >= comm.JoinLevel {
 		ctxt.VarMap().Set("canJoin", true)
 	}
-	if member && !me.IsAnon {
+	if ctxt.IsMember() && !me.IsAnon {
 		ctxt.VarMap().Set("canInvite", true)
 	}
 	ctxt.VarMap().Set("public", comm.Public())
-	if !globalFlags.Get(database.GlobalFlagNoCategories) {
+	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
 		ctxt.VarMap().Set("categories", cats)
 	}
 	if comm.Synopsis != nil && *comm.Synopsis != "" {
@@ -131,6 +116,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("homePage", *ci.URL)
 	}
 
+	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Community Profile: "+comm.Name)
 	return "framed_template", "comprofile.jet", nil
 }

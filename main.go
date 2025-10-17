@@ -78,6 +78,8 @@ func main() {
 	ui.SetupTemplates()
 	closer = ui.SetupSessionManager()
 	defer closer()
+	closer = ui.SetupAmContext()
+	defer closer()
 
 	// Set up Echo.
 	e := setupEcho()

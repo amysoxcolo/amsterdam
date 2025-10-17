@@ -289,6 +289,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("you cannot create a new account while logged in on an existing one. You must log out first"))
 	}
 
+	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("target", target)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "New Account User Agreement")
 	ctxt.VarMap().Set("amsterdam_suppressLogin", true)
@@ -370,13 +371,13 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 						// create and save contact info
 						ci := database.AmNewUserContactInfo(user.Uid)
 						ci.Prefix = dlg.Field("prefix").ValPtr()
-						ci.GivenName = dlg.Field("first").Value
+						ci.GivenName = dlg.Field("first").ValPtr()
 						mid := dlg.Field("mid").Value
 						if mid == "" {
 							mid = " "
 						}
 						ci.MiddleInit = &mid
-						ci.FamilyName = dlg.Field("last").Value
+						ci.FamilyName = dlg.Field("last").ValPtr()
 						ci.Suffix = dlg.Field("suffix").ValPtr()
 						ci.Locality = dlg.Field("loc").ValPtr()
 						ci.Region = dlg.Field("reg").ValPtr()
@@ -446,6 +447,7 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
 				msg.AddVariable("username", user.Username)
 				msg.AddVariable("password", newpass)
 				msg.Send()
+				ctxt.SetLeftMenu("top")
 				ctxt.VarMap().Set("amsterdam_pageTitle", "Your Password Has Been Changed")
 				return "framed_template", "password_changed.jet", nil
 			}

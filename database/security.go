@@ -254,5 +254,26 @@ func AmRoleList(id string) RoleList {
  *     true if the permission test is satisfied, false if not.
  */
 func AmTestPermission(id string, level uint16) bool {
-	return securityRoot.permsMap[id].level < level
+	return securityRoot.permsMap[id].level <= level
+}
+
+// AmPermissionLevel returns a level value for a permission.
+func AmPermissionLevel(id string) uint16 {
+	return securityRoot.permsMap[id].level
+}
+
+/* AmCombinePermissionRole combines a permission and a role into a single permission level.
+ * Parameters:
+ *     perm - Permission to use.
+ *     role - Role to use.
+ * Returns:
+ *     The combined permission level.
+ */
+func AmCombinePermissionRole(perm string, role string) uint16 {
+	p1 := securityRoot.permsMap[perm].level
+	p2 := securityRoot.roleMap[role].level
+	if p1 > p2 {
+		return p1
+	}
+	return p2
 }

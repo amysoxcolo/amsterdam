@@ -19,6 +19,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
@@ -30,12 +31,19 @@ import (
 type AmContext interface {
 	ClearLoginCookie()
 	ClearSession()
+	CurrentCommunity() *database.Community
 	CurrentUser() *database.User
 	CurrentUserId() int32
+	Done()
+	EffectiveLevel() uint16
 	FormField(string) string
 	FormFieldInt(string) (int, error)
 	FormFieldIsSet(string) bool
 	FormFile(string) (*multipart.FileHeader, error)
+	Globals() *database.Globals
+	GlobalFlags() *util.OptionSet
+	IsMember() bool
+	LeftMenu() string
 	RC() int
 	OutputType() string
 	Parameter(string) string
@@ -43,11 +51,14 @@ type AmContext interface {
 	ReplaceUser(*database.User)
 	SaveSession() error
 	SubRender(string) ([]byte, error)
+	SetCommunityContext(string) error
+	SetLeftMenu(string)
 	SetLoginCookie(string)
 	SetOutputType(string)
 	SetRC(int)
 	GetScratch(string) any
 	SetScratch(string, any)
+	TestPermission(string) bool
 	URLParam(string) string
 	URLParamInt(string) (int, error)
 	URLPath() string
@@ -56,12 +67,18 @@ type AmContext interface {
 
 // amContext is the internal structure that implements AmContext.
 type amContext struct {
-	echoContext echo.Context
-	httprc      int
-	rendervars  jet.VarMap
-	outputType  string
-	scratchpad  map[string]any
-	session     *sessions.Session
+	echoContext    echo.Context
+	httprc         int
+	rendervars     jet.VarMap
+	outputType     string
+	scratchpad     map[string]any
+	session        *sessions.Session
+	globals        *database.Globals
+	globalFlags    *util.OptionSet
+	user           *database.User
+	effectiveLevel uint16
+	community      *database.Community
+	isMember       bool
 }
 
 // ClearLoginCookie overwrites and removes the login cookie.
@@ -77,20 +94,41 @@ func (c *amContext) ClearLoginCookie() {
 // ClearSession clears the current session.
 func (c *amContext) ClearSession() {
 	AmResetSession(c.session)
+	c.user = nil
+	c.effectiveLevel = 0
+}
+
+// CurrentCommunity returns the current community, if one's been set.
+func (c *amContext) CurrentCommunity() *database.Community {
+	return c.community
 }
 
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
-	u, err := database.AmGetUser(AmSessionUid(c.session))
-	if err != nil {
-		log.Errorf("unable to retrieve current user")
+	if c.user == nil {
+		u, err := database.AmGetUser(AmSessionUid(c.session))
+		if err != nil {
+			log.Errorf("unable to retrieve current user")
+		}
+		c.user = u
+		c.effectiveLevel = u.BaseLevel
 	}
-	return u
+	return c.user
 }
 
 // CurrentUserId returns the current user ID.
 func (c *amContext) CurrentUserId() int32 {
 	return AmSessionUid(c.session)
+}
+
+// Done signals that we're done with this context and it can be recycled.
+func (c *amContext) Done() {
+	amContextRecycleBin <- c
+}
+
+// EffectiveLevel returns the user's effective access level (in terms of current community, if any).
+func (c *amContext) EffectiveLevel() uint16 {
+	return c.effectiveLevel
 }
 
 /* FormField returns the value of a form field from the request.
@@ -133,6 +171,26 @@ func (c *amContext) FormFile(name string) (*multipart.FileHeader, error) {
 	return c.echoContext.FormFile(name)
 }
 
+// Globals returns a reference to the database globals.
+func (c *amContext) Globals() *database.Globals {
+	return c.globals
+}
+
+// GlobalFlags returns a reference to the database global flags.
+func (c *amContext) GlobalFlags() *util.OptionSet {
+	return c.globalFlags
+}
+
+// IsMember returns true if the user is a member of the current community.
+func (c *amContext) IsMember() bool {
+	return c.isMember
+}
+
+// LeftMenu returns the current left menu selector.
+func (c *amContext) LeftMenu() string {
+	return c.session.Values["leftMenu"].(string)
+}
+
 // RC returns the HTTP result code for the current operation.
 func (c *amContext) RC() int {
 	return c.httprc
@@ -168,6 +226,8 @@ func (c *amContext) RemoteIP() string {
  */
 func (c *amContext) ReplaceUser(u *database.User) {
 	AmSetSessionUser(c.session, u)
+	c.user = u
+	c.effectiveLevel = u.BaseLevel
 }
 
 // SaveSession saves the session link to cookies.
@@ -199,6 +259,34 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err = view.Execute(buf, c.VarMap(), c)
 	return buf.Bytes(), err
+}
+
+/* SetCommunityContext establishes the community context from a (ID or alias) parameter.
+ * Parameters:
+ *     param - String parameter selecting the community.
+ * Returns:
+ *     Standard Go error status.
+ */
+func (c *amContext) SetCommunityContext(param string) error {
+	comm, err := database.AmGetCommunityFromParam(param)
+	if err != nil {
+		return err
+	}
+	mbr, _, level, err := comm.Membership(c.CurrentUser())
+	if err != nil {
+		return err
+	}
+	c.community = comm
+	c.isMember = mbr
+	if level > c.effectiveLevel {
+		c.effectiveLevel = level
+	}
+	return nil
+}
+
+// SetLeftMenu sets the current topmost left menu name value.
+func (c *amContext) SetLeftMenu(name string) {
+	c.session.Values["leftMenu"] = name
 }
 
 /* SetLoginCookie adds the login cookie to the result output.
@@ -240,6 +328,11 @@ func (c *amContext) SetScratch(name string, val any) {
 	c.scratchpad[name] = val
 }
 
+// TestPermission tests the current user against permissions.
+func (c *amContext) TestPermission(perm string) bool {
+	return database.AmTestPermission(perm, c.effectiveLevel)
+}
+
 // URLParam returns the value of a URL parameter.
 func (c *amContext) URLParam(name string) string {
 	return c.echoContext.Param(name)
@@ -267,22 +360,42 @@ var defoptions *sessions.Options = &sessions.Options{
 	HttpOnly: true,
 }
 
-/* NewAmContext creates a new AmContext wrapping the Echo context.
+// freeContext is a free list for amContext structures.
+var freeContext util.FreeList[amContext]
+
+// amContextRecycleBin is the channel we put contexts on to be recycled.
+var amContextRecycleBin chan *amContext
+
+/* AmCreateContext creates a new AmContext wrapping the Echo context.
  * Parameters:
  *     ctxt - The Echo context to be wrapped.
  * Returns:
  *     A new Amsterdam context wrapping that context.
  *     Standard Go error status.
  */
-func NewAmContext(ctxt echo.Context) (AmContext, error) {
-	rc := amContext{
-		echoContext: ctxt,
-		httprc:      http.StatusOK,
-		rendervars:  make(jet.VarMap),
-		outputType:  "",
-		scratchpad:  nil,
+func AmCreateContext(ctxt echo.Context) (AmContext, error) {
+	rc := freeContext.Get()
+	if rc == nil {
+		rc = &amContext{
+			httprc:     http.StatusOK,
+			rendervars: make(jet.VarMap),
+			outputType: "",
+			scratchpad: nil,
+		}
 	}
-	ctxt.Set("amsterdam_context", &rc)
+
+	var err error
+	if rc.globals, err = database.AmGlobals(); err != nil {
+		amContextRecycleBin <- rc
+		return nil, err
+	}
+	if rc.globalFlags, err = rc.globals.Flags(); err != nil {
+		amContextRecycleBin <- rc
+		return nil, err
+	}
+
+	rc.echoContext = ctxt
+	ctxt.Set("amsterdam_context", rc)
 	sess, err := session.Get("AMSTERDAM_SESSION", ctxt)
 	if err == nil {
 		rc.session = sess
@@ -293,7 +406,14 @@ func NewAmContext(ctxt echo.Context) (AmContext, error) {
 			AmHitSession(sess)
 		}
 	}
-	return &rc, err
+	rc.user, err = database.AmGetUser(AmSessionUid(sess))
+	if err == nil {
+		rc.effectiveLevel = rc.user.BaseLevel
+	} else {
+		rc.user = nil
+		rc.effectiveLevel = database.AmRole("NotInList").Level()
+	}
+	return rc, err
 }
 
 /* AmContextFromEchoContext returns the AmContext associated with an Echo context.
@@ -311,4 +431,41 @@ func AmContextFromEchoContext(ctxt echo.Context) AmContext {
 		}
 	}
 	return nil
+}
+
+// contextRecycler is the task that recycles context blocks.
+func contextRecycler(incoming chan *amContext, done chan bool) {
+	for c := range incoming {
+		c.echoContext = nil
+		c.httprc = http.StatusOK
+		for k := range c.rendervars {
+			delete(c.rendervars, k)
+		}
+		c.outputType = ""
+		if c.scratchpad != nil {
+			for k := range c.scratchpad {
+				delete(c.scratchpad, k)
+			}
+		}
+		c.session = nil
+		c.globals = nil
+		c.globalFlags = nil
+		c.user = nil
+		c.effectiveLevel = 0
+		c.community = nil
+		c.isMember = false
+		freeContext.Put(c)
+	}
+	done <- true
+}
+
+// SetupAmContext starts the recycler for contexts.
+func SetupAmContext() func() {
+	amContextRecycleBin = make(chan *amContext, 16)
+	done := make(chan bool)
+	go contextRecycler(amContextRecycleBin, done)
+	return func() {
+		close(amContextRecycleBin)
+		<-done
+	}
 }

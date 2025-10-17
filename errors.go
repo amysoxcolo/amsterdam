@@ -22,6 +22,7 @@ import (
  *     Standard Go error status.
  */
 func NotImplPage(ctxt ui.AmContext) (string, any, error) {
+	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Function Not Implemented")
 	ctxt.VarMap().Set("path", ctxt.URLPath())
 	return "framed_template", "notimpl.jet", nil
