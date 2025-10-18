@@ -208,6 +208,7 @@ func (r *CfgRole) LevelStr() string {
 type RoleList interface {
 	Roles() []Role
 	Default() Role
+	FindForLevel(uint16) Role
 }
 
 func (r *CfgRoleList) Roles() []Role {
@@ -220,6 +221,15 @@ func (r *CfgRoleList) Roles() []Role {
 
 func (r *CfgRoleList) Default() Role {
 	return r.defptr
+}
+
+func (r *CfgRoleList) FindForLevel(level uint16) Role {
+	for _, rp := range r.roleptrs {
+		if rp.level == level {
+			return rp
+		}
+	}
+	return nil
 }
 
 /* AmRole returns a Role given a string ID.

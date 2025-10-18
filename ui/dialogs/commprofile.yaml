@@ -24,7 +24,7 @@ fields:
     caption: "Community Name"
     required: true
     size: 32
-    maxLength: 128
+    maxlength: 128
   - type: "ams_id"
     name: "alias"
     caption: "Community Alias"
@@ -35,12 +35,12 @@ fields:
     name: "synopsis"
     caption: "Synopsis"
     size: 32
-    maxLength: 255
+    maxlength: 255
   - type: "text"
     name: "rules"
     caption: "Rules"
     size: 32
-    maxLength: 255
+    maxlength: 255
   - type: "localelist"
     name: "language"
     caption: "Primary Language"
@@ -114,7 +114,7 @@ fields:
     caption: "Join Key"
     subcaption: "(for private communities)"
     size: 32
-    maxLength: 64
+    maxlength: 64
   - type: "checkbox"
     name: "membersonly"
     caption: "Allow only members to access this community"

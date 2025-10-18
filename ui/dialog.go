@@ -202,6 +202,24 @@ func (fld *DialogItem) SetInt(v int) {
 	fld.Value = fmt.Sprintf("%d", v)
 }
 
+// SetLevel sets a security level into a field value.
+func (fld *DialogItem) SetLevel(level uint16) {
+	fld.Value = fmt.Sprintf("%d", level)
+	if fld.Type == "rolelist" {
+		rolelist := database.AmRoleList(fld.Param)
+		fld.AuxData = rolelist.FindForLevel(level)
+	}
+}
+
+// GetLevel gets a field's value as a security level.
+func (fld *DialogItem) GetLevel() uint16 {
+	v, err := strconv.Atoi(fld.Value)
+	if err != nil {
+		return uint16(0)
+	}
+	return uint16(v)
+}
+
 // IsEmpty returns true if the field is empty.
 func (fld *DialogItem) IsEmpty() bool {
 	return len(fld.Value) == 0
@@ -278,23 +296,15 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 				}
 			}
 		case "rolelist":
-			rl := database.AmRoleList(fld.Param)
-			defv := rl.Default().LevelStr()
-			if d.Fields[i].Value == "" {
-				d.Fields[i].Value = defv
-			} else {
-				ok := false
-				for _, r := range rl.Roles() {
-					if d.Fields[i].Value == r.LevelStr() {
-						ok = true
-						break
-					}
-					if !ok {
-						d.Fields[i].Value = defv
-					}
+			if d.Fields[i].AuxData == nil {
+				rolelist := database.AmRoleList(fld.Param)
+				role := rolelist.FindForLevel(d.Fields[i].GetLevel())
+				if role == nil {
+					role := rolelist.Default()
+					d.Fields[i].Value = role.LevelStr()
 				}
+				d.Fields[i].AuxData = role
 			}
-			// TODO: want to do something like dropdown but not sure what yet
 		}
 	}
 	if d.MenuSelector != "" && d.MenuSelector != "nochange" {
@@ -385,6 +395,13 @@ func (d *Dialog) LoadFromForm(ctxt AmContext) {
 			d.Fields[i].AuxData = dvals
 		case "userphoto", "communitylogo":
 			d.Fields[i].Value = ctxt.FormField(fmt.Sprintf("%s_data", fld.Name))
+		case "rolelist":
+			d.Fields[i].Value = ctxt.FormField(fld.Name)
+			rolelist := database.AmRoleList(d.Fields[i].Param)
+			role := rolelist.FindForLevel(d.Fields[i].GetLevel())
+			if role != nil {
+				d.Fields[i].AuxData = role
+			}
 		default:
 			d.Fields[i].Value = ctxt.FormField(fld.Name)
 		}
@@ -510,6 +527,19 @@ func validateCountryField(fld *DialogItem) error {
 	return nil
 }
 
+/* validateRoleListField validates a role list field.
+ * Parameters:
+ *     fld - The field to be validated.
+ * Returns:
+ *     Standard Go error status.
+ */
+func validateRoleListField(fld *DialogItem) error {
+	if fld.AuxData == nil {
+		return fmt.Errorf("invalid role level %s found in field \"%s\"", fld.Value, fld.Caption)
+	}
+	return nil
+}
+
 /* validateDateField validates a date field.
  * Parameters:
  *     fld - The field to be validated.
@@ -552,7 +582,7 @@ var validators = map[string]validatorFunc{
 	"integer":       validateIntegerField,
 	"localelist":    nilValidator,
 	"password":      validateTextField,
-	"rolelist":      nilValidator,
+	"rolelist":      validateRoleListField,
 	"text":          validateTextField,
 	"tzlist":        nilValidator,
 	"userphoto":     nilValidator,

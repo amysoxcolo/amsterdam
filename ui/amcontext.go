@@ -112,6 +112,12 @@ func (c *amContext) ClearSession() {
 
 // CurrentCommunity returns the current community, if one's been set.
 func (c *amContext) CurrentCommunity() *database.Community {
+	if c.community == nil {
+		cv, ok := c.session.Values["lastCommunity"]
+		if ok && !c.CurrentUser().IsAnon {
+			c.SetCommunityContext(fmt.Sprintf("%d", cv))
+		}
+	}
 	return c.community
 }
 

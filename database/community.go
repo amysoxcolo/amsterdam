@@ -273,10 +273,10 @@ func (c *Community) SetProfileData(name string, alias string, synopsis *string, 
 	create_lvl uint16, delete_lvl uint16, join_lvl uint16) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
-	_, err := amdb.Exec(`UPDATE communities SET commname = ?, alias = ?, synopsis = ? rules = ?, language = ?,
+	_, err := amdb.Exec(`UPDATE communities SET commname = ?, alias = ?, synopsis = ?, rules = ?, language = ?,
 		joinkey = ?, membersonly = ?, hide_dir = ?, hide_search = ?, read_lvl = ?, write_lvl = ?, create_lvl = ?,
 		delete_lvl = ?, join_lvl = ?, lastupdate = NOW() WHERE commid = ?`,
-		name, alias, synopsis, rules, joinkey, membersonly, hideDirectory, hideSearch, read_lvl, write_lvl,
+		name, alias, synopsis, rules, language, joinkey, membersonly, hideDirectory, hideSearch, read_lvl, write_lvl,
 		create_lvl, delete_lvl, join_lvl, c.Id)
 	if err == nil {
 		c.Name = name

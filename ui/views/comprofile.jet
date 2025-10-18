@@ -114,8 +114,8 @@
                             {{ if isset(homePage) }}
                                 <div>
                                     <strong>Homepage:</strong> 
-                                    <a href="{{ homepage }}" target="_blank"
-                                    class="text-blue-700 hover:text-blue-900">{{ homepage }}</a>
+                                    <a href="{{ homePage }}" target="_blank"
+                                    class="text-blue-700 hover:text-blue-900">{{ homePage }}</a>
                                 </div>
                             {{ end }}
                         </div>

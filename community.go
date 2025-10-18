@@ -115,7 +115,9 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	}
 	tag, err := comm.LanguageTag()
 	if err == nil && tag != nil {
-		ctxt.VarMap().Set("language", display.Languages(*prefs.LanguageTag()).Name(tag))
+		my_lang := prefs.LanguageTag()
+		disp := display.Languages(*my_lang)
+		ctxt.VarMap().Set("language", disp.Name(tag))
 	}
 	if comm.Rules != nil && *comm.Rules != "" {
 		ctxt.VarMap().Set("rules", *comm.Rules)
