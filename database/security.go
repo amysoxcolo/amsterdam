@@ -11,6 +11,7 @@ package database
 
 import (
 	_ "embed"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -184,6 +185,7 @@ type Role interface {
 	ID() string
 	Name() string
 	Level() uint16
+	LevelStr() string
 }
 
 func (r *CfgRole) ID() string {
@@ -196,6 +198,10 @@ func (r *CfgRole) Name() string {
 
 func (r *CfgRole) Level() uint16 {
 	return r.level
+}
+
+func (r *CfgRole) LevelStr() string {
+	return fmt.Sprintf("%d", r.level)
 }
 
 // RoleList defines a list of security roles.

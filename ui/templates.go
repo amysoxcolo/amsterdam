@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
+	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
@@ -234,6 +235,10 @@ func SetupTemplates() {
 	views.AddGlobalFunc("AmMenu", func(a jet.Arguments) reflect.Value {
 		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
 		return reflect.ValueOf(AmMenu(s))
+	})
+	views.AddGlobalFunc("AmRoleList", func(a jet.Arguments) reflect.Value {
+		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
+		return reflect.ValueOf(database.AmRoleList(s))
 	})
 	views.AddGlobalFunc("CapitalizeString", func(a jet.Arguments) reflect.Value {
 		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()

@@ -23,17 +23,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// DialogItemChoice holds a dialog item choice (only needed in case of defined dropdowns)
+type DialogItemChoice struct {
+	Id      string `yaml:"id"`
+	Text    string `yaml:"text"`
+	Default bool   `yaml:"default,omitempty"`
+}
+
 // DialogItem holds the dialog item definition.
 type DialogItem struct {
-	Type       string `yaml:"type"`
-	Name       string `yaml:"name"`
-	Caption    string `yaml:"caption,omitempty"`
-	Subcaption string `yaml:"subcaption,omitempty"`
-	Required   bool   `yaml:"required,omitempty"`
-	Size       int    `yaml:"size,omitempty"`
-	MaxLength  int    `yaml:"maxlength,omitempty"`
-	Value      string `yaml:"value,omitempty"`
-	Param      string `yaml:"param,omitempty"`
+	Type       string             `yaml:"type"`
+	Name       string             `yaml:"name"`
+	Caption    string             `yaml:"caption,omitempty"`
+	Subcaption string             `yaml:"subcaption,omitempty"`
+	Required   bool               `yaml:"required,omitempty"`
+	Disabled   bool               `yaml:"disabled,omitempty"`
+	Size       int                `yaml:"size,omitempty"`
+	MaxLength  int                `yaml:"maxlength,omitempty"`
+	Value      string             `yaml:"value,omitempty"`
+	Param      string             `yaml:"param,omitempty"`
+	Choices    []DialogItemChoice `yaml:"choices,omitempty"`
 	AuxData    any
 }
 
@@ -44,6 +53,7 @@ type Dialog struct {
 	Options      string       `yaml:"options,omitempty"`
 	MenuSelector string       `yaml:"menuSelector,omitempty"`
 	Title        string       `yaml:"title"`
+	Subtitle     string       `yaml:"subtitle,omitempty"`
 	Action       string       `yaml:"action"`
 	Instructions string       `yaml:"instructions,omitempty"`
 	Fields       []DialogItem `yaml:"fields"`
@@ -81,6 +91,9 @@ func AmLoadDialog(name string) (*Dialog, error) {
 				}
 				if fld.Type == "date" && fld.Param == "" {
 					d.Fields[i].Param = "year:-100"
+				}
+				if fld.Type == "dropdown" && len(fld.Choices) == 0 {
+					return nil, fmt.Errorf("dropdown field %s in dialog %s has no choices", fld.Name, name)
 				}
 			}
 			return &d, nil
@@ -184,9 +197,27 @@ func (fld *DialogItem) SetVal(p *string) {
 	}
 }
 
+// SetInt sets the value of a field to an integer.
+func (fld *DialogItem) SetInt(v int) {
+	fld.Value = fmt.Sprintf("%d", v)
+}
+
 // IsEmpty returns true if the field is empty.
 func (fld *DialogItem) IsEmpty() bool {
 	return len(fld.Value) == 0
+}
+
+// SetCommunity alters a dialog's content to reflect the community.
+func (d *Dialog) SetCommunity(comm *database.Community) {
+	d.Title = strings.ReplaceAll(d.Title, "[CNAME]", comm.Name)
+	d.Subtitle = strings.ReplaceAll(d.Subtitle, "[CNAME]", comm.Name)
+	d.Action = strings.ReplaceAll(d.Action, "[CID]", comm.Alias)
+	for i, fld := range d.Fields {
+		switch fld.Type {
+		case "userphoto", "communitylogo":
+			d.Fields[i].Param = strings.ReplaceAll(fld.Param, "[CID]", comm.Alias)
+		}
+	}
 }
 
 /* Field returns a pointer to a dialog's field, given its name.
@@ -224,6 +255,46 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 			if d.Fields[i].Value == "" {
 				d.Fields[i].Value = config.GlobalConfig.Defaults.TimeZone
 			}
+		case "dropdown":
+			defv := ""
+			for _, ch := range fld.Choices {
+				if ch.Default {
+					defv = ch.Id
+					break
+				}
+			}
+			if d.Fields[i].Value == "" {
+				d.Fields[i].Value = defv
+			} else {
+				ok := false
+				for _, ch := range fld.Choices {
+					if d.Fields[i].Value == ch.Id {
+						ok = true
+						break
+					}
+				}
+				if !ok {
+					d.Fields[i].Value = defv
+				}
+			}
+		case "rolelist":
+			rl := database.AmRoleList(fld.Param)
+			defv := rl.Default().LevelStr()
+			if d.Fields[i].Value == "" {
+				d.Fields[i].Value = defv
+			} else {
+				ok := false
+				for _, r := range rl.Roles() {
+					if d.Fields[i].Value == r.LevelStr() {
+						ok = true
+						break
+					}
+					if !ok {
+						d.Fields[i].Value = defv
+					}
+				}
+			}
+			// TODO: want to do something like dropdown but not sure what yet
 		}
 	}
 	if d.MenuSelector != "" && d.MenuSelector != "nochange" {
@@ -312,7 +383,7 @@ func (d *Dialog) LoadFromForm(ctxt AmContext) {
 				}
 			}
 			d.Fields[i].AuxData = dvals
-		case "userphoto":
+		case "userphoto", "communitylogo":
 			d.Fields[i].Value = ctxt.FormField(fmt.Sprintf("%s_data", fld.Name))
 		default:
 			d.Fields[i].Value = ctxt.FormField(fld.Name)
@@ -468,20 +539,23 @@ func validateDateField(fld *DialogItem) error {
 
 // validators maps the field types to validator functions.
 var validators = map[string]validatorFunc{
-	"ams_id":      validateAmsIdField,
-	"button":      nilValidator,
-	"checkbox":    nilValidator,
-	"countrylist": validateCountryField,
-	"date":        validateDateField,
-	"email":       validateEmailField,
-	"header":      nilValidator,
-	"hidden":      nilValidator,
-	"integer":     validateIntegerField,
-	"localelist":  nilValidator, // TODO
-	"password":    validateTextField,
-	"text":        validateTextField,
-	"tzlist":      nilValidator, // TODO
-	"userphoto":   nilValidator,
+	"ams_id":        validateAmsIdField,
+	"button":        nilValidator,
+	"checkbox":      nilValidator,
+	"communitylogo": nilValidator,
+	"countrylist":   validateCountryField,
+	"date":          validateDateField,
+	"dropdown":      nilValidator,
+	"email":         validateEmailField,
+	"header":        nilValidator,
+	"hidden":        nilValidator,
+	"integer":       validateIntegerField,
+	"localelist":    nilValidator,
+	"password":      validateTextField,
+	"rolelist":      nilValidator,
+	"text":          validateTextField,
+	"tzlist":        nilValidator,
+	"userphoto":     nilValidator,
 }
 
 /* Validate validates the values in the dialog.

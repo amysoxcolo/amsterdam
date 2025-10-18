@@ -61,15 +61,15 @@ menudefs:
       community. Use with care and review all changes before applying them to the community.
     items:
       - text: "Community Profile"
-        link: "/TODO/comm/[CID]/admin/profile"
-        permission: "Community.ShowAdmin"
+        link: "/comm/[CID]/admin/profile"
+        permission: "Community.Write"
       - text: "Set Community Category"
         link: "/TODO/comm/[CID]/admin/category"
-        permission: "Community.ShowAdmin"
+        permission: "Community.Write"
         ifdef: "USECAT"
       - text: "Set Community Services"
         link: "/TODO/comm/[CID]/admin/services"
-        permission: "Community.ShowAdmin"
+        permission: "Community.Write"
         disabled: true
       - text: "Membership Control"
         link: "/TODO/comm/[CID]/admin/members"
@@ -82,5 +82,5 @@ menudefs:
         permission: "Community.ShowAdmin"
       - text: "Delete Community"
         link: "/TODO/comm/[CID]/admin/delete"
-        permission: "Community.Destroy"
+        permission: "Community.Delete"
         hazard: true

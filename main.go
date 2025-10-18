@@ -66,6 +66,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 	e.GET("/comm/:cid/profile", ui.AmWrap(ShowCommunity))
 	e.GET("/comm/:cid/admin", ui.AmWrap(CommunityAdminMenu))
+	e.GET("/comm/:cid/admin/profile", ui.AmWrap(CommunityProfileForm))
 
 	return e
 }

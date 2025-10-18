@@ -10,6 +10,9 @@
 <div class="p-4">
     <div class="mb-6">
         <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ amsterdam_dialog.Title }}</h1>
+        {{ if amsterdam_dialog.Subtitle != "" }}
+            <span class="text-blue-800 text-2xl font-bold ml-2">{{ amsterdam_dialog.Subtitle }}</span>
+        {{ end }}
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>
     <form name="{{ amsterdam_dialog.FormName }}" method="POST" action="{{ amsterdam_dialog.Action }}" class="max-w-2xl">
@@ -58,26 +61,28 @@
                 {{ range amsterdam_dialog.Fields }}
                     {{ if .Type == "text" || .Type == "ams_id" || .Type == "email" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}:
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             <input type="text" id="{{ .Name }}" name="{{ .Name }}" 
                                 {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
                                 {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
-                                value="{{ .Value }}"
+                                value="{{ .Value }}" {{ if .Disabled }}disabled{{ end }}
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                         </div>
                     {{ else if .Type == "integer" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}:
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             <input type="text" id="{{ .Name }}" name="{{ .Name }}" 
                                 {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
                                 {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
-                                value="{{ .Value }}"
+                                value="{{ .Value }}" {{ if .Disabled }}disabled{{ end }}
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                                 {{ vr := .ValueRange() }}
                                 {{ if vr.Low != -1 && vr.High != -1 }}
@@ -86,36 +91,69 @@
                         </div>
                     {{ else if .Type == "password" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}:
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             <input type="password" id="{{ .Name }}" name="{{ .Name }}" 
                                 {{ if .Size > 0 }}size="{{ .Size }}"{{ end }}
                                 {{ if .MaxLength > 0 }}maxlength="{{ .MaxLength }}"{{ end }}
-                                value="{{ .Value }}"
+                                value="{{ .Value }}" {{ if .Disabled }}disabled{{ end }}
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                         </div>
                     {{ else if .Type == "checkbox" }}
                         <div class="flex items-center">
                             <div class="w-24 text-right pr-4">
                                 <input type="checkbox" id="{{ .Name }}" name="{{ .Name }}" 
-                                    value="Y" {{ if .Value != "" }}checked{{ end }}
+                                    value="Y" {{ if .Value != "" }}checked{{ end }} {{ if .Disabled }}disabled{{ end }}
                                     class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                             </div>
-                            <label for="{{ .Name }}" class="flex-1 text-black text-sm">
+                            <label for="{{ .Name }}" class="flex-1 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                         </div>
-                    {{ else if .Type == "countrylist" }}
+                    {{ else if .Type == "dropdown" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             {{ v := .Value }}
-                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }} {{ if .Disabled }}disabled{{ end }}
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                {{ range .Choices }}
+                                    <option value="{{ .Id }}" {{ if .Id == v }}selected{{ end }}>{{ .Text }}</option>
+                                {{ end }}
+                            </select>
+                        </div>
+                    {{ else if .Type == "rolelist" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            {{ v := .Value }}
+                            {{ rl := AmRoleList(.Param) }}
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }} {{ if .Disabled }}disabled{{ end }}
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                {{ range rl.Roles() }}
+                                    <option value="{{ .LevelStr() }}" {{ if .LevelStr() == v }}selected{{ end }}>{{ .Name() }}</option>
+                                {{ end }}
+                            </select>
+                        </div>
+                    {{ else if .Type == "countrylist" }}
+                        <div class="flex items-center">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
+                                {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
+                                {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
+                            </label>
+                            {{ v := .Value }}
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }} {{ if .Disabled }}disabled{{ end }}
                                         class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="XX" {{ if v == "XX" }}selected{{ end }}>🏳️ (unknown)</option>
                                 {{ range GetCountryList() }}
@@ -126,12 +164,13 @@
                         </div>
                     {{ else if .Type == "localelist" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             {{ v := .Value }}
-                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }} {{ if .Disabled }}disabled{{ end }}
                                     class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 {{ range GetLanguageList() }}
                                     <option value="{{ .Tag }}" {{ if .Tag == v }}selected{{ end }}>{{ .Name }}</option>
@@ -140,12 +179,13 @@
                         </div>
                     {{ else if .Type == "tzlist" }}
                         <div class="flex items-center">
-                            <label for="{{ .Name }}" class="w-64 text-right pr-4 text-black text-sm">
+                            <label for="{{ .Name }}" 
+                                   class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             {{ v := .Value }}
-                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }}
+                            <select id="{{ .Name }}" name="{{ .Name }}" {{ if .Required }}required{{ end }} {{ if .Disabled }}disabled{{ end }}
                                     class="flex-1 max-w-md px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 {{ range GetTimeZoneList() }}
                                     <option value="{{ . }}" {{ if v == . }}selected{{ end }}>{{ . }}</option>
@@ -155,25 +195,27 @@
                     {{ else if .Type == "date" }}
                         {{ dv := .DateValues() }}
                         <div class="flex items-center">
-                            <label class="w-64 text-right pr-4 text-black text-sm">
+                            <label class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">
                                 {{ .Caption }}{{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }}
                                 {{ if .Required }}<span class="text-red-600">*</span>{{ end }}
                             </label>
                             <div class="flex gap-2">
-                                <select name="{{ .Name }}_month"
+                                <select name="{{ .Name }}_month" {{ if .Disabled }}disabled{{ end }}
                                         class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="-1" {{ if dv[0] == -1 }}selected{{ end }}>---</option>
                                     {{ range i := GetMonthList() }}
                                         <option value="{{ i + 1 }}" {{ if dv[0] == i + 1 }}selected{{ end }}>{{ . }}</option>
                                     {{ end }}
                                 </select>
-                                <select name="{{ .Name }}_day" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select name="{{ .Name }}_day" {{ if .Disabled }}disabled{{ end }}
+                                        class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="-1" {{ if dv[1] == -1 }}selected{{ end }}>---</option>
                                     {{ range MakeIntRange(1, 32, 1) }}
                                         <option value="{{ . }}" {{ if dv[1] == . }}selected{{ end }}>{{ . }}</option>
                                     {{ end }}
                                 </select>
-                                <select name="{{ .Name }}_year" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select name="{{ .Name }}_year" {{ if .Disabled }}disabled{{ end }}
+                                        class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="-1" {{ if dv[2] == -1 }}selected{{ end }}>---</option>
                                     {{ range MakeYearRange(.Param) }}
                                         <option value="{{ . }}" {{ if dv[2] == . }}selected{{ end }}>{{ . }}</option>
@@ -183,13 +225,31 @@
                         </div>
                     {{ else if .Type == "userphoto" }}
                         <div class="flex items-start">
-                            <label class="w-64 text-right pr-4 text-black text-sm pt-2">{{ .Caption }}
+                            <label class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm pt-2">{{ .Caption }}
                                 {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} (click to change):</label>
                             <input type="hidden" name="{{ .Name }}_data" value="{{ .Value }}"/>
-                            <a href="/profile_photo?tgt={{ target | url }}"
-                               class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
-                                <img src="{{ .Value }}" alt="Click to upload photo" class="w-25 h-25">
-                            </a>                                
+                            {{ if .Disabled }}
+                                <img src="{{ .Value }}" class="w-25 h-25">
+                            {{ else }}
+                                <a href="/profile_photo?tgt={{ target | url }}"
+                                class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
+                                    <img src="{{ .Value }}" alt="Click to upload photo" class="w-25 h-25">
+                                </a>    
+                            {{ end }}                            
+                        </div>
+                    {{ else if .Type == "communitylogo" }}
+                        <div class="flex items-start">
+                            <label class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm pt-2">{{ .Caption }}
+                                {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} (click to change):</label>
+                            <input type="hidden" name="{{ .Name }}_data" value="{{ .Value }}"/>
+                            {{ if .Disabled }}
+                                <img src="/img/builtin/default-community.jpg" class="w-28 h-16 rounded">
+                            {{ else }}
+                                <a href="{{ .Param }}"
+                                class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
+                                    <img src="/img/builtin/default-community.jpg" alt="Click to upload logo" class="w-28 h-16 rounded">
+                                </a>
+                            {{ end }}
                         </div>
                     {{ else if .Type == "header" }}
                         <h2 class="text-lg font-bold text-black mb-4">{{ .Caption }}</h2>
@@ -202,7 +262,7 @@
                 {{ range amsterdam_dialog.Fields }}
                     {{ if .Type == "button" }}
                         {{ clstmp := "bg-" + .Param + "-600 hover:bg-" + .Param + "-700" }}
-                        <button type="submit" name="{{ .Name }}"
+                        <button type="submit" name="{{ .Name }}" {{ if .Disabled }}disabled{{ end }}
                                 class="{{ clstmp }} text-white px-6 py-2 rounded font-medium transition-colors">{{ .Caption }}</button>
                     {{ end }}
                 {{ end }}

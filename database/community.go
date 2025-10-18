@@ -47,13 +47,37 @@ type Community struct {
 	Rules             *string    `dd:"rules"`
 	JoinKey           *string    `db:"joinkey"`
 	Alias             string     `db:"alias"`
+	flags             *util.OptionSet
 }
+
+// CommunityProperties represents a property entry for a community.
+type CommunityProperties struct {
+	Cid   int32   `db:"cid"`
+	Index int32   `db:"ndx"`
+	Data  *string `db:"data"`
+}
+
+// Community property indexes defined.
+const (
+	CommunityPropFlags = int32(0) // "flags" user property
+)
+
+// Flag values for community property index CommunityPropFlags defined.
+const (
+	CommunityFlagPicturesInPosts = uint(0)
+)
 
 // communityCache is the cache for Community objects.
 var communityCache *lru.TwoQueueCache = nil
 
 // getCommunityMutex is a mutex on AmGetCommunity.
 var getCommunityMutex sync.Mutex
+
+// communityPropCache is the cache for CommunityProperties objects.
+var communityPropCache *lru.Cache = nil
+
+// getCommunityPropMutex is a mutex on AmGetCommunityProperty.
+var getCommunityPropMutex sync.Mutex
 
 // memberCacheData caches membership information for communities.
 type memberCacheData struct {
@@ -76,7 +100,7 @@ func stuffMembership(cid int32, uid int32, member bool, locked bool, level uint1
 	memberMutex.Unlock()
 }
 
-// init initializes the community cache.
+// init initializes the caches.
 func init() {
 	var err error
 	communityCache, err = lru.New2Q(50)
@@ -84,6 +108,10 @@ func init() {
 		panic(err)
 	}
 	memberCache, err = lru.New(250)
+	if err != nil {
+		panic(err)
+	}
+	communityPropCache, err = lru.New(100)
 	if err != nil {
 		panic(err)
 	}
@@ -119,6 +147,16 @@ func (c *Community) LanguageTag() (*language.Tag, error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+func (c *Community) HideMode() string {
+	if c.HideFromSearch {
+		return "BOTH"
+	} else if c.HideFromDirectory {
+		return "DIRECTORY"
+	} else {
+		return "NONE"
+	}
 }
 
 /* Membership returns the details of the specified user's membership in the community.
@@ -198,6 +236,35 @@ func (c *Community) PermissionLevel(perm string) uint16 {
 	default:
 		return AmPermissionLevel(perm)
 	}
+}
+
+// GetFlags retrieves the flags from the properties.
+func (c *Community) Flags() (*util.OptionSet, error) {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	if c.flags == nil {
+		s, err := AmGetCommunityProperty(c.Id, CommunityPropFlags)
+		if err != nil {
+			return nil, err
+		}
+		if s == nil {
+			return nil, fmt.Errorf("missing flags for community %d", c.Id)
+		}
+		c.flags = util.OptionSetFromString(*s)
+	}
+	return c.flags, nil
+}
+
+// SaveFlags writes the flags to the database and stores them.
+func (c *Community) SaveFlags(f *util.OptionSet) error {
+	s := f.AsString()
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	err := AmSetCommunityProperty(c.Id, CommunityPropFlags, &s)
+	if err == nil {
+		c.flags = f
+	}
+	return err
 }
 
 /* AmGetCommunity returns a reference to the specified community.
@@ -338,6 +405,77 @@ func AmAutoJoinCommunities(user *User) error {
 				}
 				stuffMembership(cid, user.Uid, true, lock, grantLevel)
 			}
+		}
+	}
+	return err
+}
+
+// internalGetProp is a helper used by the property functions.
+func internalGetCommProp(cid int32, ndx int32) (*CommunityProperties, error) {
+	var err error = nil
+	key := fmt.Sprintf("%d:%d", cid, ndx)
+	getCommunityPropMutex.Lock()
+	defer getCommunityPropMutex.Unlock()
+	rc, ok := communityPropCache.Get(key)
+	if !ok {
+		var dbdata []CommunityProperties
+		err = amdb.Select(&dbdata, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
+		if err != nil {
+			return nil, err
+		}
+		if len(dbdata) == 0 {
+			return nil, nil
+		}
+		if len(dbdata) > 1 {
+			return nil, fmt.Errorf("AmGetCommunityProperty(%d): too many responses(%d)", cid, len(dbdata))
+		}
+		rc = &(dbdata[0])
+		communityPropCache.Add(key, rc)
+	}
+	return rc.(*CommunityProperties), nil
+}
+
+/* AmGetCommunityProperty retrieves the value of a user property.
+ * Parameters:
+ *     cid - The ID of the community to get the property for.
+ *     ndx - The index of the property to retrieve.
+ * Returns:
+ *     Value of the property string.
+ *     Standard Go error status.
+ */
+func AmGetCommunityProperty(cid int32, ndx int32) (*string, error) {
+	p, err := internalGetCommProp(cid, ndx)
+	if err != nil {
+		return nil, err
+	}
+	return p.Data, nil
+}
+
+/* AmSetCommunityProperty sets the value of a community property.
+ * Parameters:
+ *     cid - The ID of the community to set the property for.
+ *     ndx - The index of the property to set.
+ *     val - The new value of the property.
+ * Returns:
+ *     Standard Go error status.
+ */
+func AmSetCommunityProperty(cid int32, ndx int32, val *string) error {
+	p, err := internalGetCommProp(cid, ndx)
+	if err != nil {
+		return err
+	}
+	getCommunityPropMutex.Lock()
+	defer getCommunityPropMutex.Unlock()
+	if p != nil {
+		_, err = amdb.Exec("UPDATE propcomm SET data = ? WHERE cid = ? AND ndx = ?", val, cid, ndx)
+		if err == nil {
+			p.Data = val
+		}
+	} else {
+		prop := CommunityProperties{Cid: cid, Index: ndx, Data: val}
+		_, err := amdb.NamedExec("INSERT INTO propcomm (cid, ndx, data) VALUES(:cid, :ndx, :data)", prop)
+		if err == nil {
+			communityPropCache.Add(fmt.Sprintf("%d:%d", cid, ndx), prop)
 		}
 	}
 	return err
