@@ -30,6 +30,7 @@ import (
 
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
+	ClearCommunityContext()
 	ClearLoginCookie()
 	ClearSession()
 	CurrentCommunity() *database.Community
@@ -82,6 +83,14 @@ type amContext struct {
 	community      *database.Community
 	isMember       bool
 	isMemberLocked bool
+}
+
+// ClearCommunityContext clears the community context so changes will be reflected.
+func (c *amContext) ClearCommunityContext() {
+	c.community = nil
+	c.isMember = false
+	c.isMemberLocked = false
+	c.effectiveLevel = c.user.BaseLevel
 }
 
 // ClearLoginCookie overwrites and removes the login cookie.

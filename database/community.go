@@ -267,6 +267,41 @@ func (c *Community) SaveFlags(f *util.OptionSet) error {
 	return err
 }
 
+// SetProfileData sets all the "settable" profile data
+func (c *Community) SetProfileData(name string, alias string, synopsis *string, rules *string, language *string,
+	joinkey *string, membersonly bool, hideDirectory bool, hideSearch bool, read_lvl uint16, write_lvl uint16,
+	create_lvl uint16, delete_lvl uint16, join_lvl uint16) error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	_, err := amdb.Exec(`UPDATE communities SET commname = ?, alias = ?, synopsis = ? rules = ?, language = ?,
+		joinkey = ?, membersonly = ?, hide_dir = ?, hide_search = ?, read_lvl = ?, write_lvl = ?, create_lvl = ?,
+		delete_lvl = ?, join_lvl = ?, lastupdate = NOW() WHERE commid = ?`,
+		name, alias, synopsis, rules, joinkey, membersonly, hideDirectory, hideSearch, read_lvl, write_lvl,
+		create_lvl, delete_lvl, join_lvl, c.Id)
+	if err == nil {
+		c.Name = name
+		c.Alias = alias
+		c.Synopsis = synopsis
+		c.Rules = rules
+		c.Language = language
+		c.JoinKey = joinkey
+		c.MembersOnly = membersonly
+		c.HideFromDirectory = hideDirectory
+		c.HideFromSearch = hideSearch
+		c.ReadLevel = read_lvl
+		c.WriteLevel = write_lvl
+		c.CreateLevel = create_lvl
+		c.DeleteLevel = delete_lvl
+		c.JoinLevel = join_lvl
+		rs, err2 := amdb.Query("SELECT lastupdate FROM communities WHERE commid = ?", c.Id)
+		if err2 != nil {
+			rs.Next()
+			rs.Scan(&c.LastUpdate)
+		}
+	}
+	return err
+}
+
 /* AmGetCommunity returns a reference to the specified community.
  * Parameters:
  *     id - The ID of the community.

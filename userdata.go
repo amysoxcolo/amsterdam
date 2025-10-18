@@ -124,6 +124,10 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 			return "redirect", target, nil
 		}
 		if action == "update" {
+			err = dlg.Validate()
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
 			var ci *database.ContactInfo
 			ci, err = u.ContactInfo()
 			if err == nil {
