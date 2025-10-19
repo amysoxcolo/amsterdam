@@ -21,7 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func sendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
+func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
 	var err error
 	switch command {
 	case "bytes":
@@ -103,7 +103,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 			amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
 			amctxt.VarMap().Set("message", banmsg)
 			amctxt.SetRC(http.StatusForbidden)
-			return sendPageData(ctxt, amctxt, "framed_template", "ipban.jet")
+			return AmSendPageData(ctxt, amctxt, "framed_template", "ipban.jet")
 		}
 
 		// Check for cookie login.
@@ -123,7 +123,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 					}
 					if !user.VerifyEMail {
 						// bounce to E-mail verification before we go anywhere
-						return sendPageData(ctxt, amctxt, "redirect",
+						return AmSendPageData(ctxt, amctxt, "redirect",
 							"/verify?tgt="+url.QueryEscape(ctxt.Request().URL.Path))
 					}
 				} else {
@@ -140,7 +140,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 				ctxt.Logger().Errorf("Session save error: %v", err)
 				return err
 			}
-			err = sendPageData(ctxt, amctxt, what, rc)
+			err = AmSendPageData(ctxt, amctxt, what, rc)
 			if err != nil {
 				ctxt.Logger().Errorf("Rendering error: %v", err)
 			}
@@ -148,7 +148,7 @@ func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 			ctxt.Logger().Errorf("Page function error: %v", err)
 			_, rc, _ = ErrorPage(amctxt, err)
 			amctxt.SetRC(http.StatusInternalServerError)
-			newerr := sendPageData(ctxt, amctxt, "framed_template", rc)
+			newerr := AmSendPageData(ctxt, amctxt, "framed_template", rc)
 			err = newerr
 		}
 		return err

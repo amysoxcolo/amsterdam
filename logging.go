@@ -11,7 +11,10 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -119,8 +122,18 @@ func LogrusMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			"uri":        req.RequestURI,
 			"status":     res.Status,
 			"latency_ms": stop.Sub(start).Milliseconds(),
-			"user_agent": req.UserAgent(),
 		}).Info("handled request")
 		return err
 	}
+}
+
+// LogrusPanicLogging is a log function hooked into the recovery middleware.
+func LogrusPanicLogging(c echo.Context, err error, stack []byte) error {
+	log.Errorf("[PANIC RECOVERY] %v", err)
+	scanner := bufio.NewScanner(bytes.NewReader(stack))
+	for scanner.Scan() {
+		line := strings.ReplaceAll(scanner.Text(), "\t", "    ")
+		log.Error(line)
+	}
+	return scanner.Err()
 }

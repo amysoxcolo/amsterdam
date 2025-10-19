@@ -33,8 +33,11 @@ func setupEcho() *echo.Echo {
 	e := echo.New()
 	e.Logger = &EchoLogrusAdapter{}
 	e.Renderer = &ui.TemplateRenderer{}
+	e.HTTPErrorHandler = AmErrorHandler
 	if !config.CommandLine.DebugPanic {
-		e.Use(middleware.Recover())
+		e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+			LogErrorFunc: LogrusPanicLogging,
+		}))
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
