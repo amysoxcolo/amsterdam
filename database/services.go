@@ -114,3 +114,27 @@ func AmGetCommunityServices(cid int32) ([]*ServiceDef, error) {
 	}
 	return rc.([]*ServiceDef), nil
 }
+
+/* AmEstablishCommunityServices extablishes the service (feature) records for a new community.
+ * Parameters:
+ *     cid - ID of the new community.
+ * Returns:
+ *     Standard Go error status.
+ */
+func AmEstablishCommunityServices(cid int32) error {
+	dom := serviceRoot.byName["community"]
+	a := make([]*ServiceDef, 0, len(dom.Services))
+	for i, svc := range dom.Services {
+		if svc.Default {
+			_, err := amdb.Exec("INSERT INTO commftrs (commid, ftr_code) VALUES (?, ?)", cid, svc.Index)
+			if err != nil {
+				return err
+			}
+			a = append(a, &(dom.Services[i]))
+		}
+	}
+	servicesCacheMutex.Lock()
+	servicesCache.Add(cid, a)
+	servicesCacheMutex.Unlock()
+	return nil
+}

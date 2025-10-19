@@ -14,17 +14,17 @@
     </div>
     <div class="bg-blue-400 px-2 py-2 rounded-b">
         <div class="space-y-2">
-                {{ if len(sb.Items) > 0 }}
-                    {{ range sb.Items }}
-                        <div class="flex items-center">
-                            <span class="mr-2">🟣</span>
-                            <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
-                            {{ if .Flags["admin"] }}<span class="ml-1">👑</span>{{ end }}
-                        </div>
-                    {{ end }}
-                {{ else }}
-                    <div class="text-small">You are not a member of any communities.</div>
+            {{ if len(sb.Items) > 0 }}
+                {{ range sb.Items }}
+                    <div class="flex items-center">
+                        <span class="mr-2">🟣</span>
+                        <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
+                        {{ if .Flags["admin"] }}<span class="ml-1">👑</span>{{ end }}
+                    </div>
                 {{ end }}
+            {{ else }}
+                <div class="text-small">You are not a member of any communities.</div>
+            {{ end }}
         </div>
         {{ if sb.Flags["canManage"] || sb.Flags["canCreate"] }}
             <div class="mt-3 text-center">
@@ -35,7 +35,7 @@
                         {{ if sb.Flags["canCreate"] }}|{{ end }}
                     {{ end }}
                     {{ if sb.Flags["canCreate"] }}
-                    <a href="/TODO/create_comm" class="text-blue-700 hover:text-blue-900">Create New</a>
+                    <a href="/create_comm" class="text-blue-700 hover:text-blue-900">Create New</a>
                     {{ end }}
                     ]
                 </span>

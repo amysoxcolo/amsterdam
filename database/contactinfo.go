@@ -250,3 +250,15 @@ func AmNewUserContactInfo(uid int32) *ContactInfo {
 	rc := ContactInfo{OwnerUid: uid, OwnerCommId: -1}
 	return &rc
 }
+
+/* AmNewCommunityContactInfo creates a new contact info record for the community.
+ * Parameters:
+ *     uid - The UID of the host of this community.
+ *     cid - The community ID of the owning community.
+ * Returns:
+ *     New ContactInfo structure.
+ */
+func AmNewCommunityContactInfo(uid int32, cid int32) *ContactInfo {
+	rc := ContactInfo{OwnerUid: uid, OwnerCommId: cid}
+	return &rc
+}

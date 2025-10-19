@@ -46,6 +46,18 @@ const (
 	AuditAdminChangeUserAccount  = 111
 	AuditAdminSetAccountSecurity = 112
 	AuditAdminLockUnlockAccount  = 113
+	AuditCommunityCreate         = 201
+	AuditCommunitySetMembership  = 202
+	AuditCommuntiyContactInfo    = 203
+	AuditCommunityFeatureSet     = 204
+	AuditCommunityName           = 205
+	AuditCommunityAlias          = 206
+	AuditCommunityCategory       = 207
+	AuditCommunityHideInfo       = 208
+	AuditCommunityMembersOnly    = 209
+	AuditCommunityJoinKey        = 210
+	AuditCommunitySecurity       = 211
+	AuditCommunityDelete         = 212
 )
 
 // auditWriteQueue is a channel to store audit records in the background.

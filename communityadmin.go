@@ -54,6 +54,7 @@ func CommunityAdminMenu(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "menu.jet", nil
 }
 
+// setupCommunityProfileDialog sets up fields in the Community Profile dialog.
 func setupCommunityProfileDialog(dlg *ui.Dialog, comm *database.Community) {
 	dlg.SetCommunity(comm)
 	if comm.IsAdmin {
@@ -108,7 +109,6 @@ func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 	dlg, err := ui.AmLoadDialog("commprofile")
 	if err == nil {
 		setupCommunityProfileDialog(dlg, comm)
-		dlg.Field("cc").Value = fmt.Sprintf("%d", comm.Id)
 		dlg.Field("name").Value = comm.Name
 		dlg.Field("alias").Value = comm.Alias
 		dlg.Field("synopsis").SetVal(comm.Synopsis)
@@ -143,10 +143,16 @@ func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
-// levelFld is a quick routine to extract a level value from a drop-down.
-func levelFld(d *ui.Dialog, name string) uint16 {
-	v, _ := strconv.Atoi(d.Field(name).Value)
-	return uint16(v)
+// validateJoinKey is an extra validation step for the join key.
+func validateJoinKey(dlg *ui.Dialog) error {
+	if dlg.Field("comtype").Value == "1" {
+		if dlg.Field("joinkey").IsEmpty() {
+			return errors.New("private community must specify a join key")
+		}
+	} else {
+		dlg.Field("joinkey").Value = ""
+	}
+	return nil
 }
 
 /* EditCommunityProfile updates the community's profile from the dialog.
@@ -179,6 +185,10 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 		}
 		if action == "update" {
 			err = dlg.Validate()
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+			err = validateJoinKey(dlg)
 			if err != nil {
 				return dlg.RenderError(ctxt, err.Error())
 			}
@@ -222,8 +232,8 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 				}
 				err = comm.SetProfileData(dlg.Field("name").Value, dlg.Field("alias").Value, dlg.Field("synopsis").ValPtr(),
 					dlg.Field("rules").ValPtr(), dlg.Field("language").ValPtr(), joinkey, dlg.Field("membersonly").IsChecked(),
-					hidedir, hidesearch, levelFld(dlg, "read_lvl"), levelFld(dlg, "write_lvl"), levelFld(dlg, "create_lvl"),
-					levelFld(dlg, "delete_lvl"), levelFld(dlg, "join_lvl"))
+					hidedir, hidesearch, dlg.Field("read_lvl").GetLevel(), dlg.Field("write_lvl").GetLevel(),
+					dlg.Field("create_lvl").GetLevel(), dlg.Field("delete_lvl").GetLevel(), dlg.Field("join_lvl").GetLevel())
 			}
 			if err == nil {
 				flags.Set(database.CommunityFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
@@ -241,6 +251,14 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* CommunityLogoForm renders the form for changing the community logo.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
 	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
 	if err != nil {
@@ -263,6 +281,14 @@ func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, err)
 }
 
+/* EditCommunityLogo handles setting the community logo.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
 	if err != nil {
@@ -340,4 +366,104 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 		return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
 	}
 	return ui.ErrorPage(ctxt, errors.New("invalid button detected in logo upload"))
+}
+
+/* CreateCommunityForm renders the form for creating a new community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func CreateCommunityForm(ctxt ui.AmContext) (string, any, error) {
+	user := ctxt.CurrentUser()
+	if user.BaseLevel < uint16(ctxt.Globals().CommunityCreateLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create a community"))
+	}
+	dlg, err := ui.AmLoadDialog("create_comm")
+	if err != nil {
+		dlg.Field("language").Value = "en-US"
+		dlg.Field("country").Value = "US"
+		return dlg.Render(ctxt)
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+/* CreateCommunity creates a new community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
+	user := ctxt.CurrentUser()
+	if user.BaseLevel < uint16(ctxt.Globals().CommunityCreateLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create a community"))
+	}
+	dlg, err := ui.AmLoadDialog("create_comm")
+	if err != nil {
+		dlg.LoadFromForm(ctxt)
+		action := dlg.WhichButton(ctxt)
+		if action == "cancel" {
+			return "redirect", "/", nil
+		}
+		if action == "create" {
+			err = dlg.Validate()
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+			err = validateJoinKey(dlg)
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+			var testcomm *database.Community
+			testcomm, err = database.AmGetCommunityByAlias(dlg.Field("alias").Value)
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+			if testcomm != nil {
+				return dlg.RenderError(ctxt, fmt.Sprintf("A community with the alias \"%s\" already exists; please try again.", testcomm.Alias))
+			}
+			var hideDir, hideSearch bool
+			switch dlg.Field("hidemode").Value {
+			case "NONE":
+				hideDir = false
+				hideSearch = false
+			case "DIRECTORY":
+				hideDir = true
+				hideSearch = false
+			case "BOTH":
+				hideDir = true
+				hideSearch = true
+			}
+			var comm *database.Community
+			comm, err = database.AmCreateCommunity(dlg.Field("name").Value, dlg.Field("alias").Value, user.Uid,
+				dlg.Field("language").ValPtr(), dlg.Field("synopsis").ValPtr(), dlg.Field("rules").ValPtr(),
+				dlg.Field("joinkey").ValPtr(), hideDir, hideSearch, ctxt.RemoteIP())
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+			ci := database.AmNewCommunityContactInfo(user.Uid, comm.Id)
+			ci.Locality = dlg.Field("loc").ValPtr()
+			ci.Region = dlg.Field("reg").ValPtr()
+			ci.PostalCode = dlg.Field("pcode").ValPtr()
+			ci.Country = dlg.Field("country").ValPtr()
+			_, err = ci.Save()
+			if err == nil {
+				err = comm.SetContactID(ci.ContactId)
+			}
+			if err != nil {
+				return dlg.RenderError(ctxt, err.Error())
+			}
+			// new community is now created! redirect to the new profile
+			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		}
+		return dlg.RenderError(ctxt, "No known button click on POST to community creation.")
+	}
+	return ui.ErrorPage(ctxt, err)
 }

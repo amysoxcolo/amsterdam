@@ -6,12 +6,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
-name: "community.profile"
-formName: "comprofform"
-menuSelector: "community"
-title: "Edit Community Profile:"
-subtitle: "[CNAME]"
-action: "/comm/[CID]/admin/profile"
+name: "create.community"
+formName: "createcommform"
+menuSelector: "top"
+title: "Create New Community"
+action: "/create_comm"
 fields:
   - type: "header"
     name: "header1"
@@ -42,35 +41,9 @@ fields:
     name: "language"
     caption: "Primary Language"
     required: true
-  - type: "text"
-    name: "url"
-    caption: "Home Page"
-    subcaption: "(URL)"
-    size: 32
-    maxlength: 255
-  - type: "communitylogo"
-    name: "logo"
-    caption: "Community logo"
-    param: "/comm/[CID]/admin/logo"
   - type: "header"
     name: "header2"
     caption: "Location"
-  - type: "text"
-    name: "company"
-    caption: "Company"
-    size: 32
-    maxlength: 255
-  - type: "text"
-    name: "addr1"
-    caption: "Address"
-    size: 32
-    maxlength: 255
-  - type: "text"
-    name: "addr2"
-    caption: "Address"
-    subcaption: "(line 2)"
-    size: 32
-    maxlength: 255
   - type: "text"
     name: "loc"
     caption: "City"
@@ -112,9 +85,6 @@ fields:
     subcaption: "(for private communities)"
     size: 32
     maxlength: 64
-  - type: "checkbox"
-    name: "membersonly"
-    caption: "Allow only members to access this community"
   - type: "dropdown"
     name: "hidemode"
     caption: "Community visibility"
@@ -127,41 +97,9 @@ fields:
         text: "Hide in directory, but not in search"
       - id: "BOTH"
         text: "Hide in both directory and search"
-  - type: "rolelist"
-    name: "read_lvl"
-    caption: "Security level required to read contents"
-    required: true
-    param: "Community.Read"
-  - type: "rolelist"
-    name: "write_lvl"
-    caption: "Security level required to update profile"
-    required: true
-    param: "Community.Write"
-  - type: "rolelist"
-    name: "create_lvl"
-    caption: "Security level required to create new subobjects"
-    required: true
-    param: "Community.Create"
-  - type: "rolelist"
-    name: "delete_lvl"
-    caption: "Security level required to delete community"
-    required: true
-    param: "Community.Delete"
-  - type: "rolelist"
-    name: "join_lvl"
-    caption: "Security level required to join community"
-    required: true
-    param: "Community.Join"
-  - type: "header"
-    name: "header4"
-    caption: "Conferencing Options"
-  - type: "checkbox"
-    name: "pic_in_post"
-    caption: "Display user pictures next to posts in conferences"
-    subcaption: "(by default; user can override)"
   - type: "button"
-    name: "update"
-    caption: "Update"
+    name: "create"
+    caption: "Create"
     param: "blue"
   - type: "button"
     name: "cancel"

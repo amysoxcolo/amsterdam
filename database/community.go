@@ -10,6 +10,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -248,9 +249,10 @@ func (c *Community) Flags() (*util.OptionSet, error) {
 			return nil, err
 		}
 		if s == nil {
-			return nil, fmt.Errorf("missing flags for community %d", c.Id)
+			c.flags = util.NewOptionSet()
+		} else {
+			c.flags = util.OptionSetFromString(*s)
 		}
-		c.flags = util.OptionSetFromString(*s)
 	}
 	return c.flags, nil
 }
@@ -302,6 +304,17 @@ func (c *Community) SetProfileData(name string, alias string, synopsis *string, 
 	return err
 }
 
+// SetContactID sets the contact ID for the community.
+func (c *Community) SetContactID(cid int32) error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	if _, err := amdb.Exec("UPDATE communities SET contactid = ? WHERE commid = ?", cid, c.Id); err != nil {
+		return err
+	}
+	c.ContactId = cid
+	return nil
+}
+
 /* AmGetCommunity returns a reference to the specified community.
  * Parameters:
  *     id - The ID of the community.
@@ -331,6 +344,27 @@ func AmGetCommunity(id int32) (*Community, error) {
 	return rc.(*Community), err
 }
 
+/* AmGetCommunityByAlias returns a reference to the specified community.
+ * Parameters:
+ *     alias - The alias for the community.
+ * Returns:
+ *     Pointer to Community containing community data, or nil
+ *     Standard Go error status (nil if community not found)
+ */
+func AmGetCommunityByAlias(alias string) (*Community, error) {
+	rs, err := amdb.Query("SELECT commid FROM communities WHERE alias = ?", alias)
+	if err == nil {
+		if rs.Next() {
+			var cid int32
+			rs.Scan(&cid)
+			return AmGetCommunity(cid)
+		} else {
+			return nil, nil
+		}
+	}
+	return nil, err
+}
+
 /* AmGetCommunityFromParam returns a reference to the specified community based on the parameter.
  * If the parameter is numeric, it's interpreted as a community ID. Otherwise, it's interpreted
  * as a community alias.
@@ -349,17 +383,13 @@ func AmGetCommunityFromParam(param string) (*Community, error) {
 		}
 		// else fall through to trying as alias
 	}
-	rs, err := amdb.Query("SELECT commid FROM communities WHERE alias = ?", param)
+	rc, err := AmGetCommunityByAlias(param)
 	if err == nil {
-		if rs.Next() {
-			var cid int32
-			rs.Scan(&cid)
-			return AmGetCommunity(cid)
-		} else {
+		if rc == nil {
 			return nil, fmt.Errorf("community with alias \"%s\" not found", param)
 		}
 	}
-	return nil, err
+	return rc, err
 }
 
 /* AmGetCommunitiesForUser returns a list of communities the user is a member of.
@@ -482,6 +512,8 @@ func AmGetCommunityProperty(cid int32, ndx int32) (*string, error) {
 	p, err := internalGetCommProp(cid, ndx)
 	if err != nil {
 		return nil, err
+	} else if p == nil {
+		return nil, nil
 	}
 	return p.Data, nil
 }
@@ -514,4 +546,88 @@ func AmSetCommunityProperty(cid int32, ndx int32, val *string) error {
 		}
 	}
 	return err
+}
+
+/* AmCreateCommunity creates a new community.
+ * Parameters:
+ *     name - The name for the new community.
+ *     alias - The alias for the new community. Must be unique.
+ *     hostUid - The UID of the creator and new host of the community.
+ *     language - Community default language.
+ *     synopsis - Community synopsis string.
+ *     rules - Community rules string.
+ *     joinkey - Community join key, or empty string for a public community.
+ *     hideDirectory - true to hide this community from the directory listings.
+ *     hideSearch - true to hide this community from searches.
+ *     remoteIP - Remote IP address for audit record.
+ * Returns:
+ *     Pointer to new Community record, or nil.
+ *     Standard Go error status.
+ */
+func AmCreateCommunity(name string, alias string, hostUid int32, language *string, synopsis *string,
+	rules *string, joinkey *string, hideDirectory bool, hideSearch bool, remoteIP string) (*Community, error) {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+
+	unlock := true
+	amdb.Exec("LOCK TABLES communities WRITE, commftrs WRITE, commmember WRITE;")
+	defer func() {
+		if unlock {
+			amdb.Exec("UNLOCK TABLES;")
+		}
+	}()
+
+	// validate alias does not already exist
+	rs, err := amdb.Query("SELECT commid FROM communities WHERE alias = ?", alias)
+	if err != nil {
+		return nil, err
+	}
+	if rs.Next() {
+		return nil, errors.New("a community with that alias already exists")
+	}
+
+	// establish the community record
+	_, err = amdb.Exec(`INSERT INTO communities (createdate, lastaccess, lastupdate, read_lvl, write_lvl,
+		create_lvl, delete_lvl, join_lvl, host_uid, hide_dir, hide_search, commname, language,
+		synopsis, rules, joinkey, alias) VALUES (NOW(), NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		AmRoleList("Community.Read").Default().Level(), AmRoleList("Community.Write").Default().Level(),
+		AmRoleList("Community.Create").Default().Level(), AmRoleList("Community.Delete").Default().Level(),
+		AmRoleList("Community.Join").Default().Level(), hostUid, hideDirectory, hideSearch, name, language,
+		synopsis, rules, joinkey, alias)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read back the community, which also puts it in the cache.
+	comm, err := AmGetCommunityByAlias(alias)
+	if err != nil {
+		return nil, err
+	} else if comm == nil {
+		return nil, errors.New("unable to find newly-generated community")
+	}
+
+	// Establish the community services.
+	err = AmEstablishCommunityServices(comm.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ensure the new host has host privileges in the community. The host's membership is "locked" so they
+	// can't unjoin and leave the community hostless.
+	_, err = amdb.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, 1)", comm.Id, hostUid,
+		AmDefaultRole("Community.Creator").Level())
+	if err != nil {
+		return nil, err
+	}
+	stuffMembership(comm.Id, hostUid, true, true, AmDefaultRole("Community.Creator").Level())
+
+	amdb.Exec("UNLOCK TABLES;")
+	unlock = false
+
+	// operation was a success - add an audit record
+	ar = AmNewAudit(AuditCommunityCreate, hostUid, remoteIP, fmt.Sprintf("id=%d", comm.Id),
+		fmt.Sprintf("name=%s", comm.Name), fmt.Sprintf("alias=%s", comm.Alias))
+	return comm, nil
 }
