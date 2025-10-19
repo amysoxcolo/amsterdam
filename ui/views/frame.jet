@@ -41,7 +41,7 @@
                 <div class="text-white font-bold text-base">
                     <a href="/TODO/help" class="text-yellow-300 hover:text-yellow-400">Help</a>
                     <span class="mx-2">|</span>
-                    <a href="/TODO/find" class="text-yellow-300 hover:text-yellow-400">Find</a>
+                    <a href="/find" class="text-yellow-300 hover:text-yellow-400">Find</a>
                 </div>
             </div>
 

@@ -1,0 +1,233 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title with Tabs -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Find:</h1>
+            <nav class="text-blue-800 text-lg">
+                {{ if mode == "COM" }}
+                    <span class="font-bold">Communities</span>
+                {{ else }}
+                    <a href="/find?mode=COM" class="text-blue-700 hover:text-blue-900">Communities</a>
+                {{ end }}
+                <span class="mx-2">|</span>
+                {{ if mode == "USR" }}
+                    <span class="font-bold">Users</span>
+                {{ else }}
+                    <a href="/find?mode=USR" class="text-blue-700 hover:text-blue-900">Users</a>
+                {{ end }}
+                <span class="mx-2">|</span>
+                {{ if mode == "CAT" }}
+                    <span class="font-bold">Categories</span>
+                {{ else }}
+                    <a href="/find?mode=CAT" class="text-blue-700 hover:text-blue-900">Categories</a>
+                {{ end }}
+                <span class="mx-2">|</span>
+                {{ if mode == "PST" }}
+                    <span class="font-bold">Posts</span>
+                {{ else }}
+                    <a href="/find?mode=PST" class="text-blue-700 hover:text-blue-900">Posts</a>
+                {{ end }}
+            </nav>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Search Form -->
+    <div class="max-w-3xl mb-8">
+        <form method="POST" action="/find">
+            <input type="hidden" name="mode" value="{{ mode }}">
+            <input type="hidden" name="ofs" value="0">
+
+            <div class="bg-gray-50 p-6 rounded-lg">
+                {{ if mode == "COM" }}
+                    <h2 class="text-xl font-bold text-black mb-4">Find Communities:</h2>
+                {{ else if mode == "USR" }}
+                    <h2 class="text-xl font-bold text-black mb-4">Find Users:</h2>
+                {{ else if mode == "CAT" }}
+                    <h2 class="text-xl font-bold text-black mb-4">Find Categories:</h2>
+                {{ else if mode == "PST" }}
+                    <h2 class="text-xl font-bold text-black mb-4">Find Posts:</h2>
+                {{ end }}
+                
+                <div class="space-y-4">
+                    {{ if mode == "COM" || mode == "USR" }}
+                    <!-- Field Selection -->
+                    <div class="flex items-center gap-2 text-sm">
+                        {{ if mode == "COM" }}
+                            <span class="text-black">Display all communities whose</span>
+                        {{ else if mode == "USR" }}
+                            <span class="text-black">Display all users whose</span>
+                        {{ end }}
+                        <select name="field" 
+                                class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            {{ if mode == "COM" }}
+                                <option value="name" {{ if field == "name" }}selected{{ end }}>name</option>
+                                <option value="synopsis"{{ if field == "synopsis" }}selected{{ end }}>synopsis</option>
+                            {{ else if mode == "USR" }}
+                                <option value="name" {{ if field == "name" }}selected{{ end }}>user name</option>
+                                <option value="descr"{{ if field == "descr" }}selected{{ end }}>description</option>
+                                <option value="first"{{ if field == "first" }}selected{{ end }}>first name</option>
+                                <option value="last"{{ if field == "last" }}selected{{ end }}>last name</option>
+                            {{ end }}
+                        </select>
+                    </div>
+
+                    <!-- Search Criteria -->
+                    <div class="flex items-center gap-2 text-sm flex-wrap">
+                        <select name="oper" 
+                                class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="st" {{ if oper == "st" }}selected{{ end }}>starts with the string</option>
+                            <option value="in" {{ if oper == "in" }}selected{{ end }}>contains the string</option>
+                            <option value="re" {{ if oper == "in" }}selected{{ end }}>matches the regular expression</option>
+                        </select>
+                        <input type="text" name="term" size="32" maxlength="255" value="{{ term }}"
+                            placeholder="Enter search term..."
+                            class="flex-1 min-w-64 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    {{ else if mode == "CAT" }}
+                    <input type="hidden" name="field" value="name">
+                    <!-- Field Selection -->
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-black">Display all categories whose name</span>
+                        <select name="oper" 
+                                class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="st" {{ if oper == "st" }}selected{{ end }}>starts with the string</option>
+                            <option value="in" {{ if oper == "in" }}selected{{ end }}>contains the string</option>
+                            <option value="re" {{ if oper == "in" }}selected{{ end }}>matches the regular expression</option>
+                        </select>
+                    </div>
+                    <!-- Search Criteria -->
+                    <div class="flex items-center gap-2 text-sm flex-wrap">
+                        <input type="text" name="term" size="32" maxlength="255" value="{{ term }}"
+                            placeholder="Enter search term..."
+                            class="flex-1 min-w-64 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    {{ else if mode == "PST" }}
+                    <input type="hidden" name="field" value="name">
+                    <input type="hidden" name="oper" value="in">
+                    <!-- Keyword search criteria -->
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-black">Keywords:</span>
+                        <input type="text" name="term" size="32" maxlength="255" value="{{ term }}"
+                            placeholder="Enter search term..."
+                            class="flex-1 min-w-64 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    {{ end }}
+
+                    <!-- Search Button -->
+                    <div>
+                        <button type="submit" 
+                                name="search"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Category Listing -->
+    {{ if mode == "COM" }}
+        <div class="max-w-3xl">
+            <hr class="border-gray-400 mb-4">
+            
+            <h2 class="text-lg font-bold text-black mb-4">Category: Top</h2>
+
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h3 class="text-base font-bold text-black mb-4">Subcategories:</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-1 gap-1">
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=1" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Arts</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=2" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Business</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=3" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Computers</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=4" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Games</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=5" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Health</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=6" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Home</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=7" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">News</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=8" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Recreation</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=9" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Reference and Education</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=10" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Regional</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=11" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Science</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=12" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Shopping</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=13" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Society</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=14" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Sports</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=15" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">System</a>
+                    </div>
+                    <div class="flex items-start gap-1">
+                        <span class="text-lg pt-0.5">🟣</span>
+                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=0" 
+                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Unclassified</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+</div>

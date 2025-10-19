@@ -61,6 +61,9 @@ type AmContext interface {
 	SetRC(int)
 	GetScratch(string) any
 	SetScratch(string, any)
+	GetSession(string) any
+	SetSession(string, any)
+	IsSession(string) bool
 	TestPermission(string) bool
 	URLParam(string) string
 	URLParamInt(string) (int, error)
@@ -355,6 +358,22 @@ func (c *amContext) SetScratch(name string, val any) {
 		c.scratchpad = make(map[string]any)
 	}
 	c.scratchpad[name] = val
+}
+
+// GetSession returns a session variable.
+func (c *amContext) GetSession(name string) any {
+	return c.session.Values["x."+name]
+}
+
+// SetSession sets a session variable.
+func (c *amContext) SetSession(name string, value any) {
+	c.session.Values["x."+name] = value
+}
+
+// IsSession tests to see whether a session value is set.
+func (c *amContext) IsSession(name string) bool {
+	_, ok := c.session.Values["x."+name]
+	return ok
 }
 
 // TestPermission tests the current user against permissions.
