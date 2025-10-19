@@ -62,7 +62,11 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	ctxt.VarMap().Set("commName", comm.Name)
-	// TODO: set photo URL
+	if ci.PhotoURL != nil && *ci.PhotoURL != "" {
+		ctxt.VarMap().Set("logoURL", *ci.PhotoURL)
+	} else {
+		ctxt.VarMap().Set("logoURL", "/img/builtin/default-community.jpg")
+	}
 	tz := prefs.Location()
 	loc := prefs.Localizer()
 	ctxt.VarMap().Set("dateCreated", loc.Strftime("%x %X", comm.CreateDate.In(tz)))

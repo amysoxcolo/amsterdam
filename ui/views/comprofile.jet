@@ -19,8 +19,8 @@
             <!-- Left Column: Image and Metadata -->
             <div class="flex-shrink-0 w-32">
                 <div class="border-2 border-gray-300 rounded mb-4">
-                    <img src="/img/builtin/default-community.jpg" 
-                         alt="{{ commName}} community logo" class="w-full h-auto">
+                    <img src="{{ logoURL }}" 
+                         alt="{{ commName }} community logo" class="w-full h-auto">
                 </div>
                 <div class="text-xs text-gray-700 space-y-2 mb-4">
                     <div><strong>Community created:</strong><br>{{ dateCreated }}</div>

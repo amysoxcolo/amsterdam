@@ -54,7 +54,7 @@ fields:
   - type: "communitylogo"
     name: "logo"
     caption: "Community logo"
-    param: "/TODO/comm/[CID]/admin/logo"
+    param: "/comm/[CID]/admin/logo"
   - type: "header"
     name: "header2"
     caption: "Location"

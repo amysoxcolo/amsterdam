@@ -243,11 +243,11 @@
                                 {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} (click to change):</label>
                             <input type="hidden" name="{{ .Name }}_data" value="{{ .Value }}"/>
                             {{ if .Disabled }}
-                                <img src="/img/builtin/default-community.jpg" class="w-28 h-16 rounded">
+                                <img src="{{ .Value }}" class="w-28 h-16 rounded">
                             {{ else }}
                                 <a href="{{ .Param }}"
                                 class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
-                                    <img src="/img/builtin/default-community.jpg" alt="Click to upload logo" class="w-28 h-16 rounded">
+                                    <img src="{{ .Value }}" alt="Click to upload logo" class="w-28 h-16 rounded">
                                 </a>
                             {{ end }}
                         </div>

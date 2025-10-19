@@ -15,10 +15,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 )
 
 /* CommunityAdminMenu renders the community administration menu.
@@ -67,6 +69,22 @@ func setupCommunityProfileDialog(dlg *ui.Dialog, comm *database.Community) {
 	}
 }
 
+// communityLogoURL returns the logo URL from the contact info, or a default.
+func communityLogoURL(ci *database.ContactInfo) string {
+	if ci.PhotoURL != nil && *ci.PhotoURL != "" {
+		return *ci.PhotoURL
+	}
+	return "/img/builtin/default-community.jpg"
+}
+
+/* CommunityProfileForm displays the dfialog for editing the community profile.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
 	if err != nil {
@@ -97,7 +115,7 @@ func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("rules").SetVal(comm.Rules)
 		dlg.Field("language").SetVal(comm.Language)
 		dlg.Field("url").SetVal(ci.URL)
-		// TODO: set logo URL
+		dlg.Field("logo").Value = communityLogoURL(ci)
 		dlg.Field("company").SetVal(ci.Company)
 		dlg.Field("addr1").SetVal(ci.Addr1)
 		dlg.Field("addr2").SetVal(ci.Addr2)
@@ -221,4 +239,105 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 		return dlg.RenderError(ctxt, "No known button click on POST to community profile.")
 	}
 	return ui.ErrorPage(ctxt, err)
+}
+
+func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
+	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, err)
+	}
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+	}
+	ci, err := comm.ContactInfo()
+	if err == nil {
+		ctxt.VarMap().Set("commName", comm.Name)
+		ctxt.VarMap().Set("commAlias", comm.Alias)
+		ctxt.VarMap().Set("logo_url", communityLogoURL(ci))
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Community Logo: "+comm.Name)
+		return "framed_template", "logo_upload.jet", nil
+	}
+	return ui.ErrorPage(ctxt, err)
+}
+
+func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
+	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, err)
+	}
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+	}
+	ci, err := comm.ContactInfo()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+	}
+	if ctxt.FormFieldIsSet("upload") {
+		file, err := ctxt.FormFile("thepic")
+		if err == nil {
+			var imageData []byte
+			var mimeType string
+			imageData, mimeType, err = ui.AmProcessUploadedImage(file, ui.CommunityLogoWidth, ui.CommunityLogoHeight,
+				ui.CommunityLogoMaxBytes)
+			if err == nil {
+				var img *database.ImageStore
+				img, err = database.AmStoreImage(database.ImageTypeCommunityLogo, comm.Id, mimeType, imageData)
+				if err == nil {
+					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
+					ci.PhotoURL = &photourl
+					_, err = ci.Save()
+					if err == nil {
+						return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+					}
+				}
+			}
+		}
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.VarMap().Set("commName", comm.Name)
+		ctxt.VarMap().Set("commAlias", comm.Alias)
+		ctxt.VarMap().Set("logo_url", communityLogoURL(ci))
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Community Logo: "+comm.Name)
+		return "framed_template", "logo_upload.jet", nil
+	}
+	if ctxt.FormFieldIsSet("remove") {
+		purl := ci.PhotoURL
+		happy := false
+		if purl == nil || *purl == "" {
+			// this is a no-op
+			return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+		}
+		if strings.HasPrefix(*purl, "/img/store/") {
+			id, err := strconv.Atoi((*purl)[11:])
+			if err != nil {
+				return ui.ErrorPage(ctxt, err)
+			}
+			defer func() {
+				if happy {
+					go func() {
+						err := database.AmDeleteImage(int32(id))
+						if err != nil {
+							log.Errorf("unable to delete image ID %d: %v", id, err)
+						}
+					}()
+				}
+			}()
+		}
+		ci.PhotoURL = nil
+		_, err := ci.Save()
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		happy = true
+		return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+	}
+	return ui.ErrorPage(ctxt, errors.New("invalid button detected in logo upload"))
 }

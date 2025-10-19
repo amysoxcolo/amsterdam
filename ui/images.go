@@ -35,11 +35,12 @@ var static_images embed.FS
 
 // Constants for default photo sizes.
 const (
-	UserPhotoWidth      = 100
-	UserPhotoHeight     = 100
-	UserPhotoMaxBytes   = 2097152 // 2 Mb
-	CommunityLogoWidth  = 110
-	CommunityLogoHeight = 60
+	UserPhotoWidth        = 100
+	UserPhotoHeight       = 100
+	UserPhotoMaxBytes     = 2097152 // 2 Mb
+	CommunityLogoWidth    = 110
+	CommunityLogoHeight   = 60
+	CommunityLogoMaxBytes = 2097152 // 2 Mb
 )
 
 /* mimeTypeFromFilenane returns the MIME type of a file, given its filename.
