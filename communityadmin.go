@@ -383,7 +383,7 @@ func CreateCommunityForm(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create a community"))
 	}
 	dlg, err := ui.AmLoadDialog("create_comm")
-	if err != nil {
+	if err == nil {
 		dlg.Field("language").Value = "en-US"
 		dlg.Field("country").Value = "US"
 		return dlg.Render(ctxt)
@@ -406,7 +406,7 @@ func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create a community"))
 	}
 	dlg, err := ui.AmLoadDialog("create_comm")
-	if err != nil {
+	if err == nil {
 		dlg.LoadFromForm(ctxt)
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" {

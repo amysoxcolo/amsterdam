@@ -571,14 +571,6 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 		AmStoreAudit(ar)
 	}()
 
-	unlock := true
-	amdb.Exec("LOCK TABLES communities WRITE, commftrs WRITE, commmember WRITE;")
-	defer func() {
-		if unlock {
-			amdb.Exec("UNLOCK TABLES;")
-		}
-	}()
-
 	// validate alias does not already exist
 	rs, err := amdb.Query("SELECT commid FROM communities WHERE alias = ?", alias)
 	if err != nil {
@@ -622,9 +614,6 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 		return nil, err
 	}
 	stuffMembership(comm.Id, hostUid, true, true, AmDefaultRole("Community.Creator").Level())
-
-	amdb.Exec("UNLOCK TABLES;")
-	unlock = false
 
 	// operation was a success - add an audit record
 	ar = AmNewAudit(AuditCommunityCreate, hostUid, remoteIP, fmt.Sprintf("id=%d", comm.Id),
