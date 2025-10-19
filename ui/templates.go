@@ -207,6 +207,19 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	}
 }
 
+// extractCommunityLogo extracts a community logo URL from a community.
+func extractCommunityLogo(a jet.Arguments) reflect.Value {
+	rc := "/img/builtin/default-community.jpg"
+	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
+	ci, err := comm.ContactInfo()
+	if err == nil {
+		if ci.PhotoURL != nil && *ci.PhotoURL != "" {
+			rc = *ci.PhotoURL
+		}
+	}
+	return reflect.ValueOf(rc)
+}
+
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -222,6 +235,7 @@ func SetupTemplates() {
 	views.AddGlobalFunc("GetMonthList", getMonthList)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
+	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
 
 	views.AddGlobalFunc("GetCountryList", func(a jet.Arguments) reflect.Value {
 		return reflect.ValueOf(internalGetCountryList())
