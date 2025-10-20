@@ -11,7 +11,7 @@
     <div class="mb-6">
         <div class="flex items-baseline gap-2">
             <h1 class="text-blue-800 text-4xl font-bold">Find:</h1>
-            <nav class="text-blue-800 text-lg">
+            <nav class="text-blue-800 text-2xl">
                 {{ if mode == "COM" }}
                     <span class="font-bold">Communities</span>
                 {{ else }}
@@ -45,6 +45,9 @@
         <form method="POST" action="/find">
             <input type="hidden" name="mode" value="{{ mode }}">
             <input type="hidden" name="ofs" value="0">
+            {{ if mode == "COM" }}
+                <input type="hidden" name="catid" value="{{ catid }}">
+            {{ end }}
 
             <div class="bg-gray-50 p-6 rounded-lg">
                 {{ if mode == "COM" }}
@@ -140,94 +143,42 @@
         <div class="max-w-3xl">
             <hr class="border-gray-400 mb-4">
             
-            <h2 class="text-lg font-bold text-black mb-4">Category: Top</h2>
+            <h2 class="text-lg font-bold text-black mb-4">
+                Category:
+                {{ if catid == -1 }}
+                    Top
+                {{ else }}
+                    <a href="/find?mode=COM&catid=-1" class="text-blue-700 hover:text-blue-900 font-bold">Top</a>
+                {{ end }}
+                {{ last := len(catHierarchy) - 1 }}
+                {{ range i, cat := catHierarchy }}
+                    :
+                    {{ if i == last }}
+                        {{ cat.Name }}
+                    {{ else }}
+                        <a href="/find?mode=COM&catid={{ cat.CatId }}"
+                           class="text-blue-700 hover:text-blue-900 font-bold">{{ cat.Name }}</a>
+                    {{ end }}
+                {{ end }}
+            </h2>
 
-            <div class="bg-gray-50 p-6 rounded-lg">
-                <h3 class="text-base font-bold text-black mb-4">Subcategories:</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-1 gap-1">
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=1" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Arts</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=2" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Business</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=3" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Computers</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=4" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Games</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=5" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Health</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=6" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Home</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=7" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">News</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=8" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Recreation</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=9" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Reference and Education</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=10" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Regional</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=11" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Science</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=12" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Shopping</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=13" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Society</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=14" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Sports</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=15" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">System</a>
-                    </div>
-                    <div class="flex items-start gap-1">
-                        <span class="text-lg pt-0.5">🟣</span>
-                        <a href="http://necrovenice:8080/venice/find.js.vs?disp=0&cat=0" 
-                            class="text-blue-700 hover:text-blue-900 font-bold text-sm">Unclassified</a>
+            {{ if len(catSubs) > 0 }}
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-base font-bold text-black mb-4">Subcategories:</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-1">
+                        {{ range _, cat := catSubs }}
+                            {{ if !cat.HideDirectory || showHiddenCat }}
+                                <div class="flex items-start gap-1">
+                                    <span class="text-sm pt-0.5">🟣</span>
+                                    <a href="/find?mode=COM&catid={{ cat.CatId }}" 
+                                    class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ cat.Name }}</a>
+                                    {{ if cat.SymLink != -1 }}<span class="text-sm pt-0.5">🔗</span>{{ end }}
+                                </div>
+                            {{ end }}
+                        {{ end }}
                     </div>
                 </div>
-            </div>
+            {{ end }}
         </div>
     {{ end }}
 </div>

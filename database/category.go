@@ -11,6 +11,8 @@ package database
 
 import (
 	"errors"
+	"slices"
+	"strings"
 	"sync"
 )
 
@@ -19,8 +21,8 @@ type Category struct {
 	CatId         int32  `db:"catid"`
 	Parent        int32  `db:"parent"`
 	SymLink       int32  `db:"symlink"`
-	HideDirectory int32  `db:"hide_dir"`
-	HideSearch    int32  `db:"hide_search"`
+	HideDirectory bool   `db:"hide_dir"`
+	HideSearch    bool   `db:"hide_search"`
 	Name          string `db:"name"`
 }
 
@@ -111,5 +113,29 @@ func AmGetCategoryHierarchy(catid int32) ([]*Category, error) {
 	for i := range ia {
 		rc = append(rc, ia[len(ia)-(i+1)])
 	}
+	return rc, nil
+}
+
+/* AmGetSubCategories returns a list of all subcategories of the given category ID.
+ * Parameters:
+ *     catid - The parent category ID to use.  May be -1 to return all "top level" categories.
+ * Returns:
+ *     List of subcategories of this category.
+ *     Standard Go error status.
+ */
+func AmGetSubCategories(catid int32) ([]*Category, error) {
+	err := loadCategories()
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]*Category, 0)
+	for i, cat := range allCategories {
+		if catid == cat.Parent {
+			rc = append(rc, &(allCategories[i]))
+		}
+	}
+	slices.SortFunc(rc, func(a, b *Category) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 	return rc, nil
 }

@@ -9,7 +9,53 @@
 // Package main contains the high-level Amsterdam logic.
 package main
 
-import "git.erbosoft.com/amy/amsterdam/ui"
+import (
+	"strconv"
+
+	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/ui"
+)
+
+// loadCategoryInformation loads the current category information to the context.
+func loadCategoryInformation(ctxt ui.AmContext) error {
+	u := ctxt.CurrentUser()
+	catid := int32(-1)
+	p := ctxt.Parameter("catid")
+	if p != "" {
+		v, err := strconv.Atoi(p)
+		if err != nil {
+			return err
+		}
+		catid = int32(v)
+	} else if ctxt.IsSession("find.catid") {
+		x := ctxt.GetSession("find.catid")
+		if xx, ok := x.(int32); ok {
+			catid = xx
+		}
+	}
+	if catid > -1 {
+		cat, err := database.AmGetCategory(catid) // this step also resolves symlinks
+		if err != nil {
+			return err
+		}
+		catid = cat.CatId
+	}
+	ctxt.SetSession("find.catid", catid)
+	ctxt.VarMap().Set("catid", catid)
+	ctxt.VarMap().Set("showHiddenCat", database.AmTestPermission("Global.ShowHiddenCategories", u.BaseLevel))
+	hier, err := database.AmGetCategoryHierarchy(catid)
+	if err != nil {
+		return err
+	}
+	ctxt.VarMap().Set("catHierarchy", hier)
+	subs, err := database.AmGetSubCategories(catid)
+	if err != nil {
+		return err
+	}
+	ctxt.VarMap().Set("catSubs", subs)
+	// TODO: set matching communities as well
+	return nil
+}
 
 /* FindPage renders the Amsterdam "Find" page.
  * Parameters:
@@ -33,11 +79,17 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 	if mode == "" {
 		mode = "COM"
 	}
+	ctxt.SetSession("find.mode", mode)
+	ctxt.VarMap().Set("mode", mode)
 	switch mode {
 	case "COM":
 		ctxt.VarMap().Set("field", "name")
 		ctxt.VarMap().Set("oper", "st")
 		ctxt.VarMap().Set("term", "")
+		err := loadCategoryInformation(ctxt)
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
 	case "USR":
 		ctxt.VarMap().Set("field", "name")
 		ctxt.VarMap().Set("oper", "st")
@@ -49,9 +101,7 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("term", "")
 	}
 
-	ctxt.VarMap().Set("mode", mode)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Find")
 	ctxt.SetLeftMenu("top")
-	ctxt.SetSession("find.mode", mode)
 	return "framed_template", "find.jet", nil
 }
