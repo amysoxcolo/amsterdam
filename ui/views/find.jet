@@ -139,7 +139,7 @@
     </div>
 
     <!-- Category Listing -->
-    {{ if mode == "COM" }}
+    {{ if isset(displayCats) }}
         <div class="max-w-3xl">
             <hr class="border-gray-400 mb-4">
             
@@ -180,5 +180,58 @@
                 </div>
             {{ end }}
         </div>
+    {{ end }}
+
+    {{ if isset(resultHeader) }}
+        <!-- Search results -->
+        <hr class="border-gray-400 mb-4">
+        <div class="flex justify-between items-center mb-4">
+            <div class="text-sm text-black font-bold">{{ resultHeader }}</div>
+        </div>
+        {{ if isset(resultList) }}
+            <!-- Results List -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <div class="space-y-4">
+                {{ range _, rx := resultList }}
+                    {{ if mode == "COM" }}
+                        <!-- Community Result -->
+                        <div class="flex items-start gap-3">
+                            <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
+                            <div class="flex-1">
+                                <div class="mb-2">
+                                    <a href="/comm/{{ rx.Alias }}/profile" 
+                                       class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Name }}</a>
+                                </div>
+                                <div class="text-sm text-gray-700 space-y-1">
+                                    <div>
+                                        <span class="font-medium">Host:</span>
+                                        {{ h := rx.HostQ() }}
+                                        <a href="/user/{{ h.Username }}" class="text-blue-700 hover:text-blue-900">{{ h.Username }}</a>
+                                        <span class="mx-2">-</span>
+                                        {{ n := rx.MemberCountQ(false) }}
+                                        {{ if n == 1 }}
+                                            <span>1 member</span>
+                                        {{ else }}
+                                            <span>{{ n }} members</span>
+                                        {{ end }}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Latest activity:</span> [Today, 9:52:48 PM]
+                                    </div>
+                                    <div class="italic text-gray-600 mt-2">{{ rx.Synopsis }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    {{ else if mode == "USR" }}
+                        TODO: I don't know USR yet
+                    {{ else if mode == "CAT" }}
+                        TODO: I don't know CAT yet
+                    {{ else if mode == "PST" }}
+                        TODO: I don't know PST yet
+                    {{ end }}
+                {{ end }}
+                </div>
+            </div>
+        {{ end }}
     {{ end }}
 </div>

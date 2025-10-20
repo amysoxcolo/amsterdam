@@ -10,6 +10,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -17,7 +18,7 @@ import (
 )
 
 // loadCategoryInformation loads the current category information to the context.
-func loadCategoryInformation(ctxt ui.AmContext) error {
+func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
 	u := ctxt.CurrentUser()
 	catid := int32(-1)
 	p := ctxt.Parameter("catid")
@@ -42,7 +43,8 @@ func loadCategoryInformation(ctxt ui.AmContext) error {
 	}
 	ctxt.SetSession("find.catid", catid)
 	ctxt.VarMap().Set("catid", catid)
-	ctxt.VarMap().Set("showHiddenCat", database.AmTestPermission("Global.ShowHiddenCategories", u.BaseLevel))
+	showHidden := database.AmTestPermission("Global.ShowHiddenCategories", u.BaseLevel)
+	ctxt.VarMap().Set("showHiddenCat", showHidden)
 	hier, err := database.AmGetCategoryHierarchy(catid)
 	if err != nil {
 		return err
@@ -53,7 +55,29 @@ func loadCategoryInformation(ctxt ui.AmContext) error {
 		return err
 	}
 	ctxt.VarMap().Set("catSubs", subs)
-	// TODO: set matching communities as well
+	ctxt.VarMap().Set("displayCats", true)
+
+	if catid > -1 {
+		// search for communities in this category
+		listMax := int(ctxt.Globals().MaxSearchPage)
+		commList, numComm, err := database.AmGetCommunitiesForCategory(catid, offset*listMax, listMax, showHidden)
+		if err != nil {
+			return err
+		}
+		if len(commList) == 0 {
+			ctxt.VarMap().Set("resultHeader", "Communities in Category (None)")
+		} else {
+			ctxt.VarMap().Set("resultHeader", fmt.Sprintf("Communities in Category (Displaying %d-%d of %d)",
+				offset*listMax+1, offset*listMax+len(commList), numComm))
+			ctxt.VarMap().Set("resultList", commList)
+			if offset > 0 {
+				ctxt.VarMap().Set("resultShowPrev", true)
+			}
+			if offset*listMax+len(commList) < numComm {
+				ctxt.VarMap().Set("resultShowNext", true)
+			}
+		}
+	}
 	return nil
 }
 
@@ -79,6 +103,14 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 	if mode == "" {
 		mode = "COM"
 	}
+	ofs := 0
+	p = ctxt.Parameter("ofs")
+	if p != "" {
+		v, err := strconv.Atoi(p)
+		if err == nil {
+			ofs = v
+		}
+	}
 	ctxt.SetSession("find.mode", mode)
 	ctxt.VarMap().Set("mode", mode)
 	switch mode {
@@ -86,7 +118,7 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("field", "name")
 		ctxt.VarMap().Set("oper", "st")
 		ctxt.VarMap().Set("term", "")
-		err := loadCategoryInformation(ctxt)
+		err := loadCategoryInformation(ctxt, ofs)
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}

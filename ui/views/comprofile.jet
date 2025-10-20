@@ -64,7 +64,7 @@
                                 <strong>Category:</strong> 
                                 {{ range i := categories }}
                                     {{ if i > 0 }}: {{ end }}
-                                    <a href="/TODO/find/communities-for-category" 
+                                    <a href="/find?mode=COM&catid={{ .CatId }}" 
                                        class="text-blue-700 hover:text-blue-900">{{ .Name }}</a>
                                 {{ end }}
                             </div>

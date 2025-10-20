@@ -10,6 +10,7 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"slices"
@@ -139,6 +140,18 @@ func (c *Community) Host() (*User, error) {
 	return AmGetUser(*c.HostUid)
 }
 
+// HostQ returns the reference to the community's host, quietly.
+func (c *Community) HostQ() *User {
+	if c.HostUid == nil {
+		return nil
+	}
+	u, err := AmGetUser(*c.HostUid)
+	if err != nil {
+		return nil
+	}
+	return u
+}
+
 func (c *Community) LanguageTag() (*language.Tag, error) {
 	if c.Language == nil {
 		return nil, nil
@@ -194,6 +207,26 @@ func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
 		memberCache.Add(key, &memberCacheData{isMember: false, locked: false, level: uint16(0)})
 	}
 	return false, false, uint16(0), err
+}
+
+// MemberCountQ returns the number of members in the community, quietly.
+func (c *Community) MemberCountQ(hidden bool) int {
+	var rs *sql.Rows
+	var err error
+	if hidden {
+		rs, err = amdb.Query("SELECT COUNT(*) FROM commmember WHERE commid = ?", c.Id)
+	} else {
+		rs, err = amdb.Query("SELECT COUNT(*) FROM commmember WHERE commid = ? AND hidden = 0", c.Id)
+	}
+	if err != nil {
+		return -1
+	}
+	if rs.Next() {
+		var rc int
+		rs.Scan(&rc)
+		return rc
+	}
+	return -1
 }
 
 /* TestPermission is shorthand that tests if a user has a permission with respect to the community.
@@ -619,4 +652,68 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 	ar = AmNewAudit(AuditCommunityCreate, hostUid, remoteIP, fmt.Sprintf("id=%d", comm.Id),
 		fmt.Sprintf("name=%s", comm.Name), fmt.Sprintf("alias=%s", comm.Alias))
 	return comm, nil
+}
+
+/* AmGetCommunitiesForCategory returns a list of communities for the specified category.
+ * Parameters:
+ *     catid - Category ID to search for.
+ *     offset - Number of communities to skip at beginning of list.
+ *     max - Maximum number of communities to return.
+ *     showAll - Include communities that are "hidden in directory."
+ * Returns:
+ *     Array of Community pointers representing the return elements.
+ *     The total number of communities matching this query (could be greater than max)
+ *	   Standard Go error status.
+ */
+func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool) ([]*Community, int, error) {
+	var rs *sql.Rows
+	var err error
+	if showAll {
+		rs, err = amdb.Query("SELECT COUNT(*) FROM communities WHERE catid = ?", catid)
+	} else {
+		rs, err = amdb.Query("SELECT COUNT(*) FROM communities WHERE catid = ? AND hide_dir = 0", catid)
+	}
+	if err != nil {
+		return nil, -1, err
+	}
+	if !rs.Next() {
+		return nil, -1, errors.New("internal error getting total match count")
+	}
+	var total int
+	rs.Scan(&total)
+	if total == 0 {
+		return make([]*Community, 0), 0, nil // short-circuit return
+	}
+	if showAll {
+		if offset > 0 {
+			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ? OFFSET ?",
+				catid, max, offset)
+		} else {
+			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ?", catid, max)
+		}
+	} else {
+		if offset > 0 {
+			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ? OFFSET ?",
+				catid, max, offset)
+		} else {
+			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ?", catid, max)
+		}
+	}
+	if err != nil {
+		return nil, total, err
+	}
+	rcCap := max
+	if rcCap > 10000 {
+		rcCap = 10000
+	}
+	rc := make([]*Community, 0, rcCap)
+	for rs.Next() {
+		var commid int32
+		rs.Scan(&commid)
+		c, err := AmGetCommunity(commid)
+		if err == nil {
+			rc = append(rc, c)
+		}
+	}
+	return rc, total, nil
 }
