@@ -15,8 +15,8 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/biter777/countries"
-	"golang.org/x/text/language/display"
 )
 
 /* ShowCommunity renders the community profile display.
@@ -119,9 +119,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	}
 	tag, err := comm.LanguageTag()
 	if err == nil && tag != nil {
-		my_lang := prefs.LanguageTag()
-		disp := display.Languages(*my_lang)
-		ctxt.VarMap().Set("language", disp.Name(tag))
+		ctxt.VarMap().Set("language", util.AmLanguageInLanguage(*tag, *prefs.LanguageTag()))
 	}
 	if comm.Rules != nil && *comm.Rules != "" {
 		ctxt.VarMap().Set("rules", *comm.Rules)

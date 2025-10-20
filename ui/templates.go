@@ -16,10 +16,7 @@ import (
 	"io"
 	"reflect"
 	"regexp"
-	"slices"
 	"strconv"
-	"strings"
-	"sync"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -28,12 +25,8 @@ import (
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
 	"github.com/CloudyKit/jet/v6/loaders/multi"
-	"github.com/biter777/countries"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
-	"github.com/tkuchiki/go-timezone"
-	"golang.org/x/text/language"
-	"golang.org/x/text/language/display"
 )
 
 //go:embed views/*
@@ -41,112 +34,6 @@ var static_views embed.FS
 
 // views is the main Jet template repository.
 var views *jet.Set
-
-//go:embed languages.txt
-var knownLanguages string
-
-// Language is a type for a list of all supportred languages.
-type Language struct {
-	Tag  string // the BCP 47 tag, such as "en-US"
-	Name string // the human-readable name, like "American English"
-}
-
-// cachedLanguageList is the cached language list.
-var cachedLanguageList []Language = nil
-
-// languageListMutex controls access to internalGetLanguageList.
-var languageListMutex sync.Mutex
-
-// internalGetLanguageList is a wrapper around "allTags" that sorts it by language name.
-func internalGetLanguageList() []Language {
-	languageListMutex.Lock()
-	defer languageListMutex.Unlock()
-	if cachedLanguageList == nil {
-		langs := strings.Split(knownLanguages, "\n")
-		enNamer := display.English.Tags()
-		cachedLanguageList = make([]Language, 0, len(langs))
-		for _, l := range langs {
-			tag, err := language.Parse(l)
-			if err == nil {
-				cachedLanguageList = append(cachedLanguageList, Language{
-					Tag:  tag.String(),
-					Name: enNamer.Name(tag),
-				})
-			} else {
-				log.Errorf("*** PUKE on parsing language tag %s: %v", l, err)
-			}
-		}
-
-		slices.SortFunc(cachedLanguageList, func(a Language, b Language) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
-	return cachedLanguageList
-}
-
-// cachedTimeZoneList is a wrapper around timezone.Timezones() that produces it by timezone name.
-var cachedTimeZoneList []string = nil
-
-// timeZoneListMutex controls access to internalGetTimeZoneList.
-var timeZoneListMutex sync.Mutex
-
-// internalGetTimeZoneList is a wrapper around TimeZone.TimeZones() that sorts and compacts the list.
-func internalGetTimeZoneList() []string {
-	timeZoneListMutex.Lock()
-	defer timeZoneListMutex.Unlock()
-	if cachedTimeZoneList == nil {
-		timezones := timezone.New().Timezones()
-		ilist := make([]string, 0, len(timezones)*5)
-		for k, v := range timezones {
-			ilist = append(ilist, k)
-			ilist = append(ilist, v...)
-		}
-
-		slices.Sort(ilist)
-		cachedTimeZoneList = slices.Compact(ilist)
-	}
-	return cachedTimeZoneList
-}
-
-// cachedCountryList is the cached country list after sorting.
-var cachedCountryList []countries.CountryCode = nil
-
-// countryListMutex control access to internalGetCountryList.
-var countryListMutex sync.Mutex
-
-// internalGetCountryList is a wrapper around countries.All() that sorts it by country name.
-func internalGetCountryList() []countries.CountryCode {
-	countryListMutex.Lock()
-	defer countryListMutex.Unlock()
-	if cachedCountryList == nil {
-		countryList := countries.All()
-		slices.SortFunc(countryList, func(a countries.CountryCode, b countries.CountryCode) int {
-			return strings.Compare(a.Info().Name, b.Info().Name)
-		})
-		if config.GlobalConfig.Rendering.CountryList.Prioritize != "" {
-			for i, c := range countryList {
-				if c.Info().Alpha2 == config.GlobalConfig.Rendering.CountryList.Prioritize {
-					newList := make([]countries.CountryCode, len(countryList))
-					newList[0] = c
-					copy(newList[1:], countryList[:i])
-					copy(newList[i+1:], countryList[i+1:])
-					countryList = newList
-				}
-			}
-		}
-		cachedCountryList = countryList
-	}
-	return cachedCountryList
-}
-
-// getMonthList is a simple wrapper that returns the names of the months to the template context.
-func getMonthList(a jet.Arguments) reflect.Value {
-	rc := make([]string, 12)
-	for m := time.January; m <= time.December; m++ {
-		rc[m-time.January] = m.String()
-	}
-	return reflect.ValueOf(rc)
-}
 
 // countRanger is a Ranger that can count from one value to another with a certain step.
 type countRanger struct {
@@ -232,19 +119,21 @@ func SetupTemplates() {
 	views.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
-	views.AddGlobalFunc("GetMonthList", getMonthList)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
 
 	views.AddGlobalFunc("GetCountryList", func(a jet.Arguments) reflect.Value {
-		return reflect.ValueOf(internalGetCountryList())
+		return reflect.ValueOf(util.AmCountryList())
 	})
 	views.AddGlobalFunc("GetLanguageList", func(a jet.Arguments) reflect.Value {
-		return reflect.ValueOf(internalGetLanguageList())
+		return reflect.ValueOf(util.AmLanguageList())
 	})
 	views.AddGlobalFunc("GetTimeZoneList", func(a jet.Arguments) reflect.Value {
-		return reflect.ValueOf(internalGetTimeZoneList())
+		return reflect.ValueOf(util.AmTimeZoneList())
+	})
+	views.AddGlobalFunc("GetMonthList", func(a jet.Arguments) reflect.Value {
+		return reflect.ValueOf(util.AmMonthList())
 	})
 	views.AddGlobalFunc("AmMenu", func(a jet.Arguments) reflect.Value {
 		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
@@ -258,11 +147,6 @@ func SetupTemplates() {
 		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
 		return reflect.ValueOf(util.CapitalizeString(s))
 	})
-
-	// preload the lists in the background
-	go internalGetCountryList()
-	go internalGetLanguageList()
-	go internalGetTimeZoneList()
 }
 
 // TemplateRenderer is the Renderer instance set into the Echo context at creation time, to render Jet templates.
