@@ -208,7 +208,7 @@
                                         {{ h := rx.HostQ() }}
                                         <a href="/user/{{ h.Username }}" class="text-blue-700 hover:text-blue-900">{{ h.Username }}</a>
                                         <span class="mx-2">-</span>
-                                        {{ n := rx.MemberCountQ(false) }}
+                                        {{ n := DisplayMemberCount(rx, .) }}
                                         {{ if n == 1 }}
                                             <span>1 member</span>
                                         {{ else }}
@@ -216,7 +216,7 @@
                                         {{ end }}
                                     </div>
                                     <div>
-                                        <span class="font-medium">Latest activity:</span> [Today, 9:52:48 PM]
+                                        <span class="font-medium">Latest activity:</span> {{ DisplayActivity(rx.LastAccess, .)}}
                                     </div>
                                     <div class="italic text-gray-600 mt-2">{{ rx.Synopsis }}</div>
                                 </div>

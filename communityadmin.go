@@ -239,6 +239,9 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 				flags.Set(database.CommunityFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
 				err = comm.SaveFlags(flags)
 			}
+			if err == nil {
+				err = comm.TouchUpdate()
+			}
 			if err != nil {
 				ctxt.ClearCommunityContext()
 				return dlg.RenderError(ctxt, err.Error())
@@ -321,6 +324,9 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
 					ci.PhotoURL = &photourl
 					_, err = ci.Save()
+					if err == nil {
+						err = comm.TouchUpdate()
+					}
 					if err == nil {
 						return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
 					}
@@ -456,6 +462,9 @@ func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
 			_, err = ci.Save()
 			if err == nil {
 				err = comm.SetContactID(ci.ContactId)
+			}
+			if err == nil {
+				err = comm.TouchUpdate()
 			}
 			if err != nil {
 				return dlg.RenderError(ctxt, err.Error())

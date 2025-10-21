@@ -107,6 +107,35 @@ func extractCommunityLogo(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+func displayActivity(a jet.Arguments) reflect.Value {
+	timeval := a.Get(0).Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	prefs, err := ctxt.CurrentUser().Prefs()
+	if err == nil {
+		return reflect.ValueOf(util.AmActivityString(timeval, prefs.Localizer()))
+	}
+	return reflect.ValueOf(fmt.Sprintf("<<%v>>", err))
+}
+
+func displayMemberCount(a jet.Arguments) reflect.Value {
+	showHidden := false
+	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	level := ctxt.CurrentUser().BaseLevel
+	mbr, _, clevel, err := comm.Membership(ctxt.CurrentUser())
+	if err == nil {
+		if mbr && clevel > level {
+			level = clevel
+		}
+		showHidden = comm.TestPermission("Community.ShowHiddenMembers", level)
+	}
+	count, err := comm.MemberCount(showHidden)
+	if err != nil {
+		return reflect.ValueOf(-1)
+	}
+	return reflect.ValueOf(count)
+}
+
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -122,17 +151,19 @@ func SetupTemplates() {
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
+	views.AddGlobalFunc("DisplayActivity", displayActivity)
+	views.AddGlobalFunc("DisplayMemberCount", displayMemberCount)
 
-	views.AddGlobalFunc("GetCountryList", func(a jet.Arguments) reflect.Value {
+	views.AddGlobalFunc("GetCountryList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmCountryList())
 	})
-	views.AddGlobalFunc("GetLanguageList", func(a jet.Arguments) reflect.Value {
+	views.AddGlobalFunc("GetLanguageList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmLanguageList())
 	})
-	views.AddGlobalFunc("GetTimeZoneList", func(a jet.Arguments) reflect.Value {
+	views.AddGlobalFunc("GetTimeZoneList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmTimeZoneList())
 	})
-	views.AddGlobalFunc("GetMonthList", func(a jet.Arguments) reflect.Value {
+	views.AddGlobalFunc("GetMonthList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmMonthList())
 	})
 	views.AddGlobalFunc("AmMenu", func(a jet.Arguments) reflect.Value {
@@ -173,5 +204,9 @@ func (r *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Con
 	if amctxt != nil {
 		vmap = amctxt.VarMap()
 	}
-	return view.Execute(w, vmap, data)
+	err = view.Execute(w, vmap, data)
+	if err != nil {
+		log.Errorf("Template \"%s\" failed exec: %v", name, err)
+	}
+	return err
 }

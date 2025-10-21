@@ -284,6 +284,9 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	}
 	buf := new(bytes.Buffer)
 	err = view.Execute(buf, c.VarMap(), c)
+	if err != nil {
+		log.Errorf("template \"%s\" failed subrender exec: %v", name, err)
+	}
 	return buf.Bytes(), err
 }
 

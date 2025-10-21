@@ -11,10 +11,12 @@
 package util
 
 import (
+	"fmt"
 	"slices"
 	"sync"
 	"time"
 
+	"github.com/klauspost/lctime"
 	"github.com/tkuchiki/go-timezone"
 )
 
@@ -49,6 +51,48 @@ func AmMonthList() []string {
 		rc[m-time.January] = m.String()
 	}
 	return rc
+}
+
+/* AmActivityString generates a string to represent the activity based on the given timestamp
+ * and the current time.
+ * Parameters:
+ *     timeval - The time value representing the last point of activity.
+ *     loc - The localizer used to format the time.
+ * Returns:
+ *     The string activity equivalent.
+ */
+func AmActivityString(timeval *time.Time, loc lctime.Localizer) string {
+	if timeval == nil {
+		return "Never"
+	}
+	now := time.Now().In(timeval.Location())
+	day := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if timeval.Compare(day) == 1 {
+		return "Today, " + loc.Strftime("%X", *timeval)
+	}
+	day = time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, now.Location())
+	if timeval.Compare(day) == 1 {
+		return "Yesterday, " + loc.Strftime("%X", *timeval)
+	}
+	duration := now.Sub(*timeval)
+	days := duration.Hours() / 24.0
+	day = time.Date(now.Year(), now.Month()-1, now.Day(), 0, 0, 0, 0, now.Location())
+	if timeval.Compare(day) == 1 {
+		return fmt.Sprintf("%d days ago", int(days))
+	}
+	day = time.Date(now.Year()-1, now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if timeval.Compare(day) == 1 {
+		nm := int(days / 30.0)
+		if nm == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", nm)
+	}
+	ny := int(days / 365.25)
+	if ny == 1 {
+		return "1 year ago"
+	}
+	return fmt.Sprintf("%d years ago", ny)
 }
 
 // init preloads the time zone list.

@@ -209,8 +209,8 @@ func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
 	return false, false, uint16(0), err
 }
 
-// MemberCountQ returns the number of members in the community, quietly.
-func (c *Community) MemberCountQ(hidden bool) int {
+// MemberCount returns the number of members in the community, quietly.
+func (c *Community) MemberCount(hidden bool) (int, error) {
 	var rs *sql.Rows
 	var err error
 	if hidden {
@@ -219,14 +219,14 @@ func (c *Community) MemberCountQ(hidden bool) int {
 		rs, err = amdb.Query("SELECT COUNT(*) FROM commmember WHERE commid = ? AND hidden = 0", c.Id)
 	}
 	if err != nil {
-		return -1
+		return -1, err
 	}
 	if rs.Next() {
 		var rc int
 		rs.Scan(&rc)
-		return rc
+		return rc, nil
 	}
-	return -1
+	return -1, errors.New("internal error reading member count")
 }
 
 /* TestPermission is shorthand that tests if a user has a permission with respect to the community.
@@ -254,7 +254,7 @@ func (c *Community) TestPermission(perm string, level uint16) bool {
 	}
 }
 
-// PermissionLevel returns trhe permission level for a permission name.
+// PermissionLevel returns the permission level for a permission name.
 func (c *Community) PermissionLevel(perm string) uint16 {
 	switch perm {
 	case "Community.Read":
@@ -346,6 +346,41 @@ func (c *Community) SetContactID(cid int32) error {
 	}
 	c.ContactId = cid
 	return nil
+}
+
+// Touch updates the last access time of the community.
+func (c *Community) Touch() error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	_, err := amdb.Exec("UPDATE communities SET lastaccess = NOW() WHERE commid = ?", c.Id)
+	if err == nil {
+		rs, err := amdb.Query("SELECT lastaccess FROM communities WHERE commid = ?", c.Id)
+		if err == nil {
+			rs.Next()
+			var na time.Time
+			rs.Scan(&na)
+			c.LastAccess = &na
+		}
+	}
+	return err
+}
+
+// TouchUpdate updates the last access and last update times of the community.
+func (c *Community) TouchUpdate() error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	_, err := amdb.Exec("UPDATE communities SET lastaccess = NOW(), lastupdate = NOW() WHERE commid = ?", c.Id)
+	if err == nil {
+		rs, err := amdb.Query("SELECT lastaccess, lastupdate FROM communities WHERE commid = ?", c.Id)
+		if err != nil {
+			rs.Next()
+			var na, nu time.Time
+			rs.Scan(&na, &nu)
+			c.LastAccess = &na
+			c.LastUpdate = &nu
+		}
+	}
+	return err
 }
 
 /* AmGetCommunity returns a reference to the specified community.
