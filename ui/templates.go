@@ -12,6 +12,7 @@ package ui
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -90,7 +91,7 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 			return reflect.ValueOf(err)
 		}
 	} else {
-		return reflect.ValueOf(fmt.Errorf("cannot locate year: marker in param"))
+		return reflect.ValueOf(errors.New("cannot locate year: marker in param"))
 	}
 }
 

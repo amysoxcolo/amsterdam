@@ -70,6 +70,7 @@ func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
 			ctxt.VarMap().Set("resultHeader", fmt.Sprintf("Communities in Category (Displaying %d-%d of %d)",
 				offset*listMax+1, offset*listMax+len(commList), numComm))
 			ctxt.VarMap().Set("resultList", commList)
+			ctxt.VarMap().Set("resultFromDirectory", true)
 			if offset > 0 {
 				ctxt.VarMap().Set("resultShowPrev", true)
 			}
@@ -113,6 +114,7 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.SetSession("find.mode", mode)
 	ctxt.VarMap().Set("mode", mode)
+	ctxt.VarMap().Set("ofs", ofs)
 	switch mode {
 	case "COM":
 		ctxt.VarMap().Set("field", "name")
@@ -127,9 +129,12 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("oper", "st")
 		ctxt.VarMap().Set("term", "")
 	case "CAT":
+		ctxt.VarMap().Set("field", "name")
 		ctxt.VarMap().Set("oper", "st")
 		ctxt.VarMap().Set("term", "")
 	case "PST":
+		ctxt.VarMap().Set("field", "name")
+		ctxt.VarMap().Set("oper", "in")
 		ctxt.VarMap().Set("term", "")
 	}
 

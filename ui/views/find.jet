@@ -45,9 +45,6 @@
         <form method="POST" action="/find">
             <input type="hidden" name="mode" value="{{ mode }}">
             <input type="hidden" name="ofs" value="0">
-            {{ if mode == "COM" }}
-                <input type="hidden" name="catid" value="{{ catid }}">
-            {{ end }}
 
             <div class="bg-gray-50 p-6 rounded-lg">
                 {{ if mode == "COM" }}
@@ -127,8 +124,7 @@
 
                     <!-- Search Button -->
                     <div>
-                        <button type="submit" 
-                                name="search"
+                        <button type="submit" name="search"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
                             Search
                         </button>
@@ -231,6 +227,43 @@
                     {{ end }}
                 {{ end }}
                 </div>
+                {{ if isset(resultShowPrev) || isset(resultShowNext) }}
+                    <div class="flex justify-center gap-4 mt-6">
+                        {{ if isset(resultFromDirectory) }}
+                            {{ if isset(resultShowPrev) }}
+                                <a href="/find?mode=COM&catid={{ catid }}&ofs={{ ofs - 1 }}"
+                                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
+                                   ⏪ Prev
+                                </a>
+                            {{ end }}
+                            {{ if isset(resultShowNext) }}
+                                <a href="/find?mode=COM&catid={{ catid }}&ofs={{ ofs + 1 }}"
+                                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
+                                   Next ⏩
+                                </a>
+                            {{ end }}
+                        {{ else }}
+                            <form method="POST" action="/find">
+                                <input type="hidden" name="mode" value="{{ mode }}"/>
+                                <input type="hidden" name="ofs" value="{{ ofs }}"/>
+                                <input type="hidden" name="field" value="{{ field }}"/>
+                                <input type="hidden" name="oper" value="{{ oper }}"/>
+                                <input type="hidden" name="term" value="{{ term }}"/>
+                                {{ if isset(resultShowPrev) }}
+                                    <button type="submit" name="prev"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                        ⏪ Prev
+                                    </button>
+                                {{ if isset(resultShowNext) }}
+                                    <button type="submit" name="next"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                        Next ⏩
+                                    </button>
+                                {{ end }}
+                            </form>
+                        {{ end }}
+                    </div>
+                {{ end }}
             </div>
         {{ end }}
     {{ end }}
