@@ -1,0 +1,41 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">Unjoin Community</h1>
+        <span class="text-blue-800 text-2xl font-bold ml-2">{{ comm.Name }}</span>
+        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+    </div>
+
+    <div class="bg-yellow-50 p-6 rounded-lg">
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-black mb-4">⚠️ Warning</h2>
+            <p class="text-black">
+                You are about to unjoin the {{ comm.Name }} community.
+                {{ if comm.MembersOnly }}
+                    You will lose access to all content of the community, as well as the ability to interact with
+                    the community as a whole.
+                {{ else }}
+                    You will lose the ability to interact with the community's members and content.
+                {{ end }}
+            </p>
+            <p class="text-black">Please confirm if you wish to proceed.</p>
+        </div>
+        <div class="flex justify-center gap-4 mt-6">
+            <form method="POST" action="/comm/{{ comm.Alias }}/unjoin">
+                <button type="submit" name="cancel"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Cancel</button>
+                <button type="submit" name="unjoin"
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                    Unjoin {{ comm.Name }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

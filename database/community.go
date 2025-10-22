@@ -273,7 +273,7 @@ func (c *Community) SetMembership(u *User, level uint16, locked bool, personUID 
 				stuffMembership(c.Id, u.Uid, true, locked, level)
 			}
 		} else {
-			_, err := amdb.Exec("INSERT INTO commmember (comm_id, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
+			_, err := amdb.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
 				c.Id, u.Uid, level, locked)
 			if err != nil {
 				return err

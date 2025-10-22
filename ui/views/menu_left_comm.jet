@@ -24,6 +24,6 @@
         {{ end }}
     {{ end }}
     {{ if .IsMember() && !.IsMemberLocked() }}
-        <div class="mb-1"><a href="/TODO/comm/{{ comm.Alias }}/unjoin" class="text-red-700 hover:text-red-900">⚠️ Unjoin</a></div>
+        <div class="mb-1"><a href="/comm/{{ comm.Alias }}/unjoin" class="text-red-700 hover:text-red-900">⚠️ Unjoin</a></div>
     {{ end }}   
 </div>
