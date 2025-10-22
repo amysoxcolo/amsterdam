@@ -782,8 +782,8 @@ func AmSetUserProperty(uid int32, ndx int32, val *string) error {
  *         SearchUserOperSubstring - The specified field contains the string "term".
  *         SearchUserOperRegex - The specified field matches the regular expression in "term".
  *     term - The search term, as specified above.
- *     offset - Number of communities to skip at beginning of list.
- *     max - Maximum number of communities to return.
+ *     offset - Number of users to skip at beginning of list.
+ *     max - Maximum number of users to return.
  * Returns:
  *     Array of User pointers representing the return elements.
  *     The total number of users matching this query (could be greater than max)

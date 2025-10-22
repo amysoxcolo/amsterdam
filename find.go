@@ -254,7 +254,30 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 	case "CAT":
-		// TODO
+		listMax = 20
+		var iOper int
+		switch oper {
+		case "st":
+			iOper = database.SearchCatOperPrefix
+		case "in":
+			iOper = database.SearchCatOperSubstring
+		case "re":
+			iOper = database.SearchCatOperRegex
+		default:
+			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+			return "framed_template", "find.jet", nil
+		}
+		var catlist []*database.Category
+		catlist, total, err = database.AmSearchCategories(iOper, term, ofs*listMax, listMax,
+			ctxt.TestPermission("Global.ShowHiddenCategories"), ctxt.TestPermission("Global.SearchHiddenCategories"))
+		if err == nil {
+			if catlist == nil {
+				numResults = 0
+			} else {
+				numResults = len(catlist)
+				ctxt.VarMap().Set("resultList", catlist)
+			}
+		}
 	case "PST":
 		// TODO
 	}

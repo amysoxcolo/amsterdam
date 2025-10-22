@@ -252,7 +252,14 @@
                             </div>
                         </div>
                     {{ else if mode == "CAT" }}
-                        TODO: I don't know CAT yet
+                        <!-- Category Result -->
+                        <div class="flex items-start gap-3">
+                            <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
+                            <div class="flex-1 mb-2">
+                                <a href="/find?mode=COM&catid={{ rx.CatId }}" 
+                                    class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ DisplayExpandCat(rx) }}</a>
+                            </div>
+                        </div>
                     {{ else if mode == "PST" }}
                         TODO: I don't know PST yet
                     {{ end }}

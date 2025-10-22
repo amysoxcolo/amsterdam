@@ -14,6 +14,8 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"git.erbosoft.com/amy/amsterdam/util"
 )
 
 // Category is the structure defining a category.
@@ -26,6 +28,13 @@ type Category struct {
 	Name          string `db:"name"`
 }
 
+// Selectors for operator in category search.
+const (
+	SearchCatOperPrefix    = 0
+	SearchCatOperSubstring = 1
+	SearchCatOperRegex     = 2
+)
+
 // allCategories is the list of all categories loaded from the database.
 var allCategories []Category
 
@@ -34,6 +43,19 @@ var categoryIdMap map[int32]*Category = make(map[int32]*Category)
 
 // categoryMutex syncs the loading of the categories.
 var categoryMutex sync.Mutex
+
+// isCatEnabled determines if category features are enabled.
+func isCatEnabled() (bool, error) {
+	g, err := AmGlobals()
+	if err != nil {
+		return false, err
+	}
+	set, err := g.Flags()
+	if err != nil {
+		return false, err
+	}
+	return !set.Get(GlobalFlagNoCategories), nil
+}
 
 // loadCategories loads the categories list from the database.
 func loadCategories() error {
@@ -69,7 +91,14 @@ func loadCategories() error {
  *     Standard Go error status.
  */
 func AmGetCategory(catid int32) (*Category, error) {
-	err := loadCategories()
+	ok, err := isCatEnabled()
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("category feature not supported")
+	}
+	err = loadCategories()
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +122,14 @@ func AmGetCategory(catid int32) (*Category, error) {
  *     Standard Go error status.
  */
 func AmGetCategoryHierarchy(catid int32) ([]*Category, error) {
-	err := loadCategories()
+	ok, err := isCatEnabled()
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("category feature not supported")
+	}
+	err = loadCategories()
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +160,14 @@ func AmGetCategoryHierarchy(catid int32) ([]*Category, error) {
  *     Standard Go error status.
  */
 func AmGetSubCategories(catid int32) ([]*Category, error) {
-	err := loadCategories()
+	ok, err := isCatEnabled()
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("category feature not supported")
+	}
+	err = loadCategories()
 	if err != nil {
 		return nil, err
 	}
@@ -138,4 +181,83 @@ func AmGetSubCategories(catid int32) ([]*Category, error) {
 		return strings.Compare(a.Name, b.Name)
 	})
 	return rc, nil
+}
+
+/* AmSearchCategories searches for categories matching certain criteria.
+ * Parameters:
+ *     oper - The operation to perform on the category name:
+ *         SearchCatOperPrefix - The category name has the string "term" as a prefix.
+ *         SearchCatOperSubstring - The category name contains the string "term".
+ *         SearchCatOperRegex - The category name matches the regular expression in "term".
+ *     term - The search term, as specified above.
+ *     offset - Number of categories to skip at beginning of list.
+ *     max - Maximum number of categories to return.
+ * Returns:
+ *     Array of Category pointers representing the return elements.
+ *     The total number of categories matching this query (could be greater than max)
+ *	   Standard Go error status.
+ */
+func AmSearchCategories(oper int, term string, offset int, max int, showAll bool, searchAll bool) ([]*Category, int, error) {
+	ok, err := isCatEnabled()
+	if err != nil {
+		return nil, -1, err
+	}
+	if !ok {
+		return nil, -1, errors.New("category feature not supported")
+	}
+	var queryString strings.Builder
+	queryString.WriteString("name ")
+	switch oper {
+	case SearchCatOperPrefix:
+		queryString.WriteString("LIKE '")
+		queryString.WriteString(util.SqlEscape(term, true))
+		queryString.WriteString("%'")
+	case SearchCatOperSubstring:
+		queryString.WriteString("LIKE '%")
+		queryString.WriteString(util.SqlEscape(term, true))
+		queryString.WriteString("%'")
+	case SearchCatOperRegex:
+		queryString.WriteString("REGEXP '")
+		queryString.WriteString(util.SqlEscape(term, false))
+		queryString.WriteString("'")
+	default:
+		return nil, -1, errors.New("invalid operator to search function")
+	}
+	if !showAll {
+		queryString.WriteString(" AND hide_dir = 0")
+	}
+	if !searchAll {
+		queryString.WriteString(" AND hide_search = 0")
+	}
+	q := queryString.String()
+	rs, err := amdb.Query("SELECT COUNT(*) FROM refcategory WHERE " + q)
+	if err != nil {
+		return nil, -1, err
+	}
+	if !rs.Next() {
+		return nil, -1, errors.New("internal error getting category total")
+	}
+	var total int
+	rs.Scan(&total)
+	if total == 0 {
+		return make([]*Category, 0), 0, nil
+	}
+	if offset > 0 {
+		rs, err = amdb.Query("SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ? OFFSET ?", max, offset)
+	} else {
+		rs, err = amdb.Query("SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ?", max)
+	}
+	if err != nil {
+		return nil, total, err
+	}
+	rc := make([]*Category, 0, min(max, 1000))
+	for rs.Next() {
+		var catid int32
+		rs.Scan(&catid)
+		c, err := AmGetCategory(catid)
+		if err == nil {
+			rc = append(rc, c)
+		}
+	}
+	return rc, total, nil
 }

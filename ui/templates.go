@@ -164,6 +164,19 @@ func displayFullName(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc.String())
 }
 
+func displayExpandCat(a jet.Arguments) reflect.Value {
+	cat := a.Get(0).Convert(reflect.TypeFor[*database.Category]()).Interface().(*database.Category)
+	hier, _ := database.AmGetCategoryHierarchy(cat.CatId)
+	var rc strings.Builder
+	for i, c := range hier {
+		if i > 0 {
+			rc.WriteString(": ")
+		}
+		rc.WriteString(c.Name)
+	}
+	return reflect.ValueOf(rc.String())
+}
+
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -182,6 +195,7 @@ func SetupTemplates() {
 	views.AddGlobalFunc("DisplayActivity", displayActivity)
 	views.AddGlobalFunc("DisplayMemberCount", displayMemberCount)
 	views.AddGlobalFunc("DisplayFullName", displayFullName)
+	views.AddGlobalFunc("DisplayExpandCat", displayExpandCat)
 
 	views.AddGlobalFunc("GetCountryList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmCountryList())
