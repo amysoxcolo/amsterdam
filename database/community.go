@@ -163,6 +163,7 @@ func (c *Community) HostQ() *User {
 	return u
 }
 
+// LanguageTag returns the tag for the community's language.
 func (c *Community) LanguageTag() (*language.Tag, error) {
 	if c.Language == nil {
 		return nil, nil
