@@ -7,6 +7,7 @@ After the point where it reaches feature parity with Venice circa 2006.
 * A better way to set up the database than `setup/database.sql`. Bring the table setup into the application somehow.
   The [migrate](https://github.com/golang-migrate/migrate) library might be of use here.
 * Either implement the Calendar and Chat, or take those menu entries out.
+  * Should those be community "services" instead?
   * For Chat, if it's implemented, it should use XMPP.
 * Implement proper help and online documentation.
 

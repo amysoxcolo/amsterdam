@@ -231,6 +231,58 @@ func (c *Community) MemberCount(hidden bool) (int, error) {
 	return -1, errors.New("internal error reading member count")
 }
 
+/* SetMembership sets a user's membership status within the community.
+ * Parameters:
+ *     u - The user to change the membership status of.
+ *     level - Their membership level. If this is 0, they are removed from membership.
+ *     locked - Whether they can unjoin the community themselves. Ignored if removing them.
+ * Returns:
+ *     Standard Go error status.
+ */
+func (c *Community) SetMembership(u *User, level uint16, locked bool) error {
+	if level == 0 {
+		_, err := amdb.Exec("DELETE FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+		if err != nil {
+			return err
+		}
+		stuffMembership(c.Id, u.Uid, false, false, 0)
+		err = AmOnUserLeaveCommunityServices(c, u)
+		if err != nil {
+			return err
+		}
+	} else {
+		rs, err := amdb.Query("SELECT granted_lvl, locked FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+		if err != nil {
+			return err
+		}
+		if rs.Next() {
+			var oldLevel uint16
+			var lockStatus bool
+			rs.Scan(&oldLevel, &lockStatus)
+			if level != oldLevel || lockStatus != locked {
+				_, err := amdb.Exec("UPDATE commmember SET granted_lvl = ?, locked = ? WHERE commid = ? AND uid = ?",
+					level, locked, c.Id, u.Uid)
+				if err != nil {
+					return err
+				}
+				stuffMembership(c.Id, u.Uid, true, locked, level)
+			}
+		} else {
+			_, err := amdb.Exec("INSERT INTO commmember (comm_id, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
+				c.Id, u.Uid, level, locked)
+			if err != nil {
+				return err
+			}
+			stuffMembership(c.Id, u.Uid, true, locked, level)
+			err = AmOnUserJoinCommunityServices(c, u)
+			if err != nil {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
 /* TestPermission is shorthand that tests if a user has a permission with respect to the community.
  * Parameters:
  *     user - The user to be checked.
@@ -670,12 +722,6 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 		return nil, errors.New("unable to find newly-generated community")
 	}
 
-	// Establish the community services.
-	err = AmEstablishCommunityServices(comm.Id)
-	if err != nil {
-		return nil, err
-	}
-
 	// Ensure the new host has host privileges in the community. The host's membership is "locked" so they
 	// can't unjoin and leave the community hostless.
 	_, err = amdb.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, 1)", comm.Id, hostUid,
@@ -684,6 +730,12 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 		return nil, err
 	}
 	stuffMembership(comm.Id, hostUid, true, true, AmDefaultRole("Community.Creator").Level())
+
+	// Establish the community services.
+	err = AmEstablishCommunityServices(comm)
+	if err != nil {
+		return nil, err
+	}
 
 	// operation was a success - add an audit record
 	ar = AmNewAudit(AuditCommunityCreate, hostUid, remoteIP, fmt.Sprintf("id=%d", comm.Id),
