@@ -12,6 +12,7 @@ package util
 
 import (
 	"regexp"
+	"strings"
 	"unicode"
 )
 
@@ -38,6 +39,36 @@ func CapitalizeString(s string) string {
 		return string(runes)
 	}
 	return ""
+}
+
+/* SqlEscape escapes a string in SQL terms.
+ * Parameters:
+ *     s - The string to be escaped.
+ *     wildcards - If true, also escape the wildcard characters % and _.
+ * Returns:
+ *     The escaped string.
+ */
+func SqlEscape(s string, wildcards bool) string {
+	var sb strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch c {
+		case '\\', 0, '\n', '\r', '\'', '"':
+			sb.WriteByte('\\')
+			sb.WriteByte(c)
+		case '\032':
+			sb.WriteByte('\\')
+			sb.WriteByte('Z')
+		case '%', '_':
+			if wildcards {
+				sb.WriteByte('\\')
+			}
+			sb.WriteByte(c)
+		default:
+			sb.WriteByte(c)
+		}
+	}
+	return sb.String()
 }
 
 /* IsNumeric returns true if the string is numeric (all digits).

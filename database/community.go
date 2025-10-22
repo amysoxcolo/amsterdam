@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -67,6 +68,16 @@ const (
 // Flag values for community property index CommunityPropFlags defined.
 const (
 	CommunityFlagPicturesInPosts = uint(0)
+)
+
+// Field and operation selectors for AmSearchCommunities.
+const (
+	SearchCommFieldName     = 0
+	SearchCommFieldSynopsis = 1
+
+	SearchCommOperPrefix    = 0
+	SearchCommOperSubstring = 1
+	SearchCommOperRegex     = 2
 )
 
 // communityCache is the cache for Community objects.
@@ -161,16 +172,6 @@ func (c *Community) LanguageTag() (*language.Tag, error) {
 		return nil, err
 	}
 	return &t, nil
-}
-
-func (c *Community) HideMode() string {
-	if c.HideFromSearch {
-		return "BOTH"
-	} else if c.HideFromDirectory {
-		return "DIRECTORY"
-	} else {
-		return "NONE"
-	}
 }
 
 /* Membership returns the details of the specified user's membership in the community.
@@ -737,11 +738,88 @@ func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool)
 	if err != nil {
 		return nil, total, err
 	}
-	rcCap := max
-	if rcCap > 10000 {
-		rcCap = 10000
+	rc := make([]*Community, 0, min(max, 10000))
+	for rs.Next() {
+		var commid int32
+		rs.Scan(&commid)
+		c, err := AmGetCommunity(commid)
+		if err == nil {
+			rc = append(rc, c)
+		}
 	}
-	rc := make([]*Community, 0, rcCap)
+	return rc, total, nil
+}
+
+/* AmSearchCommunities searches for communities matching certain criteria.
+ * Parameters:
+ *     field - A value indicating which field to search:
+ *         SearchCommFieldName - The community name.
+ *         SearchCommFieldSynopsis - The communty synopsis.
+ *     oper - The operation to perform on the search field:
+ *         SearchCommOperPrefix - The specified field has the string "term" as a prefix.
+ *         SearchCommOperSubstring - The specified field contains the string "term".
+ *         SearchCommOperRegex - The specified field matches the regular expression in "term".
+ *     term - The search term, as specified above.
+ *     offset - Number of communities to skip at beginning of list.
+ *     max - Maximum number of communities to return.
+ *     showAll - Include communities that are "hidden in search."
+ * Returns:
+ *     Array of Community pointers representing the return elements.
+ *     The total number of communities matching this query (could be greater than max)
+ *	   Standard Go error status.
+ */
+func AmSearchCommunities(field int, oper int, term string, offset int, max int, showAll bool) ([]*Community, int, error) {
+	var queryPortion strings.Builder
+	queryPortion.WriteString("WHERE ")
+	switch field {
+	case SearchCommFieldName:
+		queryPortion.WriteString("commname ")
+	case SearchCommFieldSynopsis:
+		queryPortion.WriteString("synopsis ")
+	default:
+		return nil, -1, errors.New("invalid field selector")
+	}
+	switch oper {
+	case SearchCommOperPrefix:
+		queryPortion.WriteString("LIKE '")
+		queryPortion.WriteString(util.SqlEscape(term, true))
+		queryPortion.WriteString("%'")
+	case SearchCommOperSubstring:
+		queryPortion.WriteString("LIKE '%")
+		queryPortion.WriteString(util.SqlEscape(term, true))
+		queryPortion.WriteString("%'")
+	case SearchCommOperRegex:
+		queryPortion.WriteString("REGEXP '")
+		queryPortion.WriteString(util.SqlEscape(term, false))
+		queryPortion.WriteString("'")
+	default:
+		return nil, -1, errors.New("invalid operator selector")
+	}
+	if !showAll {
+		queryPortion.WriteString(" AND hide_search = 0")
+	}
+	q := queryPortion.String()
+	rs, err := amdb.Query("SELECT COUNT(*) FROM communities " + q)
+	if err != nil {
+		return nil, -1, err
+	}
+	if !rs.Next() {
+		return nil, -1, errors.New("internal error getting count")
+	}
+	var total int
+	rs.Scan(&total)
+	if total == 0 {
+		return make([]*Community, 0), 0, nil // short-circuit return
+	}
+	if offset > 0 {
+		rs, err = amdb.Query("SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ? OFFSET ?", max, offset)
+	} else {
+		rs, err = amdb.Query("SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ?", max)
+	}
+	if err != nil {
+		return nil, total, err
+	}
+	rc := make([]*Community, 0, min(max, 10000))
 	for rs.Next() {
 		var commid int32
 		rs.Scan(&commid)

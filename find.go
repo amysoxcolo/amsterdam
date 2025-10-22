@@ -19,6 +19,9 @@ import (
 
 // loadCategoryInformation loads the current category information to the context.
 func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
+	if ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
+		return nil
+	}
 	u := ctxt.CurrentUser()
 	catid := int32(-1)
 	p := ctxt.Parameter("catid")
@@ -112,6 +115,9 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 			ofs = v
 		}
 	}
+	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
+		ctxt.VarMap().Set("catIsPresent", true)
+	}
 	ctxt.SetSession("find.mode", mode)
 	ctxt.VarMap().Set("mode", mode)
 	ctxt.VarMap().Set("ofs", ofs)
@@ -140,5 +146,99 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Find")
 	ctxt.SetLeftMenu("top")
+	return "framed_template", "find.jet", nil
+}
+
+/* Find performs the "find" operation.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func Find(ctxt ui.AmContext) (string, any, error) {
+	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
+		ctxt.VarMap().Set("catIsPresent", true)
+	}
+	mode := ctxt.FormField("mode")
+	ctxt.VarMap().Set("mode", mode)
+	field := ctxt.FormField("field")
+	ctxt.VarMap().Set("field", field)
+	oper := ctxt.FormField("oper")
+	ctxt.VarMap().Set("oper", oper)
+	term := ctxt.FormField("term")
+	ctxt.VarMap().Set("term", term)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Find")
+	ctxt.SetLeftMenu("top")
+	ofs, _ := ctxt.FormFieldInt("ofs")
+	if ctxt.FormFieldIsSet("search") {
+		ofs = 0
+	} else if ctxt.FormFieldIsSet("prev") {
+		ofs -= 1
+	} else if ctxt.FormFieldIsSet("next") {
+		ofs += 1
+	}
+	ctxt.VarMap().Set("ofs", ofs)
+	listMax := int(ctxt.Globals().MaxSearchPage)
+	var numResults, total int
+	var err error
+	switch mode {
+	case "COM":
+		var iField, iOper int
+		switch field {
+		case "name":
+			iField = database.SearchCommFieldName
+		case "synopsis":
+			iField = database.SearchCommFieldSynopsis
+		default:
+			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+			return "framed_template", "find.jet", nil
+		}
+		switch oper {
+		case "st":
+			iOper = database.SearchCommOperPrefix
+		case "in":
+			iOper = database.SearchCommOperSubstring
+		case "re":
+			iOper = database.SearchCommOperRegex
+		default:
+			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+			return "framed_template", "find.jet", nil
+		}
+		var clist []*database.Community
+		clist, total, err = database.AmSearchCommunities(iField, iOper, term, ofs*listMax, listMax,
+			ctxt.TestPermission("Global.SearchHiddenCommunities"))
+		if err == nil {
+			if clist == nil {
+				numResults = 0
+			} else {
+				numResults = len(clist)
+				ctxt.VarMap().Set("resultList", clist)
+			}
+		}
+	case "USR":
+		// TODO
+	case "CAT":
+		// TODO
+	case "PST":
+		// TODO
+	}
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		return "framed_template", "find.jet", nil
+	}
+	if numResults == 0 {
+		ctxt.VarMap().Set("resultHeader", "Search Results: (None)")
+	} else {
+		ctxt.VarMap().Set("resultHeader", fmt.Sprintf("Search Results: Displaying %d-%d of %d",
+			ofs*listMax+1, ofs*listMax+numResults, total))
+		if ofs > 0 {
+			ctxt.VarMap().Set("resultShowPrev", true)
+		}
+		if ofs*listMax+numResults < total {
+			ctxt.VarMap().Set("resultShowNext", true)
+		}
+	}
 	return "framed_template", "find.jet", nil
 }

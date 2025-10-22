@@ -65,6 +65,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/profile_photo", ui.AmWrap(ProfilePhotoForm))
 	e.POST("/profile_photo", ui.AmWrap(ProfilePhoto))
 	e.GET("/find", ui.AmWrap(FindPage))
+	e.POST("/find", ui.AmWrap(Find))
 	e.GET("/user/:uname", ui.AmWrap(ShowProfile))
 	e.POST("/quick_email", ui.AmWrap(QuickEMail))
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))

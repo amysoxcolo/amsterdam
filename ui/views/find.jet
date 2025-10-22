@@ -24,12 +24,14 @@
                     <a href="/find?mode=USR" class="text-blue-700 hover:text-blue-900">Users</a>
                 {{ end }}
                 <span class="mx-2">|</span>
-                {{ if mode == "CAT" }}
-                    <span class="font-bold">Categories</span>
-                {{ else }}
-                    <a href="/find?mode=CAT" class="text-blue-700 hover:text-blue-900">Categories</a>
+                {{ if isset(catIsPresent) }}
+                    {{ if mode == "CAT" }}
+                        <span class="font-bold">Categories</span>
+                    {{ else }}
+                        <a href="/find?mode=CAT" class="text-blue-700 hover:text-blue-900">Categories</a>
+                    {{ end }}
+                    <span class="mx-2">|</span>
                 {{ end }}
-                <span class="mx-2">|</span>
                 {{ if mode == "PST" }}
                     <span class="font-bold">Posts</span>
                 {{ else }}
@@ -39,6 +41,20 @@
         </div>
         <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
     </div>
+
+    {{ if isset(errorMessage) }}
+        <!-- Error Message Banner -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-red-500 text-xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(errorMessage) }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
 
     <!-- Search Form -->
     <div class="max-w-3xl mb-8">
@@ -254,6 +270,7 @@
                                             class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
                                         ⏪ Prev
                                     </button>
+                                {{ end }}
                                 {{ if isset(resultShowNext) }}
                                     <button type="submit" name="next"
                                             class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">

@@ -131,7 +131,13 @@ func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 			dlg.Field("joinkey").SetVal(comm.JoinKey)
 		}
 		dlg.Field("membersonly").SetChecked(comm.MembersOnly)
-		dlg.Field("hidemode").Value = comm.HideMode()
+		if comm.HideFromSearch {
+			dlg.Field("hidemode").Value = "BOTH"
+		} else if comm.HideFromDirectory {
+			dlg.Field("hidemode").Value = "DIRECTORY"
+		} else {
+			dlg.Field("hidemode").Value = "NONE"
+		}
 		dlg.Field("read_lvl").Value = fmt.Sprintf("%d", comm.ReadLevel)
 		dlg.Field("write_lvl").Value = fmt.Sprintf("%d", comm.WriteLevel)
 		dlg.Field("create_lvl").Value = fmt.Sprintf("%d", comm.CreateLevel)
