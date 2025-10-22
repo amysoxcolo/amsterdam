@@ -236,19 +236,24 @@ func (c *Community) MemberCount(hidden bool) (int, error) {
  *     u - The user to change the membership status of.
  *     level - Their membership level. If this is 0, they are removed from membership.
  *     locked - Whether they can unjoin the community themselves. Ignored if removing them.
+ *     personUID - The UID of the person taking this action.
+ *     ipaddr - The source IP address, for audit records.
  * Returns:
  *     Standard Go error status.
  */
-func (c *Community) SetMembership(u *User, level uint16, locked bool) error {
+func (c *Community) SetMembership(u *User, level uint16, locked bool, personUID int32, ipaddr string) error {
 	if level == 0 {
-		_, err := amdb.Exec("DELETE FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+		res, err := amdb.Exec("DELETE FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
 		if err != nil {
 			return err
 		}
 		stuffMembership(c.Id, u.Uid, false, false, 0)
-		err = AmOnUserLeaveCommunityServices(c, u)
-		if err != nil {
-			return err
+		ra, err := res.RowsAffected()
+		if err == nil && ra > 0 {
+			err = AmOnUserLeaveCommunityServices(c, u)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		rs, err := amdb.Query("SELECT granted_lvl, locked FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
@@ -276,9 +281,15 @@ func (c *Community) SetMembership(u *User, level uint16, locked bool) error {
 			stuffMembership(c.Id, u.Uid, true, locked, level)
 			err = AmOnUserJoinCommunityServices(c, u)
 			if err != nil {
-				return nil
+				return err
 			}
 		}
+	}
+	err := c.TouchUpdate()
+	if err == nil {
+		ar := AmNewAudit(AuditCommunitySetMembership, personUID, ipaddr, fmt.Sprintf("cid=%d", c.Id),
+			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level))
+		AmStoreAudit(ar)
 	}
 	return nil
 }

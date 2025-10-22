@@ -41,7 +41,7 @@ const (
 	AuditSetUserContactInfo      = 106
 	AuditResendEmailConfirm      = 107
 	AuditChangePassword          = 108
-	AuditAdminSetUserContectInfo = 109
+	AuditAdminSetUserContactInfo = 109
 	AuditAdminChangeUserPassword = 110
 	AuditAdminChangeUserAccount  = 111
 	AuditAdminSetAccountSecurity = 112
