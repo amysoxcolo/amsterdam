@@ -235,7 +235,22 @@
                             </div>
                         </div>
                     {{ else if mode == "USR" }}
-                        TODO: I don't know USR yet
+                        <!-- User Result -->
+                        <div class="flex items-start gap-3">
+                            <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
+                            <div class="flex-1">
+                                <div class="mb-2">
+                                    <a href="/user/{{ rx.Username }}" 
+                                       class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Username }}</a>
+                                </div>
+                                <div class="text-sm text-gray-700 space-y-1">
+                                    <div>
+                                        {{ ci := rx.ContactInfoQ() }}
+                                        {{ DisplayFullName(ci) }}, from {{ ci.Locality }}, {{ ci.Region }} {{ ci.Country }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     {{ else if mode == "CAT" }}
                         TODO: I don't know CAT yet
                     {{ else if mode == "PST" }}

@@ -139,6 +139,18 @@ const (
 	UserFlagMassMailOptOut   = uint(2)
 )
 
+// Selectors for field and operator in user search.
+const (
+	SearchUserFieldName        = 0
+	SearchUserFieldDescription = 1
+	SearchUserFieldFirstName   = 2
+	SearchUserFieldLastName    = 3
+
+	SearchUserOperPrefix    = 0
+	SearchUserOperSubstring = 1
+	SearchUserOperRegex     = 2
+)
+
 // userCache is the cache for User objects.
 var userCache *lru.TwoQueueCache = nil
 
@@ -173,6 +185,15 @@ func (u *User) ContactInfo() (*ContactInfo, error) {
 		return nil, nil
 	}
 	return AmGetContactInfo(u.ContactID)
+}
+
+// ContactInfo returns the contact info structure for the user, quietly.
+func (u *User) ContactInfoQ() *ContactInfo {
+	if u.ContactID < 0 {
+		return nil
+	}
+	ci, _ := AmGetContactInfo(u.ContactID)
+	return ci
 }
 
 // SetContactID sets the contact ID of a user.
@@ -747,4 +768,88 @@ func AmSetUserProperty(uid int32, ndx int32, val *string) error {
 		}
 	}
 	return err
+}
+
+/* AmSearchUsers searches for users matching certain criteria.
+ * Parameters:
+ *     field - A value indicating which field to search:
+ *         SearchUserFieldName - The user name.
+ *         SearchUserFieldDescription - The user description.
+ *         SearchUserFieldFirstName - The user's first name.
+ *         SearchUserFieldLastName - The user's last name.
+ *     oper - The operation to perform on the search field:
+ *         SearchUserOperPrefix - The specified field has the string "term" as a prefix.
+ *         SearchUserOperSubstring - The specified field contains the string "term".
+ *         SearchUserOperRegex - The specified field matches the regular expression in "term".
+ *     term - The search term, as specified above.
+ *     offset - Number of communities to skip at beginning of list.
+ *     max - Maximum number of communities to return.
+ * Returns:
+ *     Array of User pointers representing the return elements.
+ *     The total number of users matching this query (could be greater than max)
+ *	   Standard Go error status.
+ */
+func AmSearchUsers(field int, oper int, term string, offset int, max int) ([]*User, int, error) {
+	var queryPortion strings.Builder
+	switch field {
+	case SearchUserFieldName:
+		queryPortion.WriteString("u.username ")
+	case SearchUserFieldDescription:
+		queryPortion.WriteString("u.description ")
+	case SearchUserFieldFirstName:
+		queryPortion.WriteString("c.given_name ")
+	case SearchUserFieldLastName:
+		queryPortion.WriteString("c.family_name ")
+	default:
+		return nil, -1, errors.New("invalid field selector")
+	}
+	switch oper {
+	case SearchUserOperPrefix:
+		queryPortion.WriteString("LIKE '")
+		queryPortion.WriteString(util.SqlEscape(term, true))
+		queryPortion.WriteString("%'")
+	case SearchUserOperSubstring:
+		queryPortion.WriteString("LIKE '%")
+		queryPortion.WriteString(util.SqlEscape(term, true))
+		queryPortion.WriteString("%'")
+	case SearchUserOperRegex:
+		queryPortion.WriteString("REGEXP '")
+		queryPortion.WriteString(util.SqlEscape(term, false))
+		queryPortion.WriteString("'")
+	default:
+		return nil, -1, errors.New("invalid operator selector")
+	}
+	q := queryPortion.String()
+	rs, err := amdb.Query("SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND " + q)
+	if err != nil {
+		return nil, -1, err
+	}
+	if !rs.Next() {
+		return nil, -1, errors.New("internal error getting count")
+	}
+	var total int
+	rs.Scan(&total)
+	if total == 0 {
+		return make([]*User, 0), 0, nil
+	}
+	if offset > 0 {
+		rs, err = amdb.Query("SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
+			" ORDER BY u.username LIMIT ? OFFSET ?", max, offset)
+	} else {
+		rs, err = amdb.Query("SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
+			" ORDER BY u.username LIMIT ?", max)
+	}
+	if err != nil {
+		return nil, total, err
+	}
+	rc := make([]*User, 0, min(max, 10000))
+	for rs.Next() {
+		var uid int32
+		rs.Scan(&uid)
+		u, err := AmGetUser(uid)
+		if err == nil {
+			rc = append(rc, u)
+		}
+	}
+	return rc, total, nil
 }

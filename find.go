@@ -218,7 +218,41 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 	case "USR":
-		// TODO
+		var iField, iOper int
+		switch field {
+		case "name":
+			iField = database.SearchUserFieldName
+		case "descr":
+			iField = database.SearchUserFieldDescription
+		case "first":
+			iField = database.SearchUserFieldFirstName
+		case "last":
+			iField = database.SearchUserFieldLastName
+		default:
+			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+			return "framed_template", "find.jet", nil
+		}
+		switch oper {
+		case "st":
+			iOper = database.SearchUserOperPrefix
+		case "in":
+			iOper = database.SearchUserOperSubstring
+		case "re":
+			iOper = database.SearchUserOperRegex
+		default:
+			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+			return "framed_template", "find.jet", nil
+		}
+		var ulist []*database.User
+		ulist, total, err = database.AmSearchUsers(iField, iOper, term, ofs*listMax, listMax)
+		if err == nil {
+			if ulist == nil {
+				numResults = 0
+			} else {
+				numResults = len(ulist)
+				ctxt.VarMap().Set("resultList", ulist)
+			}
+		}
 	case "CAT":
 		// TODO
 	case "PST":

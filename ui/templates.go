@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -137,6 +138,32 @@ func displayMemberCount(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(count)
 }
 
+func displayFullName(a jet.Arguments) reflect.Value {
+	ci := a.Get(0).Convert(reflect.TypeFor[*database.ContactInfo]()).Interface().(*database.ContactInfo)
+	var rc strings.Builder
+	if ci.Prefix != nil && *ci.Prefix != "" {
+		rc.WriteString(*ci.Prefix)
+		rc.WriteString(" ")
+	}
+	if ci.GivenName != nil && *ci.GivenName != "" {
+		rc.WriteString(*ci.GivenName)
+	}
+	if ci.MiddleInit != nil && *ci.MiddleInit != "" {
+		rc.WriteString(" ")
+		rc.WriteString(*ci.MiddleInit)
+		rc.WriteString(".")
+	}
+	if ci.FamilyName != nil && *ci.FamilyName != "" {
+		rc.WriteString(" ")
+		rc.WriteString(*ci.FamilyName)
+	}
+	if ci.Suffix != nil && *ci.Suffix != "" {
+		rc.WriteString(" ")
+		rc.WriteString(*ci.Suffix)
+	}
+	return reflect.ValueOf(rc.String())
+}
+
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -154,6 +181,7 @@ func SetupTemplates() {
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
 	views.AddGlobalFunc("DisplayActivity", displayActivity)
 	views.AddGlobalFunc("DisplayMemberCount", displayMemberCount)
+	views.AddGlobalFunc("DisplayFullName", displayFullName)
 
 	views.AddGlobalFunc("GetCountryList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmCountryList())
