@@ -560,13 +560,12 @@ func (c *Community) TouchUpdate() error {
  *     Standard Go error status
  */
 func AmGetCommunity(id int32) (*Community, error) {
-	var err error = nil
 	getCommunityMutex.Lock()
 	defer getCommunityMutex.Unlock()
 	rc, ok := communityCache.Get(id)
 	if !ok {
 		var dbdata []Community
-		err = amdb.Select(&dbdata, "SELECT * from communities WHERE commid = ?", id)
+		err := amdb.Select(&dbdata, "SELECT * from communities WHERE commid = ?", id)
 		if err != nil {
 			return nil, err
 		}
@@ -578,7 +577,7 @@ func AmGetCommunity(id int32) (*Community, error) {
 		rc = &(dbdata[0])
 		communityCache.Add(id, rc)
 	}
-	return rc.(*Community), err
+	return rc.(*Community), nil
 }
 
 /* AmGetCommunityByAlias returns a reference to the specified community.
