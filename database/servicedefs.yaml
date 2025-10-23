@@ -43,7 +43,7 @@ domains:
         requirePermission: "Community.Read"
         requireRole: ""
         linkSequence: 500
-        link: "/TODO/comm/[CID]/conf"
+        link: "/comm/[CID]/conf"
         title: "Conferences"
       - id: "Members"
         index: 4

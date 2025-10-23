@@ -1,0 +1,69 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+ <div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold inline">Conference List:</h1>
+        <span class="text-blue-800 text-2xl font-bold ml-2">{{ commName }}</span>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Conference Listing -->
+    <div class="max-w-4xl">
+        <div class="bg-gray-50 p-6 rounded-lg mb-6">
+            <div class="space-y-6">
+                {{ range _, c := conferences }}
+                    <div class="flex items-start gap-3">
+                        <span class="text-lg pt-0.5 flex-shrink-0">🟣</span>
+                        <div class="flex-1">
+                            <div class="mb-2">
+                                <a href="/TODO/comm/{{ commAlias }}/conf/{{ c.AliasesQ()[0] }}" 
+                                    class="text-blue-700 hover:text-blue-900 font-bold text-lg">{{ c.Name }}</a>
+                                <span class="text-gray-600 text-sm ml-2">- Latest activity: {{ DisplayActivity(c.LastUpdate, .) }}</span>
+                            </div>
+                            <div class="text-sm text-gray-700 mb-1">
+                                {{ hl := c.HostsQ() }}
+                                {{ if len(hl) == 1 }}
+                                    <span class="font-medium">Host:</span>
+                                {{ else }}
+                                    <span class="font-medium">Hosts:</span>
+                                {{ end }}
+                                {{ if len(hl) > 0 }}
+                                    {{ range i, u := hl }}
+                                        {{ if i > 0 }}, {{ end }}
+                                        <a href="/users/{{ u.Username }}" class="text-blue-700 hover:text-blue-900">{{ u.Username }}</a>
+                                    {{ end }}
+                                {{ else }}
+                                    None 
+                                {{ end }}
+                            </div>
+                            <div class="italic text-gray-600 text-sm">{{ c.Description }}</div>
+                        </div>
+                    </div>
+                {{ end }}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+            <a href="/find?mode=PST"
+                class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                Find Posts
+            </a>
+        </div>
+
+        <!-- Information Note -->
+        <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+            <p class="text-sm text-gray-700">
+                <strong>About Conferences:</strong> Conferences are discussion areas within this community. 
+                Click on a conference name to view topics and participate in discussions.
+            </p>
+        </div>
+    </div>
+</div>

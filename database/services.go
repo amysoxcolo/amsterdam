@@ -246,3 +246,15 @@ func AmOnUserLeaveCommunityServices(c *Community, u *User) error {
 	}
 	return err
 }
+
+func AmTestService(c *Community, serviceId string) (bool, error) {
+	arr, err := AmGetCommunityServices(c.Id)
+	if err == nil {
+		for _, svc := range arr {
+			if svc.Id == serviceId {
+				return true, nil
+			}
+		}
+	}
+	return false, err
+}

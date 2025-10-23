@@ -83,6 +83,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/comm/:cid/admin/profile", ui.AmWrap(EditCommunityProfile))
 	e.GET("/comm/:cid/admin/logo", ui.AmWrap(CommunityLogoForm))
 	e.POST("/comm/:cid/admin/logo", ui.AmWrap(EditCommunityLogo))
+	e.GET("/comm/:cid/conf", ui.AmWrap(Conferences))
 
 	return e
 }

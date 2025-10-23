@@ -19,6 +19,7 @@ import (
 
 // Conference struct is the top-level structure for a conference.
 type Conference struct {
+	Mutex       sync.Mutex
 	ConfId      int32      `db:"confid"`
 	CreateDate  time.Time  `db:"createdate"`
 	LastUpdate  *time.Time `db:"lastupdate"`
@@ -27,8 +28,8 @@ type Conference struct {
 	CreateLevel uint16     `db:"create_lvl"`
 	HideLevel   uint16     `db:"hide_lvl"`
 	NukeLevel   uint16     `db:"nuke_lvl"`
-	ChangeLevel uint16     `db:"change_level"`
-	DeleteLevel uint16     `db:"delete_level"`
+	ChangeLevel uint16     `db:"change_lvl"`
+	DeleteLevel uint16     `db:"delete_lvl"`
 	TopTopic    int16      `db:"top_topic"`
 	Name        string     `db:"name"`
 	Description *string    `db:"descr"`
@@ -51,6 +52,95 @@ func init() {
 	conferenceCache, err = lru.New2Q(100)
 	if err != nil {
 		panic(err)
+	}
+}
+
+// Aliases returns the list of aliases for this conference.
+func (c *Conference) Aliases() ([]string, error) {
+	rs, err := amdb.Query("SELECT alias FROM confalias WHERE confid = ? ORDER BY alias", c.ConfId)
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]string, 0, 5)
+	for rs.Next() {
+		var a string
+		rs.Scan(&a)
+		rc = append(rc, a)
+	}
+	return rc, nil
+}
+
+// AliasesQ returns the list of aliases for this conference, quietly.
+func (c *Conference) AliasesQ() []string {
+	rc, _ := c.Aliases()
+	return rc
+}
+
+// Hosts returns the list of users that host this conference.
+func (c *Conference) Hosts() ([]*User, error) {
+	rs, err := amdb.Query("SELECT uid FROM confmember WHERE confid = ? AND granted_lvl = ?",
+		c.ConfId, AmRole("Conference.Host").Level())
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]*User, 0, 5)
+	for rs.Next() {
+		var uid int32
+		rs.Scan(&uid)
+		u, err := AmGetUser(uid)
+		if err == nil {
+			rc = append(rc, u)
+		}
+	}
+	return rc, nil
+}
+
+// Hosts returns the list of users that host this conference, quietly.
+func (c *Conference) HostsQ() []*User {
+	rc, _ := c.Hosts()
+	return rc
+}
+
+// Membership returns a membership flag and granted level for the user in this conference.
+func (c *Conference) Membership(u *User) (bool, uint16, error) {
+	rs, err := amdb.Query("SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	if err != nil {
+		return false, 0, err
+	}
+	if rs.Next() {
+		var level uint16
+		rs.Scan(&level)
+		return true, level, nil
+	}
+	return false, 0, nil
+}
+
+/* TestPermission is shorthand that tests if a user has a permission with respect to the conference.
+ * Parameters:
+ *     user - The user to be checked.
+ *     perm - The permission to be tested.
+ * Returns:
+ *     true if the user has the permission, false if not.
+ *     Standard Go error status.
+ */
+func (c *Conference) TestPermission(perm string, level uint16) bool {
+	switch perm {
+	case "Conference.Read":
+		return level >= c.ReadLevel
+	case "Conference.Post":
+		return level >= c.PostLevel
+	case "Conference.Create":
+		return level >= c.CreateLevel
+	case "Conference.Hide":
+		return level >= c.HideLevel
+	case "Conference.Nuke":
+		return level >= c.NukeLevel
+	case "Conference.Change":
+		return level >= c.ChangeLevel
+	case "Conference.Delete":
+		return level >= c.DeleteLevel
+	default:
+		return AmTestPermission(perm, level)
 	}
 }
 
