@@ -98,12 +98,14 @@
                         <div class="mb-2">
                             <a href="/user/{{ rx.Username }}" 
                                 class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Username }}</a>
+                                {{ if rx.Uid == hostUid }}
+                                    <span class="ml-1">👑</span>
+                                {{ end }}
                         </div>
                         <div class="text-sm text-gray-700 space-y-1">
                             <div>
                                 {{ ci := rx.ContactInfoQ() }}
                                 {{ DisplayFullName(ci) }}, from {{ ci.Locality }}, {{ ci.Region }} {{ ci.Country }}
-                                {{ if rx.Uid == comm.HostUid }}<span class="ml-1">👑</span>{{ end }}
                             </div>
                         </div>
                     </div>

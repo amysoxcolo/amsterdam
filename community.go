@@ -341,6 +341,7 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("comm", comm)
+	ctxt.VarMap().Set("hostUid", *comm.HostUid)
 	showHidden := ctxt.TestPermission("Community.ShowHiddenMembers")
 	ctxt.VarMap().Set("canExport", showHidden)
 	ctxt.VarMap().Set("field", "name")
@@ -392,6 +393,7 @@ func MemberSearch(ctxt ui.AmContext) (string, any, error) {
 	term := ctxt.FormField("term")
 	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("comm", comm)
+	ctxt.VarMap().Set("hostUid", comm.HostUid)
 	showHidden := ctxt.TestPermission("Community.ShowHiddenMembers")
 	ctxt.VarMap().Set("canExport", showHidden)
 	ctxt.VarMap().Set("field", field)
