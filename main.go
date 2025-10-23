@@ -76,6 +76,8 @@ func setupEcho() *echo.Echo {
 	e.POST("/comm/:cid/join", ui.AmWrap(JoinCommunityWithKey))
 	e.GET("/comm/:cid/unjoin", ui.AmWrap(UnjoinCommunity))
 	e.POST("/comm/:cid/unjoin", ui.AmWrap(UnjoinCommunityConfirm))
+	e.GET("/comm/:cid/members", ui.AmWrap(MemberList))
+	e.POST("/comm/:cid/members", ui.AmWrap(MemberSearch))
 	e.GET("/comm/:cid/admin", ui.AmWrap(CommunityAdminMenu))
 	e.GET("/comm/:cid/admin/profile", ui.AmWrap(CommunityProfileForm))
 	e.POST("/comm/:cid/admin/profile", ui.AmWrap(EditCommunityProfile))

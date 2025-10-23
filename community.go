@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -238,6 +239,14 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
 }
 
+/* UnjoinCommunity starts the process of unjoining a community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
@@ -264,6 +273,14 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "unjoin.jet", nil
 }
 
+/* UnjoinCommunityConfirm finishes the process of unjoining a community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
@@ -297,4 +314,135 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
 		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
 	}
 	return ui.ErrorPage(ctxt, errors.New("unknown button pressed to confirm unjoin"))
+}
+
+/* MemberList lists the members of the community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func MemberList(ctxt ui.AmContext) (string, any, error) {
+	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, err)
+	}
+	comm := ctxt.CurrentCommunity()
+	ofs := 0
+	p := ctxt.Parameter("ofs")
+	if p != "" {
+		v, err := strconv.Atoi(p)
+		if err == nil {
+			ofs = v
+		}
+	}
+	ctxt.SetLeftMenu("community")
+	ctxt.VarMap().Set("comm", comm)
+	showHidden := ctxt.TestPermission("Community.ShowHiddenMembers")
+	ctxt.VarMap().Set("canExport", showHidden)
+	ctxt.VarMap().Set("field", "name")
+	ctxt.VarMap().Set("oper", "st")
+	ctxt.VarMap().Set("term", "")
+	ctxt.VarMap().Set("ofs", ofs)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "List Members")
+	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
+	results, total, err := comm.ListMembers(database.ListMembersFieldNone, database.ListMembersOperNone, "", ofs*listMax, listMax, showHidden)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if total == 0 {
+		ctxt.VarMap().Set("headerLine", "Community Members: (None)")
+	} else {
+		ctxt.VarMap().Set("headerLine", fmt.Sprintf("Community Members: (Displaying %d-%d of %d)",
+			ofs*listMax+1, ofs*listMax+len(results), total))
+	}
+	if len(results) > 0 {
+		ctxt.VarMap().Set("resultList", results)
+		if ofs > 0 {
+			ctxt.VarMap().Set("resultShowPrev", true)
+		}
+		if ofs*listMax+len(results) < total {
+			ctxt.VarMap().Set("resultShowNext", true)
+		}
+	}
+	return "framed_template", "memberlist.jet", nil
+}
+
+/* MemberSearch searches for members of the community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func MemberSearch(ctxt ui.AmContext) (string, any, error) {
+	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, err)
+	}
+	comm := ctxt.CurrentCommunity()
+	ofs, _ := ctxt.FormFieldInt("ofs")
+	field := ctxt.FormField("field")
+	oper := ctxt.FormField("oper")
+	term := ctxt.FormField("term")
+	ctxt.SetLeftMenu("community")
+	ctxt.VarMap().Set("comm", comm)
+	showHidden := ctxt.TestPermission("Community.ShowHiddenMembers")
+	ctxt.VarMap().Set("canExport", showHidden)
+	ctxt.VarMap().Set("field", field)
+	ctxt.VarMap().Set("oper", oper)
+	ctxt.VarMap().Set("term", term)
+	ctxt.VarMap().Set("ofs", ofs)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Search for Members")
+	var iField, iOper int
+	switch field {
+	case "name":
+		iField = database.ListMembersFieldName
+	case "descr":
+		iField = database.ListMembersFieldDescription
+	case "first":
+		iField = database.ListMembersFieldFirstName
+	case "last":
+		iField = database.ListMembersFieldLastName
+	default:
+		ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+		return "framed_template", "memberlist.jet", nil
+	}
+	switch oper {
+	case "st":
+		iOper = database.ListMembersOperPrefix
+	case "in":
+		iOper = database.ListMembersOperSubstring
+	case "re":
+		iOper = database.ListMembersOperRegex
+	default:
+		ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
+		return "framed_template", "memberlist.jet", nil
+	}
+	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
+	results, total, err := comm.ListMembers(iField, iOper, term, ofs*listMax, listMax, showHidden)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if total == 0 {
+		ctxt.VarMap().Set("headerLine", "Search Results: (None)")
+	} else {
+		ctxt.VarMap().Set("headerLine", fmt.Sprintf("Search Results: (Displaying %d-%d of %d)",
+			ofs*listMax+1, ofs*listMax+len(results), total))
+	}
+	if len(results) > 0 {
+		ctxt.VarMap().Set("resultList", results)
+		if ofs > 0 {
+			ctxt.VarMap().Set("resultShowPrev", true)
+		}
+		if ofs*listMax+len(results) < total {
+			ctxt.VarMap().Set("resultShowNext", true)
+		}
+	}
+	return "framed_template", "memberlist.jet", nil
 }

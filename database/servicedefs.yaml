@@ -52,5 +52,5 @@ domains:
         requirePermission: "Community.Read"
         requireRole: "Community.Member"
         linkSequence: 4800
-        link: "/TODO/comm/[CID]/members"
+        link: "/comm/[CID]/members"
         title: "Members"

@@ -80,6 +80,20 @@ const (
 	SearchCommOperRegex     = 2
 )
 
+// Field and operator selectors for ListMembers.
+const (
+	ListMembersFieldNone        = -1
+	ListMembersFieldName        = 0
+	ListMembersFieldDescription = 1
+	ListMembersFieldFirstName   = 2
+	ListMembersFieldLastName    = 3
+
+	ListMembersOperNone      = -1
+	ListMembersOperPrefix    = 0
+	ListMembersOperSubstring = 1
+	ListMembersOperRegex     = 2
+)
+
 // communityCache is the cache for Community objects.
 var communityCache *lru.TwoQueueCache = nil
 
@@ -229,6 +243,96 @@ func (c *Community) MemberCount(hidden bool) (int, error) {
 		return rc, nil
 	}
 	return -1, errors.New("internal error reading member count")
+}
+
+/* ListMembers lists or searches for community members matching certain criteria.
+ * Parameters:
+ *     field - A value indicating which field to search:
+ *         ListMembersFieldNone - Do not search, just return all community members.
+ *         ListMembersFieldName - The user name.
+ *         ListMembersFieldDescription - The user description.
+ *         ListMembersFieldFirstName - The user's first name.
+ *         ListMembersFieldLastName - The user's last name.
+ *     oper - The operation to perform on the search field:
+ *         ListMembersOperNone - Do not search, just return all community members.
+ *         ListMembersOperPrefix - The specified field has the string "term" as a prefix.
+ *         ListMembersOperSubstring - The specified field contains the string "term".
+ *         ListMembersOperRegex - The specified field matches the regular expression in "term".
+ *     term - The search term, as specified above.
+ *     offset - Number of members to skip at beginning of list.
+ *     max - Maximum number of members to return.
+ * Returns:
+ *     Array of User pointers representing the return elements.
+ *     The total number of members matching this query (could be greater than max)
+ *	   Standard Go error status.
+ */
+func (c *Community) ListMembers(field int, oper int, term string, offset int, max int, showHidden bool) ([]*User, int, error) {
+	var query strings.Builder
+	if field != ListMembersFieldNone && oper != ListMembersOperNone {
+		query.WriteString(" AND ")
+		switch field {
+		case ListMembersFieldName:
+			query.WriteString("u.username ")
+		case ListMembersFieldDescription:
+			query.WriteString("u.description ")
+		case ListMembersFieldFirstName:
+			query.WriteString("c.given_name ")
+		case ListMembersFieldLastName:
+			query.WriteString("c.family_name ")
+		default:
+			return nil, -1, errors.New("invalid field selector")
+		}
+		switch oper {
+		case ListMembersOperPrefix:
+			query.WriteString("LIKE '")
+			query.WriteString(util.SqlEscape(term, true))
+			query.WriteString("%'")
+		case ListMembersOperSubstring:
+			query.WriteString("LIKE '%")
+			query.WriteString(util.SqlEscape(term, true))
+			query.WriteString("%'")
+		case ListMembersOperRegex:
+			query.WriteString("REGEXP '")
+			query.WriteString(util.SqlEscape(term, false))
+			query.WriteString("'")
+		default:
+			return nil, -1, errors.New("invalid operator selector")
+		}
+	}
+	if !showHidden {
+		query.WriteString(" AND m.hidden = 0")
+	}
+	q := query.String()
+	rs, err := amdb.Query(`SELECT COUNT(*) FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+		AND u.contactid = c.contactid`+q, c.Id)
+	if err != nil {
+		return nil, -1, err
+	}
+	if !rs.Next() {
+		return nil, -1, errors.New("internal error getting member count")
+	}
+	var total int
+	rs.Scan(&total)
+	if offset > 0 {
+		rs, err = amdb.Query(`SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+			AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
+	} else {
+		rs, err = amdb.Query(`SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+			AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ?", c.Id, max)
+	}
+	if err != nil {
+		return nil, total, err
+	}
+	rc := make([]*User, 0, min(max, 10000))
+	for rs.Next() {
+		var uid int32
+		rs.Scan(&uid)
+		u, err := AmGetUser(uid)
+		if err == nil {
+			rc = append(rc, u)
+		}
+	}
+	return rc, total, nil
 }
 
 /* SetMembership sets a user's membership status within the community.
