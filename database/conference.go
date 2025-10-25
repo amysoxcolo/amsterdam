@@ -37,6 +37,14 @@ type Conference struct {
 	Color       *string    `db:"color"`
 }
 
+type ConferenceSettings struct {
+	ConfId       int32      `db:"confid"`
+	Uid          int32      `db:"uid"`
+	DefaultPseud *string    `db:"default_pseud"`
+	LastRead     *time.Time `db:"last_read"`
+	LastPost     *time.Time `db:"last_post"`
+}
+
 // conferenceCache is the cache for Conference objects.
 var conferenceCache *lru.TwoQueueCache = nil
 
@@ -198,7 +206,7 @@ func AmGetConferenceByAlias(alias string) (*Conference, error) {
 
 /* AmGetCommunityConferences returns all conferences for a given community.
  * Parameters:
- *     cid - COmmunity ID to get conferences for.
+ *     cid - Community ID to get conferences for.
  *     showHidden - true to show hidden conferences.
  * Returns:
  *     Array containing the COnference pointers, or nil.
