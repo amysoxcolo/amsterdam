@@ -10,6 +10,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -202,6 +203,28 @@ func AmGetConferenceByAlias(alias string) (*Conference, error) {
 		conferenceAliasMap.Store(alias, confid)
 	}
 	return AmGetConference(int32(confid.(int)))
+}
+
+/* AmGetConferenceByAliasInCommunity returns a conference in a community given its alias.
+ * Parameters:
+ *     cid - The community to look inside.
+ *     alias - The alias to look up.
+ * Returns:
+ *     Pointer to the conference, or nil.
+ *     Standard Go error status.
+ */
+func AmGetConferenceByAliasInCommunity(cid int32, alias string) (*Conference, error) {
+	rs, err := amdb.Query(`SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
+		AND c.commid = ? AND a.alias = ?`, cid, alias)
+	if err != nil {
+		return nil, err
+	}
+	if !rs.Next() {
+		return nil, errors.New("conference not found")
+	}
+	var confid int32
+	rs.Scan(&confid)
+	return AmGetConference(confid)
 }
 
 /* AmGetCommunityConferences returns all conferences for a given community.

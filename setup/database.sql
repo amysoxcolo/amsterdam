@@ -1009,7 +1009,7 @@ INSERT INTO commmember (commid, uid, granted_lvl, locked)
 # (CONFID = 2)
 INSERT INTO confs (confid, createdate, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl,
                    delete_lvl, top_topic, name, descr)
-    VALUES (2, '2000-12-01 00:00:00', 6500, 6500, 6500, 52500, 52500, 52500, 58000, 0, 'General Discussion',
+    VALUES (2, '2000-12-01 00:00:00', 2500, 2500, 2500, 60500, 60500, 60500, 61000, 0, 'General Discussion',
             'Your place for general discussion about the system and general topics.');
 INSERT INTO commtoconf (commid, confid, sequence) VALUES (2, 2, 10);
 INSERT INTO confalias (confid, alias) VALUES (2, 'General');
@@ -1022,7 +1022,7 @@ INSERT INTO confmember (confid, uid, granted_lvl) VALUES (2, 2, 52500);
 # (CONFID = 3)
 INSERT INTO confs (confid, createdate, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl,
                    delete_lvl, top_topic, name, descr)
-    VALUES (3, '2000-12-01 00:00:00', 6500, 6500, 6500, 52500, 52500, 52500, 58000, 0, 'Test Postings',
+    VALUES (3, '2000-12-01 00:00:00', 2500, 2500, 2500, 60500, 60500, 60500, 61000, 0, 'Test Postings',
             'Use this conference to test the conferencing system.');
 INSERT INTO commtoconf (commid, confid, sequence) VALUES (2, 3, 20);
 INSERT INTO confalias (confid, alias) VALUES (3, 'Test');

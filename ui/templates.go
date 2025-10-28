@@ -96,6 +96,15 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	}
 }
 
+func immediateIf(a jet.Arguments) reflect.Value {
+	cond := a.Get(0).Convert(reflect.TypeFor[bool]()).Bool()
+	if cond {
+		return a.Get(1)
+	} else {
+		return a.Get(2)
+	}
+}
+
 // extractCommunityLogo extracts a community logo URL from a community.
 func extractCommunityLogo(a jet.Arguments) reflect.Value {
 	rc := "/img/builtin/default-community.jpg"
@@ -189,6 +198,7 @@ func SetupTemplates() {
 	views.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
+	views.AddGlobalFunc("iif", immediateIf)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)

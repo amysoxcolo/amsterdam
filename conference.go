@@ -12,6 +12,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -34,7 +35,7 @@ func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusNotFound)
 		return ui.ErrorPage(ctxt, errors.New("this community does not use conferencing services"))
 	}
-	if comm.MembersOnly && !ctxt.IsMember() {
+	if comm.MembersOnly && !ctxt.IsMember() && !ctxt.TestPermission("Community.NoJoinRequired") {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not a member of this community"))
 	}
@@ -42,6 +43,29 @@ func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to conferences"))
 	}
+	return "", nil, nil
+}
+
+func singleConferencePrequel(ctxt ui.AmContext) (string, any, error) {
+	cmd, arg, err := conferencesPrequel(ctxt)
+	if cmd != "" {
+		return cmd, arg, err
+	}
+	var conf *database.Conference
+	conf, err = database.AmGetConferenceByAliasInCommunity(ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	m, lvl, err := conf.Membership(ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	myLevel := ctxt.EffectiveLevel()
+	if m && lvl > myLevel {
+		myLevel = lvl
+	}
+	ctxt.SetScratch("currentConference", conf)
+	ctxt.SetScratch("levelInConference", myLevel)
 	return "", nil, nil
 }
 
@@ -69,4 +93,68 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("conferences", clist)
 	return "framed_template", "conflist.jet", err
+}
+
+func Topics(ctxt ui.AmContext) (string, any, error) {
+	cmd, arg, err := singleConferencePrequel(ctxt)
+	if cmd != "" {
+		return cmd, arg, err
+	}
+	prefs, err := ctxt.CurrentUser().Prefs()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Read", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to read this conference"))
+	}
+
+	// Get view and sort parameters from query, session, or defaults. Store to session.
+	trustSessionValues := false
+	if ctxt.IsSession("topic.conf") {
+		v := ctxt.GetSession("topic.conf").(int32)
+		if v == conf.ConfId {
+			trustSessionValues = true
+		} else {
+			ctxt.SetSession("topic.conf", conf.ConfId)
+		}
+	}
+	view := database.TopicViewActive
+	if trustSessionValues && ctxt.IsSession("topic.view") {
+		view = ctxt.GetSession("topic.view").(int)
+	}
+	view = ctxt.QueryParamInt("view", view)
+	ctxt.SetSession("topic.view", view)
+	sort := database.TopicSortNumber
+	if trustSessionValues && ctxt.IsSession("topic.sort") {
+		sort = ctxt.GetSession("topic.sort").(int)
+	}
+	sort = ctxt.QueryParamInt("sort", sort)
+	ctxt.SetSession("topic.sort", sort)
+
+	topics, err := database.AmListTopics(conf.ConfId, ctxt.CurrentUserId(), view, sort, false)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	tz := prefs.Location()
+	loc := prefs.Localizer()
+	fdate := make([]string, len(topics))
+	for i, t := range topics {
+		fdate[i] = loc.Strftime("%x %X", t.LastUpdate.In(tz))
+	}
+
+	ctxt.VarMap().Set("conferenceName", conf.Name)
+	ctxt.VarMap().Set("urlBack", fmt.Sprintf("/comm/%s/conf", comm.Alias))
+	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
+	ctxt.VarMap().Set("permalink", "TODO")
+	ctxt.VarMap().Set("view", view)
+	ctxt.VarMap().Set("sort", sort)
+	ctxt.VarMap().Set("topics", topics)
+	ctxt.VarMap().Set("formattedDate", fdate)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Topics in "+conf.Name)
+	return "framed_template", "topiclist.jet", nil
 }

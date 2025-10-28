@@ -23,7 +23,7 @@
                         <span class="text-lg pt-0.5 flex-shrink-0">🟣</span>
                         <div class="flex-1">
                             <div class="mb-2">
-                                <a href="/TODO/comm/{{ commAlias }}/conf/{{ c.AliasesQ()[0] }}" 
+                                <a href="/comm/{{ commAlias }}/conf/{{ c.AliasesQ()[0] }}" 
                                     class="text-blue-700 hover:text-blue-900 font-bold text-lg">{{ c.Name }}</a>
                                 <span class="text-gray-600 text-sm ml-2">- Latest activity: {{ DisplayActivity(c.LastUpdate, .) }}</span>
                             </div>

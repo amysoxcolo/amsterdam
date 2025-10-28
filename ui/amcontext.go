@@ -50,6 +50,7 @@ type AmContext interface {
 	RC() int
 	OutputType() string
 	Parameter(string) string
+	QueryParamInt(string, int) int
 	RemoteIP() string
 	ReplaceUser(*database.User)
 	SaveSession() error
@@ -237,6 +238,19 @@ func (c *amContext) Parameter(name string) string {
 	rc := c.echoContext.QueryParam(name)
 	if rc == "" && c.echoContext.Request().Method == "POST" {
 		rc = c.echoContext.FormValue(name)
+	}
+	return rc
+}
+
+// QueryParamInt returns the value of a query parameter as an integer, with a default.
+func (c *amContext) QueryParamInt(name string, defval int) int {
+	s := c.echoContext.QueryParam(name)
+	if s == "" {
+		return defval
+	}
+	rc, err := strconv.Atoi(s)
+	if err != nil {
+		return defval
 	}
 	return rc
 }
