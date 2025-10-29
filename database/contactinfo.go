@@ -12,6 +12,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,6 +72,45 @@ func lookupUserContact(uid int32) (int32, error) {
 		}
 	}
 	return rc, err
+}
+
+// FullName returns the full name inside this contact info.
+func (ci *ContactInfo) FullName(ps bool) string {
+	var b strings.Builder
+	writeSpace := false
+	if ps && ci.Prefix != nil && *ci.Prefix != "" {
+		b.WriteString(*ci.Prefix)
+		writeSpace = true
+	}
+	if ci.GivenName != nil && *ci.GivenName != "" {
+		if writeSpace {
+			b.WriteString(" ")
+		}
+		b.WriteString(*ci.GivenName)
+		writeSpace = true
+	}
+	if ci.MiddleInit != nil && *ci.MiddleInit != "" {
+		if writeSpace {
+			b.WriteString(" ")
+		}
+		b.WriteString(*ci.MiddleInit)
+		b.WriteString(".")
+		writeSpace = true
+	}
+	if ci.FamilyName != nil && *ci.FamilyName != "" {
+		if writeSpace {
+			b.WriteString(" ")
+		}
+		b.WriteString(*ci.FamilyName)
+		writeSpace = true
+	}
+	if ps && ci.Suffix != nil && *ci.Suffix != "" {
+		if writeSpace {
+			b.WriteString(" ")
+		}
+		b.WriteString(*ci.Suffix)
+	}
+	return b.String()
 }
 
 /* Save saves the contact info to the database.

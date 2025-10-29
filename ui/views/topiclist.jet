@@ -20,7 +20,7 @@
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                 Conference List
             </a>
-            <a href="/TODO{{ urlStem }}/new_topic"
+            <a href="{{ urlStem }}/new_topic"
                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                 Add Topic
             </a>

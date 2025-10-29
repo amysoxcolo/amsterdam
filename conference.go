@@ -95,6 +95,14 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "conflist.jet", err
 }
 
+/* Topics displayes the list of topics in a conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func Topics(ctxt ui.AmContext) (string, any, error) {
 	cmd, arg, err := singleConferencePrequel(ctxt)
 	if cmd != "" {
@@ -157,4 +165,29 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("formattedDate", fdate)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Topics in "+conf.Name)
 	return "framed_template", "topiclist.jet", nil
+}
+
+func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
+	cmd, arg, err := singleConferencePrequel(ctxt)
+	if cmd != "" {
+		return cmd, arg, err
+	}
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	ci, err := ctxt.CurrentUser().ContactInfo()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Create", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to read this conference"))
+	}
+	ctxt.VarMap().Set("conferenceName", conf.Name)
+	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
+	ctxt.VarMap().Set("topicName", "")
+	ctxt.VarMap().Set("pseud", ci.FullName(false))
+	ctxt.VarMap().Set("pb", "")
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Topic")
+	return "framed_template", "new_topic.jet", nil
 }

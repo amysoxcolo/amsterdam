@@ -1,0 +1,84 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold inline">Create New Topic</h1>
+        <span class="text-blue-800 text-2xl font-bold ml-2">in: {{ conferenceName }}</span>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- New Topic Form -->
+    <div class="max-w-3xl">
+        <form method="POST" action="{{ urlStem }}/new_topic">
+            <div class="bg-gray-50 p-6 rounded-lg space-y-4">
+                <!-- Topic Name -->
+                <div>
+                    <label for="title" class="block text-black text-sm font-medium mb-2">New topic name:</label>
+                    <input type="text" id="title" name="title" size="37" maxlength="128" 
+                            value="{{ topicName }}" required placeholder="Enter a descriptive topic name..."
+                            class="w-full px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- Your Name/Header and Attach File -->
+                <div>
+                    <label for="pseud" class="block text-black text-sm font-medium mb-2">Your name/header:</label>
+                    <div class="flex items-center gap-4">
+                        <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="{{ pseud }}"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="attach" name="attach" value="Y"
+                                    {{ if isset(attachFile) }}checked{{ end }}
+                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="attach" class="text-black text-sm">Attach a file</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="pb" class="text-black text-sm font-medium">Message:</label>
+                        <a href="/TODO/html-reference" target="_blank"
+                            class="text-blue-700 hover:text-blue-900 text-sm">HTML Guide</a>
+                    </div>
+                    <textarea id="pb" name="pb" wrap="soft" rows="7" cols="51"
+                                placeholder="Enter your message here. HTML tags are supported..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ pb }}</textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-center gap-4 pt-4">
+                    <button type="submit" name="preview"
+                            class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                        Preview
+                    </button>
+                    <button type="submit" name="post1"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                        Add Topic
+                    </button>
+                    <button type="submit" name="cancel"
+                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Posting Guidelines -->
+        <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+            <h3 class="text-sm font-bold text-blue-900 mb-2">Posting Guidelines:</h3>
+            <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                <li>Choose a clear, descriptive topic name that summarizes your discussion</li>
+                <li>Use the Preview button to see how your post will appear before submitting</li>
+                <li>HTML formatting is supported - see the HTML Guide for available tags</li>
+                <li>Be respectful and follow the community's standards of conduct</li>
+            </ul>
+        </div>
+    </div>
+</div>
