@@ -8,10 +8,45 @@
  *}
 <div class="p-4">
     <div class="mb-6">
-        <h1 class="text-blue-800 text-4xl font-bold inline">Create New Topic</h1>
+        {{ if isset(previewPb) }}
+            <h1 class="text-blue-800 text-4xl font-bold inline">Preview New Topic</h1>
+        {{ else }}
+            <h1 class="text-blue-800 text-4xl font-bold inline">Create New Topic</h1>
+        {{ end }}
         <span class="text-blue-800 text-2xl font-bold ml-2">in: {{ conferenceName }}</span>
         <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
     </div>
+
+    {{ if isset(previewPb) }}
+        <!-- Preview Section -->
+        <div class="max-w-3xl mb-8">
+            <!-- Spelling Error Notice -->
+            {{ if nError == 0 }}
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                    <p class="text-sm font-bold text-blue-800">
+                        Your post did not contain any spelling errors.
+                    </p>
+                </div>
+            {{ else }}
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <p class="text-sm font-bold text-yellow-800">
+                        {{ if nError == 1 }}
+                            There was 1 spelling error in your post.
+                        {{ else }}
+                            There were {{ nError }} spelling errors in your post.
+                        {{ end }}
+                    </p>
+                </div>
+            {{ end }}
+
+            <!-- Preview Display -->
+            <div class="bg-white border-2 border-blue-300 rounded-lg p-6 mb-6">
+                <pre class="font-mono text-sm whitespace-pre-wrap break-words">{{ previewPb }}</pre>
+            </div>
+
+            <hr class="border-gray-400 mb-6">
+        </div>
+    {{ end }}
 
     <!-- New Topic Form -->
     <div class="max-w-3xl">
@@ -56,7 +91,7 @@
                 <div class="flex justify-center gap-4 pt-4">
                     <button type="submit" name="preview"
                             class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">
-                        Preview
+                        {{ if isset(previewPb) }}Preview Again{{ else }}Preview{{ end }}
                     </button>
                     <button type="submit" name="post1"
                             class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">
@@ -72,13 +107,23 @@
 
         <!-- Posting Guidelines -->
         <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400">
-            <h3 class="text-sm font-bold text-blue-900 mb-2">Posting Guidelines:</h3>
-            <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                <li>Choose a clear, descriptive topic name that summarizes your discussion</li>
-                <li>Use the Preview button to see how your post will appear before submitting</li>
-                <li>HTML formatting is supported - see the HTML Guide for available tags</li>
-                <li>Be respectful and follow the community's standards of conduct</li>
-            </ul>
+            {{ if isset(previewPb) }}
+                <h3 class="text-sm font-bold text-blue-900 mb-2">Review Your Post:</h3>
+                <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                    <li>Check the preview above to see how your post will appear to others</li>
+                    <li>Spelling errors are highlighted in red - you can edit your message to fix them</li>
+                    <li>Click "Preview Again" to see updated changes before posting</li>
+                    <li>When satisfied, click "Add Topic" to submit your message</li>
+                </ul>
+            {{ else }}
+                <h3 class="text-sm font-bold text-blue-900 mb-2">Posting Guidelines:</h3>
+                <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                    <li>Choose a clear, descriptive topic name that summarizes your discussion</li>
+                    <li>Use the Preview button to see how your post will appear before submitting</li>
+                    <li>HTML formatting is supported - see the HTML Guide for available tags</li>
+                    <li>Be respectful and follow the community's standards of conduct</li>
+                </ul>
+            {{ end }}
         </div>
     </div>
 </div>

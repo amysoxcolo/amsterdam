@@ -95,7 +95,7 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "conflist.jet", err
 }
 
-/* Topics displayes the list of topics in a conference.
+/* Topics displays the list of topics in a conference.
  * Parameters:
  *     ctxt - The AmContext for the request.
  * Returns:
@@ -167,6 +167,14 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "topiclist.jet", nil
 }
 
+/* NewTopicForm displays the form for creating a new topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	cmd, arg, err := singleConferencePrequel(ctxt)
 	if cmd != "" {
