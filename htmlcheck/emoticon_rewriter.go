@@ -12,6 +12,7 @@ package htmlcheck
 import (
 	_ "embed"
 	"math"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -28,13 +29,13 @@ type EmoticonDef struct {
 type EmoticonConfig struct {
 	PrefixChars string        `yaml:"prefixChars"`
 	Emoticons   []EmoticonDef `yaml:"emoticons"`
+	emos        map[string]*EmoticonDef
 }
 
 // emoticonRewriter is the implementation of rewriter in this file
 type emoticonRewriter struct {
 	config      *EmoticonConfig
 	prefixChars []byte
-	emos        map[string]*EmoticonDef
 	patterns    map[string]string
 	minLength   int
 }
@@ -42,28 +43,27 @@ type emoticonRewriter struct {
 //go:embed emoticons.yaml
 var rawEmoConfig []byte
 
-// EmoticonRewriter is the singleton instance of the emoticon rewriter.
-var EmoticonRewriter rewriter
-
-// init loads the configuration and creates the singleton instance.
+// init loads the configuration and registers the rewriters.
 func init() {
 	var cfg EmoticonConfig
 	if err := yaml.Unmarshal(rawEmoConfig, &cfg); err != nil {
 		panic(err)
 	}
+	cfg.emos = make(map[string]*EmoticonDef)
+	for i, def := range cfg.Emoticons {
+		cfg.emos[def.Name] = &(cfg.Emoticons[i])
+	}
 	rw := emoticonRewriter{
 		config:      &cfg,
 		prefixChars: []byte(cfg.PrefixChars),
-		emos:        make(map[string]*EmoticonDef),
 		patterns:    make(map[string]string),
 		minLength:   math.MaxInt,
 	}
-	for i, def := range rw.config.Emoticons {
-		rw.emos[def.Name] = &(rw.config.Emoticons[i])
+	for _, def := range rw.config.Emoticons {
 		for _, p := range def.Patterns {
 			f := false
-			for k := range rw.prefixChars {
-				if p[0] == rw.prefixChars[k] {
+			for i := range rw.prefixChars {
+				if p[0] == rw.prefixChars[i] {
 					f = true
 					break
 				}
@@ -74,7 +74,13 @@ func init() {
 			}
 		}
 	}
-	EmoticonRewriter = &rw
+	rewriterRegistry[rw.Name()] = &rw
+
+	rw2 := emoticonTagRewriter{
+		config: &cfg,
+		re:     regexp.MustCompile(`^ei:\s*(\w+)(\s*/)?\s*$`),
+	}
+	rewriterRegistry[rw2.Name()] = &rw2
 }
 
 // Name returns the rewriter's name.
@@ -113,7 +119,7 @@ func (rw *emoticonRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 			for k, v := range rw.patterns {
 				if strings.HasPrefix(work, k) {
 					looking = false
-					output.WriteString(rw.emos[v].Replace)
+					output.WriteString(rw.config.emos[v].Replace)
 					work = work[len(k):]
 					didReplace = true
 					break
@@ -136,5 +142,45 @@ func (rw *emoticonRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 		return nil
 	}
 	output.WriteString(work)
-	return &markupData{beginMarkup: "", text: output.String(), endMarkup: "", rescan: true}
+	return &markupData{
+		beginMarkup: "",
+		text:        output.String(),
+		endMarkup:   "",
+		rescan:      true,
+	}
+}
+
+// emoticonTagRewriter rewrites emoticon tags.
+type emoticonTagRewriter struct {
+	config *EmoticonConfig
+	re     *regexp.Regexp
+}
+
+// Name returns the rewriter's name.
+func (rw *emoticonTagRewriter) Name() string {
+	return "emoticon_tag"
+}
+
+/* Rewrite rewrites the given string data and adds markup before and after if needed.
+ * Parameters:
+ *     data - The data to be rewritten.
+ *     svc - Services interface we can use.
+ * Returns:
+ *     Pointer to markup data, or nil.
+ */
+func (rw *emoticonTagRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+	m := rw.re.FindStringSubmatch(data)
+	if m == nil {
+		return nil
+	}
+	d, ok := rw.config.emos[m[1]]
+	if !ok {
+		return nil
+	}
+	return &markupData{
+		beginMarkup: "",
+		text:        d.Replace,
+		endMarkup:   "",
+		rescan:      false,
+	}
 }

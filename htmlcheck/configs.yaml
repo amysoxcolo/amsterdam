@@ -1,0 +1,48 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+configs:
+  - name: "post-body"
+    wordWrap: 55
+    angles: true
+    parens: true
+    discardHTML: false
+    outputFilters:
+      - html
+    stringRewriters:
+      - emoticon
+      - email
+      - url
+    tagRewriters:
+      - emoticon_tag
+      - postlink
+      - userlink
+      - email
+      - url
+    parenRewriters:
+      - userlink
+    tagSet: normal
+  - name: "post-pseud"
+    wordWrap: 0
+    angles: true
+    parens: false
+    discardHTML: false
+    outputFilters:
+      - html
+    tagSet: restricted
+  - name: "preview"
+    wordWrap: 55
+    angles: true
+    parens: true
+    discardHTML: false
+    outputFilters:
+      - html
+    stringRewriters:
+      - emoticon
+      - email
+      - url
