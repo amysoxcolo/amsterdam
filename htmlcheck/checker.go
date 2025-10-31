@@ -27,3 +27,11 @@ type HTMLChecker interface {
 }
 
 // var NotYetFinished = errors.New("the HTML checker has not yet been finished")
+
+type htmlCheckerBackend interface {
+	getCheckerAttrValue(string) string
+	sendTagMessage(string)
+	getCheckerContextValue(string) any
+	addExternalRef(*url.URL)
+	addInternalRef(string)
+}
