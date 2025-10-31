@@ -9,6 +9,8 @@
 // The htmlcheck package contains the HTML Checker.
 package htmlcheck
 
+import "net/url"
+
 // HTMLChecker is a component that checks HTML and reformats it as needed.
 type HTMLChecker interface {
 	Append(string) error
@@ -18,9 +20,10 @@ type HTMLChecker interface {
 	Length() (int, error)
 	Lines() (int, error)
 	Counter(string) (int, error)
-	Context() map[string]any
-	ExternalRefs() ([]any, error)
-	InternalRefs() ([]any, error)
+	GetContext(string) any
+	SetContext(string, any)
+	ExternalRefs() ([]*url.URL, error)
+	InternalRefs() ([]string, error)
 }
 
 // var NotYetFinished = errors.New("the HTML checker has not yet been finished")
