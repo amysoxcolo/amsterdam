@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // AuditRecord holds an audit record instance.

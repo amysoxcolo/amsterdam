@@ -43,3 +43,5 @@ rendering:
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
   countryList:
     prioritize: US
+posting:
+  externalDictionary: ""

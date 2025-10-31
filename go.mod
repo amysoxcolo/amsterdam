@@ -7,6 +7,7 @@ require (
 	github.com/alexflint/go-arg v1.6.0
 	github.com/biter777/countries v1.7.5
 	github.com/bits-and-blooms/bitset v1.24.0
+	github.com/derekparker/trie v0.0.0-20230829180723-39f4de51ef7d
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gorilla/sessions v1.4.0

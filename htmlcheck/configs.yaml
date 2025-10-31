@@ -46,3 +46,54 @@ configs:
       - emoticon
       - email
       - url
+    wordRewriters:
+      - spelling
+    tagRewriters:
+      - emoticon_tag
+      - postlink
+      - userlink
+      - email
+      - url
+    parenRewriters:
+      - userlink
+    tagSet: normal
+  - name: "escaper"
+    wordWrap: 0
+    angles: false
+    parens: false
+    discardHTML: false
+    outputFilters:
+      - html
+  - name: "mail-post"
+    wordWrap: 55
+    angles: true
+    parens: false
+    dicardHTML: true
+    discardRejected: true
+    tagSet: normal
+  - name: "post-from-email"
+    wordWrap: 55
+    rewrap: true
+    angles: true
+    parens: true
+    discardHTML: false
+    dicardRejected: true
+    discardComments: true
+    discardXML: true
+    outputFilters:
+      - html
+    stringRewriters:
+      - emoticon
+      - email
+      - url
+    tagRewriters:
+      - emoticon_tag
+      - postlink
+      - userlink
+      - email
+      - url
+    parenRewriters:
+      - userlink
+    tagSet: normal
+    disallowTags:
+      - font

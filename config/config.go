@@ -16,7 +16,7 @@ import (
 	"os"
 
 	argparse "github.com/alexflint/go-arg"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -86,6 +86,9 @@ type AmConfig struct {
 			Prioritize string `yaml:"prioritize"`
 		} `yaml:"countryList"`
 	} `yaml:"rendering"`
+	Posting struct {
+		ExternalDictionary string `yaml:"externalDictionary"`
+	} `yaml:"posting"`
 }
 
 //go:embed default.yaml
@@ -164,6 +167,7 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)
 	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
 	dest.Rendering.CountryList.Prioritize = overlayString(loaded.Rendering.CountryList.Prioritize, defaults.Rendering.CountryList.Prioritize)
+	dest.Posting.ExternalDictionary = overlayString(loaded.Posting.ExternalDictionary, defaults.Posting.ExternalDictionary)
 }
 
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.

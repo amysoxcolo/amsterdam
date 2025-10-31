@@ -21,6 +21,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
+	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -101,6 +102,7 @@ func main() {
 	defer closer()
 	closer = email.SetupMailSender()
 	defer closer()
+	htmlcheck.SetupDicts()
 	ui.SetupTemplates()
 	closer = ui.SetupSessionManager()
 	defer closer()
