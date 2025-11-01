@@ -12,7 +12,6 @@ package htmlcheck
 import (
 	_ "embed"
 
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,48 +33,6 @@ type HTMLCheckerConfig struct {
 	ParenRewriters  []string `yaml:"parenRewriters"`
 	TagSet          string   `yaml:"tagSet"`
 	DisallowTags    []string `yaml:"disallowTags"`
-}
-
-func (cfg *HTMLCheckerConfig) rezOutputFilters() []outputFilter {
-	rc := make([]outputFilter, 0, len(cfg.OutputFilters))
-	for i := range cfg.OutputFilters {
-		f, ok := outputFilterRegistry[cfg.OutputFilters[i]]
-		if ok {
-			rc = append(rc, f)
-		} else {
-			log.Errorf("filter %s is not found", cfg.OutputFilters[i])
-		}
-	}
-	return rc
-}
-
-func rezRewriters(desired []string) []rewriter {
-	rc := make([]rewriter, 0, len(desired))
-	for i := range desired {
-		r, ok := rewriterRegistry[desired[i]]
-		if ok {
-			rc = append(rc, r)
-		} else {
-			log.Errorf("rewriter %s is not found", desired[i])
-		}
-	}
-	return rc
-}
-
-func (cfg *HTMLCheckerConfig) rezStringRewriters() []rewriter {
-	return rezRewriters(cfg.StringRewriters)
-}
-
-func (cfg *HTMLCheckerConfig) rezWordRewriters() []rewriter {
-	return rezRewriters(cfg.WordRewriters)
-}
-
-func (cfg *HTMLCheckerConfig) rezTagRewriters() []rewriter {
-	return rezRewriters(cfg.TagRewriters)
-}
-
-func (cfg *HTMLCheckerConfig) rezParenRewriters() []rewriter {
-	return rezRewriters(cfg.ParenRewriters)
 }
 
 // HTMLCheckerConfigFile represents all the configs as they exist in the file.

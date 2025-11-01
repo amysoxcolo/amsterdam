@@ -294,3 +294,47 @@ func (rw *userLinkRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 		rescan:      false,
 	}
 }
+
+// countingRewriter is a wrapper around rewriter that counts the number of rewrites.
+type countingRewriter struct {
+	inner rewriter
+	count int
+}
+
+// Name returns the rewriter's name.
+func (rw *countingRewriter) Name() string {
+	return rw.inner.Name()
+}
+
+/* Rewrite rewrites the given string data and adds markup before and after if needed.
+ * Parameters:
+ *     data - The data to be rewritten.
+ *     svc - Services interface we can use.
+ * Returns:
+ *     Pointer to markup data, or nil.
+ */
+func (rw *countingRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+	rc := rw.inner.Rewrite(data, svc)
+	if rc != nil && !rc.rescan {
+		rw.count++
+	}
+	return rc
+}
+
+// GetCount returns the rewriter's count.
+func (rw *countingRewriter) GetCount() int {
+	return rw.count
+}
+
+// Reset resets the rewriter.
+func (rw *countingRewriter) Reset() {
+	rw.count = 0
+}
+
+// MakeCountingRewriter wraps the rewriter in a countingRewriter.
+func MakeCountingRewriter(rw rewriter) *countingRewriter {
+	return &countingRewriter{
+		inner: rw,
+		count: 0,
+	}
+}
