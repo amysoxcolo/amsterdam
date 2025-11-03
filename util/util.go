@@ -14,17 +14,10 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
-var numeric *regexp.Regexp
-
-func init() {
-	re, err := regexp.Compile("^[0-9]+$")
-	if err != nil {
-		panic(err)
-	}
-	numeric = re
-}
+var numeric *regexp.Regexp = regexp.MustCompile(`^[0-9]+$`)
 
 /* CapitalizeString changes the first character of the string to a capital.
  * Parameters:
@@ -79,4 +72,53 @@ func SqlEscape(s string, wildcards bool) string {
  */
 func IsNumeric(s string) bool {
 	return numeric.MatchString(s)
+}
+
+/* RunesToBytes returns the number of bytes in a string counting the number of runes from the beginning.
+ * Parameters:
+ *     s - The string to work with.
+ *     runeCount - The number of runes to count from the start of the string.
+ * Returns:
+ *     The corresponding number of bytes.
+ */
+func RunesToBytes(s string, runeCount int) int {
+	bp := 0
+	for runeCount > 0 {
+		if bp >= len(s) {
+			return len(s)
+		}
+		_, c := utf8.DecodeRuneInString(s[bp:])
+		bp += c
+		runeCount--
+	}
+	return bp
+}
+
+func IsRuneWord(ch rune) bool {
+	return unicode.IsLetter(ch) || ch == '-' || ch == '\''
+}
+
+func WordRunLength(s string) (int, bool) {
+	c1, initLen := utf8.DecodeRuneInString(s)
+	wordChar := IsRuneWord(c1)
+	rlen := 1
+	for _, mch := range s[initLen:] {
+		if IsRuneWord(mch) != wordChar {
+			break
+		}
+		rlen++
+	}
+	return rlen, wordChar
+}
+
+func WordRunLengthAfterPrefix(s string, nrunes int) (int, bool) {
+	ofs := 0
+	for _, ch := range s {
+		if nrunes == 0 {
+			break
+		}
+		ofs += utf8.RuneLen(ch)
+		nrunes--
+	}
+	return WordRunLength(s[ofs:])
 }

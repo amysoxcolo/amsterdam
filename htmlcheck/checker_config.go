@@ -17,28 +17,32 @@ import (
 
 // HTMLCheckerConfig is a configuration that may be used with the HTML Checker.
 type HTMLCheckerConfig struct {
-	Name            string   `yaml:"name"`
-	WordWrap        int      `yaml:"wordWrap"`
-	Rewrap          bool     `yaml:"rewrap"`
-	Angles          bool     `yaml:"angles"`
-	Parens          bool     `yaml:"parens"`
-	DiscardHTML     bool     `yaml:"discardHTML"`
-	DiscardRejected bool     `yaml:"discardRejected"`
-	DiscardComments bool     `yaml:"discardComments"`
-	DiscardXML      bool     `yaml:"discardXML"`
-	OutputFilters   []string `yaml:"outputFilters"`
-	StringRewriters []string `yaml:"stringRewriters"`
-	WordRewriters   []string `yaml:"wordRewriters"`
-	TagRewriters    []string `yaml:"tagRewriters"`
-	ParenRewriters  []string `yaml:"parenRewriters"`
-	TagSet          string   `yaml:"tagSet"`
-	DisallowTags    []string `yaml:"disallowTags"`
+	Name             string   `yaml:"name"`
+	WordWrap         int      `yaml:"wordWrap"`
+	Rewrap           bool     `yaml:"rewrap"`
+	Angles           bool     `yaml:"angles"`
+	Parens           bool     `yaml:"parens"`
+	DiscardHTML      bool     `yaml:"discardHTML"`
+	DiscardRejected  bool     `yaml:"discardRejected"`
+	DiscardComments  bool     `yaml:"discardComments"`
+	DiscardXML       bool     `yaml:"discardXML"`
+	OutputFilters    []string `yaml:"outputFilters"`
+	RawOutputFilters []string `yaml:"rawOutputFilters"`
+	StringRewriters  []string `yaml:"stringRewriters"`
+	WordRewriters    []string `yaml:"wordRewriters"`
+	TagRewriters     []string `yaml:"tagRewriters"`
+	ParenRewriters   []string `yaml:"parenRewriters"`
+	TagSet           string   `yaml:"tagSet"`
+	DisallowTags     []string `yaml:"disallowTags"`
+	AnchorTail       string   `yaml:"anchorTail"`
 }
 
 // HTMLCheckerConfigFile represents all the configs as they exist in the file.
 type HTMLCheckerConfigFile struct {
 	Configs []HTMLCheckerConfig `yaml:"configs"`
 }
+
+const defaultAnchorTail = "TARGET=\"Wander\""
 
 //go:embed configs.yaml
 var configData []byte
@@ -55,5 +59,8 @@ func init() {
 	}
 	for i := range cfgdata.Configs {
 		configsRegistry[cfgdata.Configs[i].Name] = &(cfgdata.Configs[i])
+		if cfgdata.Configs[i].AnchorTail == "" {
+			cfgdata.Configs[i].AnchorTail = defaultAnchorTail
+		}
 	}
 }

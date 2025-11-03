@@ -13,8 +13,8 @@ import "strings"
 
 // outputFilter is the interface for an HTML checker output filter.
 type outputFilter interface {
-	tryOutputCharacter(strings.Builder, byte) bool
-	matchCharacter(byte) bool
+	tryOutputRune(strings.Builder, rune) bool
+	matchRune(rune) bool
 	lengthNoMatch(string) int
 }
 
@@ -34,7 +34,7 @@ type htmlEncodingFilter struct{}
 const htmlEscapedChars = "<>&"
 
 // tryOutputCharacter outputs a character that needs to be escaped.
-func (f *htmlEncodingFilter) tryOutputCharacter(buf strings.Builder, ch byte) bool {
+func (f *htmlEncodingFilter) tryOutputRune(buf strings.Builder, ch rune) bool {
 	switch ch {
 	case '<':
 		buf.WriteString("&lt;")
@@ -49,15 +49,15 @@ func (f *htmlEncodingFilter) tryOutputCharacter(buf strings.Builder, ch byte) bo
 }
 
 // matchCharacter returns true if this character needs to be escaped.
-func (f *htmlEncodingFilter) matchCharacter(ch byte) bool {
-	return strings.IndexByte(htmlEscapedChars, ch) >= 0
+func (f *htmlEncodingFilter) matchRune(ch rune) bool {
+	return strings.ContainsRune(htmlEscapedChars, ch)
 }
 
 // lengthNoMatch returns the maximum length of unmatched characters at the start of the string.
 func (f *htmlEncodingFilter) lengthNoMatch(s string) int {
 	rc := len(s)
-	for _, c := range []byte(htmlEscapedChars) {
-		tmp := strings.IndexByte(s, c)
+	for _, c := range htmlEscapedChars {
+		tmp := strings.IndexRune(s, c)
 		if tmp >= 0 && tmp < rc {
 			rc = tmp
 			if rc == 0 {

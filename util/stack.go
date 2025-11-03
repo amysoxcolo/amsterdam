@@ -11,7 +11,7 @@
 package util
 
 // Stack[T] is a simple generic array-based stack implementation.
-type Stack[T any] struct {
+type Stack[T comparable] struct {
 	elements []T
 }
 
@@ -43,8 +43,27 @@ func (stk *Stack[T]) Peek() (T, bool) {
 	return stk.elements[len(stk.elements)-1], true
 }
 
+func (stk *Stack[T]) RemoveMostRecent(data T) bool {
+	i := len(stk.elements) - 1
+	for i >= 0 {
+		if stk.elements[i] == data {
+			if i == 0 {
+				stk.elements = stk.elements[1:]
+			} else if (i + 1) == len(stk.elements) {
+				stk.elements = stk.elements[:i]
+			} else {
+				high := stk.elements[i+1:]
+				stk.elements = stk.elements[:i]
+				stk.elements = append(stk.elements, high...)
+			}
+			return true
+		}
+	}
+	return false
+}
+
 // NewStack creates and returns a new stack.
-func NewStack[T any]() *Stack[T] {
+func NewStack[T comparable]() *Stack[T] {
 	return &Stack[T]{
 		elements: make([]T, 0),
 	}

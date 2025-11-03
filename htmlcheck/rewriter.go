@@ -26,6 +26,10 @@ type markupData struct {
 	rescan      bool
 }
 
+func (md *markupData) all() string {
+	return md.beginMarkup + md.text + md.endMarkup
+}
+
 // rewriterServices is an interface that provides services to rewriters.
 type rewriterServices interface {
 	rewriterAttrValue(string) string
