@@ -33,7 +33,7 @@ type htmlEncodingFilter struct{}
 // htmlEscapedChars is a list of HTML characters that are escaped.
 const htmlEscapedChars = "<>&"
 
-// tryOutputCharacter outputs a character that needs to be escaped.
+// tryOutputRune outputs a rune that needs to be escaped.
 func (f *htmlEncodingFilter) tryOutputRune(buf strings.Builder, ch rune) bool {
 	switch ch {
 	case '<':

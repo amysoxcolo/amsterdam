@@ -94,10 +94,18 @@ func RunesToBytes(s string, runeCount int) int {
 	return bp
 }
 
+// IsRuneWord returns true if the given rune is part of a word.
 func IsRuneWord(ch rune) bool {
 	return unicode.IsLetter(ch) || ch == '-' || ch == '\''
 }
 
+/* WordRunLength calculates the number of runes at the start of the string that are either word or non-word characters.
+ * Parameters:
+ *     s - The string under test.
+ * Returns:
+ *     The run length in runes.
+ *     true if the run is a length of word characters, false if it's a run of non-word characters.
+ */
 func WordRunLength(s string) (int, bool) {
 	c1, initLen := utf8.DecodeRuneInString(s)
 	wordChar := IsRuneWord(c1)
@@ -111,6 +119,15 @@ func WordRunLength(s string) (int, bool) {
 	return rlen, wordChar
 }
 
+/* WordRunLengthAfterPrefix calculates the number of runes after a certain number in the string
+ * that are either word or non-word characters.
+ * Parameters:
+ *     s - The string under test.
+ *     nrunes - The number of runes to skip at the start of the string.
+ * Returns:
+ *     The run length in runes.
+ *     true if the run is a length of word characters, false if it's a run of non-word characters.
+ */
 func WordRunLengthAfterPrefix(s string, nrunes int) (int, bool) {
 	ofs := 0
 	for _, ch := range s {

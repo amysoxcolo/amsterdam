@@ -43,6 +43,7 @@ func (stk *Stack[T]) Peek() (T, bool) {
 	return stk.elements[len(stk.elements)-1], true
 }
 
+// RemoveMostRecent looks for the most recent particular data element on the stack, and removes that.
 func (stk *Stack[T]) RemoveMostRecent(data T) bool {
 	i := len(stk.elements) - 1
 	for i >= 0 {
@@ -58,8 +59,14 @@ func (stk *Stack[T]) RemoveMostRecent(data T) bool {
 			}
 			return true
 		}
+		i--
 	}
 	return false
+}
+
+// Clear clears out the stack.
+func (stk *Stack[T]) Clear() {
+	stk.elements = make([]T, 0)
 }
 
 // NewStack creates and returns a new stack.

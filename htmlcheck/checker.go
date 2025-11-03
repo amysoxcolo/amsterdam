@@ -12,7 +12,6 @@ package htmlcheck
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"net/url"
 	"strings"
 	"unicode"
@@ -23,24 +22,38 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+/*----------------------------------------------------------------------------
+ * External definitions
+ *----------------------------------------------------------------------------
+ */
+
 // HTMLChecker is a component that checks HTML and reformats it as needed.
 type HTMLChecker interface {
-	Append(string) error
-	Finish() error
-	Reset()
-	Value() (string, error)
-	Length() (int, error)
-	Lines() (int, error)
-	Counter(string) (int, error)
-	GetContext(string) any
-	SetContext(string, any)
-	ExternalRefs() ([]*url.URL, error)
-	InternalRefs() ([]string, error)
+	Append(string) error               // add additional string to the checker state
+	Finish() error                     // finish parsing HTML
+	Reset()                            // clear state
+	Value() (string, error)            // return value
+	Length() (int, error)              // return text length
+	Lines() (int, error)               // return number of lines
+	Counter(string) (int, error)       // return value of a counter
+	GetContext(string) any             // get a context value
+	SetContext(string, any)            // set a context value
+	ExternalRefs() ([]*url.URL, error) // return a list of external references
+	InternalRefs() ([]string, error)   // return a list of internal references
 }
 
+// ErrAlreadyFinished is a common error that's returned if the checker has been finished when it shouldn't be.
 var ErrAlreadyFinished = errors.New("the HTML checker has already finished")
+
+// ErrNotYetFinished is a common error that's returned if the checker has not been finished when it should be.
 var ErrNotYetFinished = errors.New("the HTML checker has not yet been finished")
 
+/*----------------------------------------------------------------------------
+ * Internal definitions
+ *----------------------------------------------------------------------------
+ */
+
+// htmlCheckerBackend is an interface used by subcomponents to communicate back to the HTML checker.
 type htmlCheckerBackend interface {
 	getCheckerAttrValue(string) string
 	sendTagMessage(string)
@@ -66,33 +79,40 @@ const htmlMarginSlop = 5
 // hyphApos is used to find hyphens and apostrophes.
 const hyphApos = "-'"
 
+// htmlCheckerImpl is the implementation of the HTML checker.
 type htmlCheckerImpl struct {
-	config             *HTMLCheckerConfig
-	started            bool
-	finished           bool
-	state              int
-	quoteChar          byte
-	parenLevel         int
-	columns            int
-	lines              int
-	noBreakCount       int
-	triggerWBR         bool
-	outputBuffer       strings.Builder
-	tempBuffer         strings.Builder
-	tagStack           *util.Stack[*tag]
-	counters           map[string]*countingRewriter
-	stringRewriters    []rewriter
-	wordRewriters      []rewriter
-	tagRewriters       []rewriter
-	parenRewriters     []rewriter
-	outputFilters      []outputFilter
-	rawOutputFilters   []outputFilter
-	contextData        map[string]any
-	externalReferences map[*url.URL]bool
-	internalReferences map[string]bool
-	tagSet             *bitset.BitSet
+	config             *HTMLCheckerConfig           // pointer to configuration
+	started            bool                         // has checker been started?
+	finished           bool                         // has checker been finished?
+	state              int                          // current state
+	quoteChar          byte                         // quote character to match in stateTagQuote
+	parenLevel         int                          // parenthesis level in stateParen
+	columns            int                          // current column position - runes, not bytes!
+	lines              int                          // lines of text
+	noBreakCount       int                          // current NOBR nesting count
+	triggerWBR         bool                         // do we need to trigger a word break?
+	outputBuffer       strings.Builder              // output is gathered here
+	tempBuffer         strings.Builder              // input is gathered here within a state and flushed on transition
+	tagStack           *util.Stack[*tag]            // keeps track of nested HTML tags
+	counters           map[string]*countingRewriter // counters for times rewrites have happened
+	stringRewriters    []rewriter                   // loaded string rewriters
+	wordRewriters      []rewriter                   // loaded word rewriters
+	tagRewriters       []rewriter                   // loaded tag rewriters
+	parenRewriters     []rewriter                   // loaded parenthesis rewriters
+	outputFilters      []outputFilter               // loaded standard output filters
+	rawOutputFilters   []outputFilter               // loaded "raw" output filters
+	contextData        map[string]any               // holds context values
+	externalReferences map[*url.URL]bool            // saved external references
+	internalReferences map[string]bool              // saved internal references
+	tagSet             *bitset.BitSet               // set of valid tags from configuration
 }
 
+/*----------------------------------------------------------------------------
+ * Construction helpers
+ *----------------------------------------------------------------------------
+ */
+
+// copyRewriters looks up all rewriters in the source array and builds a target array.
 func (ht *htmlCheckerImpl) copyRewriters(dest []rewriter, source []string) {
 	for i := range source {
 		rw, ok := rewriterRegistry[source[i]]
@@ -109,6 +129,7 @@ func (ht *htmlCheckerImpl) copyRewriters(dest []rewriter, source []string) {
 	}
 }
 
+// copyOutputFilters looks up all output filters in the source array and builds a target array.
 func (ht *htmlCheckerImpl) copyOutputFilters(dest []outputFilter, source []string) {
 	for i := range source {
 		f, ok := outputFilterRegistry[source[i]]
@@ -120,6 +141,18 @@ func (ht *htmlCheckerImpl) copyOutputFilters(dest []outputFilter, source []strin
 	}
 }
 
+/*----------------------------------------------------------------------------
+ * The construction function
+ *----------------------------------------------------------------------------
+ */
+
+/* AmNewHTMLChecker creates a new HTML Checker object.
+ * Parametrers:
+ *     configName - Name of the configuration to use.
+ * Returns:
+ *     New HTML checker reference.
+ *     Standard Go error status.
+ */
 func AmNewHTMLChecker(configName string) (HTMLChecker, error) {
 	config, ok := configsRegistry[configName]
 	if !ok {
@@ -161,6 +194,12 @@ func AmNewHTMLChecker(configName string) (HTMLChecker, error) {
 	return &rc, nil
 }
 
+/*----------------------------------------------------------------------------
+ * Implementations from htmlCheckerBackend and rewriterServices
+ *----------------------------------------------------------------------------
+ */
+
+// getCheckerAttrValue returns the value of an HTML checker attribute.
 func (ht *htmlCheckerImpl) getCheckerAttrValue(name string) string {
 	if name == "ANCHORTAIL" {
 		return ht.config.AnchorTail
@@ -168,6 +207,7 @@ func (ht *htmlCheckerImpl) getCheckerAttrValue(name string) string {
 	return ""
 }
 
+// sendTagMessage offers specific HTML tags a way to send messages to affect the HTML checker's state.
 func (ht *htmlCheckerImpl) sendTagMessage(msg string) {
 	switch msg {
 	case "NOBR":
@@ -179,26 +219,37 @@ func (ht *htmlCheckerImpl) sendTagMessage(msg string) {
 	}
 }
 
+// getCheckerContextValue returns a context value set on the HTML checker.
 func (ht *htmlCheckerImpl) getCheckerContextValue(name string) any {
 	return ht.contextData[name]
 }
 
+// addExternalRef adds an external reference to the checker's logs.
 func (ht *htmlCheckerImpl) addExternalRef(ref *url.URL) {
 	ht.externalReferences[ref] = true
 }
 
+// addInternalRef adds an internal reference to the checker's logs.
 func (ht *htmlCheckerImpl) addInternalRef(ref string) {
 	ht.internalReferences[ref] = true
 }
 
+// rewriterAttrValue returns the value of an HTML checker attribute.
 func (ht *htmlCheckerImpl) rewriterAttrValue(name string) string {
 	return ht.getCheckerAttrValue(name)
 }
 
+// rewriterContextValue returns a context value set on the HTML checker.
 func (ht *htmlCheckerImpl) rewriterContextValue(name string) any {
 	return ht.contextData[name]
 }
 
+/*----------------------------------------------------------------------------
+ * Internal functions forming the meat of the parser
+ *----------------------------------------------------------------------------
+ */
+
+// emitRune emits a rune to the output buffer, respecting the specified output filters.
 func (ht *htmlCheckerImpl) emitRune(ch rune, filters []outputFilter, countCols bool) {
 	handled := false
 	if len(filters) > 0 {
@@ -209,75 +260,76 @@ func (ht *htmlCheckerImpl) emitRune(ch rune, filters []outputFilter, countCols b
 				break // found a filter to handle it, done
 			}
 		}
-		if !handled { // output the raw character
-			ht.outputBuffer.WriteRune(ch)
-		}
-		if countCols && ht.config.WordWrap > 0 {
-			ht.columns++
-		}
+	}
+	if !handled { // output the raw character
+		ht.outputBuffer.WriteRune(ch)
+	}
+	if countCols && ht.config.WordWrap > 0 {
+		ht.columns++
 	}
 }
 
+// emitString emits an entire string to the output buffer, respecting the specified output filters.
 func (ht *htmlCheckerImpl) emitString(str string, filters []outputFilter, countCols bool) {
-	if str == "" {
-		return
-	}
-	realCountCols := countCols && (ht.config.WordWrap > 0)
-	if len(filters) == 0 {
-		// if there are no filters, just output the whole thing
-		ht.outputBuffer.WriteString(str)
-		if realCountCols {
-			ht.columns += utf8.RuneCountInString(str)
-		}
-		return
-	}
-	temp := str
-	for len(temp) > 0 {
-		// We output as much of the string as we possibly can at once. Assume, for now, we'll output the whole thing.
-		outputLen := len(temp)
+	if str != "" {
+		realCountCols := countCols && ht.config.WordWrap > 0
+		if len(filters) == 0 {
+			// if there are no filters, just output the whole thing
+			ht.outputBuffer.WriteString(str)
+			if realCountCols {
+				ht.columns += utf8.RuneCountInString(str)
+			}
+		} else {
+			temp := str
+			for len(temp) > 0 {
+				// We output as much of the string as we possibly can at once. Assume, for now, we'll output the whole thing.
+				outputLen := len(temp)
 
-		// Now look at each of the output filters to see if we should try outputting a lesser amount
-		// (i.e. does the string contain a "stopper" that one of the filters would like to mogrify?)
-		var stopper outputFilter = nil
-		for _, of := range filters {
-			// find the length of characters that DOESN'T match this filter
-			lnm := of.lengthNoMatch(temp)
-			if lnm >= 0 && lnm < outputLen {
-				// we've found a new stopper - record the length and the filter
-				outputLen = lnm
-				stopper = of
+				// Now look at each of the output filters to see if we should try outputting a lesser amount
+				// (i.e. does the string contain a "stopper" that one of the filters would like to mogrify?)
+				var stopper outputFilter = nil
+				for _, of := range filters {
+					// find the length of characters that DOESN'T match this filter
+					lnm := of.lengthNoMatch(temp)
+					if lnm >= 0 && lnm < outputLen {
+						// we've found a new stopper - record the length and the filter
+						outputLen = lnm
+						stopper = of
+					}
+					if outputLen <= 0 {
+						break // nothing left to do here
+					}
+				}
+				if outputLen > 0 {
+					// move over the unaltered characters first
+					ht.outputBuffer.WriteString(temp[:outputLen])
+					if realCountCols {
+						ht.columns += utf8.RuneCountInString(temp[:outputLen])
+					}
+				}
+				if stopper != nil {
+					// one of the output filters stopped us, try invoking it
+					tmpch, bsiz := utf8.DecodeRuneInString(temp[outputLen:])
+					outputLen += bsiz
+					if !stopper.tryOutputRune(ht.outputBuffer, tmpch) {
+						ht.outputBuffer.WriteRune(tmpch)
+					}
+					if realCountCols {
+						ht.columns++
+					}
+				}
+				// Chop the string and go around again.
+				if outputLen == len(temp) {
+					temp = ""
+				} else if outputLen > 0 {
+					temp = temp[outputLen:]
+				}
 			}
-			if outputLen <= 0 {
-				break // nothing left to do here
-			}
-		}
-		if outputLen > 0 {
-			// move over the unaltered characters first
-			ht.outputBuffer.WriteString(temp[:outputLen])
-			if realCountCols {
-				ht.columns += utf8.RuneCountInString(temp[:outputLen])
-			}
-		}
-		if stopper != nil {
-			// one of the output filters stopped us, try invoking it
-			tmpch, bsiz := utf8.DecodeRuneInString(temp[outputLen:])
-			outputLen += bsiz
-			if !stopper.tryOutputRune(ht.outputBuffer, tmpch) {
-				ht.outputBuffer.WriteRune(tmpch)
-			}
-			if realCountCols {
-				ht.columns++
-			}
-		}
-		// Chop the string and go around again.
-		if outputLen == len(temp) {
-			temp = ""
-		} else if outputLen > 0 {
-			temp = temp[outputLen:]
 		}
 	}
 }
 
+// emitLineBreak emits a line break to the output.
 func (ht *htmlCheckerImpl) emitLineBreak() {
 	ht.emitString("\r\n", ht.rawOutputFilters, false)
 	if ht.config.WordWrap > 0 {
@@ -286,34 +338,38 @@ func (ht *htmlCheckerImpl) emitLineBreak() {
 	ht.lines++
 }
 
+// emitPossibleLineBreak emits a line break to the output, if it's warranted.
 func (ht *htmlCheckerImpl) emitPossibleLineBreak() {
 	if ht.config.WordWrap > 0 && ht.noBreakCount <= 0 && ht.columns >= ht.config.WordWrap {
 		ht.emitLineBreak()
 	}
 }
 
-func (ht *htmlCheckerImpl) ensureSpaceOnLine(nchars int) {
+// ensureSpaceOnLine makes sure we have enough space on the current line for a certain number of runes, adding a line break if needed.
+func (ht *htmlCheckerImpl) ensureSpaceOnLine(nrunes int) {
 	if ht.config.WordWrap > 0 && ht.noBreakCount <= 0 {
 		// add a line break if needed here
 		remainSpace := ht.config.WordWrap - ht.columns
-		if remainSpace < nchars {
+		if remainSpace < nrunes {
 			ht.emitLineBreak()
 		}
 	}
 }
 
+// emitMarkupData emits the markup data in the specified data structure.
 func (ht *htmlCheckerImpl) emitMarkupData(md *markupData) {
 	if !md.rescan {
-		ht.ensureSpaceOnLine(len(md.text))
+		ht.ensureSpaceOnLine(utf8.RuneCountInString(md.text))
 		ht.emitString(md.beginMarkup, ht.rawOutputFilters, false)
 		ht.emitString(md.text, ht.outputFilters, true)
 		ht.emitString(md.endMarkup, ht.rawOutputFilters, false)
 	}
 }
 
+// emitBrackedtedMarkupData emits the marketed data in the specified data structure, with prefix and suffix runes.
 func (ht *htmlCheckerImpl) emitBracketedMarkupData(md *markupData, prefix rune, suffix rune) {
 	if !md.rescan {
-		l := len(md.text)
+		l := utf8.RuneCountInString(md.text)
 		if l > 0 {
 			l += 2
 		}
@@ -330,6 +386,7 @@ func (ht *htmlCheckerImpl) emitBracketedMarkupData(md *markupData, prefix rune, 
 	}
 }
 
+// doFlushWhitespace flushes out all the whitespace in the temporary buffer.
 func (ht *htmlCheckerImpl) doFlushWhitespace() {
 	outputLen := ht.tempBuffer.Len()
 	if outputLen > 0 {
@@ -356,6 +413,7 @@ func (ht *htmlCheckerImpl) doFlushWhitespace() {
 	}
 }
 
+// doFlushNewlines flushes all the newlines that are in the temporary buffer.
 func (ht *htmlCheckerImpl) doFlushNewlines() {
 	// Measure the number of line breaks we have.
 	lineBreaks, crs := 0, 0
@@ -385,6 +443,7 @@ func (ht *htmlCheckerImpl) doFlushNewlines() {
 		}
 	}
 
+	// emit line breaks
 	for lineBreaks > 0 {
 		ht.emitLineBreak()
 		lineBreaks--
@@ -393,6 +452,7 @@ func (ht *htmlCheckerImpl) doFlushNewlines() {
 	ht.state = stateWhitespace
 }
 
+// emitFromStartOfTempBuffer emits a certain number of runes from the start of the temporary buffer.
 func (ht *htmlCheckerImpl) emitFromStartOfTempBuffer(nrunes int) {
 	if nrunes > 0 {
 		if ht.config.WordWrap > 0 && ht.noBreakCount <= 0 {
@@ -420,6 +480,7 @@ func (ht *htmlCheckerImpl) emitFromStartOfTempBuffer(nrunes int) {
 	}
 }
 
+// attemptRewrite attempts to apply a list of rewriters on the text, returning the first one that matches.
 func (ht *htmlCheckerImpl) attemptRewrite(rewriters []rewriter, data string) *markupData {
 	for _, r := range rewriters {
 		rc := r.Rewrite(data, ht)
@@ -430,6 +491,7 @@ func (ht *htmlCheckerImpl) attemptRewrite(rewriters []rewriter, data string) *ma
 	return nil
 }
 
+// doFlushString attempts to flush a string from the temporary buffer.
 func (ht *htmlCheckerImpl) doFlushString() bool {
 	md := ht.attemptRewrite(ht.stringRewriters, ht.tempBuffer.String())
 	if md != nil {
@@ -519,9 +581,11 @@ func (ht *htmlCheckerImpl) doFlushString() bool {
 	return false
 }
 
+// handleAsHTML attempts to handle the contents of the tag in the temporary buffer as HTML.
 func (ht *htmlCheckerImpl) handleAsHTML() bool {
 	ht.triggerWBR = false
 	tempString := ht.tempBuffer.String()
+
 	// Figure out where the start of the command word is.
 	startCmd := 0
 	closingTag := false
@@ -543,8 +607,7 @@ func (ht *htmlCheckerImpl) handleAsHTML() bool {
 		// command word is empty or is too long to be an HTML tag
 		return false
 	}
-	possTagName := tempString[startCmd:endCmd]
-	tagIndex, ok := tagNameToIndex[strings.ToUpper(possTagName)]
+	tagIndex, ok := tagNameToIndex[strings.ToUpper(tempString[startCmd:endCmd])]
 	if !ok {
 		// not a known HTML tag
 		return false
@@ -584,6 +647,7 @@ func (ht *htmlCheckerImpl) handleAsHTML() bool {
 	ht.emitString(realTagData, ht.rawOutputFilters, false)
 	ht.emitRune('>', ht.rawOutputFilters, false)
 
+	// Determine whether this tag causes a "logical line break."
 	logicalLineBreak := false
 	if ht.triggerWBR && !closingTag && ht.noBreakCount > 0 {
 		// word break is logical line break, but only within no-break tags
@@ -597,10 +661,12 @@ func (ht *htmlCheckerImpl) handleAsHTML() bool {
 	return true
 }
 
+// containsHTMLComment returns true if the temporary buffer contains (the start of) an HTML comment.
 func (ht *htmlCheckerImpl) containsHTMLComment() bool {
 	return ht.tempBuffer.Len() >= 3 && strings.HasPrefix(ht.tempBuffer.String(), "!--")
 }
 
+// containsCompleteHTMLComment returns true if the temporary buffer contains a complete HTML comment.
 func (ht *htmlCheckerImpl) containsCompleteHTMLComment() bool {
 	if ht.tempBuffer.Len() >= 5 {
 		s := ht.tempBuffer.String()
@@ -609,6 +675,7 @@ func (ht *htmlCheckerImpl) containsCompleteHTMLComment() bool {
 	return false
 }
 
+// containsXMLConstruct returns true if the temporary buffer contains an XML-style namespaced tag.
 func (ht *htmlCheckerImpl) containsXMLConstruct() bool {
 	tempString := ht.tempBuffer.String()
 	ptr := 0
@@ -626,18 +693,17 @@ func (ht *htmlCheckerImpl) containsXMLConstruct() bool {
 	return false
 }
 
+// finishTag processes and outputs the tag in the temporary buffer.
 func (ht *htmlCheckerImpl) finishTag() {
 	if ht.containsHTMLComment() {
-		if ht.containsCompleteHTMLComment() {
-			if !ht.config.DiscardComments {
-				// output the comment in the raw
-				ht.emitRune('<', ht.rawOutputFilters, false)
-				ht.emitString(ht.tempBuffer.String(), ht.rawOutputFilters, false)
-				ht.emitRune('>', ht.rawOutputFilters, false)
-				// clear state and retun to parsing
-				ht.tempBuffer.Reset()
-				ht.state = stateWhitespace
-			}
+		if ht.containsCompleteHTMLComment() && !ht.config.DiscardComments {
+			// output the comment in the raw
+			ht.emitRune('<', ht.rawOutputFilters, false)
+			ht.emitString(ht.tempBuffer.String(), ht.rawOutputFilters, false)
+			ht.emitRune('>', ht.rawOutputFilters, false)
+			// clear state and return to parsing
+			ht.tempBuffer.Reset()
+			ht.state = stateWhitespace
 		}
 		return
 	}
@@ -680,6 +746,7 @@ func (ht *htmlCheckerImpl) finishTag() {
 	ht.parse(">")
 }
 
+// finishParen processes and outputs the parenthesized construct in the temporary buffer.
 func (ht *htmlCheckerImpl) finishParen() {
 	// Try to handle the element using a paren rewriter
 	md := ht.attemptRewrite(ht.parenRewriters, ht.tempBuffer.String())
@@ -708,6 +775,7 @@ func (ht *htmlCheckerImpl) finishParen() {
 	ht.parse(")")
 }
 
+// parse handles the meat of parsing an input string; it runs the state machine on the input.
 func (ht *htmlCheckerImpl) parse(str string) {
 	i := 0
 	for i < len(str) {
@@ -785,7 +853,7 @@ func (ht *htmlCheckerImpl) parse(str string) {
 						ht.tempBuffer.WriteByte('\\')
 					}
 				} else {
-					// just append the backslash notrmally
+					// just append the backslash normally
 					ht.tempBuffer.WriteByte(ch)
 					i++
 				}
@@ -801,7 +869,7 @@ func (ht *htmlCheckerImpl) parse(str string) {
 			case '<': // output < and stay in this state
 				ht.emitRune('<', ht.outputFilters, true)
 				i++
-			default:
+			default: // begin processing tag
 				ht.state = stateTag
 				ht.tempBuffer.WriteByte(ch)
 				i++
@@ -822,14 +890,15 @@ func (ht *htmlCheckerImpl) parse(str string) {
 			}
 		case stateParen:
 			switch ch {
-			case '(':
+			case '(': // nest parentheses one level deeper
 				ht.tempBuffer.WriteByte(ch)
 				ht.parenLevel++
 				i++
 			case ')':
 				if ht.parenLevel == 0 {
-					ht.finishParen()
+					ht.finishParen() // finish paren, changing state and recursively parsing if necessary
 				} else {
+					// nest parentheses one LESS level deeper
 					ht.tempBuffer.WriteByte(ch)
 					ht.parenLevel--
 				}
@@ -851,10 +920,23 @@ func (ht *htmlCheckerImpl) parse(str string) {
 			} else {
 				ht.doFlushNewlines()
 			}
+		default:
+			log.Fatalf("invalid parser state: %d", ht.state)
 		}
 	}
 }
 
+/*----------------------------------------------------------------------------
+ * Implementations from the HTMLChecker interface
+ *----------------------------------------------------------------------------
+ */
+
+/* Append adds an additional string to the HTML checker data.
+ * Parameters:
+ *     str - The string to be added and parsed.
+ * Returns:
+ *     Standard Go error status.
+ */
 func (ht *htmlCheckerImpl) Append(str string) error {
 	if ht.finished {
 		return ErrAlreadyFinished
@@ -868,6 +950,10 @@ func (ht *htmlCheckerImpl) Append(str string) error {
 	return nil
 }
 
+/* Finish completes the HTML checker parsing and makes the result available.
+ * Returns:
+ *     Standard Go error status.
+ */
 func (ht *htmlCheckerImpl) Finish() error {
 	if ht.finished {
 		return ErrAlreadyFinished
@@ -900,6 +986,7 @@ func (ht *htmlCheckerImpl) Finish() error {
 			}
 			running = true
 		case stateParen:
+			// we won't finish this, so it's automatically rejected
 			rejection := ht.tempBuffer.String()
 			ht.tempBuffer.Reset()
 			ht.tempBuffer.WriteByte('(')
@@ -923,6 +1010,7 @@ func (ht *htmlCheckerImpl) Finish() error {
 	return nil
 }
 
+// Reset clears the internal state of the HTML Checker.
 func (ht *htmlCheckerImpl) Reset() {
 	ht.started = false
 	ht.finished = false
@@ -933,17 +1021,20 @@ func (ht *htmlCheckerImpl) Reset() {
 	ht.lines = 0
 	ht.parenLevel = 0
 	ht.outputBuffer.Reset()
+	ht.tempBuffer.Reset()
+	ht.tagStack.Clear()
 	for u := range ht.externalReferences {
 		delete(ht.externalReferences, u)
 	}
 	for k := range ht.internalReferences {
 		delete(ht.internalReferences, k)
 	}
-	for c := range maps.Values(ht.counters) {
+	for _, c := range ht.counters {
 		c.Reset()
 	}
 }
 
+// Value returns the value of the output from the HTML Checker.
 func (ht *htmlCheckerImpl) Value() (string, error) {
 	if ht.finished {
 		return ht.outputBuffer.String(), nil
@@ -951,6 +1042,7 @@ func (ht *htmlCheckerImpl) Value() (string, error) {
 	return "", ErrNotYetFinished
 }
 
+// Length returns the length in bytes of the HTML Checker result.
 func (ht *htmlCheckerImpl) Length() (int, error) {
 	if ht.finished {
 		return ht.outputBuffer.Len(), nil
@@ -958,6 +1050,7 @@ func (ht *htmlCheckerImpl) Length() (int, error) {
 	return 0, ErrNotYetFinished
 }
 
+// Lines returns the number of lines of text in the HTML Checker result.
 func (ht *htmlCheckerImpl) Lines() (int, error) {
 	if ht.finished {
 		return ht.lines, nil
@@ -965,6 +1058,7 @@ func (ht *htmlCheckerImpl) Lines() (int, error) {
 	return 0, ErrNotYetFinished
 }
 
+// Counter returns the value of a counter maintained by the HTML Checker (corresponding to a rewriter).
 func (ht *htmlCheckerImpl) Counter(name string) (int, error) {
 	if ht.finished {
 		cr, ok := ht.counters[name]
@@ -976,19 +1070,22 @@ func (ht *htmlCheckerImpl) Counter(name string) (int, error) {
 	return 0, ErrNotYetFinished
 }
 
+// GetContext returns an HTML checker context value.
 func (ht *htmlCheckerImpl) GetContext(name string) any {
 	return ht.contextData[name]
 }
 
+// SetContext sets an HTML checker context value.
 func (ht *htmlCheckerImpl) SetContext(name string, value any) {
 	ht.contextData[name] = value
 }
 
+// ExternalRefs returns a list of URLs as external references in the parsed text.
 func (ht *htmlCheckerImpl) ExternalRefs() ([]*url.URL, error) {
 	if ht.finished {
 		rc := make([]*url.URL, len(ht.externalReferences))
 		p := 0
-		for url := range maps.Keys(ht.externalReferences) {
+		for url := range ht.externalReferences {
 			rc[p] = url
 			p++
 		}
@@ -997,11 +1094,12 @@ func (ht *htmlCheckerImpl) ExternalRefs() ([]*url.URL, error) {
 	return nil, ErrNotYetFinished
 }
 
+// InternalRefs returns a list of internal references in the parsed text.
 func (ht *htmlCheckerImpl) InternalRefs() ([]string, error) {
 	if ht.finished {
 		rc := make([]string, len(ht.internalReferences))
 		p := 0
-		for s := range maps.Keys(ht.internalReferences) {
+		for s := range ht.internalReferences {
 			rc[p] = s
 			p++
 		}

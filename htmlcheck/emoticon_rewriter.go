@@ -32,7 +32,7 @@ type EmoticonConfig struct {
 	emos        map[string]*EmoticonDef
 }
 
-// emoticonRewriter is the implementation of rewriter in this file
+// emoticonRewriter is the implementation of rewriter in this file.
 type emoticonRewriter struct {
 	config      *EmoticonConfig
 	prefixChars []byte

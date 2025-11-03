@@ -38,10 +38,10 @@ const (
 	tagSetNSCPForms         = 16 // Netscape form tags
 	tagSetNSCPBlockFormat   = 17 // Netscape block-formatting tags
 	tagSetNSCPServer        = 18 // the Netscape <SERVER> tag
-	tagSetMSFTDocFormat     = 19 // Microsoft-specific document formatting
-	tagSetMSFTInlineFormat  = 20 // Microsoft-specific inline formatting
-	tagSetMSFTBlockFormat   = 21 // Microsoft-specific block formatting
-	tagSetMSFTActiveContent = 22 // Microsoft-specific active content
+	tagSetMSFTDocFormat     = 19 // Micro$oft-specific document formatting
+	tagSetMSFTInlineFormat  = 20 // Micro$oft-specific inline formatting
+	tagSetMSFTBlockFormat   = 21 // Micro$oft-specific block formatting
+	tagSetMSFTActiveContent = 22 // Micro$oft-specific active content
 	tagSetServerPage        = 23 // server-side page use
 	tagSetJavaServer        = 24 // Java server page use
 	tagSetComment           = 25 // HTML comments
@@ -54,14 +54,14 @@ type rewriteContentsFunc func(*tag, string, bool, htmlCheckerBackend) string
 
 // tag is a structure describing a particular HTML tag.
 type tag struct {
-	name        string
-	index       int
-	lineBreak   bool
-	allowClose  bool
-	balanceTags bool
-	clb         causeLineBreakFunc
-	ct          closingTagFunc
-	rwc         rewriteContentsFunc
+	name        string              // tag name, upper case
+	index       int                 // index in the array
+	lineBreak   bool                // does the tag cause line breaks?
+	allowClose  bool                // is a close form of the tag allowed?
+	balanceTags bool                // do we need to balance open and close tags?
+	clb         causeLineBreakFunc  // does this tag cause line breaks?
+	ct          closingTagFunc      // generate closing tag
+	rwc         rewriteContentsFunc // rewrite the contents if necessary
 }
 
 // causeLineBreak returns true if the tag causes a line break.

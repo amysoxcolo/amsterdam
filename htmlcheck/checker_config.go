@@ -42,6 +42,7 @@ type HTMLCheckerConfigFile struct {
 	Configs []HTMLCheckerConfig `yaml:"configs"`
 }
 
+// defaultAnchorTail is the default value of the anchor tail.
 const defaultAnchorTail = "TARGET=\"Wander\""
 
 //go:embed configs.yaml
