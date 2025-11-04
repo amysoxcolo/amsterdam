@@ -273,3 +273,13 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 	}
 	return &rc, nil
 }
+
+func AmCreatePostLinkContext(community string, conference string, topic int16) *PostLinkData {
+	return &PostLinkData{
+		Community:  community,
+		Conference: conference,
+		Topic:      topic,
+		FirstPost:  -1,
+		LastPost:   -1,
+	}
+}

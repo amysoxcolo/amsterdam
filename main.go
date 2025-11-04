@@ -87,6 +87,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/comm/:cid/conf", ui.AmWrap(Conferences))
 	e.GET("/comm/:cid/conf/:confid", ui.AmWrap(Topics))
 	e.GET("/comm/:cid/conf/:confid/new_topic", ui.AmWrap(NewTopicForm))
+	e.POST("/comm/:cid/conf/:confid/new_topic", ui.AmWrap(NewTopic))
 
 	return e
 }

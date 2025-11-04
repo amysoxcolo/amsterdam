@@ -16,6 +16,7 @@ import (
 	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
@@ -189,7 +190,7 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Create", myLevel) {
 		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to read this conference"))
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create topics in this conference"))
 	}
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
@@ -198,4 +199,72 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("pb", "")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Topic")
 	return "framed_template", "new_topic.jet", nil
+}
+
+func NewTopic(ctxt ui.AmContext) (string, any, error) {
+	cmd, arg, err := singleConferencePrequel(ctxt)
+	if cmd != "" {
+		return cmd, arg, err
+	}
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Create", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create topics in this conference"))
+	}
+
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid"))
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", urlStem, nil
+	}
+	if ctxt.FormFieldIsSet("preview") {
+		// start by escaping the title
+		checker, err := htmlcheck.AmNewHTMLChecker("escaper")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.Append(ctxt.FormField("title"))
+		checker.Finish()
+		v, _ := checker.Value()
+		ctxt.VarMap().Set("topicName", v)
+
+		// escape the pseud
+		checker.Reset()
+		checker.Append(ctxt.FormField("pseud"))
+		checker.Finish()
+		v, _ = checker.Value()
+		ctxt.VarMap().Set("pseud", v)
+
+		// escape the data
+		postdata := ctxt.FormField("pb")
+		checker.Reset()
+		checker.Append(postdata)
+		checker.Finish()
+		v, _ = checker.Value()
+		ctxt.VarMap().Set("pb", v)
+
+		// run the preview
+		checker, err = htmlcheck.AmNewHTMLChecker("preview")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+		checker.Append(postdata)
+		checker.Finish()
+		v, _ = checker.Value()
+		ctxt.VarMap().Set("previewPb", v)
+		nErr, _ := checker.Counter("spelling")
+		ctxt.VarMap().Set("nError", nErr)
+
+		if ctxt.FormFieldIsSet("attach") {
+			ctxt.VarMap().Set("attachFile", true)
+		}
+		return "framed_template", "new_topic.jet", nil
+	}
+	if ctxt.FormFieldIsSet("post1") {
+
+	}
+
+	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
 }
