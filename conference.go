@@ -260,6 +260,9 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		if ctxt.FormFieldIsSet("attach") {
 			ctxt.VarMap().Set("attachFile", true)
 		}
+		ctxt.VarMap().Set("conferenceName", conf.Name)
+		ctxt.VarMap().Set("urlStem", urlStem)
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Preview New Topic")
 		return "framed_template", "new_topic.jet", nil
 	}
 	if ctxt.FormFieldIsSet("post1") {

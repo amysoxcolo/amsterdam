@@ -158,9 +158,12 @@ func AmNewHTMLChecker(configName string) (HTMLChecker, error) {
 	if !ok {
 		return nil, fmt.Errorf("configuration %s not found", configName)
 	}
-	tset, ok := tagSetNameToSet[config.TagSet]
-	if !ok {
-		return nil, fmt.Errorf("tag set %s not found", config.TagSet)
+	var tset *bitset.BitSet = nil
+	if config.TagSet != "" {
+		tset, ok = tagSetNameToSet[config.TagSet]
+		if !ok {
+			return nil, fmt.Errorf("tag set %s not found", config.TagSet)
+		}
 	}
 	rc := htmlCheckerImpl{
 		config:             config,
@@ -617,10 +620,12 @@ func (ht *htmlCheckerImpl) handleAsHTML() bool {
 		// it's a closing tag and this tag doesn't permit the "close" form
 		return false
 	}
-	tagSetID := tagIndexToSetId[tagIndex]
-	if !ht.tagSet.Test(uint(tagSetID)) {
-		// the tag is not allowed - discard it, if one of the flags is set in the config
-		return ht.config.DiscardHTML || ht.config.DiscardRejected
+	if ht.tagSet != nil {
+		tagSetID := tagIndexToSetId[tagIndex]
+		if !ht.tagSet.Test(uint(tagSetID)) {
+			// the tag is not allowed - discard it, if one of the flags is set in the config
+			return ht.config.DiscardHTML || ht.config.DiscardRejected
+		}
 	}
 	if !ht.config.DiscardHTML && tag.balanceTags {
 		// this tag needs to be balanced - here's where we manipulate the stack

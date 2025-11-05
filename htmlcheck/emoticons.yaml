@@ -23,7 +23,7 @@ emoticons:
     replace: "😳"
   - name: biggrin
     patterns:
-      ":D"
+      - ":D"
     replace: "😁"
   - name: wink
     patterns:
@@ -48,9 +48,9 @@ emoticons:
     replace: "😡"
   - name: eek
     patterns:
-      ":eek:"
+      - ":eek:"
     replace: "😱"
   - name: confused
     patterns:
-      ":confused:"
+      - ":confused:"
     replace: "😕"

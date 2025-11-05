@@ -51,12 +51,10 @@ var rewriterRegistry = make(map[string]rewriter)
 func init() {
 	r1 := emailRewriter{}
 	rewriterRegistry[r1.Name()] = &r1
-	r2 := urlRewriter{}
+	r2 := postLinkRewriter{}
 	rewriterRegistry[r2.Name()] = &r2
-	r3 := postLinkRewriter{}
+	r3 := userLinkRewriter{}
 	rewriterRegistry[r3.Name()] = &r3
-	r4 := userLinkRewriter{}
-	rewriterRegistry[r4.Name()] = &r4
 }
 
 // emailRewriter is an implementation of Rewriter that recognizes E-mail addresses.
@@ -95,63 +93,6 @@ func (rw *emailRewriter) Rewrite(data string, svc rewriterServices) *markupData 
 		text:        data,
 		endMarkup:   "</a>",
 		rescan:      false}
-}
-
-// urlRewriter is an implementation of Rewriter that recognizes URLs.
-type urlRewriter struct{}
-
-// Name returns the rewriter's name.
-func (rw *urlRewriter) Name() string {
-	return "url"
-}
-
-/* Rewrite rewrites the given string data and adds markup before and after if needed.
- * Parameters:
- *     data - The data to be rewritten.
- *     svc - Services interface we can use.
- * Returns:
- *     Pointer to markup data, or nil.
- */
-func (rw *urlRewriter) Rewrite(data string, svc rewriterServices) *markupData {
-	url, err := url.Parse(data)
-	if err != nil {
-		secondChance := ""
-		if strings.HasPrefix(data, "www.") {
-			secondChance = "http://" + data
-		} else if strings.HasPrefix(data, "ftp.") {
-			secondChance = "ftp://" + data
-		} else if strings.HasPrefix(data, "gopher.") {
-			secondChance = "gopher://" + data
-		}
-		if secondChance == "" {
-			return nil
-		}
-		url, err = url.Parse(secondChance)
-		if err != nil {
-			return nil
-		}
-	}
-
-	if url.Scheme == "http" || url.Scheme == "https" {
-		svc.addExternalRef(url)
-	}
-
-	var openA strings.Builder
-	openA.WriteString("<a href=\"")
-	openA.WriteString(url.String())
-	openA.WriteString("\"")
-	catenate := svc.rewriterAttrValue("ANCHORTAIL")
-	if catenate != "" {
-		openA.WriteString(" ")
-		openA.WriteString(catenate)
-	}
-	openA.WriteString(">")
-	return &markupData{
-		beginMarkup: openA.String(),
-		text:        data,
-		endMarkup:   "</a>",
-		rescan:      false,
-	}
 }
 
 // postLinkRewriter is the rewriter that handles links to conference posts.
