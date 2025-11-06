@@ -258,7 +258,7 @@ func (ht *htmlCheckerImpl) emitRune(ch rune, filters []outputFilter, countCols b
 	if len(filters) > 0 {
 		// try each output filter to see what we can do
 		for _, of := range filters {
-			handled = of.tryOutputRune(ht.outputBuffer, ch)
+			handled = of.tryOutputRune(&ht.outputBuffer, ch)
 			if handled {
 				break // found a filter to handle it, done
 			}
@@ -314,7 +314,7 @@ func (ht *htmlCheckerImpl) emitString(str string, filters []outputFilter, countC
 					// one of the output filters stopped us, try invoking it
 					tmpch, bsiz := utf8.DecodeRuneInString(temp[outputLen:])
 					outputLen += bsiz
-					if !stopper.tryOutputRune(ht.outputBuffer, tmpch) {
+					if !stopper.tryOutputRune(&ht.outputBuffer, tmpch) {
 						ht.outputBuffer.WriteRune(tmpch)
 					}
 					if realCountCols {

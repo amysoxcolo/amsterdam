@@ -56,7 +56,7 @@
                 <div>
                     <label for="title" class="block text-black text-sm font-medium mb-2">New topic name:</label>
                     <input type="text" id="title" name="title" size="37" maxlength="128" 
-                            value="{{ topicName }}" required placeholder="Enter a descriptive topic name..."
+                            value="{{ topicName | raw }}" required placeholder="Enter a descriptive topic name..."
                             class="w-full px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
@@ -64,7 +64,7 @@
                 <div>
                     <label for="pseud" class="block text-black text-sm font-medium mb-2">Your name/header:</label>
                     <div class="flex items-center gap-4">
-                        <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="{{ pseud }}"
+                        <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="{{ pseud | raw }}"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="attach" name="attach" value="Y"
@@ -84,7 +84,7 @@
                     </div>
                     <textarea id="pb" name="pb" wrap="soft" rows="7" cols="51"
                                 placeholder="Enter your message here. HTML tags are supported..."
-                                class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ pb }}</textarea>
+                                class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ pb | raw }}</textarea>
                 </div>
 
                 <!-- Action Buttons -->

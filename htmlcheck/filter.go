@@ -13,7 +13,7 @@ import "strings"
 
 // outputFilter is the interface for an HTML checker output filter.
 type outputFilter interface {
-	tryOutputRune(strings.Builder, rune) bool
+	tryOutputRune(*strings.Builder, rune) bool
 	matchRune(rune) bool
 	lengthNoMatch(string) int
 }
@@ -34,7 +34,7 @@ type htmlEncodingFilter struct{}
 const htmlEscapedChars = "<>&"
 
 // tryOutputRune outputs a rune that needs to be escaped.
-func (f *htmlEncodingFilter) tryOutputRune(buf strings.Builder, ch rune) bool {
+func (f *htmlEncodingFilter) tryOutputRune(buf *strings.Builder, ch rune) bool {
 	switch ch {
 	case '<':
 		buf.WriteString("&lt;")
