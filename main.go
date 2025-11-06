@@ -49,6 +49,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/TODO/*", fn)
 	e.POST("/TODO/*", fn)
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
+	e.GET("/static/*", ui.AmStaticFileHandler())
 
 	e.GET("/", ui.AmWrap(TopPage))
 	e.GET("/about", ui.AmWrap(AboutPage))

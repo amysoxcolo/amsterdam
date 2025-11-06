@@ -41,7 +41,7 @@
 
             <!-- Preview Display -->
             <div class="bg-white border-2 border-blue-300 rounded-lg p-6 mb-6">
-                <pre class="font-mono text-sm whitespace-pre-wrap break-words">{{ previewPb | raw }}</pre>
+                <pre class="amsPost font-mono text-sm whitespace-pre-wrap break-words">{{ previewPb | raw }}</pre>
             </div>
 
             <hr class="border-gray-400 mb-6">

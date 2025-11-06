@@ -18,6 +18,7 @@
         <meta http-equiv="refresh" content="{{ GlobalConfig.Site.TopRefresh }}">
     {{ end }}
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/ams_style.css" />
 </head>
 
 <body class="bg-blue-400 font-sans">
