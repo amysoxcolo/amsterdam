@@ -229,24 +229,32 @@ func setSessionAnon(session *sessions.Session) {
 	}
 }
 
+var lastHitMutex sync.Mutex
+
 // AmSessionFirstTime initializes the session after it's first created.
 func AmSessionFirstTime(session *sessions.Session) {
+	lastHitMutex.Lock()
 	setSessionAnon(session)
 	session.Values["lasthit"] = time.Now()
+	lastHitMutex.Unlock()
 }
 
 // AmResetSession clears the specified session.
 func AmResetSession(session *sessions.Session) {
+	lastHitMutex.Lock()
 	for k := range session.Values {
 		delete(session.Values, k)
 	}
 	setSessionAnon(session)
 	session.Values["lasthit"] = time.Now()
+	lastHitMutex.Unlock()
 }
 
 // AmHitSession "hits" a session, updating its "last hit" time.
 func AmHitSession(session *sessions.Session) {
+	lastHitMutex.Lock()
 	session.Values["lasthit"] = time.Now()
+	lastHitMutex.Unlock()
 }
 
 /* AmSessions returns information about the currently active sessions.

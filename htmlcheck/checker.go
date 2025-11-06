@@ -420,7 +420,7 @@ func (ht *htmlCheckerImpl) doFlushWhitespace() {
 func (ht *htmlCheckerImpl) doFlushNewlines() {
 	// Measure the number of line breaks we have.
 	lineBreaks, crs := 0, 0
-	for ch := range []byte(ht.tempBuffer.String()) {
+	for _, ch := range []byte(ht.tempBuffer.String()) {
 		switch ch {
 		case '\r':
 			crs++
