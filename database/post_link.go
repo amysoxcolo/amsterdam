@@ -192,6 +192,7 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 		if err != nil {
 			return nil, err
 		}
+		return &rc, nil
 	}
 
 	// Peel off the initial substring before the dot.
@@ -199,23 +200,22 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 	work = work[pos+1:]
 	if len(work) == 0 {
 		// we had "conference." or "topic." or maybe "community!conference."
+		var err error
 		if rc.Community == "" {
 			// it's either "conference." or "topic." - try the latter first
-			err := decodeTopicNumber(confOrTopic, &rc)
+			err = decodeTopicNumber(confOrTopic, &rc)
 			if err != nil {
 				// it's not a topic number, try it as a conference name
 				err = validateConference(confOrTopic, &rc)
 			}
-			if err != nil {
-				return nil, err
-			}
 		} else {
 			// it was "community!conference."
-			err := validateConference(confOrTopic, &rc)
-			if err != nil {
-				return nil, err
-			}
+			err = validateConference(confOrTopic, &rc)
 		}
+		if err != nil {
+			return nil, err
+		}
+		return &rc, nil
 	}
 
 	// Third test: Dot #2

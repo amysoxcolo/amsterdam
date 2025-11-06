@@ -64,13 +64,13 @@ type htmlCheckerBackend interface {
 
 // State constants for the state machine.
 const (
-	stateWhitespace = 0
-	stateChars      = 1
-	stateLeftAngle  = 2
-	stateTag        = 3
-	stateParen      = 4
-	stateTagQuote   = 5
-	stateNewline    = 6
+	stateWhitespace = 0 // processing whitespace
+	stateChars      = 1 // processing character data
+	stateLeftAngle  = 2 // processing a left angle bracket
+	stateTag        = 3 // processing the contents of a tag
+	stateParen      = 4 // processing a string in parentheses
+	stateTagQuote   = 5 // processing a quoted string inside a tag
+	stateNewline    = 6 // processing newlines
 )
 
 // htmlMarginSlop is a number of characters at the end of the line used to control word-wrapping.

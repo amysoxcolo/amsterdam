@@ -190,8 +190,11 @@ func AmGetConference(id int32) (*Conference, error) {
  *     Standard Go error status.
  */
 func AmGetConferenceByAlias(alias string) (*Conference, error) {
-	confid, ok := conferenceAliasMap.Load(alias)
-	if !ok {
+	var confid int32
+	xconf, ok := conferenceAliasMap.Load(alias)
+	if ok {
+		confid = xconf.(int32)
+	} else {
 		rs, err := amdb.Query("SELECT confid FROM confalias WHERE alias = ?", alias)
 		if err != nil {
 			return nil, err
@@ -202,7 +205,7 @@ func AmGetConferenceByAlias(alias string) (*Conference, error) {
 		rs.Scan(&confid)
 		conferenceAliasMap.Store(alias, confid)
 	}
-	return AmGetConference(int32(confid.(int)))
+	return AmGetConference(confid)
 }
 
 /* AmGetConferenceByAliasInCommunity returns a conference in a community given its alias.
