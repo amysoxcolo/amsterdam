@@ -185,3 +185,22 @@ You may add additional accurate notices of copyright ownership.
 ```
 This Source Code Form is “Incompatible With Secondary Licenses”, as defined by the Mozilla Public License, v. 2.0.
 ```
+
+### Special Note:
+
+The file `htmlcheck/en-us.dict` is derived from the American English word list supplied by the [SCOWL](http://wordlist.aspell.net/)
+(Spell Checker Oriented Word Lists) project, which has a copyright notice as follows:
+
+> Copyright 2000-2024 by Kevin Atkinson
+>
+> Permission to use, copy, modify, distribute and sell these word
+> lists, the associated scripts, the output created from the scripts,
+> and its documentation for any purpose is hereby granted without fee,
+> provided that the above copyright notice appears in all copies and
+> that both that copyright notice and this permission notice appear in
+> supporting documentation. Kevin Atkinson makes no representations
+> about the suitability of this array for any purpose. It is provided
+> "as is" without express or implied warranty.
+
+See also the [Copyright](https://raw.githubusercontent.com/en-wl/wordlist/refs/heads/v2/Copyright) file
+in the SCOWL GitHub repository.

@@ -97,6 +97,8 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	}
 }
 
+// immediateIf returns its 2nd argument if its 1st argument is true, and its 3rd argument if its 1st argument is false.
+// (Like "a ? b : c" in C or Java.)
 func immediateIf(a jet.Arguments) reflect.Value {
 	cond := a.Get(0).Convert(reflect.TypeFor[bool]()).Bool()
 	if cond {
@@ -119,6 +121,7 @@ func extractCommunityLogo(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// displayActivity displays an activity string formatted to the user's preferences.
 func displayActivity(a jet.Arguments) reflect.Value {
 	timeval := a.Get(0).Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
@@ -129,6 +132,7 @@ func displayActivity(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(fmt.Sprintf("<<%v>>", err))
 }
 
+// displayMemberCount displays the current member count of a community.
 func displayMemberCount(a jet.Arguments) reflect.Value {
 	showHidden := false
 	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
@@ -148,6 +152,7 @@ func displayMemberCount(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(count)
 }
 
+// displayFullName extracts a full name from a contact record.
 func displayFullName(a jet.Arguments) reflect.Value {
 	ci := a.Get(0).Convert(reflect.TypeFor[*database.ContactInfo]()).Interface().(*database.ContactInfo)
 	var rc strings.Builder
@@ -174,6 +179,7 @@ func displayFullName(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc.String())
 }
 
+// displayExpandCat displays a category expanded into a hierarchy.
 func displayExpandCat(a jet.Arguments) reflect.Value {
 	cat := a.Get(0).Convert(reflect.TypeFor[*database.Category]()).Interface().(*database.Category)
 	hier, _ := database.AmGetCategoryHierarchy(cat.CatId)
@@ -187,6 +193,7 @@ func displayExpandCat(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc.String())
 }
 
+// postRewrite rewrites "x-postlink:" and "x-userlink:" URLs in its text.
 func postRewrite(a jet.Arguments) reflect.Value {
 	data := a.Get(0).Convert(reflect.TypeFor[string]()).String()
 	plIndex := strings.Index(data, htmlcheck.PostLinkURLPrefix)
