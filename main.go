@@ -50,6 +50,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/TODO/*", fn)
 	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
 	e.GET("/static/*", ui.AmStaticFileHandler())
+	e.GET("/go/:postlink", fn)
 
 	e.GET("/", ui.AmWrap(TopPage))
 	e.GET("/about", ui.AmWrap(AboutPage))

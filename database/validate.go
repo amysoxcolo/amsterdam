@@ -25,3 +25,16 @@ func AmIsValidAmsterdamID(test string) bool {
 	}
 	return true
 }
+
+// AmIsValidAmsterdamIDChar returns true if the character is a valid character in an Amsterdam ID.
+func AmIsValidAmsterdamIDChar(ch byte) bool {
+	return strings.ContainsRune(AMS_ID_CHARS, rune(ch))
+}
+
+// AmIsValidPostLinkChar returns true if the character is a valid character in a post link.
+func AmIsValidPostLinkChar(ch byte) bool {
+	if strings.ContainsRune(AMS_ID_CHARS, rune(ch)) {
+		return true
+	}
+	return ch == '.' || ch == '!'
+}

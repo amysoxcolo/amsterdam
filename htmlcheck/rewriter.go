@@ -98,8 +98,8 @@ func (rw *emailRewriter) Rewrite(data string, svc rewriterServices) *markupData 
 // postLinkRewriter is the rewriter that handles links to conference posts.
 type postLinkRewriter struct{}
 
-// postLinkURLPrefix is the default URL prefix for post links.
-const postLinkURLPrefix = "x-postlink:"
+// PostLinkURLPrefix is the default URL prefix for post links.
+const PostLinkURLPrefix = "x-postlink:"
 
 // Name returns the rewriter's name.
 func (rw *postLinkRewriter) Name() string {
@@ -175,7 +175,7 @@ func (rw *postLinkRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 	// build the necessary markup and return it
 	var openA strings.Builder
 	openA.WriteString("<a href=\"")
-	openA.WriteString(postLinkURLPrefix)
+	openA.WriteString(PostLinkURLPrefix)
 	openA.WriteString(link)
 	openA.WriteString("\"")
 	catenate := svc.rewriterAttrValue("ANCHORTAIL")
@@ -196,7 +196,7 @@ func (rw *postLinkRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 type userLinkRewriter struct{}
 
 // userLinkURIPrefix is the default URL prefix for user links.
-const userLinkURIPRefix = "x-userlink:"
+const UserLinkURIPRefix = "x-userlink:"
 
 // Name returns the rewriter's name.
 func (rw *userLinkRewriter) Name() string {
@@ -223,7 +223,7 @@ func (rw *userLinkRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 	// build the necessary markup and return it
 	var openA strings.Builder
 	openA.WriteString("<a href=\"")
-	openA.WriteString(userLinkURIPRefix)
+	openA.WriteString(UserLinkURIPRefix)
 	openA.WriteString(data)
 	openA.WriteString("\"")
 	catenate := svc.rewriterAttrValue("ANCHORTAIL")

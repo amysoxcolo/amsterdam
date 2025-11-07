@@ -23,6 +23,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
@@ -186,6 +187,67 @@ func displayExpandCat(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc.String())
 }
 
+func postRewrite(a jet.Arguments) reflect.Value {
+	data := a.Get(0).Convert(reflect.TypeFor[string]()).String()
+	plIndex := strings.Index(data, htmlcheck.PostLinkURLPrefix)
+	ulIndex := strings.Index(data, htmlcheck.UserLinkURIPRefix)
+	if plIndex < 0 && ulIndex < 0 {
+		return reflect.ValueOf(data)
+	}
+
+	if plIndex >= 0 {
+		var buf strings.Builder
+		t := data
+		for plIndex >= 0 {
+			if plIndex > 0 {
+				buf.WriteString(t[:plIndex])
+				t = t[plIndex+len(htmlcheck.PostLinkURLPrefix):]
+			}
+			p := 0
+			for database.AmIsValidPostLinkChar(t[p]) {
+				p++
+			}
+			if p > 0 {
+				buf.WriteString("/go/")
+				buf.WriteString(t[:p])
+				t = t[p:]
+			} else {
+				buf.WriteString(htmlcheck.PostLinkURLPrefix)
+			}
+			plIndex = strings.Index(t, htmlcheck.PostLinkURLPrefix)
+		}
+		buf.WriteString(t)
+		data = buf.String()
+	}
+
+	ulIndex = strings.Index(data, htmlcheck.UserLinkURIPRefix)
+	if ulIndex >= 0 {
+		var buf strings.Builder
+		t := data
+		for ulIndex >= 0 {
+			if ulIndex > 0 {
+				buf.WriteString(t[:ulIndex])
+				t = t[ulIndex+len(htmlcheck.UserLinkURIPRefix):]
+			}
+			p := 0
+			for database.AmIsValidAmsterdamIDChar(t[p]) {
+				p++
+			}
+			if p > 0 {
+				buf.WriteString("/user/")
+				buf.WriteString(t[:p])
+				t = t[p:]
+			} else {
+				buf.WriteString(htmlcheck.UserLinkURIPRefix)
+			}
+			ulIndex = strings.Index(t, htmlcheck.UserLinkURIPRefix)
+		}
+		buf.WriteString(t)
+		data = buf.String()
+	}
+	return reflect.ValueOf(data)
+}
+
 // SetupTemplates is called to set up the template renderer after the configuration is loaded.
 func SetupTemplates() {
 	views = jet.NewSet(
@@ -199,6 +261,7 @@ func SetupTemplates() {
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)
 	views.AddGlobalFunc("iif", immediateIf)
+	views.AddGlobalFunc("postRewrite", postRewrite)
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
