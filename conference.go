@@ -266,7 +266,36 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		return "framed_template", "new_topic.jet", nil
 	}
 	if ctxt.FormFieldIsSet("post1") {
+		// start by checking the title and pseud
+		checker, err := htmlcheck.AmNewHTMLChecker("post-pseud")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.Append(ctxt.FormField("title"))
+		checker.Finish()
+		topicName, _ := checker.Value()
+		checker.Reset()
+		checker.Append(ctxt.FormField("pseud"))
+		checker.Finish()
+		zeroPostPseud, _ := checker.Value()
 
+		// now check the post data itself
+		checker, err = htmlcheck.AmNewHTMLChecker("post-body")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+		checker.Append(ctxt.FormField("pb"))
+		checker.Finish()
+		zeroPost, _ := checker.Value()
+		lines, _ := checker.Lines()
+
+		// Add the topic!
+		topic, err := database.AmNewTopic(conf, ctxt.CurrentUser(), topicName, zeroPostPseud, zeroPost, int32(lines))
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		_ = topic // TODO
 	}
 
 	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))

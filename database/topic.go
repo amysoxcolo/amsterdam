@@ -11,6 +11,7 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -52,6 +53,21 @@ type TopicSummary struct {
 	Frozen     bool
 	Archived   bool
 	Subscribed bool
+}
+
+func AmGetTopic(topicId int32) (*Topic, error) {
+	var dbdata []Topic
+	err := amdb.Select(&dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
+	if err != nil {
+		return nil, err
+	}
+	if len(dbdata) == 0 {
+		return nil, fmt.Errorf("topic %d not found", topicId)
+	}
+	if len(dbdata) > 1 {
+		return nil, fmt.Errorf("AmGetTopic(%d): too many responses (%d)", topicId, len(dbdata))
+	}
+	return &(dbdata[0]), nil
 }
 
 // View and sort constants for AmListTopics.
@@ -192,4 +208,75 @@ func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignor
 		rc = append(rc, &rec)
 	}
 	return rc, nil
+}
+
+func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string, zeroPostLines int32) (*Topic, error) {
+	unlock := true
+	amdb.Exec("LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
+	defer func() {
+		if unlock {
+			amdb.Exec("UNLOCK TABLES;")
+		}
+	}()
+
+	// Insert the new topic into the database.
+	conf.Mutex.Lock()
+	rs, err := amdb.Exec("INSERT INTO topics (confid, num, creator_uid, createdate, lastupdate, name) VALUES (?, ?, ?, NOW(), NOW(), ?)",
+		conf.ConfId, conf.TopTopic+1, user.Uid, title)
+	if err != nil {
+		conf.Mutex.Unlock()
+		return nil, err
+	}
+	xid, err := rs.LastInsertId()
+	if err != nil {
+		conf.Mutex.Unlock()
+		return nil, err
+	}
+	topic, err := AmGetTopic(int32(xid))
+	if err != nil {
+		conf.Mutex.Unlock()
+		return nil, err
+	}
+
+	// Update the conference to set the last update and top topic.
+	_, err = amdb.Exec("UPDATE confs SET lastupdate = ?, top_topic = ? WHERE confid = ?", topic.CreateDate, conf.TopTopic+1, conf.ConfId)
+	if err != nil {
+		conf.Mutex.Unlock()
+		return nil, err
+	}
+	conf.TopTopic++
+	conf.LastUpdate = &topic.CreateDate
+	conf.Mutex.Unlock()
+
+	// Add the "header record" for the first post.
+	rs, err = amdb.Exec("INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, 0, ?, ?, ?, ?)",
+		topic.TopicId, zeroPostLines, user.Uid, topic.CreateDate, zeroPostPseud)
+	if err != nil {
+		return nil, err
+	}
+	xid, err = rs.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	newPostId := int32(xid)
+
+	// Add the post data.
+	_, err = amdb.Exec("INSERT INTO postdata (postid, data) VALUES (?, ?)", newPostId, zeroPost)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add a new topic settings record for the user, too.
+	_, err = amdb.Exec("INSERT INTO topicsettings (topicid, uid, last_post) VALUES (?, ?, ?)",
+		topic.TopicId, user.Uid, topic.CreateDate)
+	if err != nil {
+		return nil, err
+	}
+
+	amdb.Exec("UNLOCK TABLES;")
+	unlock = false
+
+	// TODO: audit record
+
+	return topic, nil
 }
