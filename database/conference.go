@@ -21,29 +21,29 @@ import (
 // Conference struct is the top-level structure for a conference.
 type Conference struct {
 	Mutex       sync.Mutex
-	ConfId      int32      `db:"confid"`
-	CreateDate  time.Time  `db:"createdate"`
-	LastUpdate  *time.Time `db:"lastupdate"`
-	ReadLevel   uint16     `db:"read_lvl"`
-	PostLevel   uint16     `db:"post_lvl"`
-	CreateLevel uint16     `db:"create_lvl"`
-	HideLevel   uint16     `db:"hide_lvl"`
-	NukeLevel   uint16     `db:"nuke_lvl"`
-	ChangeLevel uint16     `db:"change_lvl"`
-	DeleteLevel uint16     `db:"delete_lvl"`
-	TopTopic    int16      `db:"top_topic"`
-	Name        string     `db:"name"`
-	Description *string    `db:"descr"`
-	IconUrl     *string    `db:"icon_url"`
-	Color       *string    `db:"color"`
+	ConfId      int32      `db:"confid"`     // unique conference ID
+	CreateDate  time.Time  `db:"createdate"` // date of creation
+	LastUpdate  *time.Time `db:"lastupdate"` // date of last update
+	ReadLevel   uint16     `db:"read_lvl"`   // level required to read
+	PostLevel   uint16     `db:"post_lvl"`   // level required to post
+	CreateLevel uint16     `db:"create_lvl"` // level required to create topics
+	HideLevel   uint16     `db:"hide_lvl"`   // level required to hide posts
+	NukeLevel   uint16     `db:"nuke_lvl"`   // level required to nuke posts
+	ChangeLevel uint16     `db:"change_lvl"` // level required to change conference
+	DeleteLevel uint16     `db:"delete_lvl"` // level required to delete conference
+	TopTopic    int16      `db:"top_topic"`  // highest topic number in use
+	Name        string     `db:"name"`       // conference name
+	Description *string    `db:"descr"`      // conference description
+	IconUrl     *string    `db:"icon_url"`   // conference icon URL
+	Color       *string    `db:"color"`      // color for conference
 }
 
 type ConferenceSettings struct {
-	ConfId       int32      `db:"confid"`
-	Uid          int32      `db:"uid"`
-	DefaultPseud *string    `db:"default_pseud"`
-	LastRead     *time.Time `db:"last_read"`
-	LastPost     *time.Time `db:"last_post"`
+	ConfId       int32      `db:"confid"`        // conference ID
+	Uid          int32      `db:"uid"`           // user ID
+	DefaultPseud *string    `db:"default_pseud"` // default pseud to use in this conference
+	LastRead     *time.Time `db:"last_read"`     // last read time
+	LastPost     *time.Time `db:"last_post"`     // last post time
 }
 
 // conferenceCache is the cache for Conference objects.

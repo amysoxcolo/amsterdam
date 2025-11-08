@@ -30,9 +30,9 @@ import (
 
 // UserPrefs represents the user's preferences in a table (one row per user).
 type UserPrefs struct {
-	Uid        int32  `db:"uid"`
-	TimeZoneID string `db:"tzid"`
-	LocaleID   string `db:"localeid"`
+	Uid        int32  `db:"uid"`      // user ID
+	TimeZoneID string `db:"tzid"`     // ID of default timezone
+	LocaleID   string `db:"localeid"` // ID of default locale
 }
 
 // ReadLocale reads the locale out of the prefs, adjusting for Go use.
@@ -100,22 +100,22 @@ func (p *UserPrefs) Location() *time.Location {
 // User represents a user in the Amsterdam database.
 type User struct {
 	Mutex        sync.RWMutex
-	Uid          int32      `db:"uid"`
-	Username     string     `db:"username"`
-	Passhash     string     `db:"passhash"`
-	Tokenauth    *string    `db:"tokenauth"`
-	ContactID    int32      `db:"contactid"`
-	IsAnon       bool       `db:"is_anon"`
-	VerifyEMail  bool       `db:"verify_email"`
-	Lockout      bool       `db:"lockout"`
-	AccessTries  int16      `db:"access_tries"`
-	EmailConfNum int32      `db:"email_confnum"`
-	BaseLevel    uint16     `db:"base_lvl"`
-	Created      time.Time  `db:"created"`
-	LastAccess   *time.Time `db:"lastaccess"`
-	PassReminder string     `db:"passreminder"`
-	Description  *string    `db:"description"`
-	DOB          *time.Time `db:"dob"`
+	Uid          int32      `db:"uid"`           // unique ID of user
+	Username     string     `db:"username"`      // user name
+	Passhash     string     `db:"passhash"`      // password hash
+	Tokenauth    *string    `db:"tokenauth"`     // token authorization information
+	ContactID    int32      `db:"contactid"`     // contact information ID
+	IsAnon       bool       `db:"is_anon"`       // is this the anonymous user?
+	VerifyEMail  bool       `db:"verify_email"`  // is E-mail address verified?
+	Lockout      bool       `db:"lockout"`       // is this user locked out?
+	AccessTries  int16      `db:"access_tries"`  // how many timews has the user tried to access?
+	EmailConfNum int32      `db:"email_confnum"` // E-mail confirmation number
+	BaseLevel    uint16     `db:"base_lvl"`      // base access level of the user
+	Created      time.Time  `db:"created"`       // account creation time
+	LastAccess   *time.Time `db:"lastaccess"`    // last access (login) time
+	PassReminder string     `db:"passreminder"`  // last update time
+	Description  *string    `db:"description"`   // description
+	DOB          *time.Time `db:"dob"`           // date of birth
 	flags        *util.OptionSet
 	prefs        *UserPrefs
 }

@@ -32,32 +32,49 @@ type AuditRecord struct {
 
 // These are the audit record types.
 const (
-	AuditPublishToFrontPage      = 1
-	AuditLoginOK                 = 101
-	AuditLoginFail               = 102
-	AuditAccountCreated          = 103
-	AuditVerifyEmailOK           = 104
-	AuditVerifyEmailFail         = 105
-	AuditSetUserContactInfo      = 106
-	AuditResendEmailConfirm      = 107
-	AuditChangePassword          = 108
-	AuditAdminSetUserContactInfo = 109
-	AuditAdminChangeUserPassword = 110
-	AuditAdminChangeUserAccount  = 111
-	AuditAdminSetAccountSecurity = 112
-	AuditAdminLockUnlockAccount  = 113
-	AuditCommunityCreate         = 201
-	AuditCommunitySetMembership  = 202
-	AuditCommuntiyContactInfo    = 203
-	AuditCommunityFeatureSet     = 204
-	AuditCommunityName           = 205
-	AuditCommunityAlias          = 206
-	AuditCommunityCategory       = 207
-	AuditCommunityHideInfo       = 208
-	AuditCommunityMembersOnly    = 209
-	AuditCommunityJoinKey        = 210
-	AuditCommunitySecurity       = 211
-	AuditCommunityDelete         = 212
+	AuditPublishToFrontPage         = 1
+	AuditLoginOK                    = 101
+	AuditLoginFail                  = 102
+	AuditAccountCreated             = 103
+	AuditVerifyEmailOK              = 104
+	AuditVerifyEmailFail            = 105
+	AuditSetUserContactInfo         = 106
+	AuditResendEmailConfirm         = 107
+	AuditChangePassword             = 108
+	AuditAdminSetUserContactInfo    = 109
+	AuditAdminChangeUserPassword    = 110
+	AuditAdminChangeUserAccount     = 111
+	AuditAdminSetAccountSecurity    = 112
+	AuditAdminLockUnlockAccount     = 113
+	AuditCommunityCreate            = 201
+	AuditCommunitySetMembership     = 202
+	AuditCommuntiyContactInfo       = 203
+	AuditCommunityFeatureSet        = 204
+	AuditCommunityName              = 205
+	AuditCommunityAlias             = 206
+	AuditCommunityCategory          = 207
+	AuditCommunityHideInfo          = 208
+	AuditCommunityMembersOnly       = 209
+	AuditCommunityJoinKey           = 210
+	AuditCommunitySecurity          = 211
+	AuditCommunityDelete            = 212
+	AuditConferenceCreate           = 301
+	AuditConferenceSecurity         = 302
+	AuditConferenceName             = 303
+	AuditConferenceAlias            = 304
+	AuditConferenceMembership       = 305
+	AuditConferenceCreateTopic      = 306
+	AuditConferenceDeleteTopic      = 307
+	AudotConferenceFreezeTopic      = 308
+	AuditConferenceArchiveTopic     = 309
+	AuditConferencePostMessage      = 310
+	AuditConferenceHideMessage      = 311
+	AuditConferenceScribbleMessage  = 312
+	AuditConferenceNukeMessage      = 313
+	AuditConferenceUploadAttachment = 314
+	AuditConferenceDelete           = 315
+	AuditConferenceMoveMessage      = 316
+	AuditConferenceStickyTopic      = 317
 )
 
 // auditWriteQueue is a channel to store audit records in the background.

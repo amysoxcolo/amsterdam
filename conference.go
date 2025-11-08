@@ -291,7 +291,7 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		lines, _ := checker.Lines()
 
 		// Add the topic!
-		topic, err := database.AmNewTopic(conf, ctxt.CurrentUser(), topicName, zeroPostPseud, zeroPost, int32(lines))
+		topic, err := database.AmNewTopic(conf, ctxt.CurrentUser(), topicName, zeroPostPseud, zeroPost, int32(lines), ctxt.RemoteIP())
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}

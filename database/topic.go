@@ -18,28 +18,28 @@ import (
 
 // Topic is the top-level structure detailing topics.
 type Topic struct {
-	TopicId    int32     `db:"topicid"`
-	ConfId     int32     `db:"confid"`
-	Number     int16     `db:"num"`
-	CreatorUid int32     `db:"creator_uid"`
-	TopMessage int32     `db:"top_message"`
-	Frozen     bool      `db:"frozen"`
-	Archived   bool      `db:"archived"`
-	Sticky     bool      `db:"sticky"`
-	CreateDate time.Time `db:"createdate"`
-	LastUpdate time.Time `db:"lastupdate"`
-	Name       string    `db:"name"`
+	TopicId    int32     `db:"topicid"`     // unique ID of the topic
+	ConfId     int32     `db:"confid"`      // conference this topic is in
+	Number     int16     `db:"num"`         // topic number
+	CreatorUid int32     `db:"creator_uid"` // UID of topic creator
+	TopMessage int32     `db:"top_message"` // highest message number in topic
+	Frozen     bool      `db:"frozen"`      // frozen topic
+	Archived   bool      `db:"archived"`    // archived topic
+	Sticky     bool      `db:"sticky"`      // sticky topic
+	CreateDate time.Time `db:"createdate"`  // creation date
+	LastUpdate time.Time `db:"lastupdate"`  // last update date
+	Name       string    `db:"name"`        // topic name
 }
 
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
-	TopicId     int32      `db:"topicid"`
-	Uid         int32      `db:"uid"`
-	Hidden      bool       `db:"hidden"`
-	LastMessage int32      `db:"last_message"`
-	LastRead    *time.Time `db:"last_read"`
-	LastPost    *time.Time `db:"last_post"`
-	Subscribe   bool       `db:"subscribe"`
+	TopicId     int32      `db:"topicid"`      // unique ID of the topic
+	Uid         int32      `db:"uid"`          // UID of the user
+	Hidden      bool       `db:"hidden"`       // has user hidden topic?
+	LastMessage int32      `db:"last_message"` // last message read
+	LastRead    *time.Time `db:"last_read"`    // time of last read
+	LastPost    *time.Time `db:"last_post"`    // time of last post
+	Subscribe   bool       `db:"subscribe"`    // subscribed to topic updates?
 }
 
 // TopicSummary is a smaller data structure that gets topic information to create the topic list display.
@@ -53,6 +53,7 @@ type TopicSummary struct {
 	Frozen     bool
 	Archived   bool
 	Subscribed bool
+	Hidden     bool
 }
 
 func AmGetTopic(topicId int32) (*Topic, error) {
@@ -72,19 +73,19 @@ func AmGetTopic(topicId int32) (*Topic, error) {
 
 // View and sort constants for AmListTopics.
 const (
-	TopicViewAll        = 0
-	TopicViewNew        = 1
-	TopicViewActive     = 2
-	TopicViewAllVisible = 3
-	TopicViewHidden     = 4
-	TopicViewArchive    = 5
+	TopicViewAll        = 0 // list all topics
+	TopicViewNew        = 1 // list only visible topics with new messages
+	TopicViewActive     = 2 // list only visible topics, active first
+	TopicViewAllVisible = 3 // list only visible topics
+	TopicViewHidden     = 4 // list only hidden topics
+	TopicViewArchive    = 5 // list only archived, non-hidden topics
 
-	TopicSortID     = 0
-	TopicSortNumber = 1
-	TopicSortName   = 2
-	TopicSortUnread = 3
-	TopicSortTotal  = 4
-	TopicSortDate   = 5
+	TopicSortID     = 0 // sort by topic ID
+	TopicSortNumber = 1 // sort by topic number
+	TopicSortName   = 2 // sort by name
+	TopicSortUnread = 3 // sort by number of unread messages
+	TopicSortTotal  = 4 // sort by total number of messages
+	TopicSortDate   = 5 // sort by date of last update
 )
 
 /* AmListTopics produces a list of topic summary information according to specific options.
@@ -121,13 +122,13 @@ func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignor
 		if !ignoreSticky {
 			tail = "(t.sticky = 1 OR " + tail + ")"
 		}
-		whereClause = "t.archived = 0 AND IFNULL(s.hidden,0) = 0 AND " + tail
+		whereClause = "t.archived = 0 AND hidden = 0 AND " + tail
 	case TopicViewActive, TopicViewAllVisible:
-		whereClause = "t.archived = 0 AND IFNULL(s.hidden,0) = 0"
+		whereClause = "t.archived = 0 AND hidden = 0"
 	case TopicViewHidden:
-		whereClause = "IFNULL(s.hidden,0) = 1"
+		whereClause = "hidden = 1"
 	case TopicViewArchive:
-		whereClause = "t.archived = 1 AND IFNULL(s.hidden,0) = 0"
+		whereClause = "t.archived = 1 AND hidden = 0"
 	default:
 		return nil, errors.New("invalid view option specified")
 	}
@@ -180,14 +181,14 @@ func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignor
 	var fullStatement strings.Builder
 	fullStatement.WriteString("SELECT t.topicid, t.num, t.name, (t.top_message - IFNULL(s.last_message,-1)) AS unread, ")
 	fullStatement.WriteString("(t.top_message + 1) AS total, t.lastupdate, t.frozen, t.archived, IFNULL(s.subscribe,0) AS subscribe, ")
-	fullStatement.WriteString("t.sticky, GREATEST(SIGN(t.top_message - IFNULL(s.last_message,-1)),0) AS newflag ")
+	fullStatement.WriteString("IFNULL(s.hidden,0) AS hidden, t.sticky, GREATEST(SIGN(t.top_message - IFNULL(s.last_message,-1)),0) AS newflag ")
 	fullStatement.WriteString("FROM topics t LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ? WHERE t.confid = ? ")
 	if whereClause != "" {
 		fullStatement.WriteString("AND ")
 		fullStatement.WriteString(whereClause)
 	}
 	fullStatement.WriteString(" ORDER BY ")
-	if ignoreSticky {
+	if !ignoreSticky {
 		fullStatement.WriteString("t.sticky DESC, ")
 	}
 	if viewOption == TopicViewActive {
@@ -204,13 +205,19 @@ func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignor
 	for rs.Next() {
 		var rec TopicSummary
 		rs.Scan(&rec.TopicID, &rec.Number, &rec.Name, &rec.Unread, &rec.Total, &rec.LastUpdate, &rec.Frozen, &rec.Archived,
-			&rec.Subscribed)
+			&rec.Subscribed, &rec.Hidden)
 		rc = append(rc, &rec)
 	}
 	return rc, nil
 }
 
-func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string, zeroPostLines int32) (*Topic, error) {
+func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
+	zeroPostLines int32, ipaddr string) (*Topic, error) {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+
 	unlock := true
 	amdb.Exec("LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
 	defer func() {
@@ -227,11 +234,13 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 		conf.Mutex.Unlock()
 		return nil, err
 	}
+	// Retrieve the ID of the new topic.
 	xid, err := rs.LastInsertId()
 	if err != nil {
 		conf.Mutex.Unlock()
 		return nil, err
 	}
+	// Get the topic.
 	topic, err := AmGetTopic(int32(xid))
 	if err != nil {
 		conf.Mutex.Unlock()
@@ -258,10 +267,8 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	if err != nil {
 		return nil, err
 	}
-	newPostId := int32(xid)
-
 	// Add the post data.
-	_, err = amdb.Exec("INSERT INTO postdata (postid, data) VALUES (?, ?)", newPostId, zeroPost)
+	_, err = amdb.Exec("INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), zeroPost)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +283,9 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	amdb.Exec("UNLOCK TABLES;")
 	unlock = false
 
-	// TODO: audit record
+	// create audit record
+	ar = AmNewAudit(AuditConferenceCreateTopic, user.Uid, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
+		fmt.Sprintf("num=%d", topic.Number), fmt.Sprintf("name=%s", topic.Name))
 
 	return topic, nil
 }
