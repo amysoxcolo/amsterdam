@@ -283,6 +283,12 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	amdb.Exec("UNLOCK TABLES;")
 	unlock = false
 
+	// update the "last posted" date in the conference settings
+	_, err = conf.TouchPost(user, topic.CreateDate)
+	if err != nil {
+		return nil, err
+	}
+
 	// create audit record
 	ar = AmNewAudit(AuditConferenceCreateTopic, user.Uid, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
 		fmt.Sprintf("num=%d", topic.Number), fmt.Sprintf("name=%s", topic.Name))

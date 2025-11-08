@@ -153,6 +153,82 @@ func (c *Conference) TestPermission(perm string, level uint16) bool {
 	}
 }
 
+// Settings returns the settings for a user.
+func (c *Conference) Settings(u *User) (*ConferenceSettings, error) {
+	var dbdata []ConferenceSettings
+	err := amdb.Select(&dbdata, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	if err != nil {
+		return nil, err
+	}
+	if len(dbdata) == 0 {
+		return nil, nil
+	}
+	if len(dbdata) > 1 {
+		return nil, fmt.Errorf("conference.Settings(c=%d,u=%d): too many results (%d)", c.ConfId, u.Uid, len(dbdata))
+	}
+	return &(dbdata[0]), nil
+}
+
+// TouchRead updates the "last posted" date/time in the conference for the user.
+func (c *Conference) TouchRead(u *User) (*ConferenceSettings, error) {
+	cs, err := c.Settings(u)
+	if err != nil {
+		return nil, err
+	}
+	if !u.IsAnon { // anon user can't update squat
+		if cs == nil {
+			ci, cerr := u.ContactInfo()
+			if cerr != nil {
+				return nil, cerr
+			}
+			amdb.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read) VALUES (?, ?, ?, NOW())",
+				c.ConfId, u.Uid, ci.FullName(false))
+		} else {
+			_, err = amdb.Exec("UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+		}
+		if err == nil {
+			cs, err = c.Settings(u) // reread to get updated or inserted values
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cs, nil
+}
+
+// TouchPost updates the "last posted" date/time in the conference for the user.
+func (c *Conference) TouchPost(u *User, lastPost time.Time) (*ConferenceSettings, error) {
+	cs, err := c.Settings(u)
+	if err != nil {
+		return nil, err
+	}
+	if !u.IsAnon { // anon user can't update squat
+		if cs == nil {
+			ci, cerr := u.ContactInfo()
+			if cerr != nil {
+				return nil, cerr
+			}
+			defaultPseud := ci.FullName(false)
+			cs = &ConferenceSettings{
+				ConfId:       c.ConfId,
+				Uid:          u.Uid,
+				DefaultPseud: &defaultPseud,
+				LastRead:     &lastPost,
+				LastPost:     &lastPost,
+			}
+			_, err = amdb.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
+				c.ConfId, u.Uid, defaultPseud, lastPost, lastPost)
+		} else {
+			_, err = amdb.Exec("UPDATE confsettings SET last_post = ? WHERE confid = ? AND uid = ?", lastPost, c.ConfId, u.Uid)
+			cs.LastPost = &lastPost
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cs, nil
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     id - The ID of the conference.

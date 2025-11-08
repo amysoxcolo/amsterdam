@@ -44,6 +44,7 @@ func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to conferences"))
 	}
+	ctxt.SetLeftMenu("community")
 	return "", nil, nil
 }
 
@@ -183,10 +184,6 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
-	ci, err := ctxt.CurrentUser().ContactInfo()
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Create", myLevel) {
 		ctxt.SetRC(http.StatusForbidden)
@@ -195,7 +192,19 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
 	ctxt.VarMap().Set("topicName", "")
-	ctxt.VarMap().Set("pseud", ci.FullName(false))
+	cs, err := conf.Settings(ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if cs == nil || cs.DefaultPseud == nil {
+		ci, err := ctxt.CurrentUser().ContactInfo()
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		ctxt.VarMap().Set("pseud", ci.FullName(false))
+	} else {
+		ctxt.VarMap().Set("pseud", *cs.DefaultPseud)
+	}
 	ctxt.VarMap().Set("pb", "")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Topic")
 	return "framed_template", "new_topic.jet", nil
@@ -295,6 +304,12 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
+
+		if !ctxt.FormFieldIsSet("attach") {
+			return "redirect", urlStem, nil // no attachment - just redisplay topic list
+		}
+
+		// TODO: bounce to the attachment form
 		_ = topic // TODO
 	}
 
