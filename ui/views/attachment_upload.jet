@@ -1,0 +1,70 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<!-- Page Title -->
+<div class="p-4">
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">Upload Your Attachment</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+    </div>
+
+    {{ if isset(errorMessage) }}
+        <!-- Error Message Banner -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-red-500 text-xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(errorMessage) }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+
+    <!-- Upload Form -->
+    <form method="POST" enctype="multipart/form-data" action="/TODO" class="max-w-2xl">
+        <input type="hidden" name="tgt" value="{{ target }}">
+
+        <div class="bg-gray-50 p-6 rounded-lg">
+            <div class="flex items-start gap-6">
+                <!-- Upload Controls -->
+                <div class="flex-1">
+                    <div class="mb-6">
+                        <label for="thefile" class="block text-black text-sm font-medium mb-2">
+                            File to attach:
+                        </label>
+                        <input type="file" id="thefile" name="thefile"
+                            class="block w-full text-sm text-gray-900 border border-gray-300 rounded cursor-pointer bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                        <p class="mt-2 text-xs text-gray-600">
+                            Attachment may be no more than <b>1 megabyte</b> in size.
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-4">
+                        <button type="submit" name="upload"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                            Upload Photo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Instructions -->
+            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
+                <h3 class="text-sm font-bold text-blue-900 mb-2">Attachment Guidelines:</h3>
+                <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                    <li>The attachment will remain as part of the post.</li>
+                    <li>Be sure you have the right to upload your attachment publicly.</li>
+                    <li>Inapproriate attachments may cause your post to be removed from the conference.</li>
+                </ul>
+            </div>
+        </div>
+    </form>
+</div>
