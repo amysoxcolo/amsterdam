@@ -74,6 +74,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
+	e.POST("/attachment_upload", ui.AmWrap(AttachmentUpload))
 	e.GET("/comm/:cid/profile", ui.AmWrap(ShowCommunity))
 	e.GET("/comm/:cid/join", ui.AmWrap(JoinCommunity))
 	e.POST("/comm/:cid/join", ui.AmWrap(JoinCommunityWithKey))

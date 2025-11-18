@@ -31,6 +31,25 @@ type Topic struct {
 	Name       string    `db:"name"`        // topic name
 }
 
+// GetPost returns a post in the topic by number.
+func (t *Topic) GetPost(num int32) (*PostHeader, error) {
+	if num > t.TopMessage {
+		return nil, fmt.Errorf("no post %d in topic %d", num, t.TopicId)
+	}
+	var dbdata []PostHeader
+	err := amdb.Select(&dbdata, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num)
+	if err == nil {
+		if len(dbdata) == 0 {
+			err = fmt.Errorf("no post %d in topic %d", num, t.TopicId)
+		} else if len(dbdata) > 1 {
+			err = fmt.Errorf("topic.GetPost: too many entries (%d) for post %d in topic %d", len(dbdata), num, t.TopicId)
+		} else {
+			return &(dbdata[0]), nil
+		}
+	}
+	return nil, err
+}
+
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
 	TopicId     int32      `db:"topicid"`      // unique ID of the topic
@@ -44,18 +63,25 @@ type TopicSettings struct {
 
 // TopicSummary is a smaller data structure that gets topic information to create the topic list display.
 type TopicSummary struct {
-	TopicID    int32
-	Number     int16
-	Name       string
-	Unread     int32
-	Total      int32
-	LastUpdate time.Time
-	Frozen     bool
-	Archived   bool
-	Subscribed bool
-	Hidden     bool
+	TopicID    int32     // the topic ID
+	Number     int16     // the number of the topic
+	Name       string    // the topic name
+	Unread     int32     // number of unread messages
+	Total      int32     // total number of messages
+	LastUpdate time.Time // last update timestamp
+	Frozen     bool      // is topic frozen?
+	Archived   bool      // is topic archived?
+	Subscribed bool      // is topic subscribed?
+	Hidden     bool      // is topic hidden?
 }
 
+/* AmGetTopic retrieves a topic by ID.
+ * Parameters:
+ *     topicId - ID of the topic to retrieve.
+ * Returns:
+ *     The topic pointer, or nil.
+ *     Standard Go error status.
+ */
 func AmGetTopic(topicId int32) (*Topic, error) {
 	var dbdata []Topic
 	err := amdb.Select(&dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)

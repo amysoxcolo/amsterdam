@@ -13,7 +13,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"strconv"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
@@ -48,6 +51,7 @@ func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
 	return "", nil, nil
 }
 
+// singleConferencePrequel consolidates some of the basic conference checks into one function.
 func singleConferencePrequel(ctxt ui.AmContext) (string, any, error) {
 	cmd, arg, err := conferencesPrequel(ctxt)
 	if cmd != "" {
@@ -210,6 +214,14 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "new_topic.jet", nil
 }
 
+/* NewTopic creates a new topic and posts the initial message.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func NewTopic(ctxt ui.AmContext) (string, any, error) {
 	cmd, arg, err := singleConferencePrequel(ctxt)
 	if cmd != "" {
@@ -309,9 +321,72 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 			return "redirect", urlStem, nil // no attachment - just redisplay topic list
 		}
 
-		// TODO: bounce to the attachment form
-		_ = topic // TODO
+		post, err := topic.GetPost(0) // get the initial post in the new topic
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+
+		// go upload the attachment
+		ctxt.VarMap().Set("target", urlStem)
+		ctxt.VarMap().Set("post", post.PostId)
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
+		return "framed_template", "attachment_upload.jet", nil
 	}
 
+	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
+}
+
+// slurpFile reads the contrents of a multipart.File into memory.
+func slurpFile(file *multipart.FileHeader) ([]byte, error) {
+	f, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return io.ReadAll(f)
+}
+
+/* AttachmentUpload adds an attachment to a post.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
+	target := ctxt.FormField("tgt")
+	postidStr := ctxt.FormField("post")
+	postId, err := strconv.ParseInt(postidStr, 10, 64)
+	if err != nil {
+		return ui.ErrorPage(ctxt, fmt.Errorf("internal error converting postID: %v", err))
+	}
+	if ctxt.FormFieldIsSet("upload") {
+		file, err := ctxt.FormFile("thefile")
+		if err == nil {
+			if file.Size <= (1024 * 1024) { // 1 Mb
+				var post *database.PostHeader
+				post, err = database.AmGetPost(postId)
+				if err == nil {
+					var data []byte
+					data, err = slurpFile(file)
+					if err == nil {
+						err = post.SetAttachment(file.Filename, file.Header.Get("Content-Type"), int32(file.Size), data)
+						if err == nil {
+							return "redirect", target, nil
+						}
+					}
+				}
+			} else {
+				err = errors.New("the file is too large to be attached")
+			}
+		}
+
+		ctxt.VarMap().Set("target", target)
+		ctxt.VarMap().Set("post", postId)
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		return "framed_template", "attachment_upload.jet", nil
+	}
 	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
 }

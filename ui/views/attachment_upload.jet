@@ -28,7 +28,8 @@
     {{ end }}
 
     <!-- Upload Form -->
-    <form method="POST" enctype="multipart/form-data" action="/TODO" class="max-w-2xl">
+    <form method="POST" enctype="multipart/form-data" action="/attachment_upload" class="max-w-2xl">
+        <input type="hidden" name="post" value="{{ post }}">
         <input type="hidden" name="tgt" value="{{ target }}">
 
         <div class="bg-gray-50 p-6 rounded-lg">
@@ -50,7 +51,7 @@
                     <div class="flex gap-4">
                         <button type="submit" name="upload"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
-                            Upload Photo
+                            Upload
                         </button>
                     </div>
                 </div>
@@ -62,7 +63,7 @@
                 <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
                     <li>The attachment will remain as part of the post.</li>
                     <li>Be sure you have the right to upload your attachment publicly.</li>
-                    <li>Inapproriate attachments may cause your post to be removed from the conference.</li>
+                    <li>Inappropriate attachments may cause your post to be removed from the conference.</li>
                 </ul>
             </div>
         </div>
