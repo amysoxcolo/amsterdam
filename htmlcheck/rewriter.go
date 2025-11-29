@@ -215,7 +215,7 @@ func (rw *userLinkRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 		return nil
 	}
 
-	user, err := database.AmGetUserByName(data)
+	user, err := database.AmGetUserByName(data, nil)
 	if err != nil || user == nil {
 		return nil
 	}

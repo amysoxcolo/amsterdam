@@ -18,16 +18,16 @@ import (
 
 // AuditRecord holds an audit record instance.
 type AuditRecord struct {
-	Record int64     `db:"record"`
-	OnDate time.Time `db:"on_date"`
-	Event  int32     `db:"event"`
-	Uid    int32     `db:"uid"`
-	CommId int32     `db:"commid"`
-	IP     *string   `db:"ip"`
-	Data1  *string   `db:"data1"`
-	Data2  *string   `db:"data2"`
-	Data3  *string   `db:"data3"`
-	Data4  *string   `db:"data4"`
+	Record int64     `db:"record"`  // audit record ID
+	OnDate time.Time `db:"on_date"` // timestamp of event
+	Event  int32     `db:"event"`   // ID of the event
+	Uid    int32     `db:"uid"`     // user that performed the event
+	CommId int32     `db:"commid"`  // community associated with the event
+	IP     *string   `db:"ip"`      // IP address associated with the event
+	Data1  *string   `db:"data1"`   // first data parameter
+	Data2  *string   `db:"data2"`   // second data parameter
+	Data3  *string   `db:"data3"`   // third data parameter
+	Data4  *string   `db:"data4"`   // fourth data parameter
 }
 
 // These are the audit record types.
@@ -134,7 +134,7 @@ func auditWriter(workChan chan *AuditRecord, doneChan chan bool) {
 	for ar := range workChan {
 		err := ar.Store()
 		if err != nil {
-			log.Errorf("dropped audit record on the floor: %v", err)
+			log.Errorf("dropped audit record (%+v) on the floor: %v", *ar, err)
 		}
 	}
 	doneChan <- true

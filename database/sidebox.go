@@ -9,6 +9,8 @@
 // The database package contains database management and storage logic.
 package database
 
+import "github.com/jmoiron/sqlx"
+
 type Sidebox struct {
 	Uid      int32   `db:"uid"`
 	Boxid    int32   `db:"boxid"`
@@ -17,12 +19,12 @@ type Sidebox struct {
 }
 
 // copySideboxes copies sideboxes from one user to another.
-func copySideboxes(toUid int32, fromUid int32) error {
+func copySideboxes(tx *sqlx.Tx, toUid int32, fromUid int32) error {
 	sbox := make([]Sidebox, 0, 3)
-	err := amdb.Select(&sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
+	err := tx.Select(&sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
 	if err == nil {
 		for _, sb := range sbox {
-			_, err := amdb.Exec("INSERT INTO sideboxes (uid, boxid, sequence, param) VALUES (?, ?, ?, ?)", toUid, sb.Boxid, sb.Sequence, sb.Param)
+			_, err := tx.Exec("INSERT INTO sideboxes (uid, boxid, sequence, param) VALUES (?, ?, ?, ?)", toUid, sb.Boxid, sb.Sequence, sb.Param)
 			if err != nil {
 				break
 			}

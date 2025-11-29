@@ -16,6 +16,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/jmoiron/sqlx"
 )
 
 // Conference struct is the top-level structure for a conference.
@@ -170,7 +171,7 @@ func (c *Conference) Settings(u *User) (*ConferenceSettings, error) {
 }
 
 // TouchRead updates the "last posted" date/time in the conference for the user.
-func (c *Conference) TouchRead(u *User) (*ConferenceSettings, error) {
+func (c *Conference) TouchRead(tx *sqlx.Tx, u *User) (*ConferenceSettings, error) {
 	cs, err := c.Settings(u)
 	if err != nil {
 		return nil, err
@@ -181,10 +182,10 @@ func (c *Conference) TouchRead(u *User) (*ConferenceSettings, error) {
 			if cerr != nil {
 				return nil, cerr
 			}
-			amdb.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read) VALUES (?, ?, ?, NOW())",
+			_, err = tx.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read) VALUES (?, ?, ?, NOW())",
 				c.ConfId, u.Uid, ci.FullName(false))
 		} else {
-			_, err = amdb.Exec("UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+			_, err = tx.Exec("UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 		}
 		if err == nil {
 			cs, err = c.Settings(u) // reread to get updated or inserted values
@@ -197,7 +198,7 @@ func (c *Conference) TouchRead(u *User) (*ConferenceSettings, error) {
 }
 
 // TouchPost updates the "last posted" date/time in the conference for the user.
-func (c *Conference) TouchPost(u *User, lastPost time.Time) (*ConferenceSettings, error) {
+func (c *Conference) TouchPost(tx *sqlx.Tx, u *User, lastPost time.Time) (*ConferenceSettings, error) {
 	cs, err := c.Settings(u)
 	if err != nil {
 		return nil, err
@@ -216,10 +217,10 @@ func (c *Conference) TouchPost(u *User, lastPost time.Time) (*ConferenceSettings
 				LastRead:     &lastPost,
 				LastPost:     &lastPost,
 			}
-			_, err = amdb.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
+			_, err = tx.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
 				c.ConfId, u.Uid, defaultPseud, lastPost, lastPost)
 		} else {
-			_, err = amdb.Exec("UPDATE confsettings SET last_post = ? WHERE confid = ? AND uid = ?", lastPost, c.ConfId, u.Uid)
+			_, err = tx.Exec("UPDATE confsettings SET last_post = ? WHERE confid = ? AND uid = ?", lastPost, c.ConfId, u.Uid)
 			cs.LastPost = &lastPost
 		}
 		if err != nil {

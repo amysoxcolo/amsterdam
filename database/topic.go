@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // Topic is the top-level structure detailing topics.
@@ -85,6 +87,29 @@ type TopicSummary struct {
 func AmGetTopic(topicId int32) (*Topic, error) {
 	var dbdata []Topic
 	err := amdb.Select(&dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
+	if err != nil {
+		return nil, err
+	}
+	if len(dbdata) == 0 {
+		return nil, fmt.Errorf("topic %d not found", topicId)
+	}
+	if len(dbdata) > 1 {
+		return nil, fmt.Errorf("AmGetTopic(%d): too many responses (%d)", topicId, len(dbdata))
+	}
+	return &(dbdata[0]), nil
+}
+
+/* AmGetTopic retrieves a topic by ID, in a transaction.
+ * Parameters:
+ *     tx - The transaction to use.
+ *     topicId - ID of the topic to retrieve.
+ * Returns:
+ *     The topic pointer, or nil.
+ *     Standard Go error status.
+ */
+func AmGetTopicTx(tx *sqlx.Tx, topicId int32) (*Topic, error) {
+	var dbdata []Topic
+	err := tx.Select(&dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
 	if err != nil {
 		return nil, err
 	}
@@ -243,18 +268,25 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	defer func() {
 		AmStoreAudit(ar)
 	}()
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
 
 	unlock := true
-	amdb.Exec("LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
+	tx.Exec("LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
 	defer func() {
 		if unlock {
-			amdb.Exec("UNLOCK TABLES;")
+			tx.Exec("UNLOCK TABLES;")
 		}
 	}()
 
 	// Insert the new topic into the database.
 	conf.Mutex.Lock()
-	rs, err := amdb.Exec("INSERT INTO topics (confid, num, creator_uid, createdate, lastupdate, name) VALUES (?, ?, ?, NOW(), NOW(), ?)",
+	rs, err := tx.Exec("INSERT INTO topics (confid, num, creator_uid, createdate, lastupdate, name) VALUES (?, ?, ?, NOW(), NOW(), ?)",
 		conf.ConfId, conf.TopTopic+1, user.Uid, title)
 	if err != nil {
 		conf.Mutex.Unlock()
@@ -267,14 +299,14 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 		return nil, err
 	}
 	// Get the topic.
-	topic, err := AmGetTopic(int32(xid))
+	topic, err := AmGetTopicTx(tx, int32(xid))
 	if err != nil {
 		conf.Mutex.Unlock()
 		return nil, err
 	}
 
 	// Update the conference to set the last update and top topic.
-	_, err = amdb.Exec("UPDATE confs SET lastupdate = ?, top_topic = ? WHERE confid = ?", topic.CreateDate, conf.TopTopic+1, conf.ConfId)
+	_, err = tx.Exec("UPDATE confs SET lastupdate = ?, top_topic = ? WHERE confid = ?", topic.CreateDate, conf.TopTopic+1, conf.ConfId)
 	if err != nil {
 		conf.Mutex.Unlock()
 		return nil, err
@@ -284,7 +316,7 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	conf.Mutex.Unlock()
 
 	// Add the "header record" for the first post.
-	rs, err = amdb.Exec("INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, 0, ?, ?, ?, ?)",
+	rs, err = tx.Exec("INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, 0, ?, ?, ?, ?)",
 		topic.TopicId, zeroPostLines, user.Uid, topic.CreateDate, zeroPostPseud)
 	if err != nil {
 		return nil, err
@@ -294,26 +326,32 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 		return nil, err
 	}
 	// Add the post data.
-	_, err = amdb.Exec("INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), zeroPost)
+	_, err = tx.Exec("INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), zeroPost)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add a new topic settings record for the user, too.
-	_, err = amdb.Exec("INSERT INTO topicsettings (topicid, uid, last_post) VALUES (?, ?, ?)",
+	_, err = tx.Exec("INSERT INTO topicsettings (topicid, uid, last_post) VALUES (?, ?, ?)",
 		topic.TopicId, user.Uid, topic.CreateDate)
 	if err != nil {
 		return nil, err
 	}
 
-	amdb.Exec("UNLOCK TABLES;")
+	tx.Exec("UNLOCK TABLES;")
 	unlock = false
 
 	// update the "last posted" date in the conference settings
-	_, err = conf.TouchPost(user, topic.CreateDate)
+	_, err = conf.TouchPost(tx, user, topic.CreateDate)
 	if err != nil {
 		return nil, err
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+	success = true
 
 	// create audit record
 	ar = AmNewAudit(AuditConferenceCreateTopic, user.Uid, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),

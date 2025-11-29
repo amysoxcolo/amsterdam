@@ -80,7 +80,7 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 			return dlg.RenderError(ctxt, "User name not specified.")
 		}
 		if action == "remind" { // Password Reminder button pressed
-			user, uerr := database.AmGetUserByName(username)
+			user, uerr := database.AmGetUserByName(username, nil)
 			if uerr == nil {
 				var ci *database.ContactInfo
 				ci, uerr = user.ContactInfo()

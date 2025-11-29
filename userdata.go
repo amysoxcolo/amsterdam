@@ -334,7 +334,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// Gather the info on the current user.
-	user, err := database.AmGetUserByName(ctxt.URLParam("uname"))
+	user, err := database.AmGetUserByName(ctxt.URLParam("uname"), nil)
 	if err != nil {
 		ctxt.SetRC(http.StatusNotFound)
 		return ui.ErrorPage(ctxt, err)

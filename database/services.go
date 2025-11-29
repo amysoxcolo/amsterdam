@@ -15,33 +15,34 @@ import (
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/jmoiron/sqlx"
 	"gopkg.in/yaml.v3"
 )
 
 // ServiceVTable is a serioes of functions called for services on specific events.
 type ServiceVTable interface {
-	OnNewCommunity(*Community) error
-	OnDeleteCommunity(int32) error
-	OnUserJoinCommunity(*Community, *User) error
-	OnUserLeaveCommunity(*Community, *User) error
+	OnNewCommunity(*sqlx.Tx, *Community) error
+	OnDeleteCommunity(*sqlx.Tx, int32) error
+	OnUserJoinCommunity(*sqlx.Tx, *Community, *User) error
+	OnUserLeaveCommunity(*sqlx.Tx, *Community, *User) error
 }
 
 // emptyServiceVTable is a default ServiceVTable that does nothing.
 type emptyServiceVTable struct{}
 
-func (*emptyServiceVTable) OnNewCommunity(*Community) error {
+func (*emptyServiceVTable) OnNewCommunity(*sqlx.Tx, *Community) error {
 	return nil
 }
 
-func (*emptyServiceVTable) OnDeleteCommunity(int32) error {
+func (*emptyServiceVTable) OnDeleteCommunity(*sqlx.Tx, int32) error {
 	return nil
 }
 
-func (*emptyServiceVTable) OnUserJoinCommunity(*Community, *User) error {
+func (*emptyServiceVTable) OnUserJoinCommunity(*sqlx.Tx, *Community, *User) error {
 	return nil
 }
 
-func (*emptyServiceVTable) OnUserLeaveCommunity(*Community, *User) error {
+func (*emptyServiceVTable) OnUserLeaveCommunity(*sqlx.Tx, *Community, *User) error {
 	return nil
 }
 
@@ -150,19 +151,50 @@ func AmGetCommunityServices(cid int32) ([]*ServiceDef, error) {
 	return rc.([]*ServiceDef), nil
 }
 
+/* AmGetCommunityServices returns all the community service definitions for a community, using a transaction.
+ * Parameters:
+ *     tx - Transaction to be used.
+ *     cid - Community ID to get services for.
+ * Returns:
+ *     Array of ServiceDef pointers for the community's services.
+ *     Standard Go error status.
+ */
+func AmGetCommunityServicesTx(tx *sqlx.Tx, cid int32) ([]*ServiceDef, error) {
+	servicesCacheMutex.Lock()
+	defer servicesCacheMutex.Unlock()
+	rc, ok := servicesCache.Get(cid)
+	if !ok {
+		rs, err := tx.Query("SELECT ftr_code FROM commftrs WHERE commid = ?", cid)
+		if err != nil {
+			return nil, err
+		}
+		dom := serviceRoot.byName["community"]
+		a := make([]*ServiceDef, 0, len(dom.Services))
+		for rs.Next() {
+			var ndx int16
+			rs.Scan(&ndx)
+			a = append(a, dom.byIndex[ndx])
+		}
+		servicesCache.Add(cid, a)
+		rc = a
+	}
+	return rc.([]*ServiceDef), nil
+}
+
 /* AmEstablishCommunityServices establishes the service (feature) records for a new community,
  * and allows the services to establish themselves.
  * Parameters:
+ *     tx - The transaction to use.
  *     c - The new community.
  * Returns:
  *     Standard Go error status.
  */
-func AmEstablishCommunityServices(c *Community) error {
+func AmEstablishCommunityServices(tx *sqlx.Tx, c *Community) error {
 	dom := serviceRoot.byName["community"]
 	a := make([]*ServiceDef, 0, len(dom.Services))
 	for i, svc := range dom.Services {
 		if svc.Default {
-			_, err := amdb.Exec("INSERT INTO commftrs (commid, ftr_code) VALUES (?, ?)", c.Id, svc.Index)
+			_, err := tx.Exec("INSERT INTO commftrs (commid, ftr_code) VALUES (?, ?)", c.Id, svc.Index)
 			if err != nil {
 				return err
 			}
@@ -173,7 +205,7 @@ func AmEstablishCommunityServices(c *Community) error {
 	servicesCache.Add(c.Id, a)
 	servicesCacheMutex.Unlock()
 	for _, svc := range a {
-		err := svc.vtable.OnNewCommunity(c)
+		err := svc.vtable.OnNewCommunity(tx, c)
 		if err != nil {
 			return err
 		}
@@ -184,22 +216,23 @@ func AmEstablishCommunityServices(c *Community) error {
 /* AmDeleteCommunityServices cleans up all services associated with a community that has gone away,
  * and then cleans up the service records.
  * Parameters:
+ *     tx - The transaction to use.
  *     cid - The ID of the departing community.
  * Returns:
  *     Standard Go error status.
  */
-func AmDeleteCommunityServices(cid int32) error {
+func AmDeleteCommunityServices(tx *sqlx.Tx, cid int32) error {
 	arr, err := AmGetCommunityServices(cid)
 	if err == nil {
 		for _, svc := range arr {
-			err = svc.vtable.OnDeleteCommunity(cid)
+			err = svc.vtable.OnDeleteCommunity(tx, cid)
 			if err != nil {
 				break
 			}
 		}
 	}
 	if err == nil {
-		_, err = amdb.Exec("DELETE FROM commftrs WHERE commid = ?", cid)
+		_, err = tx.Exec("DELETE FROM commftrs WHERE commid = ?", cid)
 		servicesCacheMutex.Lock()
 		servicesCache.Remove(cid)
 		servicesCacheMutex.Unlock()
@@ -209,16 +242,17 @@ func AmDeleteCommunityServices(cid int32) error {
 
 /* AmOnUserJoinCommunityServices gives services a chance to update themselves when a user joins a community.
  * Parameters:
+ *     tx - The current database transaction.
  *     c - The community that is being joined.
  *     u - The user leaving that community.
  * Returns:
  *     Standard Go error status.
  */
-func AmOnUserJoinCommunityServices(c *Community, u *User) error {
-	arr, err := AmGetCommunityServices(c.Id)
+func AmOnUserJoinCommunityServices(tx *sqlx.Tx, c *Community, u *User) error {
+	arr, err := AmGetCommunityServicesTx(tx, c.Id)
 	if err == nil {
 		for _, svc := range arr {
-			err = svc.vtable.OnUserJoinCommunity(c, u)
+			err = svc.vtable.OnUserJoinCommunity(tx, c, u)
 			if err != nil {
 				break
 			}
@@ -229,16 +263,17 @@ func AmOnUserJoinCommunityServices(c *Community, u *User) error {
 
 /* AmOnUserLeaveCommunityServices gives services a chance to update themselves when a user leaves a community.
  * Parameters:
+ *     tx - The current database transaction.
  *     c - The community that is being left.
  *     u - The user leaving that community.
  * Returns:
  *     Standard Go error status.
  */
-func AmOnUserLeaveCommunityServices(c *Community, u *User) error {
-	arr, err := AmGetCommunityServices(c.Id)
+func AmOnUserLeaveCommunityServices(tx *sqlx.Tx, c *Community, u *User) error {
+	arr, err := AmGetCommunityServicesTx(tx, c.Id)
 	if err == nil {
 		for _, svc := range arr {
-			err = svc.vtable.OnUserLeaveCommunity(c, u)
+			err = svc.vtable.OnUserLeaveCommunity(tx, c, u)
 			if err != nil {
 				break
 			}
