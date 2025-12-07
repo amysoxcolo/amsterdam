@@ -32,12 +32,7 @@ import (
  *     Standard Go error status.
  */
 func CommunityAdminMenu(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.ShowAdmin", ctxt.EffectiveLevel()) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
@@ -47,7 +42,6 @@ func CommunityAdminMenu(ctxt ui.AmContext) (string, any, error) {
 	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
 		defs["USECAT"] = true
 	}
-	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("menu", menu.FilterCommunity(comm))
 	ctxt.VarMap().Set("defs", defs)
 	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title+" - "+comm.Name)
@@ -87,18 +81,13 @@ func communityLogoURL(ci *database.ContactInfo) string {
  *     Standard Go error status.
  */
 func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
 	}
 	var ci *database.ContactInfo
-	ci, err = comm.ContactInfo()
+	ci, err := comm.ContactInfo()
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -170,12 +159,7 @@ func validateJoinKey(dlg *ui.Dialog) error {
  *     Standard Go error status.
  */
 func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
@@ -269,12 +253,7 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
@@ -299,12 +278,7 @@ func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))

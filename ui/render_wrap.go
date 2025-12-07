@@ -13,14 +13,26 @@ package ui
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 
-	"git.erbosoft.com/amy/amsterdam/config"
-	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
 
+/* AmSendPageData sends page data to the output based on the command string.
+ * Parameters:
+ *     ctxt - The Echo context from the request.
+ *     amctxt - The associated AmContext.
+ *     command - The type of rendering to be done. Known values are:
+ *         "bytes" - Output "data" as a byte array.
+ *         "redirect" - Treat "data" as a URL to be redirected to and send a 302 Redirect.
+ *         "string" - Output "data" as a string.
+ *         "template" - Treat "data" as a template name, and output that template.
+ *         "framed_template" - Treat "data" as an inner template name, and output that template rendered
+ *		       within the outer "frame.jet" template.
+ *     data - The data to be output, as determined by the command.
+ * Returns:
+ *     Standard Go error status.
+ */
 func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
 	var err error
 	switch command {
@@ -29,9 +41,9 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 	case "redirect":
 		err = ctxt.Redirect(http.StatusFound, data.(string))
 	case "string":
-		err = ctxt.String(amctxt.RC(), fmt.Sprintf("%v", data))
+		err = ctxt.String(amctxt.RC(), data.(string))
 	case "template":
-		err = ctxt.Render(amctxt.RC(), fmt.Sprintf("%v", data), amctxt)
+		err = ctxt.Render(amctxt.RC(), data.(string), amctxt)
 	case "framed_template":
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
 		menus := make([]*MenuDefinition, 2)
@@ -86,53 +98,7 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
  */
 func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 	return func(ctxt echo.Context) error {
-		// Create the AmContext.
-		amctxt, aerr := AmCreateContext(ctxt)
-		if aerr != nil {
-			ctxt.Logger().Errorf("Session creation error: %v", aerr)
-			return aerr
-		}
-		defer amctxt.Done()
-
-		// Check IP banning.
-		banmsg, banerr := database.AmTestIPBan(ctxt.RealIP())
-		if banerr != nil {
-			ctxt.Logger().Warnf("address %s could not be tested: %v", ctxt.RealIP(), banerr)
-			// but let the request pass anyway
-		} else if banmsg != "" {
-			amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
-			amctxt.VarMap().Set("message", banmsg)
-			amctxt.SetRC(http.StatusForbidden)
-			return AmSendPageData(ctxt, amctxt, "framed_template", "ipban.jet")
-		}
-
-		// Check for cookie login.
-		if amctxt.CurrentUser().IsAnon {
-			cookie, cerr := ctxt.Cookie(config.GlobalConfig.Site.LoginCookieName)
-			if cerr == nil {
-				var user *database.User
-				user, cerr = database.AmAuthenticateUserByToken(cookie.Value, ctxt.RealIP())
-				if cerr == nil {
-					// log the user in and rotate login cookie
-					amctxt.ReplaceUser(user)
-					var newToken string
-					if newToken, cerr = user.NewAuthToken(); cerr == nil {
-						amctxt.SetLoginCookie(newToken)
-					} else {
-						log.Warnf("unable to rotate login cookie: %v", cerr)
-					}
-					if !user.VerifyEMail {
-						// bounce to E-mail verification before we go anywhere
-						return AmSendPageData(ctxt, amctxt, "redirect",
-							"/verify?tgt="+url.QueryEscape(ctxt.Request().URL.Path))
-					}
-				} else {
-					log.Errorf("login cookie bogus, do not use: %v", cerr)
-					amctxt.ClearLoginCookie()
-				}
-			}
-		}
-
+		amctxt := AmContextFromEchoContext(ctxt)
 		// Exec the wrapped function.
 		what, rc, err := myfunc(amctxt)
 		if err == nil {

@@ -36,12 +36,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	err = ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	ci, err := comm.ContactInfo()
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -132,7 +127,6 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("homePage", *ci.URL)
 	}
 
-	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Community Profile: "+comm.Name)
 	return "framed_template", "comprofile.jet", nil
 }
@@ -147,13 +141,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
  */
 func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	ctxt.SetLeftMenu("community")
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, _, _, err := comm.Membership(me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -193,13 +181,7 @@ func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
  */
 func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
-	err := ctxt.SetCommunityContext(ctxt.FormField("cc"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
-	ctxt.SetLeftMenu("community")
+	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, _, _, err := comm.Membership(me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -249,13 +231,7 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
  */
 func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
-	ctxt.SetLeftMenu("community")
+	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, lock, _, err := comm.Membership(me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -283,13 +259,7 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
  */
 func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
-	ctxt.SetLeftMenu("community")
+	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, lock, _, err := comm.Membership(me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -325,12 +295,7 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func MemberList(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	ofs := 0
 	p := ctxt.Parameter("ofs")
 	if p != "" {
@@ -339,7 +304,6 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
 			ofs = v
 		}
 	}
-	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("comm", comm)
 	ctxt.VarMap().Set("hostUid", *comm.HostUid)
 	showHidden := ctxt.TestPermission("Community.ShowHiddenMembers")
@@ -381,17 +345,11 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func MemberSearch(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	ofs, _ := ctxt.FormFieldInt("ofs")
 	field := ctxt.FormField("field")
 	oper := ctxt.FormField("oper")
 	term := ctxt.FormField("term")
-	ctxt.SetLeftMenu("community")
 	ctxt.VarMap().Set("comm", comm)
 	ctxt.VarMap().Set("hostUid", comm.HostUid)
 	showHidden := ctxt.TestPermission("Community.ShowHiddenMembers")

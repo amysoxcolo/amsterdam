@@ -28,6 +28,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+/*----------------------------------------------------------------------------
+ * AmContext interface
+ *----------------------------------------------------------------------------
+ */
+
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
 	ClearCommunityContext()
@@ -36,7 +41,6 @@ type AmContext interface {
 	CurrentCommunity() *database.Community
 	CurrentUser() *database.User
 	CurrentUserId() int32
-	Done()
 	EffectiveLevel() uint16
 	FormField(string) string
 	FormFieldInt(string) (int, error)
@@ -72,13 +76,17 @@ type AmContext interface {
 	VarMap() jet.VarMap
 }
 
+/*----------------------------------------------------------------------------
+ * AmContext implementation
+ *----------------------------------------------------------------------------
+ */
+
 // amContext is the internal structure that implements AmContext.
 type amContext struct {
 	echoContext    echo.Context
 	httprc         int
 	rendervars     jet.VarMap
 	outputType     string
-	scratchpad     map[string]any
 	session        *sessions.Session
 	globals        *database.Globals
 	globalFlags    *util.OptionSet
@@ -141,11 +149,6 @@ func (c *amContext) CurrentUser() *database.User {
 // CurrentUserId returns the current user ID.
 func (c *amContext) CurrentUserId() int32 {
 	return AmSessionUid(c.session)
-}
-
-// Done signals that we're done with this context and it can be recycled.
-func (c *amContext) Done() {
-	amContextRecycleBin <- c
 }
 
 // EffectiveLevel returns the user's effective access level (in terms of current community, if any).
@@ -275,14 +278,6 @@ func (c *amContext) SaveSession() error {
 	return c.session.Save(c.echoContext.Request(), c.echoContext.Response())
 }
 
-// Scratchpad returns the per-request scratchpad for values.
-func (c *amContext) Scratchpad() map[string]any {
-	if c.scratchpad == nil {
-		c.scratchpad = make(map[string]any)
-	}
-	return c.scratchpad
-}
-
 /* SubRender renders a subtemplate to the output.
  * Parameters:
  *	   name = The name of the template to be rendered.
@@ -363,18 +358,12 @@ func (c *amContext) SetRC(rc int) {
 
 // GetScratch returns a value in the per-request scratchpad.
 func (c *amContext) GetScratch(name string) any {
-	if c.scratchpad == nil {
-		return nil
-	}
-	return c.scratchpad[name]
+	return c.echoContext.Get("am." + name)
 }
 
 // SetScratch sets a value in the per-request scratchpad.
 func (c *amContext) SetScratch(name string, val any) {
-	if c.scratchpad == nil {
-		c.scratchpad = make(map[string]any)
-	}
-	c.scratchpad[name] = val
+	c.echoContext.Set("am."+name, val)
 }
 
 // GetSession returns a session variable.
@@ -431,21 +420,20 @@ var freeContext util.FreeList[amContext]
 // amContextRecycleBin is the channel we put contexts on to be recycled.
 var amContextRecycleBin chan *amContext
 
-/* AmCreateContext creates a new AmContext wrapping the Echo context.
+/* newContext creates a new AmContext wrapping the Echo context.
  * Parameters:
  *     ctxt - The Echo context to be wrapped.
  * Returns:
- *     A new Amsterdam context wrapping that context.
+ *     Internal Amsterdam context structure pointer, or nil.
  *     Standard Go error status.
  */
-func AmCreateContext(ctxt echo.Context) (AmContext, error) {
+func newContext(ctxt echo.Context) (*amContext, error) {
 	rc := freeContext.Get()
 	if rc == nil {
 		rc = &amContext{
 			httprc:     http.StatusOK,
 			rendervars: make(jet.VarMap),
 			outputType: "",
-			scratchpad: nil,
 		}
 	}
 
@@ -460,7 +448,7 @@ func AmCreateContext(ctxt echo.Context) (AmContext, error) {
 	}
 
 	rc.echoContext = ctxt
-	ctxt.Set("amsterdam_context", rc)
+	ctxt.Set("__amsterdam_context", rc)
 	sess, err := session.Get("AMSTERDAM_SESSION", ctxt)
 	if err == nil {
 		rc.session = sess
@@ -491,17 +479,17 @@ func AmCreateContext(ctxt echo.Context) (AmContext, error) {
  * Parameters:
  *     ctxt - The Echo context to have the AmContext extracted.
  * Returns:
- *     The associated AmContext, or nil if there is none.
+ *     The associated AmContext.
  */
 func AmContextFromEchoContext(ctxt echo.Context) AmContext {
-	myctxt := ctxt.Get("amsterdam_context")
+	myctxt := ctxt.Get("__amsterdam_context")
 	if myctxt != nil {
 		rc, ok := myctxt.(AmContext)
 		if ok {
 			return rc
 		}
 	}
-	return nil
+	panic("Failed to find AmContext when required")
 }
 
 // contextRecycler is the task that recycles context blocks.
@@ -513,11 +501,6 @@ func contextRecycler(incoming chan *amContext, done chan bool) {
 			delete(c.rendervars, k)
 		}
 		c.outputType = ""
-		if c.scratchpad != nil {
-			for k := range c.scratchpad {
-				delete(c.scratchpad, k)
-			}
-		}
 		c.session = nil
 		c.globals = nil
 		c.globalFlags = nil
@@ -539,5 +522,17 @@ func SetupAmContext() func() {
 	return func() {
 		close(amContextRecycleBin)
 		<-done
+	}
+}
+
+// ContextCreator is middleware that creates and recycles the AmContext.
+func ContextCreator(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		myctxt, err := newContext(c)
+		if err == nil {
+			err = next(c)
+			amContextRecycleBin <- myctxt
+		}
+		return err
 	}
 }

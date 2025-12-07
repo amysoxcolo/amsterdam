@@ -25,12 +25,7 @@ import (
 
 // conferencesPrequel consolidates some of the basic conference checks into one function.
 func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
-	err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
-	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
-	}
-	comm := ctxt.CurrentCommunity()
+	comm := ctxt.CurrentCommunity() // set by middleware
 	b, err := database.AmTestService(comm, "Conference")
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -47,7 +42,6 @@ func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to conferences"))
 	}
-	ctxt.SetLeftMenu("community")
 	return "", nil, nil
 }
 

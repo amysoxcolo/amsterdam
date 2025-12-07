@@ -10,7 +10,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -49,15 +48,6 @@ func AmErrorHandler(err error, c echo.Context) {
 	}
 
 	amctxt := ui.AmContextFromEchoContext(c)
-	if amctxt == nil {
-		var qerr error
-		amctxt, qerr = ui.AmCreateContext(c)
-		if qerr != nil {
-			log.Errorf("failed to create AmContext in error handler: %v", qerr)
-			c.String(errCode, fmt.Sprintf("error %d: %v", errCode, err))
-			return
-		}
-	}
 	amctxt.SetLeftMenu("top")
 	amctxt.SetRC(errCode)
 	amctxt.VarMap().Set("error", err.Error())
