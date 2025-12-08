@@ -11,6 +11,7 @@
 package ui
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 
@@ -19,6 +20,12 @@ import (
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
+
+// middlewareErrorPage is a shortcut to displaying an ErrorPage from middleware.
+func middlewareErrorPage(c echo.Context, ctxt AmContext, err error) error {
+	cmd, data, _ := ErrorPage(ctxt, err)
+	return AmSendPageData(c, ctxt, cmd, data)
+}
 
 // IPBanTest is middleware that handles the IP banning.
 func IPBanTest(next echo.HandlerFunc) echo.HandlerFunc {
@@ -80,10 +87,55 @@ func SetCommunity(next echo.HandlerFunc) echo.HandlerFunc {
 		err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
 		if err != nil {
 			ctxt.SetRC(http.StatusNotFound)
-			cmd, data, _ := ErrorPage(ctxt, err)
-			return AmSendPageData(c, ctxt, cmd, data)
+			return middlewareErrorPage(c, ctxt, err)
 		}
 		ctxt.SetLeftMenu("community")
+		return next(c)
+	}
+}
+
+// ValidateConference is middleware that validates the user has access to the community's conference facility.
+func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctxt := AmContextFromEchoContext(c)
+		comm := ctxt.CurrentCommunity() // set by middleware
+		b, err := database.AmTestService(comm, "Conference")
+		if err != nil {
+			return middlewareErrorPage(c, ctxt, err)
+		}
+		if !b {
+			ctxt.SetRC(http.StatusNotFound)
+			return middlewareErrorPage(c, ctxt, errors.New("this community does not use conferencing services"))
+		}
+		if comm.MembersOnly && !ctxt.IsMember() && !ctxt.TestPermission("Community.NoJoinRequired") {
+			ctxt.SetRC(http.StatusForbidden)
+			return middlewareErrorPage(c, ctxt, errors.New("you are not a member of this community"))
+		}
+		if !comm.TestPermission("Community.Read", ctxt.EffectiveLevel()) {
+			ctxt.SetRC(http.StatusForbidden)
+			return middlewareErrorPage(c, ctxt, errors.New("you are not authorized access to conferences"))
+		}
+		return next(c)
+	}
+}
+
+func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctxt := AmContextFromEchoContext(c)
+		conf, err := database.AmGetConferenceByAliasInCommunity(ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
+		if err != nil {
+			return middlewareErrorPage(c, ctxt, err)
+		}
+		m, lvl, err := conf.Membership(ctxt.CurrentUser())
+		if err != nil {
+			return middlewareErrorPage(c, ctxt, err)
+		}
+		myLevel := ctxt.EffectiveLevel()
+		if m && lvl > myLevel {
+			myLevel = lvl
+		}
+		ctxt.SetScratch("currentConference", conf)
+		ctxt.SetScratch("levelInConference", myLevel)
 		return next(c)
 	}
 }

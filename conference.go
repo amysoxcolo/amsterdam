@@ -23,52 +23,6 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
-// conferencesPrequel consolidates some of the basic conference checks into one function.
-func conferencesPrequel(ctxt ui.AmContext) (string, any, error) {
-	comm := ctxt.CurrentCommunity() // set by middleware
-	b, err := database.AmTestService(comm, "Conference")
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
-	if !b {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, errors.New("this community does not use conferencing services"))
-	}
-	if comm.MembersOnly && !ctxt.IsMember() && !ctxt.TestPermission("Community.NoJoinRequired") {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not a member of this community"))
-	}
-	if !comm.TestPermission("Community.Read", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to conferences"))
-	}
-	return "", nil, nil
-}
-
-// singleConferencePrequel consolidates some of the basic conference checks into one function.
-func singleConferencePrequel(ctxt ui.AmContext) (string, any, error) {
-	cmd, arg, err := conferencesPrequel(ctxt)
-	if cmd != "" {
-		return cmd, arg, err
-	}
-	var conf *database.Conference
-	conf, err = database.AmGetConferenceByAliasInCommunity(ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
-	m, lvl, err := conf.Membership(ctxt.CurrentUser())
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
-	}
-	myLevel := ctxt.EffectiveLevel()
-	if m && lvl > myLevel {
-		myLevel = lvl
-	}
-	ctxt.SetScratch("currentConference", conf)
-	ctxt.SetScratch("levelInConference", myLevel)
-	return "", nil, nil
-}
-
 /* Conferences displayes the list of conferences in a community.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -78,10 +32,6 @@ func singleConferencePrequel(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func Conferences(ctxt ui.AmContext) (string, any, error) {
-	cmd, arg, err := conferencesPrequel(ctxt)
-	if cmd != "" {
-		return cmd, arg, err
-	}
 	comm := ctxt.CurrentCommunity()
 	ctxt.VarMap().Set("commName", comm.Name)
 	ctxt.VarMap().Set("commAlias", comm.Alias)
@@ -104,10 +54,6 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func Topics(ctxt ui.AmContext) (string, any, error) {
-	cmd, arg, err := singleConferencePrequel(ctxt)
-	if cmd != "" {
-		return cmd, arg, err
-	}
 	prefs, err := ctxt.CurrentUser().Prefs()
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
@@ -176,10 +122,6 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
-	cmd, arg, err := singleConferencePrequel(ctxt)
-	if cmd != "" {
-		return cmd, arg, err
-	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
@@ -217,10 +159,6 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
  *     Standard Go error status.
  */
 func NewTopic(ctxt ui.AmContext) (string, any, error) {
-	cmd, arg, err := singleConferencePrequel(ctxt)
-	if cmd != "" {
-		return cmd, arg, err
-	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)

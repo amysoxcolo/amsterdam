@@ -42,11 +42,8 @@ func setupEcho() *echo.Echo {
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
-	e.Use(LogrusMiddleware)
-	e.Use(session.Middleware(ui.SessionStore))
-	e.Use(ui.ContextCreator)
-	e.Use(ui.IPBanTest)
-	e.Use(ui.CookieLoginTest)
+	e.Use(LogrusMiddleware, session.Middleware(ui.SessionStore))
+	e.Use(ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest)
 
 	fn := ui.AmWrap(NotImplPage)
 	e.GET("/TODO/*", fn)
@@ -79,6 +76,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
 	e.POST("/attachment_upload", ui.AmWrap(AttachmentUpload))
 
+	// community group
 	commGroup := e.Group("/comm/:cid", ui.SetCommunity)
 	commGroup.GET("/profile", ui.AmWrap(ShowCommunity))
 	commGroup.GET("/join", ui.AmWrap(JoinCommunity))
@@ -93,9 +91,10 @@ func setupEcho() *echo.Echo {
 	commGroup.GET("/admin/logo", ui.AmWrap(CommunityLogoForm))
 	commGroup.POST("/admin/logo", ui.AmWrap(EditCommunityLogo))
 
-	commGroup.GET("/conf", ui.AmWrap(Conferences))
-	confGroup := commGroup.Group("/conf/:confid")
-	confGroup.GET("", ui.AmWrap(Topics))
+	// conference group
+	commGroup.GET("/conf", ui.AmWrap(Conferences), ui.ValidateConference)
+	confGroup := commGroup.Group("/conf/:confid", ui.ValidateConference, ui.SetConference)
+	confGroup.GET("/", ui.AmWrap(Topics))
 	confGroup.GET("/new_topic", ui.AmWrap(NewTopicForm))
 	confGroup.POST("/new_topic", ui.AmWrap(NewTopic))
 
