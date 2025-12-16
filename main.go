@@ -94,7 +94,7 @@ func setupEcho() *echo.Echo {
 	// conference group
 	commGroup.GET("/conf", ui.AmWrap(Conferences), ui.ValidateConference)
 	confGroup := commGroup.Group("/conf/:confid", ui.ValidateConference, ui.SetConference)
-	confGroup.GET("/", ui.AmWrap(Topics))
+	confGroup.GET("", ui.AmWrap(Topics))
 	confGroup.GET("/new_topic", ui.AmWrap(NewTopicForm))
 	confGroup.POST("/new_topic", ui.AmWrap(NewTopic))
 
