@@ -97,6 +97,7 @@ func setupEcho() *echo.Echo {
 	confGroup.GET("", ui.AmWrap(Topics))
 	confGroup.GET("/new_topic", ui.AmWrap(NewTopicForm))
 	confGroup.POST("/new_topic", ui.AmWrap(NewTopic))
+	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts))
 
 	return e
 }

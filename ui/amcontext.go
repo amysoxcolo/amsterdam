@@ -48,6 +48,7 @@ type AmContext interface {
 	FormFile(string) (*multipart.FileHeader, error)
 	Globals() *database.Globals
 	GlobalFlags() *util.OptionSet
+	HasParameter(string) bool
 	IsMember() bool
 	IsMemberLocked() bool
 	LeftMenu() string
@@ -204,6 +205,21 @@ func (c *amContext) Globals() *database.Globals {
 // GlobalFlags returns a reference to the database global flags.
 func (c *amContext) GlobalFlags() *util.OptionSet {
 	return c.globalFlags
+}
+
+// HasParameter tests to see if we have a parameter.
+func (c *amContext) HasParameter(name string) bool {
+	s := c.echoContext.QueryParam(name)
+	if s != "" {
+		return true
+	}
+	if c.echoContext.Request().Method == "POST" {
+		s = c.echoContext.FormValue(name)
+		if s != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // IsMember returns true if the user is a member of the current community.

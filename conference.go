@@ -17,6 +17,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
@@ -321,4 +322,89 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
 		return "framed_template", "attachment_upload.jet", nil
 	}
 	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
+}
+
+func ReadPosts(ctxt ui.AmContext) (string, any, error) {
+	// If we need to reset a topic's last read count (as with "Next & Keep New"), spin the task off into a goroutine.
+	if ctxt.HasParameter("rst") {
+		rst := strings.Split(ctxt.Parameter("rst"), ",")
+		if len(rst) >= 2 {
+			topicId, e1 := strconv.ParseInt(rst[0], 10, 32)
+			lastRead, e2 := strconv.ParseInt(rst[1], 10, 32)
+			if e1 == nil && e2 == nil {
+				user := ctxt.CurrentUser()
+				go func() {
+					topic, _ := database.AmGetTopic(int32(topicId))
+					if topic != nil {
+						topic.SetLastRead(user, int32(lastRead))
+					}
+				}()
+			}
+		}
+	}
+	// Locate community, conference, and topic.
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	var topic *database.Topic = nil
+	if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
+		topic, err = database.AmGetTopicByNumber(conf, int16(rawTopic))
+	}
+	if topic == nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, fmt.Errorf("topic not found: %s", ctxt.URLParam("topic")))
+	}
+
+	// Determine the range of posts to display.  The "pin" is the post number after which we display the horizontal line separating old and new posts.
+	postRange := make([]int32, 2)
+	var pin int32 = -1
+	if ctxt.HasParameter("r") {
+		rstr := strings.Split(ctxt.Parameter("r"), ",")
+		if len(rstr) == 0 {
+			ctxt.SetRC(http.StatusNotFound)
+			return ui.ErrorPage(ctxt, fmt.Errorf("posts not found: %s in topic %d", ctxt.Parameter("r"), topic.Number))
+		}
+		v, err := strconv.ParseInt(rstr[0], 10, 32)
+		if err != nil {
+			ctxt.SetRC(http.StatusNotFound)
+			return ui.ErrorPage(ctxt, fmt.Errorf("posts not found: %s in topic %d", ctxt.Parameter("r"), topic.Number))
+		}
+		postRange[0] = int32(v)
+		if len(rstr) > 1 {
+			v, err = strconv.ParseInt(rstr[1], 10, 32)
+			if err != nil {
+				ctxt.SetRC(http.StatusNotFound)
+				return ui.ErrorPage(ctxt, fmt.Errorf("posts not found: %s in topic %d", ctxt.Parameter("r"), topic.Number))
+			}
+			postRange[1] = int32(v)
+		} else {
+			postRange[1] = postRange[0]
+		}
+		if postRange[1] < 0 {
+			postRange[1] = topic.TopMessage
+		}
+		if postRange[0] > postRange[1] {
+			t := postRange[0]
+			postRange[0] = postRange[1]
+			postRange[1] = t
+		}
+	} else {
+		lastRead, err := topic.GetLastRead(ctxt.CurrentUser())
+		if err != nil {
+			ctxt.SetRC(http.StatusNotFound)
+			return ui.ErrorPage(ctxt, fmt.Errorf("posts not found in topic %d - %v", topic.Number, err))
+		}
+		postRange[0] = lastRead + 1
+		postRange[1] = topic.TopMessage
+		count := postRange[1] - postRange[0] + 1
+		if count > ctxt.Globals().PostsPerPage {
+			postRange[0] = postRange[1] - ctxt.Globals().PostsPerPage + 1
+		} else if count < ctxt.Globals().PostsPerPage {
+			pin = postRange[0] - 1
+			postRange[0] -= ctxt.Globals().OldPostsAtTop
+			postRange[0] = max(0, postRange[0])
+			if pin < postRange[0] {
+				pin = -1
+			}
+		}
+	}
 }

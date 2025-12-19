@@ -52,6 +52,31 @@ func (t *Topic) GetPost(num int32) (*PostHeader, error) {
 	return nil, err
 }
 
+// GetLastRead returns the "last read" message for a user on a topic.
+func (t *Topic) GetLastRead(u *User) (int32, error) {
+	rs, err := amdb.Query("SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
+	if err != nil {
+		return -1, err
+	}
+	var rc int32 = -1
+	if rs.Next() {
+		rs.Scan(&rc)
+	}
+	return rc, nil
+}
+
+// SetLastRead sets the "last read" message for a user on a topic.
+func (t *Topic) SetLastRead(u *User, postNum int32) error {
+	rs, err := amdb.Exec("UPDATE topicsettings SET last_message = ?, last_read = NOW() WHERE topicid = ? AND uid = ?", postNum, t.TopicId, u.Uid)
+	if err == nil {
+		nrow, _ := rs.RowsAffected()
+		if nrow == 0 {
+			_, err = amdb.Exec("INSERT INTO topicsettings (topicid, uid, last_message, last_read, last_post) VALUES (?, ?, ?, NOW(), NULL)", t.TopicId, u.Uid, postNum)
+		}
+	}
+	return err
+}
+
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
 	TopicId     int32      `db:"topicid"`      // unique ID of the topic
@@ -99,7 +124,7 @@ func AmGetTopic(topicId int32) (*Topic, error) {
 	return &(dbdata[0]), nil
 }
 
-/* AmGetTopic retrieves a topic by ID, in a transaction.
+/* AmGetTopicTx retrieves a topic by ID, in a transaction.
  * Parameters:
  *     tx - The transaction to use.
  *     topicId - ID of the topic to retrieve.
@@ -120,6 +145,29 @@ func AmGetTopicTx(tx *sqlx.Tx, topicId int32) (*Topic, error) {
 		return nil, fmt.Errorf("AmGetTopic(%d): too many responses (%d)", topicId, len(dbdata))
 	}
 	return &(dbdata[0]), nil
+}
+
+/* AmGetTopicByNumber retrieves a topic by conference and sequence number.
+ * Parameters:
+ *     conf - The conference to look in.
+ *     topicNum - The topic number within that conference.
+ * Returns:
+ *     Pointer to the Topic, or nil.
+ *     Standard Go error status.
+ */
+func AmGetTopicByNumber(conf *Conference, topicNum int16) (*Topic, error) {
+	var dbdata []Topic
+	err := amdb.Select(&dbdata, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
+	if err == nil {
+		if len(dbdata) == 0 {
+			err = fmt.Errorf("no topic numbered %d in conference %s (#%d)", topicNum, conf.Name, conf.ConfId)
+		} else if len(dbdata) > 1 {
+			err = fmt.Errorf("AmGetTopicByNumber: too many entries (%d) for topic #%d in conference %s (#%d)", len(dbdata), topicNum, conf.Name, conf.ConfId)
+		} else {
+			return &(dbdata[0]), nil
+		}
+	}
+	return nil, err
 }
 
 // View and sort constants for AmListTopics.
