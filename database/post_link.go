@@ -11,6 +11,7 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -51,6 +52,43 @@ func (d *PostLinkData) VerifyNames() error {
 		}
 	}
 	return nil
+}
+
+// AsString converts the post link data to a string reference.
+func (d *PostLinkData) AsString() string {
+	var b strings.Builder
+	if d.Community != "" {
+		b.WriteString(d.Community)
+		b.WriteString("!")
+	}
+	wrote := false
+	if d.Conference != "" {
+		b.WriteString(d.Conference)
+		b.WriteString(".")
+		wrote = true
+	}
+	needDot := false
+	if d.Topic > 0 {
+		needDot = true
+		b.WriteString(fmt.Sprintf("%d", d.Topic))
+		if !wrote {
+			b.WriteString(".")
+			needDot = false
+		}
+	}
+	if d.FirstPost >= 0 {
+		s := ""
+		if d.LastPost < 0 || d.LastPost == d.FirstPost {
+			s = fmt.Sprintf("%d", d.FirstPost)
+		} else {
+			s = fmt.Sprintf("%d-%d", d.FirstPost, d.LastPost)
+		}
+		if needDot {
+			b.WriteString(".")
+		}
+		b.WriteString(s)
+	}
+	return b.String()
 }
 
 // Maximum lengths of the components.

@@ -49,3 +49,12 @@ func AmGetPost(postId int64) (*PostHeader, error) {
 	}
 	return &(dbdata[0]), nil
 }
+
+func AmGetPostRange(topic *Topic, first, last int32) ([]PostHeader, error) {
+	var rc []PostHeader
+	err := amdb.Select(&rc, "SELECT * FROM posts WHERE topicid = ? AND num >= ? AND num <= ? ORDER BY num", topic.TopicId, first, last)
+	if err != nil {
+		return nil, err
+	}
+	return rc, nil
+}

@@ -135,6 +135,7 @@ func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 			myLevel = lvl
 		}
 		ctxt.SetScratch("currentConference", conf)
+		ctxt.SetScratch("currentAlias", ctxt.URLParam("confid"))
 		ctxt.SetScratch("levelInConference", myLevel)
 		return next(c)
 	}

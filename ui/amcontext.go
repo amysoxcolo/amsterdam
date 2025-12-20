@@ -12,6 +12,7 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -38,6 +39,7 @@ type AmContext interface {
 	ClearCommunityContext()
 	ClearLoginCookie()
 	ClearSession()
+	Ctx() context.Context
 	CurrentCommunity() *database.Community
 	CurrentUser() *database.User
 	CurrentUserId() int32
@@ -121,6 +123,11 @@ func (c *amContext) ClearSession() {
 	AmResetSession(c.session)
 	c.user = nil
 	c.effectiveLevel = 0
+}
+
+// Ctx returns the current context.Context for the request.
+func (c *amContext) Ctx() context.Context {
+	return c.echoContext.Request().Context()
 }
 
 // CurrentCommunity returns the current community, if one's been set.
@@ -213,11 +220,9 @@ func (c *amContext) HasParameter(name string) bool {
 	if s != "" {
 		return true
 	}
-	if c.echoContext.Request().Method == "POST" {
-		s = c.echoContext.FormValue(name)
-		if s != "" {
-			return true
-		}
+	s = c.echoContext.FormValue(name)
+	if s != "" {
+		return true
 	}
 	return false
 }
@@ -255,7 +260,7 @@ func (c *amContext) OutputType() string {
  */
 func (c *amContext) Parameter(name string) string {
 	rc := c.echoContext.QueryParam(name)
-	if rc == "" && c.echoContext.Request().Method == "POST" {
+	if rc == "" {
 		rc = c.echoContext.FormValue(name)
 	}
 	return rc

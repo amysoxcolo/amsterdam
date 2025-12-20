@@ -1,0 +1,29 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="border-2 border-gray-300 rounded-lg p-4 bg-white">
+    <div class="flex justify-between items-start mb-3">
+        <div class="text-sm text-gray-600">
+            <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=0" class="text-blue-700 hover:text-blue-900 font-mono">0</a> of 
+            <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a>
+            <span class="ml-2 text-xs">&lt;General.4.0&gt;</span>
+            <a href="http://necrovenice:8080/venice/go/Piazza!General.4.0" class="ml-2 text-xs text-blue-700 hover:text-blue-900">[Permalink]</a>
+        </div>
+    </div>
+    <div class="mb-2">
+        <strong class="text-lg">The first one</strong>
+        <span class="text-gray-600 text-sm ml-2">(<em>
+            <a href="http://necrovenice:8080/venice/user/Administrator" target="_blank" class="text-blue-700 hover:text-blue-900">Administrator</a>, 
+            Nov 20, 2025 10:47:17 PM</em>)
+        </span>
+    </div>
+    <pre class="font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">This is a test.
+This is <em>only</em> a test.
+If this had been an actual emergency, we would all be 
+dead by now.</pre>
+</div>

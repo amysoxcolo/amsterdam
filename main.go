@@ -23,6 +23,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -102,6 +103,9 @@ func setupEcho() *echo.Echo {
 	return e
 }
 
+// ampool is the worker pool for one-shot background tasks.
+var ampool *util.WorkerPool
+
 // main is Ye Olde Main Function.
 func main() {
 	// Configure the system.
@@ -126,6 +130,13 @@ func main() {
 	// Set up to trap SIGINT and shut down gracefully
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+
+	// Set up ampool.
+	ampool = util.AmNewPool(ctx, 4, 128)
+	go func() {
+		<-ctx.Done()
+		ampool.Shutdown()
+	}()
 
 	// Start server
 	go func() {

@@ -11,6 +11,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -324,23 +325,60 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
 }
 
+func breakRange(topic *database.Topic, into []int32, param string, sep string) error {
+	rstr := strings.Split(param, sep)
+	if len(rstr) == 0 {
+		return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
+	}
+	v, err := strconv.ParseInt(rstr[0], 10, 32)
+	if err != nil {
+		return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
+	}
+	into[0] = int32(v)
+	if len(rstr) > 1 {
+		v, err = strconv.ParseInt(rstr[1], 10, 32)
+		if err != nil {
+			return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
+		}
+		into[1] = int32(v)
+	} else {
+		into[1] = into[0]
+	}
+	if into[1] < 0 {
+		into[1] = topic.TopMessage
+	}
+	if into[0] > into[1] {
+		t := into[0]
+		into[0] = into[1]
+		into[1] = t
+	}
+	into[0] = max(into[0], 0)
+	into[1] = min(into[1], topic.TopMessage)
+	return nil
+}
+
 func ReadPosts(ctxt ui.AmContext) (string, any, error) {
-	// If we need to reset a topic's last read count (as with "Next & Keep New"), spin the task off into a goroutine.
+	// If we need to reset a topic's last read count (as with "Next & Keep New"), spin the task off.
 	if ctxt.HasParameter("rst") {
 		rst := strings.Split(ctxt.Parameter("rst"), ",")
 		if len(rst) >= 2 {
-			topicId, e1 := strconv.ParseInt(rst[0], 10, 32)
-			lastRead, e2 := strconv.ParseInt(rst[1], 10, 32)
-			if e1 == nil && e2 == nil {
-				user := ctxt.CurrentUser()
-				go func() {
+			user := ctxt.CurrentUser()
+			ampool.Submit(func(context.Context) {
+				topicId, e1 := strconv.ParseInt(rst[0], 10, 32)
+				lastRead, e2 := strconv.ParseInt(rst[1], 10, 32)
+				if e1 == nil && e2 == nil {
 					topic, _ := database.AmGetTopic(int32(topicId))
 					if topic != nil {
 						topic.SetLastRead(user, int32(lastRead))
 					}
-				}()
-			}
+				}
+			})
 		}
+	}
+	// Get user prefs.
+	prefs, err := ctxt.CurrentUser().Prefs()
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
 	}
 	// Locate community, conference, and topic.
 	comm := ctxt.CurrentCommunity()
@@ -355,44 +393,25 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// Determine the range of posts to display.  The "pin" is the post number after which we display the horizontal line separating old and new posts.
+	lastRead, err := topic.GetLastRead(ctxt.CurrentUser())
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, fmt.Errorf("posts not found in topic %d - %v", topic.Number, err))
+	}
 	postRange := make([]int32, 2)
 	var pin int32 = -1
+	resetLastRead := false
 	if ctxt.HasParameter("r") {
-		rstr := strings.Split(ctxt.Parameter("r"), ",")
-		if len(rstr) == 0 {
+		if err := breakRange(topic, postRange, ctxt.Parameter("r"), ","); err != nil {
 			ctxt.SetRC(http.StatusNotFound)
-			return ui.ErrorPage(ctxt, fmt.Errorf("posts not found: %s in topic %d", ctxt.Parameter("r"), topic.Number))
+			return ui.ErrorPage(ctxt, err)
 		}
-		v, err := strconv.ParseInt(rstr[0], 10, 32)
-		if err != nil {
+	} else if ctxt.HasParameter("rgo") {
+		if err := breakRange(topic, postRange, ctxt.Parameter("rgo"), "-"); err != nil {
 			ctxt.SetRC(http.StatusNotFound)
-			return ui.ErrorPage(ctxt, fmt.Errorf("posts not found: %s in topic %d", ctxt.Parameter("r"), topic.Number))
-		}
-		postRange[0] = int32(v)
-		if len(rstr) > 1 {
-			v, err = strconv.ParseInt(rstr[1], 10, 32)
-			if err != nil {
-				ctxt.SetRC(http.StatusNotFound)
-				return ui.ErrorPage(ctxt, fmt.Errorf("posts not found: %s in topic %d", ctxt.Parameter("r"), topic.Number))
-			}
-			postRange[1] = int32(v)
-		} else {
-			postRange[1] = postRange[0]
-		}
-		if postRange[1] < 0 {
-			postRange[1] = topic.TopMessage
-		}
-		if postRange[0] > postRange[1] {
-			t := postRange[0]
-			postRange[0] = postRange[1]
-			postRange[1] = t
+			return ui.ErrorPage(ctxt, err)
 		}
 	} else {
-		lastRead, err := topic.GetLastRead(ctxt.CurrentUser())
-		if err != nil {
-			ctxt.SetRC(http.StatusNotFound)
-			return ui.ErrorPage(ctxt, fmt.Errorf("posts not found in topic %d - %v", topic.Number, err))
-		}
 		postRange[0] = lastRead + 1
 		postRange[1] = topic.TopMessage
 		count := postRange[1] - postRange[0] + 1
@@ -400,11 +419,49 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 			postRange[0] = postRange[1] - ctxt.Globals().PostsPerPage + 1
 		} else if count < ctxt.Globals().PostsPerPage {
 			pin = postRange[0] - 1
-			postRange[0] -= ctxt.Globals().OldPostsAtTop
-			postRange[0] = max(0, postRange[0])
+			postRange[0] = max(0, postRange[0]-ctxt.Globals().OldPostsAtTop)
 			if pin < postRange[0] {
 				pin = -1
 			}
 		}
+		resetLastRead = true
 	}
+
+	// Load the actual posts.
+	posts, err := database.AmGetPostRange(topic, postRange[0], postRange[1])
+	if err != nil {
+		return ui.ErrorPage(ctxt, fmt.Errorf("internal error getting posts <%d:%d-%d> - %v", topic.Number, postRange[0], postRange[1], err))
+	}
+
+	// Determine other required data.
+	loc := prefs.Localizer()
+	summaryLine := fmt.Sprintf("%d Total; %d New; Last: %s", topic.TopMessage+1, topic.TopMessage-lastRead, loc.Strftime("%b %e, %Y %r", topic.LastUpdate))
+	plc := database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number)
+	topicPostRef := plc.AsString()
+	plc.FirstPost = postRange[0]
+	plc.LastPost = postRange[1]
+	postsPostRef := plc.AsString()
+
+	// Render the output.
+	ctxt.VarMap().Set("stem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string)))
+	ctxt.VarMap().Set("topicName", topic.Name)
+	ctxt.VarMap().Set("summaryLine", summaryLine)
+	ctxt.VarMap().Set("lastRead", lastRead)
+	ctxt.VarMap().Set("pageSize", ctxt.Globals().PostsPerPage)
+	ctxt.VarMap().Set("post_max", topic.TopMessage)
+	ctxt.VarMap().Set("posts", posts)
+	ctxt.VarMap().Set("postsPermalink", fmt.Sprintf("/go/%s", postsPostRef))
+	ctxt.VarMap().Set("pin", pin)
+	ctxt.VarMap().Set("rangeEnd", postRange[1])
+	ctxt.VarMap().Set("rangeStart", postRange[0])
+	ctxt.VarMap().Set("topicNum", topic.Number)
+	ctxt.VarMap().Set("topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
+	if resetLastRead {
+		user := ctxt.CurrentUser()
+		ampool.Submit(func(context.Context) {
+			topic.SetLastRead(user, topic.TopMessage)
+		})
+	}
+	return "framed_template", "posts.jet", nil
 }

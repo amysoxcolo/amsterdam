@@ -10,6 +10,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -298,12 +299,12 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 			}
 			defer func() {
 				if happy {
-					go func() {
+					ampool.Submit(func(context.Context) {
 						err := database.AmDeleteImage(int32(id))
 						if err != nil {
 							log.Errorf("unable to delete image ID %d: %v", id, err)
 						}
-					}()
+					})
 				}
 			}()
 		}

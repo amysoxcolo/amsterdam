@@ -18,7 +18,7 @@
         <!-- Topic Controls -->
         <div class="flex justify-between items-center mb-4 gap-2 flex-wrap">
             <div class="flex gap-2 flex-wrap">
-                <a href="/TODO" 
+                <a href="{{ stem }}" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Topic List</a>
                 <a href="/TODO" 
                     class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Hide Topic</a>
@@ -41,17 +41,24 @@
 
         <!-- Navigation Bar -->
         <div class="flex justify-between items-center mb-4">
-            <form method="GET" action="/TODO" class="flex items-center gap-2">
-                <input type="hidden" name="cc" value="2">
-                <input type="hidden" name="conf" value="2">
-                <input type="hidden" name="top" value="4">
-                <input type="text" name="pxg" value="" size="6" maxlength="13" placeholder="Go to..." 
+            <form method="GET" action="{{ stem }}/r/{{ topicNum }}" class="flex items-center gap-2">
+                <input type="text" name="rgo" value="" size="6" maxlength="13" placeholder="Go to..." 
                         class="px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button type="submit" name="go" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Go</button>
             </form>
             <div class="flex items-center gap-2 text-sm">
                 <span>[</span>
-                <a href="/TODO" class="text-blue-700 hover:text-blue-900">View All</a>
+                <a href="{{ stem }}/r/{{ topicNum }}?r=0,-1" class="text-blue-700 hover:text-blue-900">View All</a>
+                {{ if rangeStart > 0 }}
+                    <span>|</span>
+                    <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeStart - pageSize - 1 }},{{ rangeStart - 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Up {{ pageSize }}</a>
+                {{ end }}
+                {{ if rangeEnd < post_max }}
+                    <span>|</span>
+                    <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeEnd + 1 }},{{ rangeEnd + pageSize + 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Down {{ pageSize }}</a>
+                    <span>|</span>
+                    <a href="{{ stem }}/r/{{ topicNum }}?r={{ post_max - pageSize - 1 }},{{ post_max }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll To End</a>
+                {{ end }}
                 <span>|</span>
                 <a href="#bottom" class="text-blue-700 hover:text-blue-900">Bottom</a>
                 <span>]</span>
@@ -67,105 +74,26 @@
 
         <!-- Messages -->
         <div class="space-y-6 mb-8">
-            <!-- Post 0 -->
-            <div class="border-2 border-gray-300 rounded-lg p-4 bg-white">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="text-sm text-gray-600">
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=0" class="text-blue-700 hover:text-blue-900 font-mono">0</a> of 
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a>
-                        <span class="ml-2 text-xs">&lt;General.4.0&gt;</span>
-                        <a href="http://necrovenice:8080/venice/go/Piazza!General.4.0" class="ml-2 text-xs text-blue-700 hover:text-blue-900">[Permalink]</a>
-                    </div>
-                </div>
-                <div class="mb-2">
-                    <strong class="text-lg">The first one</strong>
-                    <span class="text-gray-600 text-sm ml-2">(<em>
-                        <a href="http://necrovenice:8080/venice/user/Administrator" target="_blank" class="text-blue-700 hover:text-blue-900">Administrator</a>, 
-                        Nov 20, 2025 10:47:17 PM</em>)
-                    </span>
-                </div>
-                <pre class="font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">This is a test.
-This is <em>only</em> a test.
-If this had been an actual emergency, we would all be 
-dead by now.</pre>
-            </div>
-
-            <!-- Post 1 -->
-            <div class="border-2 border-gray-300 rounded-lg p-4 bg-white">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="text-sm text-gray-600">
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=1" class="text-blue-700 hover:text-blue-900 font-mono">1</a> of 
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a>
-                        <span class="ml-2 text-xs">&lt;General.4.1&gt;</span>
-                        <a href="http://necrovenice:8080/venice/go/Piazza!General.4.1" class="ml-2 text-xs text-blue-700 hover:text-blue-900">[Permalink]</a>
-                    </div>
-                </div>
-                <div class="mb-2">
-                    <strong class="text-lg">Sample text is here</strong>
-                    <span class="text-gray-600 text-sm ml-2">(<em>
-                        <a href="http://necrovenice:8080/venice/user/Administrator" target="_blank" class="text-blue-700 hover:text-blue-900">Administrator</a>, 
-                        Nov 20, 2025 10:48:21 PM</em>)
-                    </span>
-                </div>
-                <pre class="font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-Nulla maximus, quam sit amet dictum tristique, mi nibh 
-tempor dolor, pretium finibus purus nunc nec mauris. In
-hendrerit a erat at sodales. Fusce dictum metus id 
-augue interdum dapibus. Mauris maximus elementum arcu 
-eu ultricies. Nullam mollis lorem ac ipsum accumsan 
-tincidunt. Proin gravida nibh fringilla tellus gravida,
-viverra pellentesque metus luctus. Vivamus quis pretium
-magna...</pre>
-            </div>
-
-            <!-- Post 2 - Truncated for space -->
-            <div class="border-2 border-gray-300 rounded-lg p-4 bg-white">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="text-sm text-gray-600">
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=2" class="text-blue-700 hover:text-blue-900 font-mono">2</a> of 
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a>
-                        <span class="ml-2 text-xs">&lt;General.4.2&gt;</span>
-                        <a href="http://necrovenice:8080/venice/go/Piazza!General.4.2" class="ml-2 text-xs text-blue-700 hover:text-blue-900">[Permalink]</a>
-                    </div>
-                </div>
-                <div class="mb-2">
-                    <strong class="text-lg">Reposted Tiedrich</strong>
-                    <span class="text-gray-600 text-sm ml-2">(<em>
-                        <a href="http://necrovenice:8080/venice/user/Administrator" target="_blank" class="text-blue-700 hover:text-blue-900">Administrator</a>, 
-                        Nov 20, 2025 10:57:04 PM</em>)
-                    </span>
-                </div>
-                <div class="font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">
-                    <h3 class="font-bold mb-2">friday: the further adventures of some fucking idiot</h3>
-                    <div>[Content with HTML links preserved]</div>
-                </div>
-            </div>
-
-            <!-- Post 3 -->
-            <div class="border-2 border-gray-300 rounded-lg p-4 bg-white" id="bottom">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="text-sm text-gray-600">
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a> of 
-                        <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a>
-                        <span class="ml-2 text-xs">&lt;General.4.3&gt;</span>
-                        <a href="http://necrovenice:8080/venice/go/Piazza!General.4.3" class="ml-2 text-xs text-blue-700 hover:text-blue-900">[Permalink]</a>
-                    </div>
-                </div>
-                <div class="mb-2">
-                    <strong class="text-lg">Look</strong>
-                    <span class="text-gray-600 text-sm ml-2">(<em>
-                        <a href="http://necrovenice:8080/venice/user/Administrator" target="_blank" class="text-blue-700 hover:text-blue-900">Administrator</a>, 
-                        Nov 20, 2025 10:57:33 PM</em>)
-                    </span>
-                </div>
-                <pre class="font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">Let's not worry about all this.</pre>
-            </div>
+            {{ range i, p := posts }}
+                {{ .SubRender("singlepost.jet") | raw }}
+                {{ if pin == p.Num }}<hr/>{{ end }}
+            {{ end }}
         </div>
 
         <!-- Bottom Navigation -->
         <div class="flex justify-end items-center mb-6 text-sm">
             <span>[</span>
-            <a href="/TODO" class="text-blue-700 hover:text-blue-900 mx-2">View All</a>
+            <a href="{{ stem }}/r/{{ topicNum }}?r=0,-1" class="text-blue-700 hover:text-blue-900 mx-2">View All</a>
+            {{ if rangeStart > 0 }}
+                <span>|</span>
+                <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeStart - pageSize - 1 }},{{ rangeStart - 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Up {{ pageSize }}</a>
+            {{ end }}
+            {{ if rangeEnd < post_max }}
+                <span>|</span>
+                <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeEnd + 1 }},{{ rangeEnd + pageSize + 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Down {{ pageSize }}</a>
+                <span>|</span>
+                <a href="{{ stem }}/r/{{ topicNum }}?r={{ post_max - pageSize - 1 }},{{ post_max }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll To End</a>
+            {{ end }}
             <span>|</span>
             <a href="#top" class="text-blue-700 hover:text-blue-900 mx-2">Top</a>
             <span>]</span>
