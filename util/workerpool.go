@@ -44,15 +44,15 @@ func AmNewPool(parent context.Context, workers, queueSize int) *WorkerPool {
 		tasks:  make(chan Task, queueSize),
 	}
 	for i := range workers {
-		p.wg.Add(1)
-		go p.worker(i)
+		p.wg.Go(func() {
+			p.worker(i)
+		})
 	}
 	return &p
 }
 
 // worker is the worker goroutine for a pool.
 func (p *WorkerPool) worker(id int) {
-	defer p.wg.Done()
 	for {
 		select {
 		case <-p.ctx.Done():

@@ -29,10 +29,47 @@ type PostHeader struct {
 	Pseud        *string    `db:"pseud"`         // post's "pseud" (name/header)
 }
 
+type PostData struct {
+	PostId int64   `db:"postid"` // ID of the post
+	Data   *string `db:"data"`   // actual post data
+}
+
+var ErrNoPostData = errors.New("no post data")
+
+// IsScribbled returns true if the post has been scribbled, false if not.
+func (p *PostHeader) IsScribbled() bool {
+	return p.ScribbleUid != nil && p.ScribbleDate != nil
+}
+
+/* SetAttachment sets the attachment data for a post.
+ * Parameters:
+ *     fileName - Name of the original attachment file.
+ *     mimeType - MIME type of the attachment data.
+ *     length - Length of the attachment data in bytes.
+ *     data - The attachment data itself.
+ * Returns:
+ *     Standard Go error status.
+ */
 func (p *PostHeader) SetAttachment(fileName string, mimeType string, length int32, data []byte) error {
 	_, err := amdb.Exec("INSERT INTO postattach (postid, datalen, filename, mimetype, data) VALUES (?, ?, ?, ?, ?)",
 		p.PostId, length, fileName, mimeType, data)
 	return err
+}
+
+// Text returns the text associated with a post.
+func (p *PostHeader) Text() (string, error) {
+	var dbdata []PostData
+	err := amdb.Select(&dbdata, "SELECT * FROM postdata WHERE postid = ?", p.PostId)
+	if err != nil {
+		return "", err
+	}
+	if len(dbdata) > 1 {
+		return "", fmt.Errorf("too many data records (%d) for post #%d", len(dbdata), p.PostId)
+	}
+	if len(dbdata) == 0 || dbdata[0].Data == nil {
+		return "", ErrNoPostData
+	}
+	return *dbdata[0].Data, nil
 }
 
 func AmGetPost(postId int64) (*PostHeader, error) {

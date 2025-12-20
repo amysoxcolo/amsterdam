@@ -18,7 +18,7 @@
         <!-- Topic Controls -->
         <div class="flex justify-between items-center mb-4 gap-2 flex-wrap">
             <div class="flex gap-2 flex-wrap">
-                <a href="{{ stem }}" 
+                <a href="{{ topicListLink }}" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Topic List</a>
                 <a href="/TODO" 
                     class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Hide Topic</a>
@@ -41,23 +41,23 @@
 
         <!-- Navigation Bar -->
         <div class="flex justify-between items-center mb-4">
-            <form method="GET" action="{{ stem }}/r/{{ topicNum }}" class="flex items-center gap-2">
+            <form method="GET" action="{{ post_stem }}" class="flex items-center gap-2">
                 <input type="text" name="rgo" value="" size="6" maxlength="13" placeholder="Go to..." 
                         class="px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button type="submit" name="go" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Go</button>
             </form>
-            <div class="flex items-center gap-2 text-sm">
+            <div class="flex items-center gap-2 text-sm" name="top">
                 <span>[</span>
-                <a href="{{ stem }}/r/{{ topicNum }}?r=0,-1" class="text-blue-700 hover:text-blue-900">View All</a>
+                <a href="{{ post_stem }}?r=0,-1" class="text-blue-700 hover:text-blue-900">View All</a>
                 {{ if rangeStart > 0 }}
                     <span>|</span>
-                    <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeStart - pageSize - 1 }},{{ rangeStart - 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Up {{ pageSize }}</a>
+                    <a href="{{ post_stem }}?r={{ rangeStart - pageSize - 1 }},{{ rangeStart - 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Up {{ pageSize }}</a>
                 {{ end }}
                 {{ if rangeEnd < post_max }}
                     <span>|</span>
-                    <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeEnd + 1 }},{{ rangeEnd + pageSize + 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Down {{ pageSize }}</a>
+                    <a href="{{ post_stem }}?r={{ rangeEnd + 1 }},{{ rangeEnd + pageSize + 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Down {{ pageSize }}</a>
                     <span>|</span>
-                    <a href="{{ stem }}/r/{{ topicNum }}?r={{ post_max - pageSize - 1 }},{{ post_max }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll To End</a>
+                    <a href="{{ post_stem }}?r={{ post_max - pageSize - 1 }},{{ post_max }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll To End</a>
                 {{ end }}
                 <span>|</span>
                 <a href="#bottom" class="text-blue-700 hover:text-blue-900">Bottom</a>
@@ -67,32 +67,40 @@
 
         <!-- Permalink Info -->
         <div class="text-center text-xs text-gray-600 mb-6">
-            <a href="/go/{{ topicPermalink }}" class="text-blue-700 hover:text-blue-900">[Permalink to this topic]</a>
+            <a href="{{ post_topicPermalink }}" class="text-blue-700 hover:text-blue-900">[Permalink to this topic]</a>
             <span class="mx-2">·</span>
-            <a href="/go/{{ postsPermalink }}" class="text-blue-700 hover:text-blue-900">[Permalink to these posts]</a>
+            <a href="{{ postsPermalink }}" class="text-blue-700 hover:text-blue-900">[Permalink to these posts]</a>
         </div>
 
         <!-- Messages -->
         <div class="space-y-6 mb-8">
-            {{ range i, p := posts }}
+            {{ post_userName := "" }}
+            {{ post_text := "" }}
+            {{ post_overrideLine := "" }}
+            {{ post_overrideLink := "" }}
+            {{ range i, post_cur := posts }}
+                {{ post_userName = post_getUserName(post_cur) }}
+                {{ post_text = post_getText(post_cur) }}
+                {{ post_overrideLine = post_getOverrideLine(post_cur, .) }}
+                {{ post_overrideLink = post_getOverrideLink(post_cur, post_topicPermalink) }}
                 {{ .SubRender("singlepost.jet") | raw }}
-                {{ if pin == p.Num }}<hr/>{{ end }}
+                {{ if pin == post_cur.Num }}<hr/>{{ end }}
             {{ end }}
         </div>
 
         <!-- Bottom Navigation -->
-        <div class="flex justify-end items-center mb-6 text-sm">
+        <div class="flex justify-end items-center mb-6 text-sm" name="bottom">
             <span>[</span>
-            <a href="{{ stem }}/r/{{ topicNum }}?r=0,-1" class="text-blue-700 hover:text-blue-900 mx-2">View All</a>
+            <a href="{{ post_stem }}?r=0,-1" class="text-blue-700 hover:text-blue-900 mx-2">View All</a>
             {{ if rangeStart > 0 }}
                 <span>|</span>
-                <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeStart - pageSize - 1 }},{{ rangeStart - 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Up {{ pageSize }}</a>
+                <a href="{{ post_stem }}?r={{ rangeStart - pageSize - 1 }},{{ rangeStart - 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Up {{ pageSize }}</a>
             {{ end }}
             {{ if rangeEnd < post_max }}
                 <span>|</span>
-                <a href="{{ stem }}/r/{{ topicNum }}?r={{ rangeEnd + 1 }},{{ rangeEnd + pageSize + 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Down {{ pageSize }}</a>
+                <a href="{{ post_stem }}?r={{ rangeEnd + 1 }},{{ rangeEnd + pageSize + 1 }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll Down {{ pageSize }}</a>
                 <span>|</span>
-                <a href="{{ stem }}/r/{{ topicNum }}?r={{ post_max - pageSize - 1 }},{{ post_max }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll To End</a>
+                <a href="{{ post_stem }}?r={{ post_max - pageSize - 1 }},{{ post_max }}" class="text-blue-700 hover:text-blue-900 mx-2">Scroll To End</a>
             {{ end }}
             <span>|</span>
             <a href="#top" class="text-blue-700 hover:text-blue-900 mx-2">Top</a>

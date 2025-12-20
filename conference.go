@@ -17,12 +17,15 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"github.com/CloudyKit/jet/v6"
+	"github.com/labstack/gommon/log"
 )
 
 /* Conferences displayes the list of conferences in a community.
@@ -325,18 +328,25 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
 	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
 }
 
+/* breakRange breaks up a post range into two elements.
+ * Parameters:
+ *     topic - The topic within which the range is defined.
+ *     into - The 2-element array into which the range will be filled.
+ *     param - The range parameter to be broken up.
+ *     sep - The separator character to use
+ */
 func breakRange(topic *database.Topic, into []int32, param string, sep string) error {
 	rstr := strings.Split(param, sep)
 	if len(rstr) == 0 {
 		return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
 	}
-	v, err := strconv.ParseInt(rstr[0], 10, 32)
+	v, err := strconv.ParseInt(strings.TrimSpace(rstr[0]), 10, 32)
 	if err != nil {
 		return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
 	}
 	into[0] = int32(v)
 	if len(rstr) > 1 {
-		v, err = strconv.ParseInt(rstr[1], 10, 32)
+		v, err = strconv.ParseInt(strings.TrimSpace(rstr[1]), 10, 32)
 		if err != nil {
 			return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
 		}
@@ -355,6 +365,63 @@ func breakRange(topic *database.Topic, into []int32, param string, sep string) e
 	into[0] = max(into[0], 0)
 	into[1] = min(into[1], topic.TopMessage)
 	return nil
+}
+
+func templateExtractUserName(args jet.Arguments) reflect.Value {
+	rc := "<<ERROR>>"
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	user, err := database.AmGetUser(post.CreatorUid)
+	if err == nil {
+		rc = user.Username
+	} else {
+		log.Errorf("templateExtractUserName failed to get user #%d: %v", post.CreatorUid, err)
+	}
+	return reflect.ValueOf(rc)
+}
+
+func templatePostText(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	rc, err := post.Text()
+	if err != nil {
+		log.Errorf("templatePostText could not get post text from post #%d: %v", post.PostId, err)
+		rc = ""
+	}
+	return reflect.ValueOf(rc)
+}
+
+func templateOverrideLine(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	rc := ""
+	if post.IsScribbled() {
+		scr_date := ""
+		scr_user, err := database.AmGetUser(*post.ScribbleUid)
+		if err == nil {
+			var p *database.UserPrefs
+			p, err = ctxt.CurrentUser().Prefs()
+			if err == nil {
+				scr_date = p.Localizer().Strftime("%b %e, %Y %r", *post.ScribbleDate)
+			}
+		}
+		if err == nil {
+			rc = fmt.Sprintf("(Scribbled by %s on %s)", scr_user.Username, scr_date)
+		} else {
+			rc = fmt.Sprintf("<<<%v>>>", err)
+		}
+	} else if post.Hidden {
+		rc = fmt.Sprintf("(Hidden Message: %d Lines)", *post.LineCount)
+	}
+	return reflect.ValueOf(rc)
+}
+
+func templateOverrideLink(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	root := args.Get(1).Convert(reflect.TypeFor[string]()).String()
+	rc := ""
+	if post.Hidden {
+		rc = fmt.Sprintf("%s?r=%d&ac=1", root, post.Num)
+	}
+	return reflect.ValueOf(rc)
 }
 
 func ReadPosts(ctxt ui.AmContext) (string, any, error) {
@@ -420,7 +487,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 		} else if count < ctxt.Globals().PostsPerPage {
 			pin = postRange[0] - 1
 			postRange[0] = max(0, postRange[0]-ctxt.Globals().OldPostsAtTop)
-			if pin < postRange[0] {
+			if pin < postRange[0] || pin >= postRange[1] {
 				pin = -1
 			}
 		}
@@ -434,28 +501,35 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// Determine other required data.
-	loc := prefs.Localizer()
-	summaryLine := fmt.Sprintf("%d Total; %d New; Last: %s", topic.TopMessage+1, topic.TopMessage-lastRead, loc.Strftime("%b %e, %Y %r", topic.LastUpdate))
-	plc := database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number)
+	summaryLine := fmt.Sprintf("%d Total; %d New; Last: %s", topic.TopMessage+1, topic.TopMessage-lastRead, prefs.Localizer().Strftime("%b %e, %Y %r", topic.LastUpdate))
+	plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
+	topicConferenceRef := plc.AsString()
+	plc.Community = comm.Alias
 	topicPostRef := plc.AsString()
 	plc.FirstPost = postRange[0]
 	plc.LastPost = postRange[1]
 	postsPostRef := plc.AsString()
 
 	// Render the output.
-	ctxt.VarMap().Set("stem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string)))
 	ctxt.VarMap().Set("topicName", topic.Name)
 	ctxt.VarMap().Set("summaryLine", summaryLine)
 	ctxt.VarMap().Set("lastRead", lastRead)
 	ctxt.VarMap().Set("pageSize", ctxt.Globals().PostsPerPage)
+	ctxt.VarMap().Set("post_confRef", topicConferenceRef)
+	ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
+	ctxt.VarMap().SetFunc("post.getOverrideLink", templateOverrideLink)
+	ctxt.VarMap().SetFunc("post_getText", templatePostText)
+	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
+	ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
 	ctxt.VarMap().Set("post_max", topic.TopMessage)
+	ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
 	ctxt.VarMap().Set("posts", posts)
 	ctxt.VarMap().Set("postsPermalink", fmt.Sprintf("/go/%s", postsPostRef))
 	ctxt.VarMap().Set("pin", pin)
 	ctxt.VarMap().Set("rangeEnd", postRange[1])
 	ctxt.VarMap().Set("rangeStart", postRange[0])
+	ctxt.VarMap().Set("topicListLink", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string)))
 	ctxt.VarMap().Set("topicNum", topic.Number)
-	ctxt.VarMap().Set("topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	if resetLastRead {
 		user := ctxt.CurrentUser()

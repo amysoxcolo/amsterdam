@@ -9,21 +9,27 @@
 <div class="border-2 border-gray-300 rounded-lg p-4 bg-white">
     <div class="flex justify-between items-start mb-3">
         <div class="text-sm text-gray-600">
-            <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=0" class="text-blue-700 hover:text-blue-900 font-mono">0</a> of 
-            <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=4&shac=1&p1=3" class="text-blue-700 hover:text-blue-900 font-mono">3</a>
-            <span class="ml-2 text-xs">&lt;General.4.0&gt;</span>
-            <a href="http://necrovenice:8080/venice/go/Piazza!General.4.0" class="ml-2 text-xs text-blue-700 hover:text-blue-900">[Permalink]</a>
+            <a href="{{ post_stem }}?r={{ post_cur.Num }}&ac=1" class="text-blue-700 hover:text-blue-900 font-mono">{{ post_cur.Num }}</a> of 
+            <a href="{{ post_stem }}?r={{ post_max }}&ac=1" class="text-blue-700 hover:text-blue-900 font-mono">{{ post_max }}</a>
+            🔗 <a href="{{ post_topicPermalink }}.{{ post_cur.Num }}" class="ml-2 text-xs text-blue-700 hover:text-blue-900">&lt;{{ post_confRef }}.{{ post_cur.Num }}&gt;</a>
         </div>
     </div>
     <div class="mb-2">
-        <strong class="text-lg">The first one</strong>
+        <strong class="text-lg">{{ post_cur.Pseud }}</strong>
         <span class="text-gray-600 text-sm ml-2">(<em>
-            <a href="http://necrovenice:8080/venice/user/Administrator" target="_blank" class="text-blue-700 hover:text-blue-900">Administrator</a>, 
-            Nov 20, 2025 10:47:17 PM</em>)
+            <a href="/user/{{ post_userName }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ post_userName }}</a>, 
+            {{ DisplayDateTime(post_cur.Posted, .) }}</em>)
         </span>
     </div>
-    <pre class="font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">This is a test.
-This is <em>only</em> a test.
-If this had been an actual emergency, we would all be 
-dead by now.</pre>
+    {{ if post_overrideLine != "" }}
+        <div class="mb-2">
+            {{ if post_overrideLink != "" }}
+                <a href="{{ post_overrideLink }}" target="_blank" class="text-blue-700 hover:text-blue-900"><span class="italic font-bold">{{ post_overrideLine }}</span></a>
+            {{ else }}
+                <span class="italic text-bold">{{ post_overrideLine }}</span>
+            {{ end }}
+        </div>
+    {{ else }}
+        <pre class="amsPost font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">{{ post_text | postRewrite | raw }}</pre>
+    {{ end }}
 </div>

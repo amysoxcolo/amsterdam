@@ -121,6 +121,18 @@ func extractCommunityLogo(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// displayDateTime formats a date and time value.
+func displayDateTime(a jet.Arguments) reflect.Value {
+	timeval := a.Get(0).Convert(reflect.TypeFor[time.Time]()).Interface().(time.Time)
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	prefs, err := ctxt.CurrentUser().Prefs()
+	if err == nil {
+		loc := prefs.Localizer()
+		return reflect.ValueOf(loc.Strftime("%b %e, %Y %r", timeval))
+	}
+	return reflect.ValueOf(fmt.Sprintf("<<%v>>", err))
+}
+
 // displayActivity displays an activity string formatted to the user's preferences.
 func displayActivity(a jet.Arguments) reflect.Value {
 	timeval := a.Get(0).Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
@@ -273,6 +285,7 @@ func SetupTemplates() {
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
 	views.AddGlobalFunc("DisplayActivity", displayActivity)
+	views.AddGlobalFunc("DisplayDateTime", displayDateTime)
 	views.AddGlobalFunc("DisplayMemberCount", displayMemberCount)
 	views.AddGlobalFunc("DisplayFullName", displayFullName)
 	views.AddGlobalFunc("DisplayExpandCat", displayExpandCat)
