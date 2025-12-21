@@ -499,16 +499,16 @@ func (ht *htmlCheckerImpl) attemptRewrite(rewriters []rewriter, data string) *ma
 }
 
 // doFlushString attempts to flush a string from the temporary buffer.
-func (ht *htmlCheckerImpl) doFlushString() bool {
+func (ht *htmlCheckerImpl) doFlushString() (bool, error) {
 	md := ht.attemptRewrite(ht.stringRewriters, ht.tempBuffer.String())
 	if md != nil {
 		ht.emitMarkupData(md)
 		ht.tempBuffer.Reset()
 		if md.rescan {
-			ht.parse(md.all())
-			return true
+			err := ht.parse(md.all())
+			return true, err
 		}
-		return false
+		return false, nil
 	}
 
 	first := true
@@ -549,7 +549,10 @@ func (ht *htmlCheckerImpl) doFlushString() bool {
 					// emit and/or reparse
 					ht.emitMarkupData(md)
 					if md.rescan {
-						ht.parse(md.all())
+						err := ht.parse(md.all())
+						if err != nil {
+							return false, err
+						}
 					}
 				} else {
 					// just output the word normally
@@ -585,7 +588,7 @@ func (ht *htmlCheckerImpl) doFlushString() bool {
 		}
 		first = false
 	}
-	return false
+	return false, nil
 }
 
 // handleAsHTML attempts to handle the contents of the tag in the temporary buffer as HTML.
@@ -703,7 +706,7 @@ func (ht *htmlCheckerImpl) containsXMLConstruct() bool {
 }
 
 // finishTag processes and outputs the tag in the temporary buffer.
-func (ht *htmlCheckerImpl) finishTag() {
+func (ht *htmlCheckerImpl) finishTag() error {
 	if ht.containsHTMLComment() {
 		if ht.containsCompleteHTMLComment() && !ht.config.DiscardComments {
 			// output the comment in the raw
@@ -714,13 +717,13 @@ func (ht *htmlCheckerImpl) finishTag() {
 			ht.tempBuffer.Reset()
 			ht.state = stateWhitespace
 		}
-		return
+		return nil
 	}
 	if ht.handleAsHTML() {
 		// this was valid HTML, we're done
 		ht.tempBuffer.Reset()
 		ht.state = stateWhitespace
-		return
+		return nil
 	}
 
 	// try to handle it with a tag rewriter
@@ -729,19 +732,20 @@ func (ht *htmlCheckerImpl) finishTag() {
 		ht.emitBracketedMarkupData(md, '<', '>')
 		ht.tempBuffer.Reset()
 		ht.state = stateWhitespace
+		var err error = nil
 		if md.rescan {
 			ht.tempBuffer.WriteByte('<')
 			ht.state = stateChars
-			ht.parse(md.all() + ">")
+			err = ht.parse(md.all() + ">")
 		}
-		return
+		return err
 	}
 
 	if ht.config.DiscardXML && ht.containsXMLConstruct() {
 		// this tag is an XML construct, and needs to be discarded
 		ht.tempBuffer.Reset()
 		ht.state = stateWhitespace
-		return
+		return nil
 	}
 
 	// This tag has been rejected! process it normally as character data
@@ -749,14 +753,18 @@ func (ht *htmlCheckerImpl) finishTag() {
 	ht.tempBuffer.Reset()
 	ht.tempBuffer.WriteByte('<')
 	ht.state = stateChars
+	var err error = nil
 	if len(rejection) > 0 {
-		ht.parse(rejection)
+		err = ht.parse(rejection)
 	}
-	ht.parse(">")
+	if err == nil {
+		err = ht.parse(">")
+	}
+	return err
 }
 
 // finishParen processes and outputs the parenthesized construct in the temporary buffer.
-func (ht *htmlCheckerImpl) finishParen() {
+func (ht *htmlCheckerImpl) finishParen() error {
 	// Try to handle the element using a paren rewriter
 	md := ht.attemptRewrite(ht.parenRewriters, ht.tempBuffer.String())
 	if md != nil {
@@ -764,12 +772,13 @@ func (ht *htmlCheckerImpl) finishParen() {
 		ht.tempBuffer.Reset()
 		ht.state = stateWhitespace
 		ht.parenLevel = 0
+		var err error = nil
 		if md.rescan {
 			ht.tempBuffer.WriteByte('(')
 			ht.state = stateChars
-			ht.parse(md.all() + ")")
+			err = ht.parse(md.all() + ")")
 		}
-		return
+		return err
 	}
 
 	// Tag rejected! Process it normally as character data.
@@ -778,16 +787,24 @@ func (ht *htmlCheckerImpl) finishParen() {
 	ht.tempBuffer.WriteByte('(')
 	ht.state = stateChars
 	ht.parenLevel = 0
+	var err error = nil
 	if len(rejection) > 0 {
-		ht.parse(rejection)
+		err = ht.parse(rejection)
 	}
-	ht.parse(")")
+	if err == nil {
+		err = ht.parse(")")
+	}
+	return err
 }
 
 // parse handles the meat of parsing an input string; it runs the state machine on the input.
-func (ht *htmlCheckerImpl) parse(str string) {
+func (ht *htmlCheckerImpl) parse(str string) error {
 	i := 0
 	for i < len(str) {
+		err := ht.ctx.Err()
+		if err != nil {
+			return err
+		}
 		ch := str[i]
 		switch ht.state {
 		case stateWhitespace:
@@ -832,18 +849,27 @@ func (ht *htmlCheckerImpl) parse(str string) {
 		case stateChars:
 			switch ch {
 			case ' ', '\t': // go to Whitespace state
-				ht.doFlushString()
+				_, err := ht.doFlushString()
+				if err != nil {
+					return err
+				}
 				ht.state = stateWhitespace
 				ht.tempBuffer.WriteByte(ch)
 				i++
 			case '\r', '\n': // go to Newline state
-				ht.doFlushString()
+				_, err := ht.doFlushString()
+				if err != nil {
+					return err
+				}
 				ht.state = stateNewline
 				ht.tempBuffer.WriteByte(ch)
 				i++
 			case '<': // may be a start of tag
 				if ht.config.Angles {
-					ht.doFlushString()
+					_, err := ht.doFlushString()
+					if err != nil {
+						return err
+					}
 					ht.state = stateLeftAngle
 				} else {
 					ht.tempBuffer.WriteByte(ch)
@@ -886,7 +912,10 @@ func (ht *htmlCheckerImpl) parse(str string) {
 		case stateTag:
 			switch ch {
 			case '>': // finish the tag - this changes the state, and possibly calls parse() recursively
-				ht.finishTag()
+				err := ht.finishTag()
+				if err != nil {
+					return err
+				}
 				i++
 			case '\'', '"': // go into "quote string" state inside the tag
 				ht.tempBuffer.WriteByte(ch)
@@ -905,7 +934,10 @@ func (ht *htmlCheckerImpl) parse(str string) {
 				i++
 			case ')':
 				if ht.parenLevel == 0 {
-					ht.finishParen() // finish paren, changing state and recursively parsing if necessary
+					err := ht.finishParen() // finish paren, changing state and recursively parsing if necessary
+					if err != nil {
+						return err
+					}
 				} else {
 					// nest parentheses one LESS level deeper
 					ht.tempBuffer.WriteByte(ch)
@@ -933,6 +965,7 @@ func (ht *htmlCheckerImpl) parse(str string) {
 			log.Fatalf("invalid parser state: %d", ht.state)
 		}
 	}
+	return nil
 }
 
 /*----------------------------------------------------------------------------
@@ -953,10 +986,11 @@ func (ht *htmlCheckerImpl) Append(str string) error {
 	if !ht.started {
 		ht.started = true
 	}
+	var err error = nil
 	if str != "" {
-		ht.parse(str)
+		err = ht.parse(str)
 	}
-	return nil
+	return err
 }
 
 /* Finish completes the HTML checker parsing and makes the result available.
@@ -975,11 +1009,12 @@ func (ht *htmlCheckerImpl) Finish() error {
 	running := true
 	for running {
 		running = false // make sure we stop unless this is set to true
+		var err error = nil
 		switch ht.state {
 		case stateWhitespace, stateNewline:
 			// do nothing - discard whitespace or newlines at end
 		case stateChars:
-			running = ht.doFlushString() // flush the temporary buffer
+			running, err = ht.doFlushString() // flush the temporary buffer
 		case stateLeftAngle:
 			// just emit a left angle character
 			ht.emitPossibleLineBreak()
@@ -991,20 +1026,23 @@ func (ht *htmlCheckerImpl) Finish() error {
 			ht.tempBuffer.WriteByte('<')
 			ht.state = stateChars
 			if len(rejection) > 0 {
-				ht.parse(rejection)
+				err = ht.parse(rejection)
 			}
 			running = true
 		case stateParen:
-			// we won't finish this, so it's automatically rejected
+			// we won't finish this, so it's automagically rejected
 			rejection := ht.tempBuffer.String()
 			ht.tempBuffer.Reset()
 			ht.tempBuffer.WriteByte('(')
 			ht.state = stateChars
 			ht.parenLevel = 0
 			if len(rejection) > 0 {
-				ht.parse(rejection)
+				err = ht.parse(rejection)
 			}
 			running = true
+		}
+		if err != nil {
+			return err
 		}
 	}
 
