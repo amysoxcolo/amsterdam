@@ -80,10 +80,10 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 			return dlg.RenderError(ctxt, "User name not specified.")
 		}
 		if action == "remind" { // Password Reminder button pressed
-			user, uerr := database.AmGetUserByName(username, nil)
+			user, uerr := database.AmGetUserByName(ctxt.Ctx(), username, nil)
 			if uerr == nil {
 				var ci *database.ContactInfo
-				ci, uerr = user.ContactInfo()
+				ci, uerr = user.ContactInfo(ctxt.Ctx())
 				if uerr == nil {
 					if ci != nil && ci.Email != nil && *ci.Email != "" {
 						pchange := database.AmNewPasswordChangeRequest(user.Uid, user.Username, *ci.Email)
@@ -109,14 +109,14 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		}
 		if action == "login" { // Login button pressed
 			// authenticate the user
-			user, uerr := database.AmAuthenticateUser(username, dlg.Field("pass").Value, ctxt.RemoteIP())
+			user, uerr := database.AmAuthenticateUser(ctxt.Ctx(), username, dlg.Field("pass").Value, ctxt.RemoteIP())
 			if uerr != nil {
 				return dlg.RenderError(ctxt, uerr.Error())
 			}
 			ctxt.ReplaceUser(user)
 			if dlg.Field("saveme").IsChecked() {
 				// create and save an authentication token
-				authString, cerr := user.NewAuthToken()
+				authString, cerr := user.NewAuthToken(ctxt.Ctx())
 				if cerr == nil {
 					ctxt.SetLoginCookie(authString)
 
@@ -240,9 +240,9 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 		}
 		if action == "sendagain" {
 			var ci *database.ContactInfo
-			ci, err = user.ContactInfo()
+			ci, err = user.ContactInfo(ctxt.Ctx())
 			if err == nil {
-				err = user.NewEmailConfirmationNumber()
+				err = user.NewEmailConfirmationNumber(ctxt.Ctx())
 				if err == nil {
 					err = sendEmailConfirmationEmail(user, ci, ctxt.RemoteIP())
 				}
@@ -257,7 +257,7 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 			err = dlg.Validate()
 			if err == nil {
 				cn, _ := dlg.Field("num").ValueInt()
-				err = user.ConfirmEMailAddress(int32(cn), ctxt.RemoteIP())
+				err = user.ConfirmEMailAddress(ctxt.Ctx(), int32(cn), ctxt.RemoteIP())
 				if err == nil {
 					return "redirect", target, nil
 				}
@@ -358,14 +358,14 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 					return dlg.RenderError(ctxt, "The typed passwords do not match.")
 				}
 				var banned bool
-				banned, err = database.AmIsEmailAddressBanned(dlg.Field("email").Value)
+				banned, err = database.AmIsEmailAddressBanned(ctxt.Ctx(), dlg.Field("email").Value)
 				if err == nil {
 					if banned {
 						return dlg.RenderError(ctxt, "This E-mail address may not register a new account.")
 					}
 					// Create new user account
 					var user *database.User
-					user, err = database.AmCreateNewUser(dlg.Field("user").Value, dlg.Field("pass1").Value,
+					user, err = database.AmCreateNewUser(ctxt.Ctx(), dlg.Field("user").Value, dlg.Field("pass1").Value,
 						dlg.Field("remind").Value, dlg.Field("dob").AsDate(), ctxt.RemoteIP())
 					if err == nil {
 						// create and save contact info
@@ -384,9 +384,9 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 						ci.PostalCode = dlg.Field("pcode").ValPtr()
 						ci.Country = dlg.Field("country").ValPtr()
 						ci.Email = dlg.Field("email").ValPtr()
-						_, err = ci.Save()
+						_, err = ci.Save(ctxt.Ctx())
 						if err == nil {
-							err = user.SetContactID(ci.ContactId)
+							err = user.SetContactID(ctxt.Ctx(), ci.ContactId)
 						}
 						if err == nil {
 							err = sendEmailConfirmationEmail(user, ci, ctxt.RemoteIP())
@@ -435,10 +435,10 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	if err == nil {
-		user, err := database.AmGetUser(int32(uid))
+		user, err := database.AmGetUser(ctxt.Ctx(), int32(uid))
 		if err == nil {
 			newpass := util.GenerateRandomPassword()
-			err = user.ChangePassword(newpass, ctxt.RemoteIP())
+			err = user.ChangePassword(ctxt.Ctx(), newpass, ctxt.RemoteIP())
 			if err == nil {
 				// send the password change message
 				msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())

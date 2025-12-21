@@ -78,7 +78,7 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 			id, err = strconv.Atoi(components[3])
 			if err == nil {
 				var img *database.ImageStore
-				img, err = database.AmLoadImage(int32(id))
+				img, err = database.AmLoadImage(ctxt.Ctx(), int32(id))
 				if err == nil {
 					ctxt.SetOutputType(img.MimeType)
 					return "bytes", img.Data, nil

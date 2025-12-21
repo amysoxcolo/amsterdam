@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 )
@@ -31,14 +32,14 @@ const (
 )
 
 // Save persists the ImageStore record to the database.
-func (img *ImageStore) Save() error {
+func (img *ImageStore) Save(ctx context.Context) error {
 	var err error
 	if img.ImgId > 0 {
-		_, err = amdb.NamedExec(`UPDATE imagestore SET typecode = :typecode, ownerid = :ownerid, mimetype = :mimetype,
+		_, err = amdb.NamedExecContext(ctx, `UPDATE imagestore SET typecode = :typecode, ownerid = :ownerid, mimetype = :mimetype,
 		    length = :length, data = :data WHERE imgid = :imgid`, img)
 	} else {
 		var rs sql.Result
-		rs, err = amdb.NamedExec(`INSERT INTO imagestore (typecode, ownerid, mimetype, length, data)
+		rs, err = amdb.NamedExecContext(ctx, `INSERT INTO imagestore (typecode, ownerid, mimetype, length, data)
 			VALUES (:typecode, :ownerid, :mimetype, :length, :data)`, img)
 		if err == nil {
 			var lii int64
@@ -53,14 +54,15 @@ func (img *ImageStore) Save() error {
 
 /* AmLoadImage loads an image from the database.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     id - The ID of the image to be loaded.
  * Returns:
  *     Pointer to ImageStore, or nil.
  *     Standard Go error status.
  */
-func AmLoadImage(id int32) (*ImageStore, error) {
+func AmLoadImage(ctx context.Context, id int32) (*ImageStore, error) {
 	var dbdata []ImageStore
-	err := amdb.Select(&dbdata, "SELECT * FROM imagestore WHERE imgid = ?", id)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM imagestore WHERE imgid = ?", id)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +76,7 @@ func AmLoadImage(id int32) (*ImageStore, error) {
 
 /* AmStoreImage stores an image in the database, overwriting one with the same type code and owner if it exists.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     typecode - Type code for the image.
  *     owner - Owner Id for the image (UID or community ID)
  *     mimetype - MIME type of the image.
@@ -82,8 +85,8 @@ func AmLoadImage(id int32) (*ImageStore, error) {
  *     Pointer to ImageStore, or nil.
  *     Standard Go error status.
  */
-func AmStoreImage(typecode int16, owner int32, mimetype string, data []byte) (*ImageStore, error) {
-	rs, err := amdb.Query("SELECT imgid FROM imagestore WHERE typecode = ? AND ownerid = ?", typecode, owner)
+func AmStoreImage(ctx context.Context, typecode int16, owner int32, mimetype string, data []byte) (*ImageStore, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT imgid FROM imagestore WHERE typecode = ? AND ownerid = ?", typecode, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +94,7 @@ func AmStoreImage(typecode int16, owner int32, mimetype string, data []byte) (*I
 	if rs.Next() {
 		var id int32
 		rs.Scan(&id)
-		img, err = AmLoadImage(id)
+		img, err = AmLoadImage(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +111,7 @@ func AmStoreImage(typecode int16, owner int32, mimetype string, data []byte) (*I
 			Data:     data,
 		}
 	}
-	err = img.Save()
+	err = img.Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +120,12 @@ func AmStoreImage(typecode int16, owner int32, mimetype string, data []byte) (*I
 
 /* AmDeleteImage erases an image from the database.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     id - The ID of the image to be deleted.
  * Returns:
  *     Standard Go error status.
  */
-func AmDeleteImage(id int32) error {
-	_, err := amdb.Exec("DELETE FROM imagestore WHERE imgid = ?", id)
+func AmDeleteImage(ctx context.Context, id int32) error {
+	_, err := amdb.ExecContext(ctx, "DELETE FROM imagestore WHERE imgid = ?", id)
 	return err
 }

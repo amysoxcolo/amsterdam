@@ -10,6 +10,7 @@
 package htmlcheck
 
 import (
+	"context"
 	_ "embed"
 	"math"
 	"regexp"
@@ -90,12 +91,13 @@ func (rw *emoticonRewriter) Name() string {
 
 /* Rewrite rewrites the given string data and adds markup before and after if needed.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     data - The data to be rewritten.
  *     svc - Services interface we can use.
  * Returns:
  *     Pointer to markup data, or nil.
  */
-func (rw *emoticonRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+func (rw *emoticonRewriter) Rewrite(ctx context.Context, data string, svc rewriterServices) *markupData {
 	pos := math.MaxInt
 	for _, c := range rw.prefixChars {
 		foo := strings.IndexByte(data, c)
@@ -163,12 +165,13 @@ func (rw *emoticonTagRewriter) Name() string {
 
 /* Rewrite rewrites the given string data and adds markup before and after if needed.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     data - The data to be rewritten.
  *     svc - Services interface we can use.
  * Returns:
  *     Pointer to markup data, or nil.
  */
-func (rw *emoticonTagRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+func (rw *emoticonTagRewriter) Rewrite(ctx context.Context, data string, svc rewriterServices) *markupData {
 	m := rw.re.FindStringSubmatch(data)
 	if m == nil {
 		return nil

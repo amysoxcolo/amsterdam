@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -151,27 +152,27 @@ func (c *Community) Public() bool {
 }
 
 // ContactInfo returns the contact info structure for the community.
-func (c *Community) ContactInfo() (*ContactInfo, error) {
+func (c *Community) ContactInfo(ctx context.Context) (*ContactInfo, error) {
 	if c.ContactId < 0 {
 		return nil, nil
 	}
-	return AmGetContactInfo(c.ContactId)
+	return AmGetContactInfo(ctx, c.ContactId)
 }
 
 // Host returns the reference to the host of the community.
-func (c *Community) Host() (*User, error) {
+func (c *Community) Host(ctx context.Context) (*User, error) {
 	if c.HostUid == nil {
 		return nil, nil
 	}
-	return AmGetUser(*c.HostUid)
+	return AmGetUser(ctx, *c.HostUid)
 }
 
 // HostQ returns the reference to the community's host, quietly.
-func (c *Community) HostQ() *User {
+func (c *Community) HostQ(ctx context.Context) *User {
 	if c.HostUid == nil {
 		return nil
 	}
-	u, err := AmGetUser(*c.HostUid)
+	u, err := AmGetUser(ctx, *c.HostUid)
 	if err != nil {
 		return nil
 	}
@@ -192,6 +193,7 @@ func (c *Community) LanguageTag() (*language.Tag, error) {
 
 /* Membership returns the details of the specified user's membership in the community.
  * Parameters:
+ *     ctxt - Standard Go context value.
  *     u - The user to check the membership of.
  * Returns:
  *     true if the user is a member, false if not.
@@ -199,7 +201,7 @@ func (c *Community) LanguageTag() (*language.Tag, error) {
  *	   User's access level in the community, or 0 if the user is not a member.
  *     Standard Go error status.
  */
-func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
+func (c *Community) Membership(ctx context.Context, u *User) (bool, bool, uint16, error) {
 	key := fmt.Sprintf("%d:%d", c.Id, u.Uid)
 	memberMutex.Lock()
 	defer memberMutex.Unlock()
@@ -212,7 +214,7 @@ func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
 		// "no join required" - they are effectively a member, but don't cache that
 		return true, false, u.BaseLevel, nil
 	}
-	rs, err := amdb.Query("SELECT locked, granted_lvl FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+	rs, err := amdb.QueryContext(ctx, "SELECT locked, granted_lvl FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
 	if err == nil {
 		if rs.Next() {
 			var locked bool
@@ -227,13 +229,13 @@ func (c *Community) Membership(u *User) (bool, bool, uint16, error) {
 }
 
 // MemberCount returns the number of members in the community.
-func (c *Community) MemberCount(hidden bool) (int, error) {
+func (c *Community) MemberCount(ctx context.Context, hidden bool) (int, error) {
 	var rs *sql.Rows
 	var err error
 	if hidden {
-		rs, err = amdb.Query("SELECT COUNT(*) FROM commmember WHERE commid = ?", c.Id)
+		rs, err = amdb.QueryContext(ctx, "SELECT COUNT(*) FROM commmember WHERE commid = ?", c.Id)
 	} else {
-		rs, err = amdb.Query("SELECT COUNT(*) FROM commmember WHERE commid = ? AND hidden = 0", c.Id)
+		rs, err = amdb.QueryContext(ctx, "SELECT COUNT(*) FROM commmember WHERE commid = ? AND hidden = 0", c.Id)
 	}
 	if err != nil {
 		return -1, err
@@ -248,6 +250,7 @@ func (c *Community) MemberCount(hidden bool) (int, error) {
 
 /* ListMembers lists or searches for community members matching certain criteria.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     field - A value indicating which field to search:
  *         ListMembersFieldNone - Do not search, just return all community members.
  *         ListMembersFieldName - The user name.
@@ -267,7 +270,7 @@ func (c *Community) MemberCount(hidden bool) (int, error) {
  *     The total number of members matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func (c *Community) ListMembers(field int, oper int, term string, offset int, max int, showHidden bool) ([]*User, int, error) {
+func (c *Community) ListMembers(ctx context.Context, field int, oper int, term string, offset int, max int, showHidden bool) ([]*User, int, error) {
 	var query strings.Builder
 	if field != ListMembersFieldNone && oper != ListMembersOperNone {
 		query.WriteString(" AND ")
@@ -304,7 +307,7 @@ func (c *Community) ListMembers(field int, oper int, term string, offset int, ma
 		query.WriteString(" AND m.hidden = 0")
 	}
 	q := query.String()
-	rs, err := amdb.Query(`SELECT COUNT(*) FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+	rs, err := amdb.QueryContext(ctx, `SELECT COUNT(*) FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
 		AND u.contactid = c.contactid`+q, c.Id)
 	if err != nil {
 		return nil, -1, err
@@ -315,10 +318,10 @@ func (c *Community) ListMembers(field int, oper int, term string, offset int, ma
 	var total int
 	rs.Scan(&total)
 	if offset > 0 {
-		rs, err = amdb.Query(`SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+		rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
 			AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
 	} else {
-		rs, err = amdb.Query(`SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+		rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
 			AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ?", c.Id, max)
 	}
 	if err != nil {
@@ -328,7 +331,7 @@ func (c *Community) ListMembers(field int, oper int, term string, offset int, ma
 	for rs.Next() {
 		var uid int32
 		rs.Scan(&uid)
-		u, err := AmGetUser(uid)
+		u, err := AmGetUser(ctx, uid)
 		if err == nil {
 			rc = append(rc, u)
 		}
@@ -338,6 +341,7 @@ func (c *Community) ListMembers(field int, oper int, term string, offset int, ma
 
 /* SetMembership sets a user's membership status within the community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     u - The user to change the membership status of.
  *     level - Their membership level. If this is 0, they are removed from membership.
  *     locked - Whether they can unjoin the community themselves. Ignored if removing them.
@@ -346,7 +350,7 @@ func (c *Community) ListMembers(field int, oper int, term string, offset int, ma
  * Returns:
  *     Standard Go error status.
  */
-func (c *Community) SetMembership(u *User, level uint16, locked bool, personUID int32, ipaddr string) error {
+func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, locked bool, personUID int32, ipaddr string) error {
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -355,20 +359,20 @@ func (c *Community) SetMembership(u *User, level uint16, locked bool, personUID 
 		}
 	}()
 	if level == 0 {
-		res, err := tx.Exec("DELETE FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+		res, err := tx.ExecContext(ctx, "DELETE FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
 		if err != nil {
 			return err
 		}
 		stuffMembership(c.Id, u.Uid, false, false, 0)
 		ra, err := res.RowsAffected()
 		if err == nil && ra > 0 {
-			err = AmOnUserLeaveCommunityServices(tx, c, u)
+			err = AmOnUserLeaveCommunityServices(ctx, tx, c, u)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		rs, err := tx.Query("SELECT granted_lvl, locked FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
+		rs, err := tx.QueryContext(ctx, "SELECT granted_lvl, locked FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
 		if err != nil {
 			return err
 		}
@@ -377,7 +381,7 @@ func (c *Community) SetMembership(u *User, level uint16, locked bool, personUID 
 			var lockStatus bool
 			rs.Scan(&oldLevel, &lockStatus)
 			if level != oldLevel || lockStatus != locked {
-				_, err := tx.Exec("UPDATE commmember SET granted_lvl = ?, locked = ? WHERE commid = ? AND uid = ?",
+				_, err := tx.ExecContext(ctx, "UPDATE commmember SET granted_lvl = ?, locked = ? WHERE commid = ? AND uid = ?",
 					level, locked, c.Id, u.Uid)
 				if err != nil {
 					return err
@@ -385,19 +389,19 @@ func (c *Community) SetMembership(u *User, level uint16, locked bool, personUID 
 				stuffMembership(c.Id, u.Uid, true, locked, level)
 			}
 		} else {
-			_, err := tx.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
+			_, err := tx.ExecContext(ctx, "INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
 				c.Id, u.Uid, level, locked)
 			if err != nil {
 				return err
 			}
 			stuffMembership(c.Id, u.Uid, true, locked, level)
-			err = AmOnUserJoinCommunityServices(tx, c, u)
+			err = AmOnUserJoinCommunityServices(ctx, tx, c, u)
 			if err != nil {
 				return err
 			}
 		}
 	}
-	err := c.TouchUpdateTx(tx)
+	err := c.TouchUpdateTx(ctx, tx)
 	if err == nil {
 		ar := AmNewAudit(AuditCommunitySetMembership, personUID, ipaddr, fmt.Sprintf("cid=%d", c.Id),
 			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level))
@@ -450,11 +454,11 @@ func (c *Community) PermissionLevel(perm string) uint16 {
 }
 
 // GetFlags retrieves the flags from the properties.
-func (c *Community) Flags() (*util.OptionSet, error) {
+func (c *Community) Flags(ctx context.Context) (*util.OptionSet, error) {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	if c.flags == nil {
-		s, err := AmGetCommunityProperty(c.Id, CommunityPropFlags)
+		s, err := AmGetCommunityProperty(ctx, c.Id, CommunityPropFlags)
 		if err != nil {
 			return nil, err
 		}
@@ -468,11 +472,11 @@ func (c *Community) Flags() (*util.OptionSet, error) {
 }
 
 // SaveFlags writes the flags to the database and stores them.
-func (c *Community) SaveFlags(f *util.OptionSet) error {
+func (c *Community) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 	s := f.AsString()
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
-	err := AmSetCommunityProperty(c.Id, CommunityPropFlags, &s)
+	err := AmSetCommunityProperty(ctx, c.Id, CommunityPropFlags, &s)
 	if err == nil {
 		c.flags = f
 	}
@@ -480,12 +484,12 @@ func (c *Community) SaveFlags(f *util.OptionSet) error {
 }
 
 // SetProfileData sets all the "settable" profile data
-func (c *Community) SetProfileData(name string, alias string, synopsis *string, rules *string, language *string,
+func (c *Community) SetProfileData(ctx context.Context, name string, alias string, synopsis *string, rules *string, language *string,
 	joinkey *string, membersonly bool, hideDirectory bool, hideSearch bool, read_lvl uint16, write_lvl uint16,
 	create_lvl uint16, delete_lvl uint16, join_lvl uint16) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
-	_, err := amdb.Exec(`UPDATE communities SET commname = ?, alias = ?, synopsis = ?, rules = ?, language = ?,
+	_, err := amdb.ExecContext(ctx, `UPDATE communities SET commname = ?, alias = ?, synopsis = ?, rules = ?, language = ?,
 		joinkey = ?, membersonly = ?, hide_dir = ?, hide_search = ?, read_lvl = ?, write_lvl = ?, create_lvl = ?,
 		delete_lvl = ?, join_lvl = ?, lastupdate = NOW() WHERE commid = ?`,
 		name, alias, synopsis, rules, language, joinkey, membersonly, hideDirectory, hideSearch, read_lvl, write_lvl,
@@ -505,7 +509,7 @@ func (c *Community) SetProfileData(name string, alias string, synopsis *string, 
 		c.CreateLevel = create_lvl
 		c.DeleteLevel = delete_lvl
 		c.JoinLevel = join_lvl
-		rs, err2 := amdb.Query("SELECT lastupdate FROM communities WHERE commid = ?", c.Id)
+		rs, err2 := amdb.QueryContext(ctx, "SELECT lastupdate FROM communities WHERE commid = ?", c.Id)
 		if err2 != nil {
 			rs.Next()
 			rs.Scan(&c.LastUpdate)
@@ -515,10 +519,10 @@ func (c *Community) SetProfileData(name string, alias string, synopsis *string, 
 }
 
 // SetContactID sets the contact ID for the community.
-func (c *Community) SetContactID(cid int32) error {
+func (c *Community) SetContactID(ctx context.Context, cid int32) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
-	if _, err := amdb.Exec("UPDATE communities SET contactid = ? WHERE commid = ?", cid, c.Id); err != nil {
+	if _, err := amdb.ExecContext(ctx, "UPDATE communities SET contactid = ? WHERE commid = ?", cid, c.Id); err != nil {
 		return err
 	}
 	c.ContactId = cid
@@ -526,12 +530,12 @@ func (c *Community) SetContactID(cid int32) error {
 }
 
 // Touch updates the last access time of the community.
-func (c *Community) Touch() error {
+func (c *Community) Touch(ctx context.Context) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
-	_, err := amdb.Exec("UPDATE communities SET lastaccess = NOW() WHERE commid = ?", c.Id)
+	_, err := amdb.ExecContext(ctx, "UPDATE communities SET lastaccess = NOW() WHERE commid = ?", c.Id)
 	if err == nil {
-		rs, err := amdb.Query("SELECT lastaccess FROM communities WHERE commid = ?", c.Id)
+		rs, err := amdb.QueryContext(ctx, "SELECT lastaccess FROM communities WHERE commid = ?", c.Id)
 		if err == nil {
 			rs.Next()
 			var na time.Time
@@ -543,12 +547,12 @@ func (c *Community) Touch() error {
 }
 
 // TouchUpdateTx updates the last access and last update times of the community.
-func (c *Community) TouchUpdateTx(tx *sqlx.Tx) error {
+func (c *Community) TouchUpdateTx(ctx context.Context, tx *sqlx.Tx) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
-	_, err := tx.Exec("UPDATE communities SET lastaccess = NOW(), lastupdate = NOW() WHERE commid = ?", c.Id)
+	_, err := tx.ExecContext(ctx, "UPDATE communities SET lastaccess = NOW(), lastupdate = NOW() WHERE commid = ?", c.Id)
 	if err == nil {
-		rs, err := tx.Query("SELECT lastaccess, lastupdate FROM communities WHERE commid = ?", c.Id)
+		rs, err := tx.QueryContext(ctx, "SELECT lastaccess, lastupdate FROM communities WHERE commid = ?", c.Id)
 		if err != nil {
 			rs.Next()
 			var na, nu time.Time
@@ -561,9 +565,9 @@ func (c *Community) TouchUpdateTx(tx *sqlx.Tx) error {
 }
 
 // TouchUpdateTx updates the last access and last update times of the community.
-func (c *Community) TouchUpdate() error {
+func (c *Community) TouchUpdate(ctx context.Context) error {
 	tx := amdb.MustBegin()
-	err := c.TouchUpdateTx(tx)
+	err := c.TouchUpdateTx(ctx, tx)
 	if err != nil {
 		err = tx.Commit()
 	}
@@ -575,18 +579,19 @@ func (c *Community) TouchUpdate() error {
 
 /* AmGetCommunity returns a reference to the specified community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     id - The ID of the community.
  * Returns:
  *     Pointer to Community containing community data, or nil
  *     Standard Go error status
  */
-func AmGetCommunity(id int32) (*Community, error) {
+func AmGetCommunity(ctx context.Context, id int32) (*Community, error) {
 	getCommunityMutex.Lock()
 	defer getCommunityMutex.Unlock()
 	rc, ok := communityCache.Get(id)
 	if !ok {
 		var dbdata []Community
-		err := amdb.Select(&dbdata, "SELECT * from communities WHERE commid = ?", id)
+		err := amdb.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id)
 		if err != nil {
 			return nil, err
 		}
@@ -603,19 +608,20 @@ func AmGetCommunity(id int32) (*Community, error) {
 
 /* AmGetCommunityTx returns a reference to the specified community, in a transaction.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     tx - The transaction to use.
  *     id - The ID of the community.
  * Returns:
  *     Pointer to Community containing community data, or nil
  *     Standard Go error status
  */
-func AmGetCommunityTx(tx *sqlx.Tx, id int32) (*Community, error) {
+func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, error) {
 	getCommunityMutex.Lock()
 	defer getCommunityMutex.Unlock()
 	rc, ok := communityCache.Get(id)
 	if !ok {
 		var dbdata []Community
-		err := tx.Select(&dbdata, "SELECT * from communities WHERE commid = ?", id)
+		err := tx.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id)
 		if err != nil {
 			return nil, err
 		}
@@ -632,18 +638,19 @@ func AmGetCommunityTx(tx *sqlx.Tx, id int32) (*Community, error) {
 
 /* AmGetCommunityByAlias returns a reference to the specified community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     alias - The alias for the community.
  * Returns:
  *     Pointer to Community containing community data, or nil
  *     Standard Go error status (nil if community not found)
  */
-func AmGetCommunityByAlias(alias string) (*Community, error) {
-	rs, err := amdb.Query("SELECT commid FROM communities WHERE alias = ?", alias)
+func AmGetCommunityByAlias(ctx context.Context, alias string) (*Community, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
 	if err == nil {
 		if rs.Next() {
 			var cid int32
 			rs.Scan(&cid)
-			return AmGetCommunity(cid)
+			return AmGetCommunity(ctx, cid)
 		} else {
 			return nil, nil
 		}
@@ -653,19 +660,20 @@ func AmGetCommunityByAlias(alias string) (*Community, error) {
 
 /* AmGetCommunityByAliasTx returns a reference to the specified community, within a transaction.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     tx - The transaction to use.
  *     alias - The alias for the community.
  * Returns:
  *     Pointer to Community containing community data, or nil
  *     Standard Go error status (nil if community not found)
  */
-func AmGetCommunityByAliasTx(tx *sqlx.Tx, alias string) (*Community, error) {
-	rs, err := tx.Query("SELECT commid FROM communities WHERE alias = ?", alias)
+func AmGetCommunityByAliasTx(ctx context.Context, tx *sqlx.Tx, alias string) (*Community, error) {
+	rs, err := tx.QueryContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
 	if err == nil {
 		if rs.Next() {
 			var cid int32
 			rs.Scan(&cid)
-			return AmGetCommunityTx(tx, cid)
+			return AmGetCommunityTx(ctx, tx, cid)
 		} else {
 			return nil, nil
 		}
@@ -677,21 +685,22 @@ func AmGetCommunityByAliasTx(tx *sqlx.Tx, alias string) (*Community, error) {
  * If the parameter is numeric, it's interpreted as a community ID. Otherwise, it's interpreted
  * as a community alias.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     id - The ID of the community.
  * Returns:
  *     Pointer to Community containing community data, or nil
  *     Standard Go error status
  */
-func AmGetCommunityFromParam(param string) (*Community, error) {
+func AmGetCommunityFromParam(ctx context.Context, param string) (*Community, error) {
 	if util.IsNumeric(param) {
 		v, _ := strconv.Atoi(param)
-		c, err := AmGetCommunity(int32(v))
+		c, err := AmGetCommunity(ctx, int32(v))
 		if err == nil {
 			return c, nil
 		}
 		// else fall through to trying as alias
 	}
-	rc, err := AmGetCommunityByAlias(param)
+	rc, err := AmGetCommunityByAlias(ctx, param)
 	if err == nil {
 		if rc == nil {
 			return nil, fmt.Errorf("community with alias \"%s\" not found", param)
@@ -702,18 +711,19 @@ func AmGetCommunityFromParam(param string) (*Community, error) {
 
 /* AmGetCommunitiesForUser returns a list of communities the user is a member of.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     uid - The ID of the user.
  * Returns:
  *	   Array of pointers to communities for the user
  *     Standard Go error status
  */
-func AmGetCommunitiesForUser(uid int32) ([]*Community, error) {
+func AmGetCommunitiesForUser(ctx context.Context, uid int32) ([]*Community, error) {
 	var rc []*Community = make([]*Community, 0)
 	var ids []int32 = make([]int32, 0)
-	err := amdb.Select(&ids, "SELECT commid FROM commmember WHERE uid = ?", uid)
+	err := amdb.SelectContext(ctx, &ids, "SELECT commid FROM commmember WHERE uid = ?", uid)
 	if err == nil {
 		for _, id := range ids {
-			c, err := AmGetCommunity(id)
+			c, err := AmGetCommunity(ctx, id)
 			if err == nil {
 				rc = append(rc, c)
 			} else {
@@ -727,15 +737,16 @@ func AmGetCommunitiesForUser(uid int32) ([]*Community, error) {
 /* AmGetCommunityAccessLevel returns the access level of the specified user with respect to the community.
  * This may reflect the user's admin status as well as their status within the community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     uid - The UID of the user.
  *     commid - The ID of the community.
  * Returns:
  *     Access level within the community, or 0 if the user is not a member.
  *     Standard Go error status.
  */
-func AmGetCommunityAccessLevel(uid int32, commid int32) (uint16, error) {
+func AmGetCommunityAccessLevel(ctx context.Context, uid int32, commid int32) (uint16, error) {
 	var rc uint16 = 0
-	rows, err := amdb.Queryx(`SELECT GREATEST(m.granted_lvl, u.base_lvl) AS level FROM users u, commmember m
+	rows, err := amdb.QueryxContext(ctx, `SELECT GREATEST(m.granted_lvl, u.base_lvl) AS level FROM users u, commmember m
 	    WHERE u.uid = m.uid AND m.uid = ? AND m.commid = ?`, uid, commid)
 	if err == nil {
 		defer rows.Close()
@@ -748,21 +759,22 @@ func AmGetCommunityAccessLevel(uid int32, commid int32) (uint16, error) {
 
 /* AmAutoJoinCommunities joins the specified user to any communities they're not yet a part of.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     tx - The current transaction to be used for database access.
  *     user - The user to be auto-joined to communities.
  * Returns:
  *     Standard Go error status.
  */
-func AmAutoJoinCommunities(tx *sqlx.Tx, user *User) error {
+func AmAutoJoinCommunities(ctx context.Context, tx *sqlx.Tx, user *User) error {
 	// get list of current communities
 	var current []int32 = make([]int32, 0)
-	err := tx.Select(&current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid)
+	err := tx.SelectContext(ctx, &current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid)
 	if err != nil {
 		return err
 	}
 
 	// look for candidate communities
-	rows, err := tx.Queryx(`SELECT m.commid, m.locked FROM users u, communities c, commmember m
+	rows, err := tx.QueryxContext(ctx, `SELECT m.commid, m.locked FROM users u, communities c, commmember m
 		WHERE m.uid = u.uid AND m.commid = c.commid AND u.is_anon = 1 AND c.join_lvl <= ?`, user.BaseLevel)
 	if err == nil {
 		defer rows.Close()
@@ -772,7 +784,7 @@ func AmAutoJoinCommunities(tx *sqlx.Tx, user *User) error {
 			var lock bool
 			rows.Scan(&cid, &lock)
 			if !slices.Contains(current, cid) {
-				_, err = tx.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
+				_, err = tx.ExecContext(ctx, "INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
 					cid, user.Uid, grantLevel, lock)
 				if err != nil {
 					break
@@ -785,7 +797,7 @@ func AmAutoJoinCommunities(tx *sqlx.Tx, user *User) error {
 }
 
 // internalGetProp is a helper used by the property functions.
-func internalGetCommProp(cid int32, ndx int32) (*CommunityProperties, error) {
+func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityProperties, error) {
 	var err error = nil
 	key := fmt.Sprintf("%d:%d", cid, ndx)
 	getCommunityPropMutex.Lock()
@@ -793,7 +805,7 @@ func internalGetCommProp(cid int32, ndx int32) (*CommunityProperties, error) {
 	rc, ok := communityPropCache.Get(key)
 	if !ok {
 		var dbdata []CommunityProperties
-		err = amdb.Select(&dbdata, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
+		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
 		if err != nil {
 			return nil, err
 		}
@@ -811,14 +823,15 @@ func internalGetCommProp(cid int32, ndx int32) (*CommunityProperties, error) {
 
 /* AmGetCommunityProperty retrieves the value of a user property.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     cid - The ID of the community to get the property for.
  *     ndx - The index of the property to retrieve.
  * Returns:
  *     Value of the property string.
  *     Standard Go error status.
  */
-func AmGetCommunityProperty(cid int32, ndx int32) (*string, error) {
-	p, err := internalGetCommProp(cid, ndx)
+func AmGetCommunityProperty(ctx context.Context, cid int32, ndx int32) (*string, error) {
+	p, err := internalGetCommProp(ctx, cid, ndx)
 	if err != nil {
 		return nil, err
 	} else if p == nil {
@@ -829,27 +842,28 @@ func AmGetCommunityProperty(cid int32, ndx int32) (*string, error) {
 
 /* AmSetCommunityProperty sets the value of a community property.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     cid - The ID of the community to set the property for.
  *     ndx - The index of the property to set.
  *     val - The new value of the property.
  * Returns:
  *     Standard Go error status.
  */
-func AmSetCommunityProperty(cid int32, ndx int32, val *string) error {
-	p, err := internalGetCommProp(cid, ndx)
+func AmSetCommunityProperty(ctx context.Context, cid int32, ndx int32, val *string) error {
+	p, err := internalGetCommProp(ctx, cid, ndx)
 	if err != nil {
 		return err
 	}
 	getCommunityPropMutex.Lock()
 	defer getCommunityPropMutex.Unlock()
 	if p != nil {
-		_, err = amdb.Exec("UPDATE propcomm SET data = ? WHERE cid = ? AND ndx = ?", val, cid, ndx)
+		_, err = amdb.ExecContext(ctx, "UPDATE propcomm SET data = ? WHERE cid = ? AND ndx = ?", val, cid, ndx)
 		if err == nil {
 			p.Data = val
 		}
 	} else {
 		prop := CommunityProperties{Cid: cid, Index: ndx, Data: val}
-		_, err := amdb.NamedExec("INSERT INTO propcomm (cid, ndx, data) VALUES(:cid, :ndx, :data)", prop)
+		_, err := amdb.NamedExecContext(ctx, "INSERT INTO propcomm (cid, ndx, data) VALUES(:cid, :ndx, :data)", prop)
 		if err == nil {
 			communityPropCache.Add(fmt.Sprintf("%d:%d", cid, ndx), prop)
 		}
@@ -859,6 +873,7 @@ func AmSetCommunityProperty(cid int32, ndx int32, val *string) error {
 
 /* AmCreateCommunity creates a new community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     name - The name for the new community.
  *     alias - The alias for the new community. Must be unique.
  *     hostUid - The UID of the creator and new host of the community.
@@ -873,7 +888,7 @@ func AmSetCommunityProperty(cid int32, ndx int32, val *string) error {
  *     Pointer to new Community record, or nil.
  *     Standard Go error status.
  */
-func AmCreateCommunity(name string, alias string, hostUid int32, language *string, synopsis *string,
+func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid int32, language *string, synopsis *string,
 	rules *string, joinkey *string, hideDirectory bool, hideSearch bool, remoteIP string) (*Community, error) {
 	var ar *AuditRecord = nil
 	defer func() {
@@ -888,7 +903,7 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 	}()
 
 	// validate alias does not already exist
-	rs, err := tx.Query("SELECT commid FROM communities WHERE alias = ?", alias)
+	rs, err := tx.QueryContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
 	if err != nil {
 		return nil, err
 	}
@@ -897,7 +912,7 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 	}
 
 	// establish the community record
-	_, err = tx.Exec(`INSERT INTO communities (createdate, lastaccess, lastupdate, read_lvl, write_lvl,
+	_, err = tx.ExecContext(ctx, `INSERT INTO communities (createdate, lastaccess, lastupdate, read_lvl, write_lvl,
 		create_lvl, delete_lvl, join_lvl, host_uid, hide_dir, hide_search, commname, language,
 		synopsis, rules, joinkey, alias) VALUES (NOW(), NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		AmRoleList("Community.Read").Default().Level(), AmRoleList("Community.Write").Default().Level(),
@@ -909,7 +924,7 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 	}
 
 	// Read back the community, which also puts it in the cache.
-	comm, err := AmGetCommunityByAliasTx(tx, alias)
+	comm, err := AmGetCommunityByAliasTx(ctx, tx, alias)
 	if err != nil {
 		return nil, err
 	} else if comm == nil {
@@ -918,7 +933,7 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 
 	// Ensure the new host has host privileges in the community. The host's membership is "locked" so they
 	// can't unjoin and leave the community hostless.
-	_, err = tx.Exec("INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, 1)", comm.Id, hostUid,
+	_, err = tx.ExecContext(ctx, "INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, 1)", comm.Id, hostUid,
 		AmDefaultRole("Community.Creator").Level())
 	if err != nil {
 		return nil, err
@@ -926,7 +941,7 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 	stuffMembership(comm.Id, hostUid, true, true, AmDefaultRole("Community.Creator").Level())
 
 	// Establish the community services.
-	err = AmEstablishCommunityServices(tx, comm)
+	err = AmEstablishCommunityServices(ctx, tx, comm)
 	if err != nil {
 		return nil, err
 	}
@@ -945,6 +960,7 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
 
 /* AmGetCommunitiesForCategory returns a list of communities for the specified category.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     catid - Category ID to search for.
  *     offset - Number of communities to skip at beginning of list.
  *     max - Maximum number of communities to return.
@@ -954,13 +970,13 @@ func AmCreateCommunity(name string, alias string, hostUid int32, language *strin
  *     The total number of communities matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool) ([]*Community, int, error) {
+func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, max int, showAll bool) ([]*Community, int, error) {
 	var rs *sql.Rows
 	var err error
 	if showAll {
-		rs, err = amdb.Query("SELECT COUNT(*) FROM communities WHERE catid = ?", catid)
+		rs, err = amdb.QueryContext(ctx, "SELECT COUNT(*) FROM communities WHERE catid = ?", catid)
 	} else {
-		rs, err = amdb.Query("SELECT COUNT(*) FROM communities WHERE catid = ? AND hide_dir = 0", catid)
+		rs, err = amdb.QueryContext(ctx, "SELECT COUNT(*) FROM communities WHERE catid = ? AND hide_dir = 0", catid)
 	}
 	if err != nil {
 		return nil, -1, err
@@ -975,17 +991,17 @@ func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool)
 	}
 	if showAll {
 		if offset > 0 {
-			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ? OFFSET ?",
+			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ? OFFSET ?",
 				catid, max, offset)
 		} else {
-			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ?", catid, max)
+			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ?", catid, max)
 		}
 	} else {
 		if offset > 0 {
-			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ? OFFSET ?",
+			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ? OFFSET ?",
 				catid, max, offset)
 		} else {
-			rs, err = amdb.Query("SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ?", catid, max)
+			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ?", catid, max)
 		}
 	}
 	if err != nil {
@@ -995,7 +1011,7 @@ func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool)
 	for rs.Next() {
 		var commid int32
 		rs.Scan(&commid)
-		c, err := AmGetCommunity(commid)
+		c, err := AmGetCommunity(ctx, commid)
 		if err == nil {
 			rc = append(rc, c)
 		}
@@ -1005,6 +1021,7 @@ func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool)
 
 /* AmSearchCommunities searches for communities matching certain criteria.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     field - A value indicating which field to search:
  *         SearchCommFieldName - The community name.
  *         SearchCommFieldSynopsis - The communty synopsis.
@@ -1021,7 +1038,7 @@ func AmGetCommunitiesForCategory(catid int32, offset int, max int, showAll bool)
  *     The total number of communities matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmSearchCommunities(field int, oper int, term string, offset int, max int, showAll bool) ([]*Community, int, error) {
+func AmSearchCommunities(ctx context.Context, field int, oper int, term string, offset int, max int, showAll bool) ([]*Community, int, error) {
 	var queryPortion strings.Builder
 	queryPortion.WriteString("WHERE ")
 	switch field {
@@ -1052,7 +1069,7 @@ func AmSearchCommunities(field int, oper int, term string, offset int, max int, 
 		queryPortion.WriteString(" AND hide_search = 0")
 	}
 	q := queryPortion.String()
-	rs, err := amdb.Query("SELECT COUNT(*) FROM communities " + q)
+	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM communities "+q)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -1065,9 +1082,9 @@ func AmSearchCommunities(field int, oper int, term string, offset int, max int, 
 		return make([]*Community, 0), 0, nil // short-circuit return
 	}
 	if offset > 0 {
-		rs, err = amdb.Query("SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ? OFFSET ?", max, offset)
+		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ? OFFSET ?", max, offset)
 	} else {
-		rs, err = amdb.Query("SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ?", max)
+		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ?", max)
 	}
 	if err != nil {
 		return nil, total, err
@@ -1076,7 +1093,7 @@ func AmSearchCommunities(field int, oper int, term string, offset int, max int, 
 	for rs.Next() {
 		var commid int32
 		rs.Scan(&commid)
-		c, err := AmGetCommunity(commid)
+		c, err := AmGetCommunity(ctx, commid)
 		if err == nil {
 			rc = append(rc, c)
 		}

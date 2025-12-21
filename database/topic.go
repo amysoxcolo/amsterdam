@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,12 +35,12 @@ type Topic struct {
 }
 
 // GetPost returns a post in the topic by number.
-func (t *Topic) GetPost(num int32) (*PostHeader, error) {
+func (t *Topic) GetPost(ctx context.Context, num int32) (*PostHeader, error) {
 	if num > t.TopMessage {
 		return nil, fmt.Errorf("no post %d in topic %d", num, t.TopicId)
 	}
 	var dbdata []PostHeader
-	err := amdb.Select(&dbdata, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num)
 	if err == nil {
 		if len(dbdata) == 0 {
 			err = fmt.Errorf("no post %d in topic %d", num, t.TopicId)
@@ -53,8 +54,8 @@ func (t *Topic) GetPost(num int32) (*PostHeader, error) {
 }
 
 // GetLastRead returns the "last read" message for a user on a topic.
-func (t *Topic) GetLastRead(u *User) (int32, error) {
-	rs, err := amdb.Query("SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
+func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	if err != nil {
 		return -1, err
 	}
@@ -66,12 +67,14 @@ func (t *Topic) GetLastRead(u *User) (int32, error) {
 }
 
 // SetLastRead sets the "last read" message for a user on a topic.
-func (t *Topic) SetLastRead(u *User, postNum int32) error {
-	rs, err := amdb.Exec("UPDATE topicsettings SET last_message = ?, last_read = NOW() WHERE topicid = ? AND uid = ?", postNum, t.TopicId, u.Uid)
+func (t *Topic) SetLastRead(ctx context.Context, u *User, postNum int32) error {
+	rs, err := amdb.ExecContext(ctx, "UPDATE topicsettings SET last_message = ?, last_read = NOW() WHERE topicid = ? AND uid = ?",
+		postNum, t.TopicId, u.Uid)
 	if err == nil {
 		nrow, _ := rs.RowsAffected()
 		if nrow == 0 {
-			_, err = amdb.Exec("INSERT INTO topicsettings (topicid, uid, last_message, last_read, last_post) VALUES (?, ?, ?, NOW(), NULL)", t.TopicId, u.Uid, postNum)
+			_, err = amdb.ExecContext(ctx, "INSERT INTO topicsettings (topicid, uid, last_message, last_read, last_post) VALUES (?, ?, ?, NOW(), NULL)",
+				t.TopicId, u.Uid, postNum)
 		}
 	}
 	return err
@@ -104,14 +107,15 @@ type TopicSummary struct {
 
 /* AmGetTopic retrieves a topic by ID.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     topicId - ID of the topic to retrieve.
  * Returns:
  *     The topic pointer, or nil.
  *     Standard Go error status.
  */
-func AmGetTopic(topicId int32) (*Topic, error) {
+func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
 	var dbdata []Topic
-	err := amdb.Select(&dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +130,16 @@ func AmGetTopic(topicId int32) (*Topic, error) {
 
 /* AmGetTopicTx retrieves a topic by ID, in a transaction.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     tx - The transaction to use.
  *     topicId - ID of the topic to retrieve.
  * Returns:
  *     The topic pointer, or nil.
  *     Standard Go error status.
  */
-func AmGetTopicTx(tx *sqlx.Tx, topicId int32) (*Topic, error) {
+func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, error) {
 	var dbdata []Topic
-	err := tx.Select(&dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
+	err := tx.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
 	if err != nil {
 		return nil, err
 	}
@@ -149,15 +154,16 @@ func AmGetTopicTx(tx *sqlx.Tx, topicId int32) (*Topic, error) {
 
 /* AmGetTopicByNumber retrieves a topic by conference and sequence number.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     conf - The conference to look in.
  *     topicNum - The topic number within that conference.
  * Returns:
  *     Pointer to the Topic, or nil.
  *     Standard Go error status.
  */
-func AmGetTopicByNumber(conf *Conference, topicNum int16) (*Topic, error) {
+func AmGetTopicByNumber(ctx context.Context, conf *Conference, topicNum int16) (*Topic, error) {
 	var dbdata []Topic
-	err := amdb.Select(&dbdata, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
 	if err == nil {
 		if len(dbdata) == 0 {
 			err = fmt.Errorf("no topic numbered %d in conference %s (#%d)", topicNum, conf.Name, conf.ConfId)
@@ -189,6 +195,7 @@ const (
 
 /* AmListTopics produces a list of topic summary information according to specific options.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     confid - The ID of the conference to list topics in.
  *     uid - The UID of the user to consider the settings of.
  *     viewOption - One of the following constants:
@@ -210,7 +217,7 @@ const (
  *     List of TopicSummary pointers.
  *     Standard Go error status.
  */
-func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignoreSticky bool) ([]*TopicSummary, error) {
+func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, sortOption int, ignoreSticky bool) ([]*TopicSummary, error) {
 	// Decode the viewOption into a WHERE clause.
 	var whereClause string
 	switch viewOption {
@@ -296,7 +303,7 @@ func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignor
 	fullStatement.WriteString(orderByClause)
 
 	// Execute and capture results
-	rs, err := amdb.Query(fullStatement.String(), uid, confid)
+	rs, err := amdb.QueryContext(ctx, fullStatement.String(), uid, confid)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +317,7 @@ func AmListTopics(confid int32, uid int32, viewOption int, sortOption int, ignor
 	return rc, nil
 }
 
-func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
+func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
 	zeroPostLines int32, ipaddr string) (*Topic, error) {
 	var ar *AuditRecord = nil
 	defer func() {
@@ -325,16 +332,16 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	}()
 
 	unlock := true
-	tx.Exec("LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
+	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
 	defer func() {
 		if unlock {
-			tx.Exec("UNLOCK TABLES;")
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
 		}
 	}()
 
 	// Insert the new topic into the database.
 	conf.Mutex.Lock()
-	rs, err := tx.Exec("INSERT INTO topics (confid, num, creator_uid, createdate, lastupdate, name) VALUES (?, ?, ?, NOW(), NOW(), ?)",
+	rs, err := tx.ExecContext(ctx, "INSERT INTO topics (confid, num, creator_uid, createdate, lastupdate, name) VALUES (?, ?, ?, NOW(), NOW(), ?)",
 		conf.ConfId, conf.TopTopic+1, user.Uid, title)
 	if err != nil {
 		conf.Mutex.Unlock()
@@ -347,14 +354,14 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 		return nil, err
 	}
 	// Get the topic.
-	topic, err := AmGetTopicTx(tx, int32(xid))
+	topic, err := AmGetTopicTx(ctx, tx, int32(xid))
 	if err != nil {
 		conf.Mutex.Unlock()
 		return nil, err
 	}
 
 	// Update the conference to set the last update and top topic.
-	_, err = tx.Exec("UPDATE confs SET lastupdate = ?, top_topic = ? WHERE confid = ?", topic.CreateDate, conf.TopTopic+1, conf.ConfId)
+	_, err = tx.ExecContext(ctx, "UPDATE confs SET lastupdate = ?, top_topic = ? WHERE confid = ?", topic.CreateDate, conf.TopTopic+1, conf.ConfId)
 	if err != nil {
 		conf.Mutex.Unlock()
 		return nil, err
@@ -364,7 +371,7 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 	conf.Mutex.Unlock()
 
 	// Add the "header record" for the first post.
-	rs, err = tx.Exec("INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, 0, ?, ?, ?, ?)",
+	rs, err = tx.ExecContext(ctx, "INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, 0, ?, ?, ?, ?)",
 		topic.TopicId, zeroPostLines, user.Uid, topic.CreateDate, zeroPostPseud)
 	if err != nil {
 		return nil, err
@@ -374,23 +381,23 @@ func AmNewTopic(conf *Conference, user *User, title string, zeroPostPseud string
 		return nil, err
 	}
 	// Add the post data.
-	_, err = tx.Exec("INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), zeroPost)
+	_, err = tx.ExecContext(ctx, "INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), zeroPost)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add a new topic settings record for the user, too.
-	_, err = tx.Exec("INSERT INTO topicsettings (topicid, uid, last_post) VALUES (?, ?, ?)",
+	_, err = tx.ExecContext(ctx, "INSERT INTO topicsettings (topicid, uid, last_post) VALUES (?, ?, ?)",
 		topic.TopicId, user.Uid, topic.CreateDate)
 	if err != nil {
 		return nil, err
 	}
 
-	tx.Exec("UNLOCK TABLES;")
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
 	unlock = false
 
 	// update the "last posted" date in the conference settings
-	_, err = conf.TouchPost(tx, user, topic.CreateDate)
+	_, err = conf.TouchPost(ctx, tx, user, topic.CreateDate)
 	if err != nil {
 		return nil, err
 	}

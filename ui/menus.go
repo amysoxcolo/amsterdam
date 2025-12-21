@@ -10,6 +10,7 @@
 package ui
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"slices"
@@ -141,19 +142,20 @@ func AmMenu(name string) *MenuDefinition {
 
 /* AmBuildCommunityMenu buids a community menu for the specified community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     comm - The community to build the menu for.
  * Returns:
  *     The new menu definition.
  *     Standard Go error status.
  */
-func AmBuildCommunityMenu(comm *database.Community) (*MenuDefinition, error) {
+func AmBuildCommunityMenu(ctx context.Context, comm *database.Community) (*MenuDefinition, error) {
 	menuCacheMutex.Lock()
 	defer menuCacheMutex.Unlock()
 	m, ok := menuCache.Get(comm.Id)
 	if ok {
 		return m.(*MenuDefinition), nil
 	}
-	sdef, err := database.AmGetCommunityServices(comm.Id)
+	sdef, err := database.AmGetCommunityServices(ctx, comm.Id)
 	if err != nil {
 		return nil, err
 	}

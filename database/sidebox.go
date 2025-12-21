@@ -9,7 +9,11 @@
 // The database package contains database management and storage logic.
 package database
 
-import "github.com/jmoiron/sqlx"
+import (
+	"context"
+
+	"github.com/jmoiron/sqlx"
+)
 
 type Sidebox struct {
 	Uid      int32   `db:"uid"`
@@ -19,12 +23,12 @@ type Sidebox struct {
 }
 
 // copySideboxes copies sideboxes from one user to another.
-func copySideboxes(tx *sqlx.Tx, toUid int32, fromUid int32) error {
+func copySideboxes(ctx context.Context, tx *sqlx.Tx, toUid int32, fromUid int32) error {
 	sbox := make([]Sidebox, 0, 3)
-	err := tx.Select(&sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
+	err := tx.SelectContext(ctx, &sbox, "SELECT * from sideboxes WHERE uid = ?", fromUid)
 	if err == nil {
 		for _, sb := range sbox {
-			_, err := tx.Exec("INSERT INTO sideboxes (uid, boxid, sequence, param) VALUES (?, ?, ?, ?)", toUid, sb.Boxid, sb.Sequence, sb.Param)
+			_, err := tx.ExecContext(ctx, "INSERT INTO sideboxes (uid, boxid, sequence, param) VALUES (?, ?, ?, ?)", toUid, sb.Boxid, sb.Sequence, sb.Param)
 			if err != nil {
 				break
 			}
@@ -35,13 +39,14 @@ func copySideboxes(tx *sqlx.Tx, toUid int32, fromUid int32) error {
 
 /* AmGetSideboxes returns all the configured sideboxes for a user.
  * Parameters:
+ *     ctx = Standard Go context value.
  *     uid = The ID of the user to retrieve sideboxes for.
  * Returns:
  *	   Array of Sidebox structures for the user, or nil
  *     Standard Go error status
  */
-func AmGetSideboxes(uid int32) ([]*Sidebox, error) {
+func AmGetSideboxes(ctx context.Context, uid int32) ([]*Sidebox, error) {
 	sboxes := make([]*Sidebox, 0, 3)
-	err := amdb.Select(&sboxes, "SELECT * FROM sideboxes WHERE uid = ? ORDER BY SEQUENCE", uid)
+	err := amdb.SelectContext(ctx, &sboxes, "SELECT * FROM sideboxes WHERE uid = ? ORDER BY SEQUENCE", uid)
 	return sboxes, err
 }

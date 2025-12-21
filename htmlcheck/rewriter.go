@@ -10,6 +10,7 @@
 package htmlcheck
 
 import (
+	"context"
 	"fmt"
 	"net/mail"
 	"net/url"
@@ -41,7 +42,7 @@ type rewriterServices interface {
 // rewriter is the interface for components that rewrite source text and place markup around it.
 type rewriter interface {
 	Name() string
-	Rewrite(string, rewriterServices) *markupData
+	Rewrite(context.Context, string, rewriterServices) *markupData
 }
 
 // rewriterRegistry contains a list of all rewriters.
@@ -72,7 +73,7 @@ func (rw *emailRewriter) Name() string {
  * Returns:
  *     Pointer to markup data, or nil.
  */
-func (rw *emailRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+func (rw *emailRewriter) Rewrite(ctx context.Context, data string, svc rewriterServices) *markupData {
 	_, err := mail.ParseAddress(data)
 	if err != nil {
 		return nil
@@ -154,7 +155,7 @@ func buildPostLink(decoded, context *database.PostLinkData) string {
  * Returns:
  *     Pointer to markup data, or nil.
  */
-func (rw *postLinkRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+func (rw *postLinkRewriter) Rewrite(ctx context.Context, data string, svc rewriterServices) *markupData {
 	q := svc.rewriterContextValue("PostLinkDecoderContext")
 	if q == nil {
 		return nil
@@ -165,7 +166,7 @@ func (rw *postLinkRewriter) Rewrite(data string, svc rewriterServices) *markupDa
 	if err != nil {
 		return nil
 	}
-	err = mydata.VerifyNames()
+	err = mydata.VerifyNames(ctx)
 	if err != nil {
 		return nil
 	}
@@ -205,17 +206,18 @@ func (rw *userLinkRewriter) Name() string {
 
 /* Rewrite rewrites the given string data and adds markup before and after if needed.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     data - The data to be rewritten.
  *     svc - Services interface we can use.
  * Returns:
  *     Pointer to markup data, or nil.
  */
-func (rw *userLinkRewriter) Rewrite(data string, svc rewriterServices) *markupData {
+func (rw *userLinkRewriter) Rewrite(ctx context.Context, data string, svc rewriterServices) *markupData {
 	if data == "" || len(data) > 64 || !database.AmIsValidAmsterdamID(data) {
 		return nil
 	}
 
-	user, err := database.AmGetUserByName(data, nil)
+	user, err := database.AmGetUserByName(ctx, data, nil)
 	if err != nil || user == nil {
 		return nil
 	}
@@ -258,8 +260,8 @@ func (rw *countingRewriter) Name() string {
  * Returns:
  *     Pointer to markup data, or nil.
  */
-func (rw *countingRewriter) Rewrite(data string, svc rewriterServices) *markupData {
-	rc := rw.inner.Rewrite(data, svc)
+func (rw *countingRewriter) Rewrite(ctx context.Context, data string, svc rewriterServices) *markupData {
+	rc := rw.inner.Rewrite(ctx, data, svc)
 	if rc != nil && !rc.rescan {
 		rw.count++
 	}

@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"net"
@@ -40,12 +41,13 @@ func init() {
 
 /* AmTestIPBan tests an IP address to see if it's on the banned list.
  * Parameters:
+ *     ctx - Standard Go context parameter.
  *     ip_address - The IP address to be tested.
  * Returns:
  *     Ban message if the address is banned, or empty string if it isn't.
  *     Standard Go error status.
  */
-func AmTestIPBan(ip_address string) (string, error) {
+func AmTestIPBan(ctx context.Context, ip_address string) (string, error) {
 	banMutex.Lock()
 	defer banMutex.Unlock()
 	rc := knownBans[ip_address]
@@ -63,8 +65,7 @@ func AmTestIPBan(ip_address string) (string, error) {
 	iv.SetBytes(addr)
 	iv_lo := big.NewInt(0).And(iv, low64mask).Uint64()
 	iv_hi := big.NewInt(0).Rsh(iv, 64).Uint64()
-	rows, err := amdb.Query(`
-		SELECT message FROM ipban WHERE (address_lo & mask_lo) = (? & mask_lo)
+	rows, err := amdb.QueryContext(ctx, `SELECT message FROM ipban WHERE (address_lo & mask_lo) = (? & mask_lo)
 			AND (address_hi & mask_hi) = (? & mask_hi) AND (expire IS NULL OR expire >= ?)
 			AND enable <> 0 ORDER BY mask_hi DESC, mask_lo DESC`, iv_lo, iv_hi, time.Now().UTC())
 	if err != nil {

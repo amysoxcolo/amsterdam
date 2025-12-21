@@ -32,22 +32,22 @@ import (
  */
 func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
-	prefs, err := me.Prefs()
+	prefs, err := me.Prefs(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
 	comm := ctxt.CurrentCommunity() // set by middleware
-	ci, err := comm.ContactInfo()
+	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	host, err := comm.Host()
+	host, err := comm.Host(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
 	var cats []*database.Category
 	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
-		cats, err = database.AmGetCategoryHierarchy(comm.CategoryId)
+		cats, err = database.AmGetCategoryHierarchy(ctxt.Ctx(), comm.CategoryId)
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
@@ -142,7 +142,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
-	mbr, _, _, err := comm.Membership(me)
+	mbr, _, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -161,7 +161,7 @@ func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
 			return dlg.Render(ctxt)
 		}
 		// if get here, this is a public community, and we can join
-		err = comm.SetMembership(me, database.AmDefaultRole("Community.NewUser").Level(), false, me.Uid, ctxt.RemoteIP())
+		err = comm.SetMembership(ctxt.Ctx(), me, database.AmDefaultRole("Community.NewUser").Level(), false, me.Uid, ctxt.RemoteIP())
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
@@ -182,7 +182,7 @@ func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
 func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
-	mbr, _, _, err := comm.Membership(me)
+	mbr, _, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -210,7 +210,7 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
 			if comm.JoinKey != nil && key != *comm.JoinKey {
 				return dlg.RenderError(ctxt, "The join key does not match the community.  Please try again.")
 			}
-			err = comm.SetMembership(me, database.AmDefaultRole("Community.NewUser").Level(), false, me.Uid, ctxt.RemoteIP())
+			err = comm.SetMembership(ctxt.Ctx(), me, database.AmDefaultRole("Community.NewUser").Level(), false, me.Uid, ctxt.RemoteIP())
 			if err != nil {
 				return dlg.RenderError(ctxt, fmt.Sprintf("Error joining: %v", err))
 			}
@@ -232,7 +232,7 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
 func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
-	mbr, lock, _, err := comm.Membership(me)
+	mbr, lock, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -260,7 +260,7 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
 func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
-	mbr, lock, _, err := comm.Membership(me)
+	mbr, lock, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -276,7 +276,7 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
 		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
 	}
 	if ctxt.FormFieldIsSet("unjoin") {
-		err = comm.SetMembership(me, 0, false, me.Uid, ctxt.RemoteIP())
+		err = comm.SetMembership(ctxt.Ctx(), me, 0, false, me.Uid, ctxt.RemoteIP())
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
@@ -314,7 +314,7 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("ofs", ofs)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "List Members")
 	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
-	results, total, err := comm.ListMembers(database.ListMembersFieldNone, database.ListMembersOperNone, "", ofs*listMax, listMax, showHidden)
+	results, total, err := comm.ListMembers(ctxt.Ctx(), database.ListMembersFieldNone, database.ListMembersOperNone, "", ofs*listMax, listMax, showHidden)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -385,7 +385,7 @@ func MemberSearch(ctxt ui.AmContext) (string, any, error) {
 		return "framed_template", "memberlist.jet", nil
 	}
 	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
-	results, total, err := comm.ListMembers(iField, iOper, term, ofs*listMax, listMax, showHidden)
+	results, total, err := comm.ListMembers(ctxt.Ctx(), iField, iOper, term, ofs*listMax, listMax, showHidden)
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}

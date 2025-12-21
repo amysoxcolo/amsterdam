@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -51,9 +52,9 @@ type ContactInfo struct {
 }
 
 // lookupCommunityContact looks up the ID of a contact for a community.
-func lookupCommunityContact(id int32) (int32, error) {
+func lookupCommunityContact(ctx context.Context, id int32) (int32, error) {
 	var rc int32 = -1
-	rs, err := amdb.Query("SELECT contactid FROM contacts WHERE owner_commid = ?", id)
+	rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
 	if err == nil {
 		if rs.Next() {
 			rs.Scan(&rc)
@@ -63,9 +64,9 @@ func lookupCommunityContact(id int32) (int32, error) {
 }
 
 // lookupUserContact looks up the ID of a contact for a user.
-func lookupUserContact(uid int32) (int32, error) {
+func lookupUserContact(ctx context.Context, uid int32) (int32, error) {
 	var rc int32 = -1
-	rs, err := amdb.Query("SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
+	rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
 	if err == nil {
 		if rs.Next() {
 			rs.Scan(&rc)
@@ -114,11 +115,13 @@ func (ci *ContactInfo) FullName(ps bool) string {
 }
 
 /* Save saves the contact info to the database.
+ * Parameters:
+ *     ctx - Standard Go context value.
  * Returns:
  *     true if the E-mail address on this account has been changed, false if not.
  *     Standard Go error status.
  */
-func (ci *ContactInfo) Save() (bool, error) {
+func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
 	ci.Mutex.Lock()
 	defer ci.Mutex.Unlock()
 
@@ -129,9 +132,9 @@ func (ci *ContactInfo) Save() (bool, error) {
 		var nx int32
 		var err error
 		if ci.OwnerCommId > 0 {
-			nx, err = lookupCommunityContact(ci.OwnerCommId)
+			nx, err = lookupCommunityContact(ctx, ci.OwnerCommId)
 		} else {
-			nx, err = lookupUserContact(ci.OwnerUid)
+			nx, err = lookupUserContact(ctx, ci.OwnerUid)
 		}
 		if err != nil {
 			return false, err
@@ -147,7 +150,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 	}
 	if !emailChange {
 		// we don't THINK the E-mail address is changing, but we could be wrong...
-		rs, err := amdb.Query("SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
+		rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
 		if err != nil {
 			return false, err
 		}
@@ -157,7 +160,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 	}
 	// Handle the database heavy lifting.
 	if updateMode {
-		_, err := amdb.NamedExec(`UPDATE contacts SET given_name = :given_name, family_name = :family_name, middle_init = :middle_init,
+		_, err := amdb.NamedExecContext(ctx, `UPDATE contacts SET given_name = :given_name, family_name = :family_name, middle_init = :middle_init,
 		    prefix = :prefix, suffix = :suffix, company = :company, addr1 = :addr1, addr2 = :addr2, locality = :locality, region = :region,
 			pcode = :pcode, country = :country, phone = :phone, fax = :fax, mobile = :mobile, email = :email, pvt_addr = :pvt_addr,
 			pvt_phone = :pvt_phone, pvt_fax = :pvt_fax, pvt_email = :pvt_email, photo_url = :photo_url, url = :url, lastupdate = NOW()
@@ -167,7 +170,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 		}
 		contactCache.Add(ci.ContactId, ci)
 	} else {
-		res, err := amdb.NamedExec(`INSERT INTO contacts (given_name, family_name, middle_init, prefix, suffix, company, addr1,
+		res, err := amdb.NamedExecContext(ctx, `INSERT INTO contacts (given_name, family_name, middle_init, prefix, suffix, company, addr1,
         	addr2, locality, region, pcode, country, phone, fax, mobile, email, pvt_addr, pvt_phone, pvt_fax,
     		pvt_email, owner_uid, owner_commid, photo_url, url, lastupdate)
 			VALUES (:given_name, :family_name, :middle_init, :prefix, :suffix, :company, :addr1, :addr2, :locality,
@@ -181,7 +184,7 @@ func (ci *ContactInfo) Save() (bool, error) {
 		contactCache.Add(ci.ContactId, ci)
 	}
 	// Refresh the last update date.
-	rs, err := amdb.Query("SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
+	rs, err := amdb.QueryContext(ctx, "SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
 	if err != nil {
 		return false, err
 	}
@@ -241,9 +244,9 @@ func init() {
 }
 
 // internalContactInfo retrieves the contact info from the database.
-func internalContactInfo(id int32) (*ContactInfo, error) {
+func internalContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
 	var dbdata []ContactInfo
-	err := amdb.Select(&dbdata, "SELECT * from contacts WHERE contactid = ?", id)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * from contacts WHERE contactid = ?", id)
 	if err == nil {
 		if len(dbdata) > 1 {
 			err = fmt.Errorf("internalContactInfo(%d): Too many responses (%d)", id, len(dbdata))
@@ -258,19 +261,20 @@ func internalContactInfo(id int32) (*ContactInfo, error) {
 
 /* AmGetContactInfo retrieves the contact info for a given identifier.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     id - The contact info ID top retrieve.
  * Returns:
  *	   ContactInfo retrieved, or nil.
  *     Standard Go error status.
  */
-func AmGetContactInfo(id int32) (*ContactInfo, error) {
+func AmGetContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
 	getContactMutex.Lock()
 	defer getContactMutex.Unlock()
 	rc, ok := contactCache.Get(id)
 	if ok {
 		return rc.(*ContactInfo), nil
 	}
-	rc2, err := internalContactInfo(id)
+	rc2, err := internalContactInfo(ctx, id)
 	if err == nil {
 		if rc2 != nil {
 			contactCache.Add(id, rc2)

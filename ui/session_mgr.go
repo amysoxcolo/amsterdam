@@ -11,6 +11,7 @@
 package ui
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/gob"
 	"encoding/hex"
@@ -220,8 +221,8 @@ func AmSetSessionUser(session *sessions.Session, user *database.User) {
 }
 
 // setSessionAnon sets the user for the session to the anonymous user.
-func setSessionAnon(session *sessions.Session) {
-	u, err := database.AmGetAnonUser()
+func setSessionAnon(ctx context.Context, session *sessions.Session) {
+	u, err := database.AmGetAnonUser(ctx)
 	if err == nil {
 		AmSetSessionUser(session, u)
 	} else {
@@ -232,20 +233,20 @@ func setSessionAnon(session *sessions.Session) {
 var lastHitMutex sync.Mutex
 
 // AmSessionFirstTime initializes the session after it's first created.
-func AmSessionFirstTime(session *sessions.Session) {
+func AmSessionFirstTime(ctx context.Context, session *sessions.Session) {
 	lastHitMutex.Lock()
-	setSessionAnon(session)
+	setSessionAnon(ctx, session)
 	session.Values["lasthit"] = time.Now()
 	lastHitMutex.Unlock()
 }
 
 // AmResetSession clears the specified session.
-func AmResetSession(session *sessions.Session) {
+func AmResetSession(ctx context.Context, session *sessions.Session) {
 	lastHitMutex.Lock()
 	for k := range session.Values {
 		delete(session.Values, k)
 	}
-	setSessionAnon(session)
+	setSessionAnon(ctx, session)
 	session.Values["lasthit"] = time.Now()
 	lastHitMutex.Unlock()
 }

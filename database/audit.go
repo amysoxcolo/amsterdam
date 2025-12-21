@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -113,12 +114,12 @@ func AmNewAudit(rectype int32, uid int32, ip string, data ...string) *AuditRecor
 }
 
 // Store stores the audit record in the database.
-func (ar *AuditRecord) Store() error {
+func (ar *AuditRecord) Store(ctx context.Context) error {
 	if ar.Record > 0 {
 		return fmt.Errorf("audit record %d already stored", ar.Record)
 	}
 	moment := time.Now().UTC()
-	rs, err := amdb.Exec(`INSERT INTO audit (on_date, event, uid, commid, ip, data1, data2, data3, data4)
+	rs, err := amdb.ExecContext(ctx, `INSERT INTO audit (on_date, event, uid, commid, ip, data1, data2, data3, data4)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`, moment, ar.Event, ar.Uid, ar.CommId, ar.IP,
 		ar.Data1, ar.Data2, ar.Data3, ar.Data4)
 	if err != nil {
@@ -132,7 +133,7 @@ func (ar *AuditRecord) Store() error {
 // auditWriter is the routine that stores audit records in trhe background.
 func auditWriter(workChan chan *AuditRecord, doneChan chan bool) {
 	for ar := range workChan {
-		err := ar.Store()
+		err := ar.Store(context.Background())
 		if err != nil {
 			log.Errorf("dropped audit record (%+v) on the floor: %v", *ar, err)
 		}

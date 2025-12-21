@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"strings"
@@ -45,12 +46,12 @@ var categoryIdMap map[int32]*Category = make(map[int32]*Category)
 var categoryMutex sync.Mutex
 
 // isCatEnabled determines if category features are enabled.
-func isCatEnabled() (bool, error) {
-	g, err := AmGlobals()
+func isCatEnabled(ctx context.Context) (bool, error) {
+	g, err := AmGlobals(ctx)
 	if err != nil {
 		return false, err
 	}
-	set, err := g.Flags()
+	set, err := g.Flags(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -58,11 +59,11 @@ func isCatEnabled() (bool, error) {
 }
 
 // loadCategories loads the categories list from the database.
-func loadCategories() error {
+func loadCategories(ctx context.Context) error {
 	categoryMutex.Lock()
 	defer categoryMutex.Unlock()
 	if allCategories == nil {
-		rs, err := amdb.Query("SELECT COUNT(*) FROM refcategory")
+		rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM refcategory")
 		if err != nil {
 			return err
 		}
@@ -72,7 +73,7 @@ func loadCategories() error {
 		var ncats int32
 		rs.Scan(&ncats)
 		allCategories = make([]Category, 0, ncats)
-		err = amdb.Select(&allCategories, "SELECT * FROM refcategory ORDER BY parent, name")
+		err = amdb.SelectContext(ctx, &allCategories, "SELECT * FROM refcategory ORDER BY parent, name")
 		if err != nil {
 			return err
 		}
@@ -85,20 +86,21 @@ func loadCategories() error {
 
 /* AmGetCategory returns the category for the given name.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     catid - The ID of the category to get.
  * Returns:
  *     Pointer to the appropriate Category, or nil.
  *     Standard Go error status.
  */
-func AmGetCategory(catid int32) (*Category, error) {
-	ok, err := isCatEnabled()
+func AmGetCategory(ctx context.Context, catid int32) (*Category, error) {
+	ok, err := isCatEnabled(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		return nil, errors.New("category feature not supported")
 	}
-	err = loadCategories()
+	err = loadCategories(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -116,20 +118,21 @@ func AmGetCategory(catid int32) (*Category, error) {
 
 /* AmGetCategoryHierarchy returns the category hierarchy for the given ID.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     catid - The ID of the category to get.
  * Returns:
  *     Array of pointers to the categories in hierarchical order, or nil.
  *     Standard Go error status.
  */
-func AmGetCategoryHierarchy(catid int32) ([]*Category, error) {
-	ok, err := isCatEnabled()
+func AmGetCategoryHierarchy(ctx context.Context, catid int32) ([]*Category, error) {
+	ok, err := isCatEnabled(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		return nil, errors.New("category feature not supported")
 	}
-	err = loadCategories()
+	err = loadCategories(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -154,20 +157,21 @@ func AmGetCategoryHierarchy(catid int32) ([]*Category, error) {
 
 /* AmGetSubCategories returns a list of all subcategories of the given category ID.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     catid - The parent category ID to use.  May be -1 to return all "top level" categories.
  * Returns:
  *     List of subcategories of this category.
  *     Standard Go error status.
  */
-func AmGetSubCategories(catid int32) ([]*Category, error) {
-	ok, err := isCatEnabled()
+func AmGetSubCategories(ctx context.Context, catid int32) ([]*Category, error) {
+	ok, err := isCatEnabled(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		return nil, errors.New("category feature not supported")
 	}
-	err = loadCategories()
+	err = loadCategories(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +189,7 @@ func AmGetSubCategories(catid int32) ([]*Category, error) {
 
 /* AmSearchCategories searches for categories matching certain criteria.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     oper - The operation to perform on the category name:
  *         SearchCatOperPrefix - The category name has the string "term" as a prefix.
  *         SearchCatOperSubstring - The category name contains the string "term".
@@ -197,8 +202,8 @@ func AmGetSubCategories(catid int32) ([]*Category, error) {
  *     The total number of categories matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmSearchCategories(oper int, term string, offset int, max int, showAll bool, searchAll bool) ([]*Category, int, error) {
-	ok, err := isCatEnabled()
+func AmSearchCategories(ctx context.Context, oper int, term string, offset int, max int, showAll bool, searchAll bool) ([]*Category, int, error) {
+	ok, err := isCatEnabled(ctx)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -230,7 +235,7 @@ func AmSearchCategories(oper int, term string, offset int, max int, showAll bool
 		queryString.WriteString(" AND hide_search = 0")
 	}
 	q := queryString.String()
-	rs, err := amdb.Query("SELECT COUNT(*) FROM refcategory WHERE " + q)
+	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM refcategory WHERE "+q)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -243,9 +248,9 @@ func AmSearchCategories(oper int, term string, offset int, max int, showAll bool
 		return make([]*Category, 0), 0, nil
 	}
 	if offset > 0 {
-		rs, err = amdb.Query("SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ? OFFSET ?", max, offset)
+		rs, err = amdb.QueryContext(ctx, "SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ? OFFSET ?", max, offset)
 	} else {
-		rs, err = amdb.Query("SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ?", max)
+		rs, err = amdb.QueryContext(ctx, "SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ?", max)
 	}
 	if err != nil {
 		return nil, total, err
@@ -254,7 +259,7 @@ func AmSearchCategories(oper int, term string, offset int, max int, showAll bool
 	for rs.Next() {
 		var catid int32
 		rs.Scan(&catid)
-		c, err := AmGetCategory(catid)
+		c, err := AmGetCategory(ctx, catid)
 		if err == nil {
 			rc = append(rc, c)
 		}

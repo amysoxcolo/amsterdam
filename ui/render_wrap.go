@@ -51,7 +51,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		case "top":
 			menus[0] = AmMenu("top")
 		case "community":
-			md, err := AmBuildCommunityMenu(amctxt.CurrentCommunity())
+			md, err := AmBuildCommunityMenu(ctxt.Request().Context(), amctxt.CurrentCommunity())
 			if err != nil {
 				return err
 			}

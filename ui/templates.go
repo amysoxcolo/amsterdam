@@ -112,7 +112,8 @@ func immediateIf(a jet.Arguments) reflect.Value {
 func extractCommunityLogo(a jet.Arguments) reflect.Value {
 	rc := "/img/builtin/default-community.jpg"
 	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
-	ci, err := comm.ContactInfo()
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err == nil {
 		if ci.PhotoURL != nil && *ci.PhotoURL != "" {
 			rc = *ci.PhotoURL
@@ -125,7 +126,7 @@ func extractCommunityLogo(a jet.Arguments) reflect.Value {
 func displayDateTime(a jet.Arguments) reflect.Value {
 	timeval := a.Get(0).Convert(reflect.TypeFor[time.Time]()).Interface().(time.Time)
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
-	prefs, err := ctxt.CurrentUser().Prefs()
+	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
 	if err == nil {
 		loc := prefs.Localizer()
 		return reflect.ValueOf(loc.Strftime("%b %e, %Y %r", timeval))
@@ -137,7 +138,7 @@ func displayDateTime(a jet.Arguments) reflect.Value {
 func displayActivity(a jet.Arguments) reflect.Value {
 	timeval := a.Get(0).Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
-	prefs, err := ctxt.CurrentUser().Prefs()
+	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
 	if err == nil {
 		return reflect.ValueOf(util.AmActivityString(timeval, prefs.Localizer()))
 	}
@@ -150,14 +151,14 @@ func displayMemberCount(a jet.Arguments) reflect.Value {
 	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
 	level := ctxt.CurrentUser().BaseLevel
-	mbr, _, clevel, err := comm.Membership(ctxt.CurrentUser())
+	mbr, _, clevel, err := comm.Membership(ctxt.Ctx(), ctxt.CurrentUser())
 	if err == nil {
 		if mbr && clevel > level {
 			level = clevel
 		}
 		showHidden = comm.TestPermission("Community.ShowHiddenMembers", level)
 	}
-	count, err := comm.MemberCount(showHidden)
+	count, err := comm.MemberCount(ctxt.Ctx(), showHidden)
 	if err != nil {
 		return reflect.ValueOf(-1)
 	}
@@ -194,7 +195,8 @@ func displayFullName(a jet.Arguments) reflect.Value {
 // displayExpandCat displays a category expanded into a hierarchy.
 func displayExpandCat(a jet.Arguments) reflect.Value {
 	cat := a.Get(0).Convert(reflect.TypeFor[*database.Category]()).Interface().(*database.Category)
-	hier, _ := database.AmGetCategoryHierarchy(cat.CatId)
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	hier, _ := database.AmGetCategoryHierarchy(ctxt.Ctx(), cat.CatId)
 	var rc strings.Builder
 	for i, c := range hier {
 		if i > 0 {

@@ -79,8 +79,8 @@
             {{ post_overrideLine := "" }}
             {{ post_overrideLink := "" }}
             {{ range i, post_cur := posts }}
-                {{ post_userName = post_getUserName(post_cur) }}
-                {{ post_text = post_getText(post_cur) }}
+                {{ post_userName = post_getUserName(post_cur, .) }}
+                {{ post_text = post_getText(post_cur, .) }}
                 {{ post_overrideLine = post_getOverrideLine(post_cur, .) }}
                 {{ post_overrideLink = post_getOverrideLink(post_cur, post_topicPermalink) }}
                 {{ .SubRender("singlepost.jet") | raw }}

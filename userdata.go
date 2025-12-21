@@ -57,10 +57,10 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("tgt").Value = target
 		ctxt.VarMap().Set("target", target)
 		var ci *database.ContactInfo
-		ci, err = u.ContactInfo()
+		ci, err = u.ContactInfo(ctxt.Ctx())
 		if err == nil {
 			var prefs *database.UserPrefs
-			prefs, err = u.Prefs()
+			prefs, err = u.Prefs(ctxt.Ctx())
 			if err == nil {
 				dlg.Field("remind").Value = u.PassReminder
 				dlg.Field("prefix").SetVal(ci.Prefix)
@@ -87,8 +87,8 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 				dlg.Field("dob").SetDate(u.DOB)
 				dlg.Field("descr").SetVal(u.Description)
 				dlg.Field("photo").Value = userPhotoURL(ci)
-				dlg.Field("pic_in_post").SetChecked(u.FlagValue(database.UserFlagPicturesInPosts))
-				dlg.Field("no_mass_mail").SetChecked(u.FlagValue(database.UserFlagMassMailOptOut))
+				dlg.Field("pic_in_post").SetChecked(u.FlagValue(ctxt.Ctx(), database.UserFlagPicturesInPosts))
+				dlg.Field("no_mass_mail").SetChecked(u.FlagValue(ctxt.Ctx(), database.UserFlagMassMailOptOut))
 				dlg.Field("locale").Value = prefs.ReadLocale()
 				dlg.Field("tz").Value = prefs.TimeZoneID
 				return dlg.Render(ctxt)
@@ -130,15 +130,15 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 				return dlg.RenderError(ctxt, err.Error())
 			}
 			var ci *database.ContactInfo
-			ci, err = u.ContactInfo()
+			ci, err = u.ContactInfo(ctxt.Ctx())
 			if err == nil {
 				var prefs *database.UserPrefs
 				emailChange := false
-				prefs, err = u.Prefs()
+				prefs, err = u.Prefs(ctxt.Ctx())
 				if err == nil && !(dlg.Field("pass1").IsEmpty() && dlg.Field("pass2").IsEmpty()) {
 					p1 := dlg.Field("pass1").Value
 					if p1 == dlg.Field("pass2").Value {
-						err = u.ChangePassword(p1, ctxt.RemoteIP())
+						err = u.ChangePassword(ctxt.Ctx(), p1, ctxt.RemoteIP())
 					} else {
 						err = errors.New("passwords do not match")
 					}
@@ -166,27 +166,27 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 					nci.Email = dlg.Field("email").ValPtr()
 					nci.PrivateEmail = dlg.Field("pvt_email").IsChecked()
 					nci.URL = dlg.Field("url").ValPtr()
-					emailChange, err = nci.Save()
+					emailChange, err = nci.Save(ctxt.Ctx())
 					ci = nci
 				}
 				if err == nil {
 					nprefs := prefs.Clone()
 					nprefs.WriteLocale(dlg.Field("locale").Value)
 					nprefs.TimeZoneID = dlg.Field("tz").Value
-					err = nprefs.Save(u)
+					err = nprefs.Save(ctxt.Ctx(), u)
 				}
 				if err == nil {
 					var f *util.OptionSet
-					f, err = u.Flags()
+					f, err = u.Flags(ctxt.Ctx())
 					if err == nil {
 						nf := f.Clone()
 						nf.Set(database.UserFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
 						nf.Set(database.UserFlagMassMailOptOut, dlg.Field("no_mass_mail").IsChecked())
-						err = u.SaveFlags(nf)
+						err = u.SaveFlags(ctxt.Ctx(), nf)
 					}
 				}
 				if err == nil {
-					err = u.SetProfileData(dlg.Field("remind").Value, dlg.Field("dob").AsDate(), dlg.Field("descr").ValPtr())
+					err = u.SetProfileData(ctxt.Ctx(), dlg.Field("remind").Value, dlg.Field("dob").AsDate(), dlg.Field("descr").ValPtr())
 				}
 				if err == nil {
 					if emailChange {
@@ -223,7 +223,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 	if u.IsAnon {
 		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
 	}
-	ci, err := u.ContactInfo()
+	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err == nil {
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
@@ -247,7 +247,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 	if u.IsAnon {
 		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
 	}
-	ci, err := u.ContactInfo()
+	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -267,11 +267,11 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 				ui.UserPhotoMaxBytes)
 			if err == nil {
 				var img *database.ImageStore
-				img, err = database.AmStoreImage(database.ImageTypeUserPhoto, u.Uid, mimeType, imageData)
+				img, err = database.AmStoreImage(ctxt.Ctx(), database.ImageTypeUserPhoto, u.Uid, mimeType, imageData)
 				if err == nil {
 					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
 					ci.PhotoURL = &photourl
-					_, err = ci.Save()
+					_, err = ci.Save(ctxt.Ctx())
 					if err == nil {
 						return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
 					}
@@ -300,7 +300,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 			defer func() {
 				if happy {
 					ampool.Submit(func(context.Context) {
-						err := database.AmDeleteImage(int32(id))
+						err := database.AmDeleteImage(ctxt.Ctx(), int32(id))
 						if err != nil {
 							log.Errorf("unable to delete image ID %d: %v", id, err)
 						}
@@ -309,7 +309,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 			}()
 		}
 		ci.PhotoURL = nil
-		_, err := ci.Save()
+		_, err := ci.Save(ctxt.Ctx())
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
@@ -329,18 +329,18 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
  */
 func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 	me := ctxt.CurrentUser()
-	prefs, err := me.Prefs()
+	prefs, err := me.Prefs(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
 
 	// Gather the info on the current user.
-	user, err := database.AmGetUserByName(ctxt.URLParam("uname"), nil)
+	user, err := database.AmGetUserByName(ctxt.Ctx(), ctxt.URLParam("uname"), nil)
 	if err != nil {
 		ctxt.SetRC(http.StatusNotFound)
 		return ui.ErrorPage(ctxt, err)
 	}
-	ci, err := user.ContactInfo()
+	ci, err := user.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -449,7 +449,7 @@ func QuickEMail(ctxt ui.AmContext) (string, any, error) {
 	if me.IsAnon {
 		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
 	}
-	myCI, err := me.ContactInfo()
+	myCI, err := me.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -457,14 +457,14 @@ func QuickEMail(ctxt ui.AmContext) (string, any, error) {
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	user, err := database.AmGetUser(int32(toUid))
+	user, err := database.AmGetUser(ctxt.Ctx(), int32(toUid))
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
 	if user.IsAnon {
 		return ui.ErrorPage(ctxt, errors.New("cannot send quick E-mail to anonymous user"))
 	}
-	ci, err := user.ContactInfo()
+	ci, err := user.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}

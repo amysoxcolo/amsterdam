@@ -38,7 +38,7 @@ func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
 		}
 	}
 	if catid > -1 {
-		cat, err := database.AmGetCategory(catid) // this step also resolves symlinks
+		cat, err := database.AmGetCategory(ctxt.Ctx(), catid) // this step also resolves symlinks
 		if err != nil {
 			return err
 		}
@@ -48,12 +48,12 @@ func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
 	ctxt.VarMap().Set("catid", catid)
 	showHidden := database.AmTestPermission("Global.ShowHiddenCategories", u.BaseLevel)
 	ctxt.VarMap().Set("showHiddenCat", showHidden)
-	hier, err := database.AmGetCategoryHierarchy(catid)
+	hier, err := database.AmGetCategoryHierarchy(ctxt.Ctx(), catid)
 	if err != nil {
 		return err
 	}
 	ctxt.VarMap().Set("catHierarchy", hier)
-	subs, err := database.AmGetSubCategories(catid)
+	subs, err := database.AmGetSubCategories(ctxt.Ctx(), catid)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
 	if catid > -1 {
 		// search for communities in this category
 		listMax := int(ctxt.Globals().MaxSearchPage)
-		commList, numComm, err := database.AmGetCommunitiesForCategory(catid, offset*listMax, listMax, showHidden)
+		commList, numComm, err := database.AmGetCommunitiesForCategory(ctxt.Ctx(), catid, offset*listMax, listMax, showHidden)
 		if err != nil {
 			return err
 		}
@@ -207,7 +207,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			return "framed_template", "find.jet", nil
 		}
 		var clist []*database.Community
-		clist, total, err = database.AmSearchCommunities(iField, iOper, term, ofs*listMax, listMax,
+		clist, total, err = database.AmSearchCommunities(ctxt.Ctx(), iField, iOper, term, ofs*listMax, listMax,
 			ctxt.TestPermission("Global.SearchHiddenCommunities"))
 		if err == nil {
 			if clist == nil {
@@ -244,7 +244,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			return "framed_template", "find.jet", nil
 		}
 		var ulist []*database.User
-		ulist, total, err = database.AmSearchUsers(iField, iOper, term, ofs*listMax, listMax)
+		ulist, total, err = database.AmSearchUsers(ctxt.Ctx(), iField, iOper, term, ofs*listMax, listMax)
 		if err == nil {
 			if ulist == nil {
 				numResults = 0
@@ -268,7 +268,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			return "framed_template", "find.jet", nil
 		}
 		var catlist []*database.Category
-		catlist, total, err = database.AmSearchCategories(iOper, term, ofs*listMax, listMax,
+		catlist, total, err = database.AmSearchCategories(ctxt.Ctx(), iOper, term, ofs*listMax, listMax,
 			ctxt.TestPermission("Global.ShowHiddenCategories"), ctxt.TestPermission("Global.SearchHiddenCategories"))
 		if err == nil {
 			if catlist == nil {

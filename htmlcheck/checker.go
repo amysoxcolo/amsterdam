@@ -10,6 +10,7 @@
 package htmlcheck
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -81,6 +82,7 @@ const hyphApos = "-'"
 
 // htmlCheckerImpl is the implementation of the HTML checker.
 type htmlCheckerImpl struct {
+	ctx                context.Context              // request context, as instances are generally per-request
 	config             *HTMLCheckerConfig           // pointer to configuration
 	started            bool                         // has checker been started?
 	finished           bool                         // has checker been finished?
@@ -147,13 +149,14 @@ func (ht *htmlCheckerImpl) copyOutputFilters(dest []outputFilter, source []strin
  */
 
 /* AmNewHTMLChecker creates a new HTML Checker object.
- * Parametrers:
+ * Parameters:
+ *     ctx - Standard Go context value.
  *     configName - Name of the configuration to use.
  * Returns:
  *     New HTML checker reference.
  *     Standard Go error status.
  */
-func AmNewHTMLChecker(configName string) (HTMLChecker, error) {
+func AmNewHTMLChecker(ctx context.Context, configName string) (HTMLChecker, error) {
 	config, ok := configsRegistry[configName]
 	if !ok {
 		return nil, fmt.Errorf("configuration %s not found", configName)
@@ -166,6 +169,7 @@ func AmNewHTMLChecker(configName string) (HTMLChecker, error) {
 		}
 	}
 	rc := htmlCheckerImpl{
+		ctx:                ctx,
 		config:             config,
 		started:            false,
 		finished:           false,
@@ -486,7 +490,7 @@ func (ht *htmlCheckerImpl) emitFromStartOfTempBuffer(nrunes int) {
 // attemptRewrite attempts to apply a list of rewriters on the text, returning the first one that matches.
 func (ht *htmlCheckerImpl) attemptRewrite(rewriters []rewriter, data string) *markupData {
 	for _, r := range rewriters {
-		rc := r.Rewrite(data, ht)
+		rc := r.Rewrite(ht.ctx, data, ht)
 		if rc != nil {
 			return rc
 		}

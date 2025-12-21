@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
@@ -53,11 +54,11 @@ func (p *UserPrefs) Clone() *UserPrefs {
 }
 
 // Save saves off the user preferences, replacing the prefs on the user if necessary.
-func (p *UserPrefs) Save(u *User) error {
+func (p *UserPrefs) Save(ctx context.Context, u *User) error {
 	if u != nil && u.Uid != p.Uid {
 		return errors.New("internal mismatch of IDs")
 	}
-	_, err := amdb.NamedExec("UPDATE userprefs SET localeid = :localeid, tzid = :tzid WHERE uid = :uid", p)
+	_, err := amdb.NamedExecContext(ctx, "UPDATE userprefs SET localeid = :localeid, tzid = :tzid WHERE uid = :uid", p)
 	if err == nil && u != nil {
 		u.prefs = p
 	}
@@ -181,27 +182,27 @@ func init() {
 }
 
 // ContactInfo returns the contact info structure for the user.
-func (u *User) ContactInfo() (*ContactInfo, error) {
+func (u *User) ContactInfo(ctx context.Context) (*ContactInfo, error) {
 	if u.ContactID < 0 {
 		return nil, nil
 	}
-	return AmGetContactInfo(u.ContactID)
+	return AmGetContactInfo(ctx, u.ContactID)
 }
 
 // ContactInfo returns the contact info structure for the user, quietly.
-func (u *User) ContactInfoQ() *ContactInfo {
+func (u *User) ContactInfoQ(ctx context.Context) *ContactInfo {
 	if u.ContactID < 0 {
 		return nil
 	}
-	ci, _ := AmGetContactInfo(u.ContactID)
+	ci, _ := AmGetContactInfo(ctx, u.ContactID)
 	return ci
 }
 
 // SetContactID sets the contact ID of a user.
-func (u *User) SetContactID(cid int32) error {
+func (u *User) SetContactID(ctx context.Context, cid int32) error {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
-	if _, err := amdb.Exec("UPDATE users SET contactid = ? WHERE uid = ?", cid, u.Uid); err != nil {
+	if _, err := amdb.ExecContext(ctx, "UPDATE users SET contactid = ? WHERE uid = ?", cid, u.Uid); err != nil {
 		return err
 	}
 	u.ContactID = cid
@@ -213,14 +214,14 @@ func (u *User) SetContactID(cid int32) error {
  *     Authentication token value
  *	   Standard Go error status.
  */
-func (u *User) NewAuthToken() (string, error) {
+func (u *User) NewAuthToken(ctx context.Context) (string, error) {
 	if u.IsAnon {
 		return "", errors.New("cannot generate token for anonymous user")
 	}
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	newToken := util.GenerateRandomAuthString()
-	if _, err := amdb.Exec("UPDATE users SET tokenauth = ? WHERE uid = ?", newToken, u.Uid); err != nil {
+	if _, err := amdb.ExecContext(ctx, "UPDATE users SET tokenauth = ? WHERE uid = ?", newToken, u.Uid); err != nil {
 		return "", err
 	}
 	u.Tokenauth = &newToken
@@ -230,12 +231,13 @@ func (u *User) NewAuthToken() (string, error) {
 
 /* ConfirmEMailAddress checks the E-mail confirmation number and sets "verified" status if it's OK.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     confnum - The entered confirmation number.
  *     remoteIP - The remote IP address for audit messages.
  * Returns:
  *     Standard Go error status.
  */
-func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
+func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -260,12 +262,12 @@ func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
 		ar = AmNewAudit(AuditVerifyEmailFail, u.Uid, remoteIP, "Invalid confirmation number")
 		return errors.New("confirmation number is incorrect. Please try again")
 	}
-	_, err := tx.Exec("UPDATE users SET verify_email = 1, base_lvl = ? WHERE uid = ?",
+	_, err := tx.ExecContext(ctx, "UPDATE users SET verify_email = 1, base_lvl = ? WHERE uid = ?",
 		AmDefaultRole("Global.AfterVerify").Level(), u.Uid)
 	if err == nil {
 		u.VerifyEMail = true
 		u.BaseLevel = AmDefaultRole("Global.AfterVerify").Level()
-		err = AmAutoJoinCommunities(tx, u)
+		err = AmAutoJoinCommunities(ctx, tx, u)
 		if err == nil {
 			err = tx.Commit()
 			if err == nil {
@@ -278,11 +280,11 @@ func (u *User) ConfirmEMailAddress(confnum int32, remoteIP string) error {
 }
 
 // NewEmailConfirmationNumber creates a new confirmation number for a user and saves it off.
-func (u *User) NewEmailConfirmationNumber() error {
+func (u *User) NewEmailConfirmationNumber(ctx context.Context) error {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	newnum := util.GenerateRandomConfirmationNumber()
-	_, err := amdb.Exec("UPDATE users SET email_confnum = ? WHERE uid = ?", newnum, u.Uid)
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET email_confnum = ? WHERE uid = ?", newnum, u.Uid)
 	if err != nil {
 		u.EmailConfNum = newnum
 	}
@@ -290,7 +292,7 @@ func (u *User) NewEmailConfirmationNumber() error {
 }
 
 // ChangePassword resets a user's password.
-func (u *User) ChangePassword(password string, remoteIP string) error {
+func (u *User) ChangePassword(ctx context.Context, password string, remoteIP string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -299,7 +301,7 @@ func (u *User) ChangePassword(password string, remoteIP string) error {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	pval := hashPassword(password)
-	_, err := amdb.Exec("UPDATE users SET passhash = ? WHERE uid = ?", pval, u.Uid)
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET passhash = ? WHERE uid = ?", pval, u.Uid)
 	if err == nil {
 		u.Passhash = pval
 		ar = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
@@ -308,11 +310,11 @@ func (u *User) ChangePassword(password string, remoteIP string) error {
 }
 
 // GetFlags retrieves the flags from the properties.
-func (u *User) Flags() (*util.OptionSet, error) {
+func (u *User) Flags(ctx context.Context) (*util.OptionSet, error) {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	if u.flags == nil {
-		s, err := AmGetUserProperty(u.Uid, UserPropFlags)
+		s, err := AmGetUserProperty(ctx, u.Uid, UserPropFlags)
 		if err != nil {
 			return nil, err
 		}
@@ -325,11 +327,11 @@ func (u *User) Flags() (*util.OptionSet, error) {
 }
 
 // SaveFlags writes the flags to the database and stores them.
-func (u *User) SaveFlags(f *util.OptionSet) error {
+func (u *User) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 	s := f.AsString()
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
-	err := AmSetUserProperty(u.Uid, UserPropFlags, &s)
+	err := AmSetUserProperty(ctx, u.Uid, UserPropFlags, &s)
 	if err == nil {
 		u.flags = f
 	}
@@ -337,8 +339,8 @@ func (u *User) SaveFlags(f *util.OptionSet) error {
 }
 
 // FlagValue returns the boolean value of one of the user flags.
-func (u *User) FlagValue(ndx uint) bool {
-	f, err := u.Flags()
+func (u *User) FlagValue(ctx context.Context, ndx uint) bool {
+	f, err := u.Flags(ctx)
 	if err != nil {
 		log.Errorf("flag retrieval error for user %d: %v", u.Uid, err)
 		return false
@@ -347,12 +349,12 @@ func (u *User) FlagValue(ndx uint) bool {
 }
 
 // Prefs returns the user's preferences record.
-func (u *User) Prefs() (*UserPrefs, error) {
+func (u *User) Prefs(ctx context.Context) (*UserPrefs, error) {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	if u.prefs == nil {
 		var dbdata []UserPrefs
-		err := amdb.Select(&dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
+		err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
 		if err != nil {
 			return nil, err
 		}
@@ -366,13 +368,14 @@ func (u *User) Prefs() (*UserPrefs, error) {
 
 /* SetProfileData sets the "profile" variables for this user.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     reminder - Password reminder string.
  *     dob - Date of birth field.
  *     descr - Description string.
  * Returns:
  *     Standard Go error status.
  */
-func (u *User) SetProfileData(reminder string, dob *time.Time, descr *string) error {
+func (u *User) SetProfileData(ctx context.Context, reminder string, dob *time.Time, descr *string) error {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	_, err := amdb.Exec("UPDATE users SET passreminder = ?, dob = ?, description = ? WHERE uid = ?", reminder, dob, descr, u.Uid)
@@ -386,19 +389,20 @@ func (u *User) SetProfileData(reminder string, dob *time.Time, descr *string) er
 
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
+ *	   ctx - Standard Go context value.
  *     uid - The UID of the user.
  * Returns:
  *     Pointer to User containing user data, or nil
  *     Standard Go error status
  */
-func AmGetUser(uid int32) (*User, error) {
+func AmGetUser(ctx context.Context, uid int32) (*User, error) {
 	var err error = nil
 	getUserMutex.Lock()
 	defer getUserMutex.Unlock()
 	rc, ok := userCache.Get(uid)
 	if !ok {
 		var dbdata []User
-		err = amdb.Select(&dbdata, "SELECT * from users WHERE uid = ?", uid)
+		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid)
 		if err != nil {
 			return nil, err
 		}
@@ -413,20 +417,21 @@ func AmGetUser(uid int32) (*User, error) {
 
 /* AmGetUserTx returns a reference to the specified user inside a transaction.
  * Parameters:
+ *     ctxt - Standard Go context value.
  *     tx - The transaction we're in.
  *     uid - The UID of the user.
  * Returns:
  *     Pointer to User containing user data, or nil
  *     Standard Go error status
  */
-func AmGetUserTx(tx *sqlx.Tx, uid int32) (*User, error) {
+func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
 	var err error = nil
 	getUserMutex.Lock()
 	defer getUserMutex.Unlock()
 	rc, ok := userCache.Get(uid)
 	if !ok {
 		var dbdata []User
-		err = tx.Select(&dbdata, "SELECT * from users WHERE uid = ?", uid)
+		err = tx.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid)
 		if err != nil {
 			return nil, err
 		}
@@ -441,19 +446,20 @@ func AmGetUserTx(tx *sqlx.Tx, uid int32) (*User, error) {
 
 /* AmGetUserByName returns a reference to the specified user.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     name - The username of the user.
  *     tx - If this is not nil, use this transaction.
  * Returns:
  *     Pointer to User containing user data, or nil
  *     Standard Go error status
  */
-func AmGetUserByName(name string, tx *sqlx.Tx) (*User, error) {
+func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, error) {
 	var dbdata []User
 	var err error
 	if tx != nil {
-		err = tx.Select(&dbdata, "SELECT * FROM users WHERE username = ?", name)
+		err = tx.SelectContext(ctx, &dbdata, "SELECT * FROM users WHERE username = ?", name)
 	} else {
-		err = amdb.Select(&dbdata, "SELECT * FROM users WHERE username = ?", name)
+		err = amdb.SelectContext(ctx, &dbdata, "SELECT * FROM users WHERE username = ?", name)
 	}
 	if err != nil {
 		return nil, err
@@ -472,9 +478,9 @@ func AmGetUserByName(name string, tx *sqlx.Tx) (*User, error) {
 }
 
 // getAnonUserID retrieves the UID of the "anonymous" user from the database.
-func getAnonUserID() (int32, error) {
+func getAnonUserID(ctx context.Context) (int32, error) {
 	if anonUid < 0 {
-		rows, err := amdb.Query("SELECT uid FROM users WHERE is_anon = 1")
+		rows, err := amdb.QueryContext(ctx, "SELECT uid FROM users WHERE is_anon = 1")
 		if err == nil {
 			defer rows.Close()
 			if rows.Next() {
@@ -495,26 +501,29 @@ func getAnonUserID() (int32, error) {
 
 /* AmIsUserAnon returns true if the specified user ID is the anonymous one.
  * Parameters:
+ *     ctx = Standard Go context value.
  *     uid = The user ID to test.
  * Returns:
  *     true if the user is anonymous, false if not
  *     Standard Go error status
  */
-func AmIsUserAnon(uid int32) (bool, error) {
-	auid, err := getAnonUserID()
+func AmIsUserAnon(ctx context.Context, uid int32) (bool, error) {
+	auid, err := getAnonUserID(ctx)
 	return (uid == auid), err
 }
 
 /* AmGetAnonUser returns a reference to the anonymous user.
+ * Parameters:
+ *     ctx = Standard Go context value.
  * Returns:
  *     Pointer to User containing anonymous user data, or nil
  *     Standard Go error status
  */
-func AmGetAnonUser() (*User, error) {
+func AmGetAnonUser(ctx context.Context) (*User, error) {
 	var rc *User = nil
-	auid, err := getAnonUserID()
+	auid, err := getAnonUserID(ctx)
 	if err == nil {
-		rc, err = AmGetUser(auid)
+		rc, err = AmGetUser(ctx, auid)
 	}
 	return rc, err
 }
@@ -531,16 +540,17 @@ func hashPassword(password string) string {
 }
 
 // touchUser updates the last access time for the user.
-func touchUser(tx *sqlx.Tx, user *User) {
+func touchUser(ctx context.Context, tx *sqlx.Tx, user *User) {
 	user.Mutex.Lock()
 	defer user.Mutex.Unlock()
 	moment := time.Now().UTC()
-	tx.Exec("UPDATE user SET lastaccess = ? WHERE uid = ?", moment, user.Uid)
+	tx.ExecContext(ctx, "UPDATE user SET lastaccess = ? WHERE uid = ?", moment, user.Uid)
 	user.LastAccess = &moment
 }
 
 /* AmAuthenticateUser authenticates a user by name and password.
  * Parameters:
+ *     ctx - Standard Go context parameter.
  *     name - The user name to try.
  *     password - The password to try.
  *     remote_ip - The remote IP address, for audit records.
@@ -548,8 +558,8 @@ func touchUser(tx *sqlx.Tx, user *User) {
  *     The User pointer if authenticated, or nil if not.
  *     Standard Go error status.
  */
-func AmAuthenticateUser(name string, password string, remoteIP string) (*User, error) {
-	log.Debugf("AmAuthenicate() authenticating user %s...", name)
+func AmAuthenticateUser(ctx context.Context, name string, password string, remoteIP string) (*User, error) {
+	log.Debugf("AmAuthenticateUser() authenticating user %s...", name)
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -562,7 +572,7 @@ func AmAuthenticateUser(name string, password string, remoteIP string) (*User, e
 		}
 	}()
 
-	user, err := AmGetUserByName(name, tx)
+	user, err := AmGetUserByName(ctx, name, tx)
 	if err != nil {
 		log.Error("...user not found")
 		ar = AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad username: %s", name))
@@ -585,7 +595,7 @@ func AmAuthenticateUser(name string, password string, remoteIP string) (*User, e
 		return nil, errors.New("the password you have specified is incorrect; please try again")
 	}
 	log.Debug("...authenticated")
-	touchUser(tx, user)
+	touchUser(ctx, tx, user)
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
@@ -621,13 +631,14 @@ func crackAuthString(authString string) (int32, string, error) {
 
 /* AmAuthenticateUserByToken authenticates a user via the stored cookie authentication string.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     authString - The stored cookie authentication string.
  *     remoteIP - The remote IP address wheter trhe user is logging in from.
  * Returns:
  *     Pointer to the authenticated User, or nil.
  *     Standard Go error status.
  */
-func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error) {
+func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP string) (*User, error) {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -645,7 +656,7 @@ func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error
 		return nil, fmt.Errorf("authString not valid, ignored: %v", err)
 	}
 	var user *User
-	user, err = AmGetUserTx(tx, uid)
+	user, err = AmGetUserTx(ctx, tx, uid)
 	if err != nil {
 		log.Error("...user not found")
 		ar = AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad uid: %d", uid))
@@ -668,7 +679,7 @@ func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error
 		return nil, errors.New("token mismatch")
 	}
 	log.Debug("...authenticated")
-	touchUser(tx, user)
+	touchUser(ctx, tx, user)
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
@@ -680,6 +691,7 @@ func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error
 
 /* AmCreateNewUser creates a new user record in the database.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     username - New user name.
  *     password - New password.
  *     reminder - Password reminder string.
@@ -689,12 +701,12 @@ func AmAuthenticateUserByToken(authString string, remoteIP string) (*User, error
  *     Pointer to new user record.
  *     Standard Go error status.
  */
-func AmCreateNewUser(username string, password string, reminder string, dob *time.Time, remoteIP string) (*User, error) {
+func AmCreateNewUser(ctx context.Context, username string, password string, reminder string, dob *time.Time, remoteIP string) (*User, error) {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
 	}()
-	anon, _ := getAnonUserID()
+	anon, _ := getAnonUserID(ctx)
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -703,15 +715,15 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 		}
 	}()
 	unlock := true
-	tx.Exec("LOCK TABLES users WRITE, userprefs WRITE, propuser WRITE, commmember WRITE, sideboxes WRITE, confhotlist WRITE;")
+	tx.ExecContext(ctx, "LOCK TABLES users WRITE, userprefs WRITE, propuser WRITE, commmember WRITE, sideboxes WRITE, confhotlist WRITE;")
 	defer func() {
 		if unlock {
-			tx.Exec("UNLOCK TABLES;")
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
 		}
 	}()
 
 	// Test if the user name is already taken.
-	rs, err := tx.Query("SELECT uid FROM users WHERE username = ?", username)
+	rs, err := tx.QueryContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
 	if err != nil {
 		return nil, err
 	} else if rs.Next() {
@@ -720,7 +732,7 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 	}
 
 	// Insert the user record.
-	_, err2 := tx.Exec(`INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
+	_, err2 := tx.ExecContext(ctx, `INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
 		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
 		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
 		reminder, dob)
@@ -728,42 +740,42 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 		return nil, err2
 	}
 	// Read back the user, which also puts it in the cache.
-	user, err3 := AmGetUserByName(username, tx)
+	user, err3 := AmGetUserByName(ctx, username, tx)
 	if err3 != nil {
 		return nil, err3
 	}
 	log.Debugf("...created new user \"%s\" with UID %d", username, user.Uid)
 
 	// add user preferences
-	_, err = tx.Exec("INSERT INTO userprefs (uid) VALUES (?)", user.Uid)
+	_, err = tx.ExecContext(ctx, "INSERT INTO userprefs (uid) VALUES (?)", user.Uid)
 	if err != nil {
 		return nil, err
 	}
 
 	// add user properties
 	props := make([]UserProperties, 0)
-	err = tx.Select(&props, "SELECT * FROM propuser WHERE uid = ?", anon)
+	err = tx.SelectContext(ctx, &props, "SELECT * FROM propuser WHERE uid = ?", anon)
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range props {
-		_, err := tx.Exec("INSERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data)
+		_, err := tx.ExecContext(ctx, "INSERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// add user sideboxes
-	err = copySideboxes(tx, user.Uid, anon)
+	err = copySideboxes(ctx, tx, user.Uid, anon)
 	if err != nil {
 		return nil, err
 	}
 
-	tx.Exec("UNLOCK TABLES;")
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
 	unlock = false
 
 	// auto-join communities
-	err = AmAutoJoinCommunities(tx, user)
+	err = AmAutoJoinCommunities(ctx, tx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -782,7 +794,7 @@ func AmCreateNewUser(username string, password string, reminder string, dob *tim
 }
 
 // internalGetProp is a helper used by the property functions.
-func internalGetProp(uid int32, ndx int32) (*UserProperties, error) {
+func internalGetProp(ctx context.Context, uid int32, ndx int32) (*UserProperties, error) {
 	var err error = nil
 	key := fmt.Sprintf("%d:%d", uid, ndx)
 	getUserPropMutex.Lock()
@@ -790,7 +802,7 @@ func internalGetProp(uid int32, ndx int32) (*UserProperties, error) {
 	rc, ok := userPropCache.Get(key)
 	if !ok {
 		var dbdata []UserProperties
-		err = amdb.Select(&dbdata, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx)
+		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx)
 		if err != nil {
 			return nil, err
 		}
@@ -808,14 +820,15 @@ func internalGetProp(uid int32, ndx int32) (*UserProperties, error) {
 
 /* AmGetUserProperty retrieves the value of a user property.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     uid - The UID of the user to get the property for.
  *     ndx - The index of the property to retrieve.
  * Returns:
  *     Value of the property string.
  *     Standard Go error status.
  */
-func AmGetUserProperty(uid int32, ndx int32) (*string, error) {
-	p, err := internalGetProp(uid, ndx)
+func AmGetUserProperty(ctx context.Context, uid int32, ndx int32) (*string, error) {
+	p, err := internalGetProp(ctx, uid, ndx)
 	if err != nil {
 		return nil, err
 	}
@@ -824,27 +837,28 @@ func AmGetUserProperty(uid int32, ndx int32) (*string, error) {
 
 /* AmSetUserProperty sets the value of a user property.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     uid - The UID of the user to set the property for.
  *     ndx - The index of the property to set.
  *     val - The new value of the property.
  * Returns:
  *     Standard Go error status.
  */
-func AmSetUserProperty(uid int32, ndx int32, val *string) error {
-	p, err := internalGetProp(uid, ndx)
+func AmSetUserProperty(ctx context.Context, uid int32, ndx int32, val *string) error {
+	p, err := internalGetProp(ctx, uid, ndx)
 	if err != nil {
 		return err
 	}
 	getUserPropMutex.Lock()
 	defer getUserPropMutex.Unlock()
 	if p != nil {
-		_, err = amdb.Exec("UPDATE propuser SET data = ? WHERE uid = ? AND ndx = ?", val, uid, ndx)
+		_, err = amdb.ExecContext(ctx, "UPDATE propuser SET data = ? WHERE uid = ? AND ndx = ?", val, uid, ndx)
 		if err == nil {
 			p.Data = val
 		}
 	} else {
 		prop := UserProperties{Uid: uid, Index: ndx, Data: val}
-		_, err := amdb.NamedExec("INSERT INTO propuser (uid, ndx, data) VALUES(:uid, :ndx, :data)", prop)
+		_, err := amdb.NamedExecContext(ctx, "INSERT INTO propuser (uid, ndx, data) VALUES(:uid, :ndx, :data)", prop)
 		if err == nil {
 			userPropCache.Add(fmt.Sprintf("%d:%d", uid, ndx), prop)
 		}
@@ -854,6 +868,7 @@ func AmSetUserProperty(uid int32, ndx int32, val *string) error {
 
 /* AmSearchUsers searches for users matching certain criteria.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     field - A value indicating which field to search:
  *         SearchUserFieldName - The user name.
  *         SearchUserFieldDescription - The user description.
@@ -871,7 +886,7 @@ func AmSetUserProperty(uid int32, ndx int32, val *string) error {
  *     The total number of users matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmSearchUsers(field int, oper int, term string, offset int, max int) ([]*User, int, error) {
+func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset int, max int) ([]*User, int, error) {
 	var queryPortion strings.Builder
 	switch field {
 	case SearchUserFieldName:
@@ -902,7 +917,7 @@ func AmSearchUsers(field int, oper int, term string, offset int, max int) ([]*Us
 		return nil, -1, errors.New("invalid operator selector")
 	}
 	q := queryPortion.String()
-	rs, err := amdb.Query("SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND " + q)
+	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -915,10 +930,10 @@ func AmSearchUsers(field int, oper int, term string, offset int, max int) ([]*Us
 		return make([]*User, 0), 0, nil
 	}
 	if offset > 0 {
-		rs, err = amdb.Query("SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
+		rs, err = amdb.QueryContext(ctx, "SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
 			" ORDER BY u.username LIMIT ? OFFSET ?", max, offset)
 	} else {
-		rs, err = amdb.Query("SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
+		rs, err = amdb.QueryContext(ctx, "SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
 			" ORDER BY u.username LIMIT ?", max)
 	}
 	if err != nil {
@@ -928,7 +943,7 @@ func AmSearchUsers(field int, oper int, term string, offset int, max int) ([]*Us
 	for rs.Next() {
 		var uid int32
 		rs.Scan(&uid)
-		u, err := AmGetUser(uid)
+		u, err := AmGetUser(ctx, uid)
 		if err == nil {
 			rc = append(rc, u)
 		}

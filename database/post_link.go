@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -32,9 +33,9 @@ func (d *PostLinkData) NeedsDBVerification() bool {
 }
 
 // VerifyNames verifies the post link data against the database.
-func (d *PostLinkData) VerifyNames() error {
+func (d *PostLinkData) VerifyNames(ctx context.Context) error {
 	if d.Community != "" {
-		comm, err := AmGetCommunityByAlias(d.Community)
+		comm, err := AmGetCommunityByAlias(ctx, d.Community)
 		if err != nil {
 			return err
 		}
@@ -43,7 +44,7 @@ func (d *PostLinkData) VerifyNames() error {
 		}
 	}
 	if d.Conference != "" {
-		conf, err := AmGetConferenceByAlias(d.Conference)
+		conf, err := AmGetConferenceByAlias(ctx, d.Conference)
 		if err != nil {
 			return err
 		}

@@ -120,7 +120,7 @@ func (c *amContext) ClearLoginCookie() {
 
 // ClearSession clears the current session.
 func (c *amContext) ClearSession() {
-	AmResetSession(c.session)
+	AmResetSession(c.echoContext.Request().Context(), c.session)
 	c.user = nil
 	c.effectiveLevel = 0
 }
@@ -144,7 +144,7 @@ func (c *amContext) CurrentCommunity() *database.Community {
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
 	if c.user == nil {
-		u, err := database.AmGetUser(AmSessionUid(c.session))
+		u, err := database.AmGetUser(c.echoContext.Request().Context(), AmSessionUid(c.session))
 		if err != nil {
 			log.Errorf("unable to retrieve current user")
 		}
@@ -327,12 +327,12 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
  *     Standard Go error status.
  */
 func (c *amContext) SetCommunityContext(param string) error {
-	comm, err := database.AmGetCommunityFromParam(param)
+	comm, err := database.AmGetCommunityFromParam(c.echoContext.Request().Context(), param)
 	if err != nil {
 		return err
 	}
 	if c.community == nil || c.community.Id != comm.Id {
-		mbr, lock, level, err := comm.Membership(c.CurrentUser())
+		mbr, lock, level, err := comm.Membership(c.echoContext.Request().Context(), c.CurrentUser())
 		if err != nil {
 			return err
 		}
@@ -459,11 +459,11 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 	}
 
 	var err error
-	if rc.globals, err = database.AmGlobals(); err != nil {
+	if rc.globals, err = database.AmGlobals(ctxt.Request().Context()); err != nil {
 		amContextRecycleBin <- rc
 		return nil, err
 	}
-	if rc.globalFlags, err = rc.globals.Flags(); err != nil {
+	if rc.globalFlags, err = rc.globals.Flags(ctxt.Request().Context()); err != nil {
 		amContextRecycleBin <- rc
 		return nil, err
 	}
@@ -475,12 +475,12 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 		rc.session = sess
 		sess.Options = defoptions
 		if sess.IsNew {
-			AmSessionFirstTime(sess)
+			AmSessionFirstTime(ctxt.Request().Context(), sess)
 		} else {
 			AmHitSession(sess)
 		}
 	}
-	rc.user, err = database.AmGetUser(AmSessionUid(sess))
+	rc.user, err = database.AmGetUser(ctxt.Request().Context(), AmSessionUid(sess))
 	if err == nil {
 		rc.effectiveLevel = rc.user.BaseLevel
 	} else {

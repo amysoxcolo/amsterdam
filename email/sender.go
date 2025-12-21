@@ -12,6 +12,7 @@ package email
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"io"
@@ -47,7 +48,7 @@ var mailHost string
 var auth smtp.Auth
 
 // formatMessage takes a message and turns it into serialized bytes for sending.
-func formatMessage(m *amMessage) ([]byte, error) {
+func formatMessage(ctx context.Context, m *amMessage) ([]byte, error) {
 	if m.template != "" {
 		// Render the template for the message, which may reset Subject.
 		templ, err := emailRenderer.GetTemplate(m.template)
@@ -62,7 +63,7 @@ func formatMessage(m *amMessage) ([]byte, error) {
 			return make([]byte, 0), err
 		}
 	}
-	user, err := database.AmGetUser(m.uid)
+	user, err := database.AmGetUser(ctx, m.uid)
 	if err == nil {
 		// Build the final headers.
 		hdrs := make(map[string]string)
@@ -177,7 +178,7 @@ func transmitMessage(m *amMessage, body []byte) {
 // senderLoop collects E-mail messages from the channel and pushes them out.
 func senderLoop(sent chan *amMessage, done chan bool) {
 	for m := range sent {
-		body, err := formatMessage(m)
+		body, err := formatMessage(context.Background(), m)
 		if err == nil {
 			transmitMessage(m, body)
 		} else {

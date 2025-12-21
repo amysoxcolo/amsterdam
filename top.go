@@ -48,11 +48,11 @@ type RenderedSidebox struct {
  * Returns:
  *     Standard Go error status.
  */
-func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	user, err := database.AmGetUser(uid)
+func buildCommunitiesSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in *database.Sidebox) error {
+	user, err := database.AmGetUser(ctxt.Ctx(), uid)
 	if err == nil {
 		var g *database.Globals
-		g, err = database.AmGlobals()
+		g, err = database.AmGlobals(ctxt.Ctx())
 		if err == nil {
 			if user.IsAnon {
 				out.Title = "Featured Communities"
@@ -60,7 +60,7 @@ func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sideb
 				out.Title = "Your Communities"
 			}
 			var l []*database.Community
-			l, err = database.AmGetCommunitiesForUser(uid)
+			l, err = database.AmGetCommunitiesForUser(ctxt.Ctx(), uid)
 			if err == nil {
 				out.Items = make([]RenderedSideboxItem, len(l))
 				for i, c := range l {
@@ -69,7 +69,7 @@ func buildCommunitiesSidebox(uid int32, out *RenderedSidebox, in *database.Sideb
 					out.Items[i].Link = &lk
 					out.Items[i].Flags = make(map[string]bool)
 					var level uint16
-					level, err = database.AmGetCommunityAccessLevel(uid, c.Id)
+					level, err = database.AmGetCommunityAccessLevel(ctxt.Ctx(), uid, c.Id)
 					if err == nil && database.AmTestPermission("Community.ShowAdmin", level) {
 						out.Items[i].Flags["admin"] = true
 					}
@@ -150,10 +150,10 @@ func buildUsersOnline(uid int32, out *RenderedSidebox, in *database.Sidebox) err
  * Returns:
  *     Standard Go error status.
  */
-func buildRenderedSidebox(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
+func buildRenderedSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in *database.Sidebox) error {
 	switch in.Boxid {
 	case 1:
-		return buildCommunitiesSidebox(uid, out, in)
+		return buildCommunitiesSidebox(ctxt, uid, out, in)
 	case 2:
 		return buildFeaturedConferences(uid, out, in)
 	case 3:
@@ -177,14 +177,14 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 
 	// Retrieve the sideboxes and create the data to be presented.
 	uid := ctxt.CurrentUserId()
-	sboxes, err := database.AmGetSideboxes(uid)
+	sboxes, err := database.AmGetSideboxes(ctxt.Ctx(), uid)
 	if err != nil {
 		return "string", "Unable to retrieve sideboxes", err
 	}
 
 	rc := make([]RenderedSidebox, len(sboxes))
 	for i, sb := range sboxes {
-		err = buildRenderedSidebox(uid, &(rc[i]), sb)
+		err = buildRenderedSidebox(ctxt, uid, &(rc[i]), sb)
 		if err != nil {
 			return "string", "Unable to render sideboxes", err
 		}

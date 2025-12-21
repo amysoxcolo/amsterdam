@@ -31,7 +31,7 @@ func middlewareErrorPage(c echo.Context, ctxt AmContext, err error) error {
 func IPBanTest(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check IP banning.
-		banmsg, banerr := database.AmTestIPBan(c.RealIP())
+		banmsg, banerr := database.AmTestIPBan(c.Request().Context(), c.RealIP())
 		if banerr != nil {
 			c.Logger().Warnf("address %s could not be tested: %v", c.RealIP(), banerr)
 			// but let the request pass anyway
@@ -55,12 +55,12 @@ func CookieLoginTest(next echo.HandlerFunc) echo.HandlerFunc {
 			cookie, err := c.Cookie(config.GlobalConfig.Site.LoginCookieName)
 			if err == nil {
 				var user *database.User
-				user, err = database.AmAuthenticateUserByToken(cookie.Value, c.RealIP())
+				user, err = database.AmAuthenticateUserByToken(c.Request().Context(), cookie.Value, c.RealIP())
 				if err == nil {
 					// log the user in and rotate login cookie
 					amctxt.ReplaceUser(user)
 					var newToken string
-					if newToken, err = user.NewAuthToken(); err == nil {
+					if newToken, err = user.NewAuthToken(c.Request().Context()); err == nil {
 						amctxt.SetLoginCookie(newToken)
 					} else {
 						log.Warnf("unable to rotate login cookie: %v", err)
@@ -99,7 +99,7 @@ func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 		comm := ctxt.CurrentCommunity() // set by middleware
-		b, err := database.AmTestService(comm, "Conference")
+		b, err := database.AmTestService(c.Request().Context(), comm, "Conference")
 		if err != nil {
 			return middlewareErrorPage(c, ctxt, err)
 		}
@@ -122,11 +122,11 @@ func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
 func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
-		conf, err := database.AmGetConferenceByAliasInCommunity(ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
+		conf, err := database.AmGetConferenceByAliasInCommunity(ctxt.Ctx(), ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
 		if err != nil {
 			return middlewareErrorPage(c, ctxt, err)
 		}
-		m, lvl, err := conf.Membership(ctxt.CurrentUser())
+		m, lvl, err := conf.Membership(ctxt.Ctx(), ctxt.CurrentUser())
 		if err != nil {
 			return middlewareErrorPage(c, ctxt, err)
 		}

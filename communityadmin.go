@@ -88,11 +88,11 @@ func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
 	}
 	var ci *database.ContactInfo
-	ci, err := comm.ContactInfo()
+	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	flags, err := comm.Flags()
+	flags, err := comm.Flags(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -184,12 +184,12 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 				return dlg.RenderError(ctxt, err.Error())
 			}
 			var ci *database.ContactInfo
-			ci, err = comm.ContactInfo()
+			ci, err = comm.ContactInfo(ctxt.Ctx())
 			if err != nil {
 				return dlg.RenderError(ctxt, err.Error())
 			}
 			var flags *util.OptionSet
-			flags, err = comm.Flags()
+			flags, err = comm.Flags(ctxt.Ctx())
 			if err != nil {
 				return ui.ErrorPage(ctxt, err)
 			}
@@ -202,7 +202,7 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 			nci.Region = dlg.Field("reg").ValPtr()
 			nci.PostalCode = dlg.Field("pcode").ValPtr()
 			nci.Country = dlg.Field("country").ValPtr()
-			_, err = nci.Save()
+			_, err = nci.Save(ctxt.Ctx())
 			ci = nci
 			if err == nil {
 				var joinkey *string = nil
@@ -221,17 +221,17 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 					hidedir = true
 					hidesearch = true
 				}
-				err = comm.SetProfileData(dlg.Field("name").Value, dlg.Field("alias").Value, dlg.Field("synopsis").ValPtr(),
+				err = comm.SetProfileData(ctxt.Ctx(), dlg.Field("name").Value, dlg.Field("alias").Value, dlg.Field("synopsis").ValPtr(),
 					dlg.Field("rules").ValPtr(), dlg.Field("language").ValPtr(), joinkey, dlg.Field("membersonly").IsChecked(),
 					hidedir, hidesearch, dlg.Field("read_lvl").GetLevel(), dlg.Field("write_lvl").GetLevel(),
 					dlg.Field("create_lvl").GetLevel(), dlg.Field("delete_lvl").GetLevel(), dlg.Field("join_lvl").GetLevel())
 			}
 			if err == nil {
 				flags.Set(database.CommunityFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
-				err = comm.SaveFlags(flags)
+				err = comm.SaveFlags(ctxt.Ctx(), flags)
 			}
 			if err == nil {
-				err = comm.TouchUpdate()
+				err = comm.TouchUpdate(ctxt.Ctx())
 			}
 			if err != nil {
 				ctxt.ClearCommunityContext()
@@ -259,7 +259,7 @@ func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
 	}
-	ci, err := comm.ContactInfo()
+	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err == nil {
 		ctxt.VarMap().Set("commName", comm.Name)
 		ctxt.VarMap().Set("commAlias", comm.Alias)
@@ -284,7 +284,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 		ctxt.SetRC(http.StatusForbidden)
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
 	}
-	ci, err := comm.ContactInfo()
+	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -300,13 +300,13 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 				ui.CommunityLogoMaxBytes)
 			if err == nil {
 				var img *database.ImageStore
-				img, err = database.AmStoreImage(database.ImageTypeCommunityLogo, comm.Id, mimeType, imageData)
+				img, err = database.AmStoreImage(ctxt.Ctx(), database.ImageTypeCommunityLogo, comm.Id, mimeType, imageData)
 				if err == nil {
 					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
 					ci.PhotoURL = &photourl
-					_, err = ci.Save()
+					_, err = ci.Save(ctxt.Ctx())
 					if err == nil {
-						err = comm.TouchUpdate()
+						err = comm.TouchUpdate(ctxt.Ctx())
 					}
 					if err == nil {
 						return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
@@ -336,7 +336,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 			defer func() {
 				if happy {
 					ampool.Submit(func(context.Context) {
-						err := database.AmDeleteImage(int32(id))
+						err := database.AmDeleteImage(ctxt.Ctx(), int32(id))
 						if err != nil {
 							log.Errorf("unable to delete image ID %d: %v", id, err)
 						}
@@ -345,7 +345,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 			}()
 		}
 		ci.PhotoURL = nil
-		_, err := ci.Save()
+		_, err := ci.Save(ctxt.Ctx())
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
@@ -409,7 +409,7 @@ func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
 				return dlg.RenderError(ctxt, err.Error())
 			}
 			var testcomm *database.Community
-			testcomm, err = database.AmGetCommunityByAlias(dlg.Field("alias").Value)
+			testcomm, err = database.AmGetCommunityByAlias(ctxt.Ctx(), dlg.Field("alias").Value)
 			if err != nil {
 				return dlg.RenderError(ctxt, err.Error())
 			}
@@ -429,7 +429,7 @@ func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
 				hideSearch = true
 			}
 			var comm *database.Community
-			comm, err = database.AmCreateCommunity(dlg.Field("name").Value, dlg.Field("alias").Value, user.Uid,
+			comm, err = database.AmCreateCommunity(ctxt.Ctx(), dlg.Field("name").Value, dlg.Field("alias").Value, user.Uid,
 				dlg.Field("language").ValPtr(), dlg.Field("synopsis").ValPtr(), dlg.Field("rules").ValPtr(),
 				dlg.Field("joinkey").ValPtr(), hideDir, hideSearch, ctxt.RemoteIP())
 			if err != nil {
@@ -440,12 +440,12 @@ func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
 			ci.Region = dlg.Field("reg").ValPtr()
 			ci.PostalCode = dlg.Field("pcode").ValPtr()
 			ci.Country = dlg.Field("country").ValPtr()
-			_, err = ci.Save()
+			_, err = ci.Save(ctxt.Ctx())
 			if err == nil {
-				err = comm.SetContactID(ci.ContactId)
+				err = comm.SetContactID(ctxt.Ctx(), ci.ContactId)
 			}
 			if err == nil {
-				err = comm.TouchUpdate()
+				err = comm.TouchUpdate(ctxt.Ctx())
 			}
 			if err != nil {
 				return dlg.RenderError(ctxt, err.Error())

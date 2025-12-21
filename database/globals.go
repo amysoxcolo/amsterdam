@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -60,11 +61,11 @@ var globalProps map[int32]string = make(map[int32]string)
 var globalPropMutex sync.Mutex
 
 // Flags returns the global flags.
-func (g *Globals) Flags() (*util.OptionSet, error) {
+func (g *Globals) Flags(ctx context.Context) (*util.OptionSet, error) {
 	g.Mutex.Lock()
 	defer g.Mutex.Unlock()
 	if g.flags == nil {
-		s, err := AmGetGlobalProperty(GlobalPropFlags)
+		s, err := AmGetGlobalProperty(ctx, GlobalPropFlags)
 		if err != nil {
 			return nil, err
 		}
@@ -74,11 +75,11 @@ func (g *Globals) Flags() (*util.OptionSet, error) {
 }
 
 // SaveFlags saves off the global flags.
-func (g *Globals) SaveFlags(f *util.OptionSet) error {
+func (g *Globals) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 	s := f.AsString()
 	g.Mutex.Lock()
 	defer g.Mutex.Unlock()
-	err := AmSetGlobalProperty(GlobalPropFlags, s)
+	err := AmSetGlobalProperty(ctx, GlobalPropFlags, s)
 	if err == nil {
 		g.flags = f
 	}
@@ -86,12 +87,12 @@ func (g *Globals) SaveFlags(f *util.OptionSet) error {
 }
 
 // AmGlobals returns trhe pointer to the singleton Globals instance.
-func AmGlobals() (*Globals, error) {
+func AmGlobals(ctx context.Context) (*Globals, error) {
 	globalsMutex.Lock()
 	defer globalsMutex.Unlock()
 	if theGlobals == nil {
 		var dbdata []Globals
-		err := amdb.Select(&dbdata, "SELECT * FROM globals")
+		err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM globals")
 		if err != nil {
 			return nil, err
 		}
@@ -105,17 +106,18 @@ func AmGlobals() (*Globals, error) {
 
 /* AmGetGlobalProperty returns the value of a global property.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     index - The index of the property to retrieve.
  * Returns:
  *     Value of the property, or empty string.
  *     Standard Go error status.
  */
-func AmGetGlobalProperty(index int32) (string, error) {
+func AmGetGlobalProperty(ctx context.Context, index int32) (string, error) {
 	globalPropMutex.Lock()
 	defer globalPropMutex.Unlock()
 	rc, ok := globalProps[index]
 	if !ok {
-		rs, err := amdb.Query("SELECT data FROM propglobal WHERE ndx = ?", index)
+		rs, err := amdb.QueryContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
 		if err != nil {
 			return "", err
 		}
@@ -131,17 +133,18 @@ func AmGetGlobalProperty(index int32) (string, error) {
 
 /* AmSetGlobalProperty sets the value of a global property.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     index - The index of the property to set.
  *     value - The value of the property to set.
  * Returns:
  *     Standard Go error status.
  */
-func AmSetGlobalProperty(index int32, value string) error {
+func AmSetGlobalProperty(ctx context.Context, index int32, value string) error {
 	globalPropMutex.Lock()
 	defer globalPropMutex.Unlock()
 	_, updateMode := globalProps[index]
 	if !updateMode {
-		rs, err := amdb.Query("SELECT data FROM propglobal WHERE ndx = ?", index)
+		rs, err := amdb.QueryContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
 		if err != nil {
 			return err
 		}
@@ -149,9 +152,9 @@ func AmSetGlobalProperty(index int32, value string) error {
 	}
 	var err error = nil
 	if updateMode {
-		_, err = amdb.Exec("UPDATE propglobal SET data = ? WHERE ndx = ?", value, index)
+		_, err = amdb.ExecContext(ctx, "UPDATE propglobal SET data = ? WHERE ndx = ?", value, index)
 	} else {
-		_, err = amdb.Exec("INSERT INTO propglobal (ndx, data) VALUES (?, ?)", index, value)
+		_, err = amdb.ExecContext(ctx, "INSERT INTO propglobal (ndx, data) VALUES (?, ?)", index, value)
 	}
 	if err == nil {
 		globalProps[index] = value

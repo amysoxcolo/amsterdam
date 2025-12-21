@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -43,6 +44,7 @@ func (p *PostHeader) IsScribbled() bool {
 
 /* SetAttachment sets the attachment data for a post.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     fileName - Name of the original attachment file.
  *     mimeType - MIME type of the attachment data.
  *     length - Length of the attachment data in bytes.
@@ -50,16 +52,16 @@ func (p *PostHeader) IsScribbled() bool {
  * Returns:
  *     Standard Go error status.
  */
-func (p *PostHeader) SetAttachment(fileName string, mimeType string, length int32, data []byte) error {
-	_, err := amdb.Exec("INSERT INTO postattach (postid, datalen, filename, mimetype, data) VALUES (?, ?, ?, ?, ?)",
+func (p *PostHeader) SetAttachment(ctx context.Context, fileName string, mimeType string, length int32, data []byte) error {
+	_, err := amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, data) VALUES (?, ?, ?, ?, ?)",
 		p.PostId, length, fileName, mimeType, data)
 	return err
 }
 
 // Text returns the text associated with a post.
-func (p *PostHeader) Text() (string, error) {
+func (p *PostHeader) Text(ctx context.Context) (string, error) {
 	var dbdata []PostData
-	err := amdb.Select(&dbdata, "SELECT * FROM postdata WHERE postid = ?", p.PostId)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM postdata WHERE postid = ?", p.PostId)
 	if err != nil {
 		return "", err
 	}
@@ -72,9 +74,9 @@ func (p *PostHeader) Text() (string, error) {
 	return *dbdata[0].Data, nil
 }
 
-func AmGetPost(postId int64) (*PostHeader, error) {
+func AmGetPost(ctx context.Context, postId int64) (*PostHeader, error) {
 	var dbdata []PostHeader
-	err := amdb.Select(&dbdata, "SELECT * FROM posts WHERE postid = ?", postId)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM posts WHERE postid = ?", postId)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +89,9 @@ func AmGetPost(postId int64) (*PostHeader, error) {
 	return &(dbdata[0]), nil
 }
 
-func AmGetPostRange(topic *Topic, first, last int32) ([]PostHeader, error) {
+func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]PostHeader, error) {
 	var rc []PostHeader
-	err := amdb.Select(&rc, "SELECT * FROM posts WHERE topicid = ? AND num >= ? AND num <= ? ORDER BY num", topic.TopicId, first, last)
+	err := amdb.SelectContext(ctx, &rc, "SELECT * FROM posts WHERE topicid = ? AND num >= ? AND num <= ? ORDER BY num", topic.TopicId, first, last)
 	if err != nil {
 		return nil, err
 	}

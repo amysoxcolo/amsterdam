@@ -10,7 +10,7 @@
 {{ comm := .CurrentCommunity() }}
 <div class="mb-2 mt-2">
     <div class="mb-1">
-        <img src="{{ ExtractCommunityLogo(comm) }}" alt="{{ comm.Name }}" class="w-28 h-16 rounded">
+        <img src="{{ ExtractCommunityLogo(comm, .) }}" alt="{{ comm.Name }}" class="w-28 h-16 rounded">
     </div>
     <div class="font-bold mb-1">{{ menu.Title }}</div>
     {{ ctxt := . }}

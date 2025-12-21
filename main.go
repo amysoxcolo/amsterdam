@@ -124,9 +124,6 @@ func main() {
 	closer = ui.SetupAmContext()
 	defer closer()
 
-	// Set up Echo.
-	e := setupEcho()
-
 	// Set up to trap SIGINT and shut down gracefully
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -137,6 +134,9 @@ func main() {
 		<-ctx.Done()
 		ampool.Shutdown()
 	}()
+
+	// Set up Echo.
+	e := setupEcho()
 
 	// Start server
 	go func() {

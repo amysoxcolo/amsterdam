@@ -10,6 +10,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -66,8 +67,8 @@ func init() {
 }
 
 // Aliases returns the list of aliases for this conference.
-func (c *Conference) Aliases() ([]string, error) {
-	rs, err := amdb.Query("SELECT alias FROM confalias WHERE confid = ? ORDER BY alias", c.ConfId)
+func (c *Conference) Aliases(ctx context.Context) ([]string, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT alias FROM confalias WHERE confid = ? ORDER BY alias", c.ConfId)
 	if err != nil {
 		return nil, err
 	}
@@ -81,14 +82,14 @@ func (c *Conference) Aliases() ([]string, error) {
 }
 
 // AliasesQ returns the list of aliases for this conference, quietly.
-func (c *Conference) AliasesQ() []string {
-	rc, _ := c.Aliases()
+func (c *Conference) AliasesQ(ctx context.Context) []string {
+	rc, _ := c.Aliases(ctx)
 	return rc
 }
 
 // Hosts returns the list of users that host this conference.
-func (c *Conference) Hosts() ([]*User, error) {
-	rs, err := amdb.Query("SELECT uid FROM confmember WHERE confid = ? AND granted_lvl = ?",
+func (c *Conference) Hosts(ctx context.Context) ([]*User, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT uid FROM confmember WHERE confid = ? AND granted_lvl = ?",
 		c.ConfId, AmRole("Conference.Host").Level())
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (c *Conference) Hosts() ([]*User, error) {
 	for rs.Next() {
 		var uid int32
 		rs.Scan(&uid)
-		u, err := AmGetUser(uid)
+		u, err := AmGetUser(ctx, uid)
 		if err == nil {
 			rc = append(rc, u)
 		}
@@ -106,14 +107,14 @@ func (c *Conference) Hosts() ([]*User, error) {
 }
 
 // Hosts returns the list of users that host this conference, quietly.
-func (c *Conference) HostsQ() []*User {
-	rc, _ := c.Hosts()
+func (c *Conference) HostsQ(ctx context.Context) []*User {
+	rc, _ := c.Hosts(ctx)
 	return rc
 }
 
 // Membership returns a membership flag and granted level for the user in this conference.
-func (c *Conference) Membership(u *User) (bool, uint16, error) {
-	rs, err := amdb.Query("SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+func (c *Conference) Membership(ctx context.Context, u *User) (bool, uint16, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	if err != nil {
 		return false, 0, err
 	}
@@ -155,9 +156,9 @@ func (c *Conference) TestPermission(perm string, level uint16) bool {
 }
 
 // Settings returns the settings for a user.
-func (c *Conference) Settings(u *User) (*ConferenceSettings, error) {
+func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings, error) {
 	var dbdata []ConferenceSettings
-	err := amdb.Select(&dbdata, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	if err != nil {
 		return nil, err
 	}
@@ -171,24 +172,24 @@ func (c *Conference) Settings(u *User) (*ConferenceSettings, error) {
 }
 
 // TouchRead updates the "last posted" date/time in the conference for the user.
-func (c *Conference) TouchRead(tx *sqlx.Tx, u *User) (*ConferenceSettings, error) {
-	cs, err := c.Settings(u)
+func (c *Conference) TouchRead(ctx context.Context, tx *sqlx.Tx, u *User) (*ConferenceSettings, error) {
+	cs, err := c.Settings(ctx, u)
 	if err != nil {
 		return nil, err
 	}
 	if !u.IsAnon { // anon user can't update squat
 		if cs == nil {
-			ci, cerr := u.ContactInfo()
+			ci, cerr := u.ContactInfo(ctx)
 			if cerr != nil {
 				return nil, cerr
 			}
-			_, err = tx.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read) VALUES (?, ?, ?, NOW())",
+			_, err = tx.ExecContext(ctx, "INSERT INTO confsettings (confid, uid, default_pseud, last_read) VALUES (?, ?, ?, NOW())",
 				c.ConfId, u.Uid, ci.FullName(false))
 		} else {
-			_, err = tx.Exec("UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+			_, err = tx.ExecContext(ctx, "UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 		}
 		if err == nil {
-			cs, err = c.Settings(u) // reread to get updated or inserted values
+			cs, err = c.Settings(ctx, u) // reread to get updated or inserted values
 		}
 		if err != nil {
 			return nil, err
@@ -198,14 +199,14 @@ func (c *Conference) TouchRead(tx *sqlx.Tx, u *User) (*ConferenceSettings, error
 }
 
 // TouchPost updates the "last posted" date/time in the conference for the user.
-func (c *Conference) TouchPost(tx *sqlx.Tx, u *User, lastPost time.Time) (*ConferenceSettings, error) {
-	cs, err := c.Settings(u)
+func (c *Conference) TouchPost(ctx context.Context, tx *sqlx.Tx, u *User, lastPost time.Time) (*ConferenceSettings, error) {
+	cs, err := c.Settings(ctx, u)
 	if err != nil {
 		return nil, err
 	}
 	if !u.IsAnon { // anon user can't update squat
 		if cs == nil {
-			ci, cerr := u.ContactInfo()
+			ci, cerr := u.ContactInfo(ctx)
 			if cerr != nil {
 				return nil, cerr
 			}
@@ -217,10 +218,10 @@ func (c *Conference) TouchPost(tx *sqlx.Tx, u *User, lastPost time.Time) (*Confe
 				LastRead:     &lastPost,
 				LastPost:     &lastPost,
 			}
-			_, err = tx.Exec("INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
+			_, err = tx.ExecContext(ctx, "INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
 				c.ConfId, u.Uid, defaultPseud, lastPost, lastPost)
 		} else {
-			_, err = tx.Exec("UPDATE confsettings SET last_post = ? WHERE confid = ? AND uid = ?", lastPost, c.ConfId, u.Uid)
+			_, err = tx.ExecContext(ctx, "UPDATE confsettings SET last_post = ? WHERE confid = ? AND uid = ?", lastPost, c.ConfId, u.Uid)
 			cs.LastPost = &lastPost
 		}
 		if err != nil {
@@ -232,19 +233,20 @@ func (c *Conference) TouchPost(tx *sqlx.Tx, u *User, lastPost time.Time) (*Confe
 
 /* AmGetConference returns a conference given its ID.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     id - The ID of the conference.
  * Returns:
  *     Pointer to the conference, or nil.
  *     Standard Go error status.
  */
-func AmGetConference(id int32) (*Conference, error) {
+func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
 	var err error = nil
 	getConferenceMutex.Lock()
 	defer getConferenceMutex.Unlock()
 	rc, ok := conferenceCache.Get(id)
 	if !ok {
 		var dbdata []Conference
-		err = amdb.Select(&dbdata, "SELECT * from confs where confid = ?", id)
+		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from confs where confid = ?", id)
 		if err != nil {
 			return nil, err
 		}
@@ -261,18 +263,19 @@ func AmGetConference(id int32) (*Conference, error) {
 
 /* AmGetConferenceByAlias returns a conference given its alias.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     alias - The alias to look up.
  * Returns:
  *     Pointer to the conference, or nil.
  *     Standard Go error status.
  */
-func AmGetConferenceByAlias(alias string) (*Conference, error) {
+func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, error) {
 	var confid int32
 	xconf, ok := conferenceAliasMap.Load(alias)
 	if ok {
 		confid = xconf.(int32)
 	} else {
-		rs, err := amdb.Query("SELECT confid FROM confalias WHERE alias = ?", alias)
+		rs, err := amdb.QueryContext(ctx, "SELECT confid FROM confalias WHERE alias = ?", alias)
 		if err != nil {
 			return nil, err
 		}
@@ -282,19 +285,20 @@ func AmGetConferenceByAlias(alias string) (*Conference, error) {
 		rs.Scan(&confid)
 		conferenceAliasMap.Store(alias, confid)
 	}
-	return AmGetConference(confid)
+	return AmGetConference(ctx, confid)
 }
 
 /* AmGetConferenceByAliasInCommunity returns a conference in a community given its alias.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     cid - The community to look inside.
  *     alias - The alias to look up.
  * Returns:
  *     Pointer to the conference, or nil.
  *     Standard Go error status.
  */
-func AmGetConferenceByAliasInCommunity(cid int32, alias string) (*Conference, error) {
-	rs, err := amdb.Query(`SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
+func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias string) (*Conference, error) {
+	rs, err := amdb.QueryContext(ctx, `SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
 		AND c.commid = ? AND a.alias = ?`, cid, alias)
 	if err != nil {
 		return nil, err
@@ -304,23 +308,24 @@ func AmGetConferenceByAliasInCommunity(cid int32, alias string) (*Conference, er
 	}
 	var confid int32
 	rs.Scan(&confid)
-	return AmGetConference(confid)
+	return AmGetConference(ctx, confid)
 }
 
 /* AmGetCommunityConferences returns all conferences for a given community.
  * Parameters:
+ *     ctx - Standard Go context value.
  *     cid - Community ID to get conferences for.
  *     showHidden - true to show hidden conferences.
  * Returns:
  *     Array containing the COnference pointers, or nil.
  *     Stanbard Go error status.
  */
-func AmGetCommunityConferences(cid int32, showHidden bool) ([]*Conference, error) {
+func AmGetCommunityConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conference, error) {
 	q := ""
 	if !showHidden {
 		q = " AND x.hide_list = 0"
 	}
-	rs, err := amdb.Query(`SELECT x.confid FROM commtoconf x, confs c WHERE x.confid = c.confid
+	rs, err := amdb.QueryContext(ctx, `SELECT x.confid FROM commtoconf x, confs c WHERE x.confid = c.confid
 		AND x.commid = ?`+q+" ORDER BY x.sequence, c.name", cid)
 	if err != nil {
 		return nil, err
@@ -329,7 +334,7 @@ func AmGetCommunityConferences(cid int32, showHidden bool) ([]*Conference, error
 	for rs.Next() {
 		var confid int32
 		rs.Scan(&confid)
-		conf, err := AmGetConference(confid)
+		conf, err := AmGetConference(ctx, confid)
 		if err == nil {
 			rc = append(rc, conf)
 		}
