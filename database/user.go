@@ -925,7 +925,10 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 		return nil, -1, errors.New("internal error getting count")
 	}
 	var total int
-	rs.Scan(&total)
+	err = rs.Scan(&total)
+	if err != nil {
+		return nil, -1, err
+	}
 	if total == 0 {
 		return make([]*User, 0), 0, nil
 	}
@@ -942,10 +945,16 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 	rc := make([]*User, 0, min(max, 10000))
 	for rs.Next() {
 		var uid int32
-		rs.Scan(&uid)
-		u, err := AmGetUser(ctx, uid)
+		err = rs.Scan(&uid)
 		if err == nil {
-			rc = append(rc, u)
+			var u *User
+			u, err = AmGetUser(ctx, uid)
+			if err == nil {
+				rc = append(rc, u)
+			}
+		}
+		if err != nil {
+			log.Errorf("AmSearchUsers scan error: %v", err)
 		}
 	}
 	return rc, total, nil

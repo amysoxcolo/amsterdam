@@ -23,6 +23,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 )
 
@@ -219,11 +220,15 @@ func (c *Community) Membership(ctx context.Context, u *User) (bool, bool, uint16
 		if rs.Next() {
 			var locked bool
 			var level uint16
-			rs.Scan(&locked, &level)
-			memberCache.Add(key, &memberCacheData{isMember: true, locked: locked, level: level})
-			return true, locked, level, nil
+			err = rs.Scan(&locked, &level)
+			if err == nil {
+				memberCache.Add(key, &memberCacheData{isMember: true, locked: locked, level: level})
+				return true, locked, level, nil
+			}
 		}
-		memberCache.Add(key, &memberCacheData{isMember: false, locked: false, level: uint16(0)})
+		if err == nil {
+			memberCache.Add(key, &memberCacheData{isMember: false, locked: false, level: uint16(0)})
+		}
 	}
 	return false, false, uint16(0), err
 }
@@ -379,7 +384,10 @@ func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, lo
 		if rs.Next() {
 			var oldLevel uint16
 			var lockStatus bool
-			rs.Scan(&oldLevel, &lockStatus)
+			err = rs.Scan(&oldLevel, &lockStatus)
+			if err != nil {
+				return err
+			}
 			if level != oldLevel || lockStatus != locked {
 				_, err := tx.ExecContext(ctx, "UPDATE commmember SET granted_lvl = ?, locked = ? WHERE commid = ? AND uid = ?",
 					level, locked, c.Id, u.Uid)
@@ -510,9 +518,12 @@ func (c *Community) SetProfileData(ctx context.Context, name string, alias strin
 		c.DeleteLevel = delete_lvl
 		c.JoinLevel = join_lvl
 		rs, err2 := amdb.QueryContext(ctx, "SELECT lastupdate FROM communities WHERE commid = ?", c.Id)
-		if err2 != nil {
+		if err2 == nil {
 			rs.Next()
-			rs.Scan(&c.LastUpdate)
+			err2 = rs.Scan(&c.LastUpdate)
+		}
+		if err2 != nil {
+			log.Errorf("SetProfileData scan error: %v", err2)
 		}
 	}
 	return err
@@ -782,7 +793,10 @@ func AmAutoJoinCommunities(ctx context.Context, tx *sqlx.Tx, user *User) error {
 		for rows.Next() {
 			var cid int32
 			var lock bool
-			rows.Scan(&cid, &lock)
+			err = rows.Scan(&cid, &lock)
+			if err != nil {
+				break
+			}
 			if !slices.Contains(current, cid) {
 				_, err = tx.ExecContext(ctx, "INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
 					cid, user.Uid, grantLevel, lock)

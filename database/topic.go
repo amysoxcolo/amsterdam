@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 )
 
 // Topic is the top-level structure detailing topics.
@@ -61,9 +62,9 @@ func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
 	}
 	var rc int32 = -1
 	if rs.Next() {
-		rs.Scan(&rc)
+		err = rs.Scan(&rc)
 	}
-	return rc, nil
+	return rc, err
 }
 
 // SetLastRead sets the "last read" message for a user on a topic.
@@ -103,6 +104,8 @@ type TopicSummary struct {
 	Archived   bool      // is topic archived?
 	Subscribed bool      // is topic subscribed?
 	Hidden     bool      // is topic hidden?
+	Sticky     bool      // is topic sticky?
+	NewFlag    bool      // does topic have new messages?
 }
 
 /* AmGetTopic retrieves a topic by ID.
@@ -310,9 +313,13 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 	rc := make([]*TopicSummary, 0)
 	for rs.Next() {
 		var rec TopicSummary
-		rs.Scan(&rec.TopicID, &rec.Number, &rec.Name, &rec.Unread, &rec.Total, &rec.LastUpdate, &rec.Frozen, &rec.Archived,
-			&rec.Subscribed, &rec.Hidden)
-		rc = append(rc, &rec)
+		err = rs.Scan(&rec.TopicID, &rec.Number, &rec.Name, &rec.Unread, &rec.Total, &rec.LastUpdate, &rec.Frozen,
+			&rec.Archived, &rec.Subscribed, &rec.Hidden, &rec.Sticky, &rec.NewFlag)
+		if err != nil {
+			log.Errorf("AmListTopics scan error: %v", err)
+		} else {
+			rc = append(rc, &rec)
+		}
 	}
 	return rc, nil
 }

@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // Category is the structure defining a category.
@@ -71,7 +72,10 @@ func loadCategories(ctx context.Context) error {
 			return errors.New("internal error loading categories")
 		}
 		var ncats int32
-		rs.Scan(&ncats)
+		err = rs.Scan(&ncats)
+		if err != nil {
+			return err
+		}
 		allCategories = make([]Category, 0, ncats)
 		err = amdb.SelectContext(ctx, &allCategories, "SELECT * FROM refcategory ORDER BY parent, name")
 		if err != nil {
@@ -243,7 +247,10 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 		return nil, -1, errors.New("internal error getting category total")
 	}
 	var total int
-	rs.Scan(&total)
+	err = rs.Scan(&total)
+	if err != nil {
+		return nil, total, err
+	}
 	if total == 0 {
 		return make([]*Category, 0), 0, nil
 	}
@@ -258,10 +265,15 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 	rc := make([]*Category, 0, min(max, 1000))
 	for rs.Next() {
 		var catid int32
-		rs.Scan(&catid)
-		c, err := AmGetCategory(ctx, catid)
+		err = rs.Scan(&catid)
 		if err == nil {
-			rc = append(rc, c)
+			c, err := AmGetCategory(ctx, catid)
+			if err == nil {
+				rc = append(rc, c)
+			}
+		}
+		if err != nil {
+			log.Errorf("AmSearchCategoris scan error: %v", err)
 		}
 	}
 	return rc, total, nil

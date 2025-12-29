@@ -122,7 +122,10 @@ func AmGetGlobalProperty(ctx context.Context, index int32) (string, error) {
 			return "", err
 		}
 		if rs.Next() {
-			rs.Scan(&rc)
+			err = rs.Scan(&rc)
+			if err != nil {
+				return "", err
+			}
 			globalProps[index] = rc
 			return rc, nil
 		}

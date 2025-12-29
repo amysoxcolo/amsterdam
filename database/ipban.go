@@ -73,7 +73,10 @@ func AmTestIPBan(ctx context.Context, ip_address string) (string, error) {
 	}
 	defer rows.Close()
 	if rows.Next() {
-		rows.Scan(&rc)
+		err = rows.Scan(&rc)
+		if err != nil {
+			return "", err
+		}
 		knownBans[ip_address] = rc
 		return rc, nil
 	}

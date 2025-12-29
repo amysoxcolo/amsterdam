@@ -93,7 +93,10 @@ func AmStoreImage(ctx context.Context, typecode int16, owner int32, mimetype str
 	var img *ImageStore
 	if rs.Next() {
 		var id int32
-		rs.Scan(&id)
+		err = rs.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
 		img, err = AmLoadImage(ctx, id)
 		if err != nil {
 			return nil, err
