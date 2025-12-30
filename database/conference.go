@@ -18,6 +18,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 )
 
 // Conference struct is the top-level structure for a conference.
@@ -75,8 +76,11 @@ func (c *Conference) Aliases(ctx context.Context) ([]string, error) {
 	rc := make([]string, 0, 5)
 	for rs.Next() {
 		var a string
-		rs.Scan(&a)
-		rc = append(rc, a)
+		if err = rs.Scan(&a); err == nil {
+			rc = append(rc, a)
+		} else {
+			log.Errorf("Aliases scan error: %v", err)
+		}
 	}
 	return rc, nil
 }

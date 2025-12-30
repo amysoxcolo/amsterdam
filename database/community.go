@@ -247,8 +247,12 @@ func (c *Community) MemberCount(ctx context.Context, hidden bool) (int, error) {
 	}
 	if rs.Next() {
 		var rc int
-		rs.Scan(&rc)
-		return rc, nil
+		err = rs.Scan(&rc)
+		if err == nil {
+			return rc, nil
+		} else {
+			return -1, err
+		}
 	}
 	return -1, errors.New("internal error reading member count")
 }
@@ -321,13 +325,15 @@ func (c *Community) ListMembers(ctx context.Context, field int, oper int, term s
 		return nil, -1, errors.New("internal error getting member count")
 	}
 	var total int
-	rs.Scan(&total)
-	if offset > 0 {
-		rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
-			AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
-	} else {
-		rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
-			AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ?", c.Id, max)
+	err = rs.Scan(&total)
+	if err == nil {
+		if offset > 0 {
+			rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
+		} else {
+			rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ?", c.Id, max)
+		}
 	}
 	if err != nil {
 		return nil, total, err
