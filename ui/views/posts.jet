@@ -74,17 +74,12 @@
 
         <!-- Messages -->
         <div class="space-y-6 mb-8">
-            {{ post_userName := "" }}
-            {{ post_text := "" }}
-            {{ post_overrideLine := "" }}
-            {{ post_overrideLink := "" }}
-            {{ range i, post_cur := posts }}
-                {{ post_userName = post_getUserName(post_cur, .) }}
-                {{ post_text = post_getText(post_cur, .) }}
-                {{ post_overrideLine = post_getOverrideLine(post_cur, .) }}
-                {{ post_overrideLink = post_getOverrideLink(post_cur, post_topicPermalink) }}
-                {{ .SubRender("singlepost.jet") | raw }}
-                {{ if pin == post_cur.Num }}<hr/>{{ end }}
+            {{ m := map("foo", "bar") }}
+            {{ range i, p := posts }}
+                {{ m = map("post_cur", p, "post_userName", post_getUserName(p, .), "post_text", post_getText(p, .),
+                           "post_overrideLine", post_getOverrideLine(p, .), "post_overrideLink", post_getOverrideLink(p, post_topicPermalink)) }}
+                {{ .SubRender2("singlepost.jet", m) | raw }}
+                {{ if pin == p.Num }}<hr/>{{ end }}
             {{ end }}
         </div>
 

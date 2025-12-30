@@ -25,7 +25,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 /* Conferences displayes the list of conferences in a community.
@@ -513,13 +513,14 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	postsPostRef := plc.AsString()
 
 	// Render the output.
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	ctxt.VarMap().Set("topicName", topic.Name)
 	ctxt.VarMap().Set("summaryLine", summaryLine)
 	ctxt.VarMap().Set("lastRead", lastRead)
 	ctxt.VarMap().Set("pageSize", ctxt.Globals().PostsPerPage)
 	ctxt.VarMap().Set("post_confRef", topicConferenceRef)
 	ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
-	ctxt.VarMap().SetFunc("post.getOverrideLink", templateOverrideLink)
+	ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 	ctxt.VarMap().SetFunc("post_getText", templatePostText)
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 	ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
@@ -532,7 +533,6 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("rangeStart", postRange[0])
 	ctxt.VarMap().Set("topicListLink", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string)))
 	ctxt.VarMap().Set("topicNum", topic.Number)
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	if resetLastRead {
 		user := ctxt.CurrentUser()
 		ampool.Submit(func(ctx context.Context) {

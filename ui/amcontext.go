@@ -62,6 +62,7 @@ type AmContext interface {
 	ReplaceUser(*database.User)
 	SaveSession() error
 	SubRender(string) ([]byte, error)
+	SubRender2(string, map[string]any) ([]byte, error)
 	SetCommunityContext(string) error
 	SetLeftMenu(string)
 	SetLoginCookie(string)
@@ -314,6 +315,27 @@ func (c *amContext) SubRender(name string) ([]byte, error) {
 	}
 	buf := new(bytes.Buffer)
 	err = view.Execute(buf, c.VarMap(), c)
+	if err != nil {
+		log.Errorf("template \"%s\" failed subrender exec: %v", name, err)
+	}
+	return buf.Bytes(), err
+}
+
+func (c *amContext) SubRender2(name string, vals map[string]any) ([]byte, error) {
+	view, err := views.GetTemplate(name)
+	if err != nil {
+		log.Errorf("unable to load template \"%s\": %v", name, err)
+		return nil, err
+	}
+	newmap := make(jet.VarMap)
+	for k, v := range c.VarMap() {
+		newmap.Set(k, v)
+	}
+	for k, v := range vals {
+		newmap.Set(k, v)
+	}
+	buf := new(bytes.Buffer)
+	err = view.Execute(buf, newmap, c)
 	if err != nil {
 		log.Errorf("template \"%s\" failed subrender exec: %v", name, err)
 	}

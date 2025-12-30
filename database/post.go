@@ -89,11 +89,15 @@ func AmGetPost(ctx context.Context, postId int64) (*PostHeader, error) {
 	return &(dbdata[0]), nil
 }
 
-func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]PostHeader, error) {
-	var rc []PostHeader
-	err := amdb.SelectContext(ctx, &rc, "SELECT * FROM posts WHERE topicid = ? AND num >= ? AND num <= ? ORDER BY num", topic.TopicId, first, last)
+func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]*PostHeader, error) {
+	var posts []PostHeader
+	err := amdb.SelectContext(ctx, &posts, "SELECT * FROM posts WHERE topicid = ? AND num >= ? AND num <= ? ORDER BY num", topic.TopicId, first, last)
 	if err != nil {
 		return nil, err
+	}
+	rc := make([]*PostHeader, len(posts))
+	for i := range posts {
+		rc[i] = &(posts[i])
 	}
 	return rc, nil
 }
