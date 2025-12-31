@@ -220,8 +220,7 @@ func (c *Community) Membership(ctx context.Context, u *User) (bool, bool, uint16
 		if rs.Next() {
 			var locked bool
 			var level uint16
-			err = rs.Scan(&locked, &level)
-			if err == nil {
+			if err = rs.Scan(&locked, &level); err == nil {
 				memberCache.Add(key, &memberCacheData{isMember: true, locked: locked, level: level})
 				return true, locked, level, nil
 			}
@@ -247,8 +246,7 @@ func (c *Community) MemberCount(ctx context.Context, hidden bool) (int, error) {
 	}
 	if rs.Next() {
 		var rc int
-		err = rs.Scan(&rc)
-		if err == nil {
+		if err = rs.Scan(&rc); err == nil {
 			return rc, nil
 		} else {
 			return -1, err
@@ -325,8 +323,7 @@ func (c *Community) ListMembers(ctx context.Context, field int, oper int, term s
 		return nil, -1, errors.New("internal error getting member count")
 	}
 	var total int
-	err = rs.Scan(&total)
-	if err == nil {
+	if err = rs.Scan(&total); err == nil {
 		if offset > 0 {
 			rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
 				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
@@ -341,10 +338,11 @@ func (c *Community) ListMembers(ctx context.Context, field int, oper int, term s
 	rc := make([]*User, 0, min(max, 10000))
 	for rs.Next() {
 		var uid int32
-		rs.Scan(&uid)
-		u, err := AmGetUser(ctx, uid)
-		if err == nil {
-			rc = append(rc, u)
+		if err = rs.Scan(&uid); err == nil {
+			u, err := AmGetUser(ctx, uid)
+			if err == nil {
+				rc = append(rc, u)
+			}
 		}
 	}
 	return rc, total, nil
@@ -390,8 +388,7 @@ func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, lo
 		if rs.Next() {
 			var oldLevel uint16
 			var lockStatus bool
-			err = rs.Scan(&oldLevel, &lockStatus)
-			if err != nil {
+			if err = rs.Scan(&oldLevel, &lockStatus); err != nil {
 				return err
 			}
 			if level != oldLevel || lockStatus != locked {
@@ -409,14 +406,12 @@ func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, lo
 				return err
 			}
 			stuffMembership(c.Id, u.Uid, true, locked, level)
-			err = AmOnUserJoinCommunityServices(ctx, tx, c, u)
-			if err != nil {
+			if err = AmOnUserJoinCommunityServices(ctx, tx, c, u); err != nil {
 				return err
 			}
 		}
 	}
-	err := c.TouchUpdateTx(ctx, tx)
-	if err == nil {
+	if err := c.TouchUpdateTx(ctx, tx); err == nil {
 		ar := AmNewAudit(AuditCommunitySetMembership, personUID, ipaddr, fmt.Sprintf("cid=%d", c.Id),
 			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level))
 		AmStoreAudit(ar)
@@ -556,8 +551,9 @@ func (c *Community) Touch(ctx context.Context) error {
 		if err == nil {
 			rs.Next()
 			var na time.Time
-			rs.Scan(&na)
-			c.LastAccess = &na
+			if err = rs.Scan(&na); err == nil {
+				c.LastAccess = &na
+			}
 		}
 	}
 	return err
@@ -573,9 +569,10 @@ func (c *Community) TouchUpdateTx(ctx context.Context, tx *sqlx.Tx) error {
 		if err != nil {
 			rs.Next()
 			var na, nu time.Time
-			rs.Scan(&na, &nu)
-			c.LastAccess = &na
-			c.LastUpdate = &nu
+			if err = rs.Scan(&na, &nu); err == nil {
+				c.LastAccess = &na
+				c.LastUpdate = &nu
+			}
 		}
 	}
 	return err
@@ -608,8 +605,7 @@ func AmGetCommunity(ctx context.Context, id int32) (*Community, error) {
 	rc, ok := communityCache.Get(id)
 	if !ok {
 		var dbdata []Community
-		err := amdb.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id)
-		if err != nil {
+		if err := amdb.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id); err != nil {
 			return nil, err
 		}
 		if len(dbdata) == 0 {
@@ -638,8 +634,7 @@ func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, e
 	rc, ok := communityCache.Get(id)
 	if !ok {
 		var dbdata []Community
-		err := tx.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id)
-		if err != nil {
+		if err := tx.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id); err != nil {
 			return nil, err
 		}
 		if len(dbdata) == 0 {
@@ -666,8 +661,9 @@ func AmGetCommunityByAlias(ctx context.Context, alias string) (*Community, error
 	if err == nil {
 		if rs.Next() {
 			var cid int32
-			rs.Scan(&cid)
-			return AmGetCommunity(ctx, cid)
+			if err = rs.Scan(&cid); err == nil {
+				return AmGetCommunity(ctx, cid)
+			}
 		} else {
 			return nil, nil
 		}
@@ -689,8 +685,9 @@ func AmGetCommunityByAliasTx(ctx context.Context, tx *sqlx.Tx, alias string) (*C
 	if err == nil {
 		if rs.Next() {
 			var cid int32
-			rs.Scan(&cid)
-			return AmGetCommunityTx(ctx, tx, cid)
+			if err = rs.Scan(&cid); err == nil {
+				return AmGetCommunityTx(ctx, tx, cid)
+			}
 		} else {
 			return nil, nil
 		}
@@ -768,7 +765,7 @@ func AmGetCommunityAccessLevel(ctx context.Context, uid int32, commid int32) (ui
 	if err == nil {
 		defer rows.Close()
 		if rows.Next() {
-			rows.Scan(&rc)
+			err = rows.Scan(&rc)
 		}
 	}
 	return rc, err
@@ -785,8 +782,7 @@ func AmGetCommunityAccessLevel(ctx context.Context, uid int32, commid int32) (ui
 func AmAutoJoinCommunities(ctx context.Context, tx *sqlx.Tx, user *User) error {
 	// get list of current communities
 	var current []int32 = make([]int32, 0)
-	err := tx.SelectContext(ctx, &current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid)
-	if err != nil {
+	if err := tx.SelectContext(ctx, &current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid); err != nil {
 		return err
 	}
 
@@ -799,8 +795,7 @@ func AmAutoJoinCommunities(ctx context.Context, tx *sqlx.Tx, user *User) error {
 		for rows.Next() {
 			var cid int32
 			var lock bool
-			err = rows.Scan(&cid, &lock)
-			if err != nil {
+			if err = rows.Scan(&cid, &lock); err != nil {
 				break
 			}
 			if !slices.Contains(current, cid) {
@@ -825,8 +820,7 @@ func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityP
 	rc, ok := communityPropCache.Get(key)
 	if !ok {
 		var dbdata []CommunityProperties
-		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
-		if err != nil {
+		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx); err != nil {
 			return nil, err
 		}
 		if len(dbdata) == 0 {
@@ -961,13 +955,11 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 	stuffMembership(comm.Id, hostUid, true, true, AmDefaultRole("Community.Creator").Level())
 
 	// Establish the community services.
-	err = AmEstablishCommunityServices(ctx, tx, comm)
-	if err != nil {
+	if err = AmEstablishCommunityServices(ctx, tx, comm); err != nil {
 		return nil, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	success = true
@@ -1005,9 +997,9 @@ func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, m
 		return nil, -1, errors.New("internal error getting total match count")
 	}
 	var total int
-	rs.Scan(&total)
-	if total == 0 {
-		return make([]*Community, 0), 0, nil // short-circuit return
+	err = rs.Scan(&total)
+	if err != nil || total == 0 {
+		return make([]*Community, 0), 0, err // short-circuit return
 	}
 	if showAll {
 		if offset > 0 {
@@ -1030,10 +1022,11 @@ func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, m
 	rc := make([]*Community, 0, min(max, 10000))
 	for rs.Next() {
 		var commid int32
-		rs.Scan(&commid)
-		c, err := AmGetCommunity(ctx, commid)
-		if err == nil {
-			rc = append(rc, c)
+		if err = rs.Scan(&commid); err == nil {
+			c, err := AmGetCommunity(ctx, commid)
+			if err == nil {
+				rc = append(rc, c)
+			}
 		}
 	}
 	return rc, total, nil
@@ -1097,9 +1090,9 @@ func AmSearchCommunities(ctx context.Context, field int, oper int, term string, 
 		return nil, -1, errors.New("internal error getting count")
 	}
 	var total int
-	rs.Scan(&total)
-	if total == 0 {
-		return make([]*Community, 0), 0, nil // short-circuit return
+	err = rs.Scan(&total)
+	if err != nil || total == 0 {
+		return make([]*Community, 0), 0, err // short-circuit return
 	}
 	if offset > 0 {
 		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ? OFFSET ?", max, offset)
@@ -1112,10 +1105,11 @@ func AmSearchCommunities(ctx context.Context, field int, oper int, term string, 
 	rc := make([]*Community, 0, min(max, 10000))
 	for rs.Next() {
 		var commid int32
-		rs.Scan(&commid)
-		c, err := AmGetCommunity(ctx, commid)
-		if err == nil {
-			rc = append(rc, c)
+		if err = rs.Scan(&commid); err == nil {
+			c, err := AmGetCommunity(ctx, commid)
+			if err == nil {
+				rc = append(rc, c)
+			}
 		}
 	}
 	return rc, total, nil

@@ -144,8 +144,9 @@ func AmGetCommunityServices(ctx context.Context, cid int32) ([]*ServiceDef, erro
 		a := make([]*ServiceDef, 0, len(dom.Services))
 		for rs.Next() {
 			var ndx int16
-			rs.Scan(&ndx)
-			a = append(a, dom.byIndex[ndx])
+			if err = rs.Scan(&ndx); err == nil {
+				a = append(a, dom.byIndex[ndx])
+			}
 		}
 		servicesCache.Add(cid, a)
 		rc = a
@@ -175,8 +176,9 @@ func AmGetCommunityServicesTx(ctx context.Context, tx *sqlx.Tx, cid int32) ([]*S
 		a := make([]*ServiceDef, 0, len(dom.Services))
 		for rs.Next() {
 			var ndx int16
-			rs.Scan(&ndx)
-			a = append(a, dom.byIndex[ndx])
+			if err = rs.Scan(&ndx); err == nil {
+				a = append(a, dom.byIndex[ndx])
+			}
 		}
 		servicesCache.Add(cid, a)
 		rc = a
@@ -209,8 +211,7 @@ func AmEstablishCommunityServices(ctx context.Context, tx *sqlx.Tx, c *Community
 	servicesCache.Add(c.Id, a)
 	servicesCacheMutex.Unlock()
 	for _, svc := range a {
-		err := svc.vtable.OnNewCommunity(ctx, tx, c)
-		if err != nil {
+		if err := svc.vtable.OnNewCommunity(ctx, tx, c); err != nil {
 			return err
 		}
 	}
@@ -230,8 +231,7 @@ func AmDeleteCommunityServices(ctx context.Context, tx *sqlx.Tx, cid int32) erro
 	arr, err := AmGetCommunityServices(ctx, cid)
 	if err == nil {
 		for _, svc := range arr {
-			err = svc.vtable.OnDeleteCommunity(ctx, tx, cid)
-			if err != nil {
+			if err = svc.vtable.OnDeleteCommunity(ctx, tx, cid); err != nil {
 				break
 			}
 		}
@@ -258,8 +258,7 @@ func AmOnUserJoinCommunityServices(ctx context.Context, tx *sqlx.Tx, c *Communit
 	arr, err := AmGetCommunityServicesTx(ctx, tx, c.Id)
 	if err == nil {
 		for _, svc := range arr {
-			err = svc.vtable.OnUserJoinCommunity(ctx, tx, c, u)
-			if err != nil {
+			if err = svc.vtable.OnUserJoinCommunity(ctx, tx, c, u); err != nil {
 				break
 			}
 		}
@@ -280,8 +279,7 @@ func AmOnUserLeaveCommunityServices(ctx context.Context, tx *sqlx.Tx, c *Communi
 	arr, err := AmGetCommunityServicesTx(ctx, tx, c.Id)
 	if err == nil {
 		for _, svc := range arr {
-			err = svc.vtable.OnUserLeaveCommunity(ctx, tx, c, u)
-			if err != nil {
+			if err = svc.vtable.OnUserLeaveCommunity(ctx, tx, c, u); err != nil {
 				break
 			}
 		}

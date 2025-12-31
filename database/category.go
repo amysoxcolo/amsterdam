@@ -72,13 +72,11 @@ func loadCategories(ctx context.Context) error {
 			return errors.New("internal error loading categories")
 		}
 		var ncats int32
-		err = rs.Scan(&ncats)
-		if err != nil {
+		if err = rs.Scan(&ncats); err != nil {
 			return err
 		}
 		allCategories = make([]Category, 0, ncats)
-		err = amdb.SelectContext(ctx, &allCategories, "SELECT * FROM refcategory ORDER BY parent, name")
-		if err != nil {
+		if err = amdb.SelectContext(ctx, &allCategories, "SELECT * FROM refcategory ORDER BY parent, name"); err != nil {
 			return err
 		}
 		for i, c := range allCategories {
@@ -104,8 +102,7 @@ func AmGetCategory(ctx context.Context, catid int32) (*Category, error) {
 	if !ok {
 		return nil, errors.New("category feature not supported")
 	}
-	err = loadCategories(ctx)
-	if err != nil {
+	if err = loadCategories(ctx); err != nil {
 		return nil, err
 	}
 	c := categoryIdMap[catid]
@@ -136,8 +133,7 @@ func AmGetCategoryHierarchy(ctx context.Context, catid int32) ([]*Category, erro
 	if !ok {
 		return nil, errors.New("category feature not supported")
 	}
-	err = loadCategories(ctx)
-	if err != nil {
+	if err = loadCategories(ctx); err != nil {
 		return nil, err
 	}
 	// walk all the way to the "root" (parent = -1)
@@ -175,8 +171,7 @@ func AmGetSubCategories(ctx context.Context, catid int32) ([]*Category, error) {
 	if !ok {
 		return nil, errors.New("category feature not supported")
 	}
-	err = loadCategories(ctx)
-	if err != nil {
+	if err = loadCategories(ctx); err != nil {
 		return nil, err
 	}
 	rc := make([]*Category, 0)
@@ -247,8 +242,7 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 		return nil, -1, errors.New("internal error getting category total")
 	}
 	var total int
-	err = rs.Scan(&total)
-	if err != nil {
+	if err = rs.Scan(&total); err != nil {
 		return nil, total, err
 	}
 	if total == 0 {
@@ -265,8 +259,7 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 	rc := make([]*Category, 0, min(max, 1000))
 	for rs.Next() {
 		var catid int32
-		err = rs.Scan(&catid)
-		if err == nil {
+		if err = rs.Scan(&catid); err == nil {
 			c, err := AmGetCategory(ctx, catid)
 			if err == nil {
 				rc = append(rc, c)

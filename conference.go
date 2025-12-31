@@ -367,6 +367,7 @@ func breakRange(topic *database.Topic, into []int32, param string, sep string) e
 	return nil
 }
 
+// templateExtractUserName extracts the user name from the post.
 func templateExtractUserName(args jet.Arguments) reflect.Value {
 	rc := "<<ERROR>>"
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
@@ -380,6 +381,7 @@ func templateExtractUserName(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// templatePostText gets the text of a post.
 func templatePostText(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
@@ -391,6 +393,7 @@ func templatePostText(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// templateOverrideLine creates the "override line" for a post, that is, what gets displayed in place of the post text.
 func templateOverrideLine(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
@@ -416,6 +419,7 @@ func templateOverrideLine(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// templateOverrideLink creates the "override link" for a post, which can make the override line a hyperlink.
 func templateOverrideLink(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	root := args.Get(1).Convert(reflect.TypeFor[string]()).String()
@@ -426,6 +430,14 @@ func templateOverrideLink(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+/* ReadPosts displays posts in a topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// If we need to reset a topic's last read count (as with "Next & Keep New"), spin the task off.
 	if ctxt.HasParameter("rst") {

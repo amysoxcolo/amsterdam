@@ -101,10 +101,11 @@ func (c *Conference) Hosts(ctx context.Context) ([]*User, error) {
 	rc := make([]*User, 0, 5)
 	for rs.Next() {
 		var uid int32
-		rs.Scan(&uid)
-		u, err := AmGetUser(ctx, uid)
-		if err == nil {
-			rc = append(rc, u)
+		if err = rs.Scan(&uid); err == nil {
+			u, err := AmGetUser(ctx, uid)
+			if err == nil {
+				rc = append(rc, u)
+			}
 		}
 	}
 	return rc, nil
@@ -122,12 +123,15 @@ func (c *Conference) Membership(ctx context.Context, u *User) (bool, uint16, err
 	if err != nil {
 		return false, 0, err
 	}
+	rc := false
 	if rs.Next() {
+		rc = true
 		var level uint16
-		rs.Scan(&level)
-		return true, level, nil
+		if err = rs.Scan(&level); err == nil {
+			return rc, level, nil
+		}
 	}
-	return false, 0, nil
+	return rc, 0, err
 }
 
 /* TestPermission is shorthand that tests if a user has a permission with respect to the conference.
@@ -162,8 +166,7 @@ func (c *Conference) TestPermission(perm string, level uint16) bool {
 // Settings returns the settings for a user.
 func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings, error) {
 	var dbdata []ConferenceSettings
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
-	if err != nil {
+	if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid); err != nil {
 		return nil, err
 	}
 	if len(dbdata) == 0 {
@@ -250,8 +253,7 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
 	rc, ok := conferenceCache.Get(id)
 	if !ok {
 		var dbdata []Conference
-		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from confs where confid = ?", id)
-		if err != nil {
+		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from confs where confid = ?", id); err != nil {
 			return nil, err
 		}
 		if len(dbdata) == 0 {
@@ -286,7 +288,9 @@ func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, err
 		if !rs.Next() {
 			return nil, fmt.Errorf("alias not found: %s", alias)
 		}
-		rs.Scan(&confid)
+		if err = rs.Scan(&confid); err != nil {
+			return nil, err
+		}
 		conferenceAliasMap.Store(alias, confid)
 	}
 	return AmGetConference(ctx, confid)
@@ -311,7 +315,9 @@ func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias str
 		return nil, errors.New("conference not found")
 	}
 	var confid int32
-	rs.Scan(&confid)
+	if err = rs.Scan(&confid); err != nil {
+		return nil, err
+	}
 	return AmGetConference(ctx, confid)
 }
 
@@ -337,10 +343,15 @@ func AmGetCommunityConferences(ctx context.Context, cid int32, showHidden bool) 
 	rc := make([]*Conference, 0, 6)
 	for rs.Next() {
 		var confid int32
-		rs.Scan(&confid)
-		conf, err := AmGetConference(ctx, confid)
-		if err == nil {
-			rc = append(rc, conf)
+		if err = rs.Scan(&confid); err == nil {
+			conf, err := AmGetConference(ctx, confid)
+			if err == nil {
+				rc = append(rc, conf)
+			} else {
+				log.Errorf("AmGetCommunityConferences conference error: %v", err)
+			}
+		} else {
+			log.Errorf("AmGetCommunityConferences scan error: %v", err)
 		}
 	}
 	return rc, nil

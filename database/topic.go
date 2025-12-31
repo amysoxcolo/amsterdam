@@ -118,8 +118,7 @@ type TopicSummary struct {
  */
 func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
 	var dbdata []Topic
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
-	if err != nil {
+	if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
 		return nil, err
 	}
 	if len(dbdata) == 0 {
@@ -142,8 +141,7 @@ func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
  */
 func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, error) {
 	var dbdata []Topic
-	err := tx.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId)
-	if err != nil {
+	if err := tx.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
 		return nil, err
 	}
 	if len(dbdata) == 0 {
@@ -313,9 +311,8 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 	rc := make([]*TopicSummary, 0)
 	for rs.Next() {
 		var rec TopicSummary
-		err = rs.Scan(&rec.TopicID, &rec.Number, &rec.Name, &rec.Unread, &rec.Total, &rec.LastUpdate, &rec.Frozen,
-			&rec.Archived, &rec.Subscribed, &rec.Hidden, &rec.Sticky, &rec.NewFlag)
-		if err != nil {
+		if err = rs.Scan(&rec.TopicID, &rec.Number, &rec.Name, &rec.Unread, &rec.Total, &rec.LastUpdate, &rec.Frozen,
+			&rec.Archived, &rec.Subscribed, &rec.Hidden, &rec.Sticky, &rec.NewFlag); err != nil {
 			log.Errorf("AmListTopics scan error: %v", err)
 		} else {
 			rc = append(rc, &rec)
@@ -324,6 +321,20 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 	return rc, nil
 }
 
+/* AmNewTopic creates a new topic.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     conf - Conference to add the new post.
+ *     user - User creating the new topic.
+ *     title - The new topic's title.
+ *     zeroPostPseud - Pseud for the topic's "zero post" (first post).
+ *     zeroPost - Textual data for the zero post.
+ *     zeroPostLines - Number of lines of text in zeroPost.
+ *     ipaddr - IP address of the user making the topic, for audit purposes.
+ * Returns:
+ *     Pointer to the new Topic data structure.
+ *     Standard Go error status.
+ */
 func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
 	zeroPostLines int32, ipaddr string) (*Topic, error) {
 	var ar *AuditRecord = nil
@@ -409,8 +420,7 @@ func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string,
 		return nil, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	success = true

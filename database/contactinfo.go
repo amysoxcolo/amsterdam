@@ -57,7 +57,7 @@ func lookupCommunityContact(ctx context.Context, id int32) (int32, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
 	if err == nil {
 		if rs.Next() {
-			rs.Scan(&rc)
+			err = rs.Scan(&rc)
 		}
 	}
 	return rc, err
@@ -69,7 +69,7 @@ func lookupUserContact(ctx context.Context, uid int32) (int32, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
 	if err == nil {
 		if rs.Next() {
-			rs.Scan(&rc)
+			err = rs.Scan(&rc)
 		}
 	}
 	return rc, err
@@ -191,8 +191,8 @@ func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
 	if !rs.Next() {
 		return false, errors.New("internal error rereading update timestamp")
 	}
-	rs.Scan(&ci.LastUpdate)
-	return emailChange, nil
+	err = rs.Scan(&ci.LastUpdate)
+	return emailChange, err
 }
 
 // Clone makes a copy of the ContactInfo.

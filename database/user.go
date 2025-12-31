@@ -267,10 +267,8 @@ func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP 
 	if err == nil {
 		u.VerifyEMail = true
 		u.BaseLevel = AmDefaultRole("Global.AfterVerify").Level()
-		err = AmAutoJoinCommunities(ctx, tx, u)
-		if err == nil {
-			err = tx.Commit()
-			if err == nil {
+		if err = AmAutoJoinCommunities(ctx, tx, u); err == nil {
+			if err = tx.Commit(); err == nil {
 				success = true
 				ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
 			}
@@ -354,8 +352,7 @@ func (u *User) Prefs(ctx context.Context) (*UserPrefs, error) {
 	defer u.Mutex.Unlock()
 	if u.prefs == nil {
 		var dbdata []UserPrefs
-		err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
-		if err != nil {
+		if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid); err != nil {
 			return nil, err
 		}
 		if len(dbdata) != 1 {
@@ -402,8 +399,7 @@ func AmGetUser(ctx context.Context, uid int32) (*User, error) {
 	rc, ok := userCache.Get(uid)
 	if !ok {
 		var dbdata []User
-		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid)
-		if err != nil {
+		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid); err != nil {
 			return nil, err
 		}
 		if len(dbdata) > 1 {
@@ -431,8 +427,7 @@ func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
 	rc, ok := userCache.Get(uid)
 	if !ok {
 		var dbdata []User
-		err = tx.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid)
-		if err != nil {
+		if err = tx.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid); err != nil {
 			return nil, err
 		}
 		if len(dbdata) > 1 {
@@ -596,8 +591,7 @@ func AmAuthenticateUser(ctx context.Context, name string, password string, remot
 	}
 	log.Debug("...authenticated")
 	touchUser(ctx, tx, user)
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	success = true
@@ -680,8 +674,7 @@ func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP 
 	}
 	log.Debug("...authenticated")
 	touchUser(ctx, tx, user)
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	success = true
@@ -754,8 +747,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 
 	// add user properties
 	props := make([]UserProperties, 0)
-	err = tx.SelectContext(ctx, &props, "SELECT * FROM propuser WHERE uid = ?", anon)
-	if err != nil {
+	if err = tx.SelectContext(ctx, &props, "SELECT * FROM propuser WHERE uid = ?", anon); err != nil {
 		return nil, err
 	}
 	for _, p := range props {
@@ -766,8 +758,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	}
 
 	// add user sideboxes
-	err = copySideboxes(ctx, tx, user.Uid, anon)
-	if err != nil {
+	if err = copySideboxes(ctx, tx, user.Uid, anon); err != nil {
 		return nil, err
 	}
 
@@ -775,15 +766,13 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	unlock = false
 
 	// auto-join communities
-	err = AmAutoJoinCommunities(ctx, tx, user)
-	if err != nil {
+	if err = AmAutoJoinCommunities(ctx, tx, user); err != nil {
 		return nil, err
 	}
 
 	// TODO: copy conference hotlists
 
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	success = true
@@ -802,8 +791,7 @@ func internalGetProp(ctx context.Context, uid int32, ndx int32) (*UserProperties
 	rc, ok := userPropCache.Get(key)
 	if !ok {
 		var dbdata []UserProperties
-		err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx)
-		if err != nil {
+		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
 			return nil, err
 		}
 		if len(dbdata) == 0 {
@@ -925,8 +913,7 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 		return nil, -1, errors.New("internal error getting count")
 	}
 	var total int
-	err = rs.Scan(&total)
-	if err != nil {
+	if err = rs.Scan(&total); err != nil {
 		return nil, -1, err
 	}
 	if total == 0 {
@@ -945,8 +932,7 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 	rc := make([]*User, 0, min(max, 10000))
 	for rs.Next() {
 		var uid int32
-		err = rs.Scan(&uid)
-		if err == nil {
+		if err = rs.Scan(&uid); err == nil {
 			var u *User
 			u, err = AmGetUser(ctx, uid)
 			if err == nil {
