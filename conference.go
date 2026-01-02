@@ -553,3 +553,117 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 	return "framed_template", "posts.jet", nil
 }
+
+func PostInTopic(ctxt ui.AmContext) (string, any, error) {
+	// Locate community, conference, and topic.
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	var topic *database.Topic = nil
+	if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
+		topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(rawTopic))
+	}
+	if topic == nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, fmt.Errorf("topic not found: %s", ctxt.URLParam("topic")))
+	}
+
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.URLParam("confid"), topic.Number)
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", urlStem, nil
+	}
+	if ctxt.FormFieldIsSet("preview") {
+		// Preview the post.
+		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.Append(ctxt.FormField("pseud"))
+		checker.Finish()
+		v, _ := checker.Value()
+		ctxt.VarMap().Set("pseud", v)
+
+		// escape the data
+		postdata := ctxt.FormField("pb")
+		checker.Reset()
+		checker.Append(postdata)
+		checker.Finish()
+		v, _ = checker.Value()
+		ctxt.VarMap().Set("pb", v)
+
+		// run the preview
+		checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "preview")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+		checker.Append(postdata)
+		checker.Finish()
+		v, _ = checker.Value()
+		ctxt.VarMap().Set("previewPb", v)
+		nErr, _ := checker.Counter("spelling")
+		ctxt.VarMap().Set("nError", nErr)
+
+		ctxt.VarMap().Set("maxPost", ctxt.FormField("xp"))
+		if ctxt.FormFieldIsSet("attach") {
+			ctxt.VarMap().Set("attachFile", true)
+		}
+		ctxt.VarMap().Set("urlStem", urlStem)
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Previewing Message")
+		return "framed_template", "preview_post.jet", nil
+	}
+	// Figure out which URL to return to once this post is made.
+	var returnURL string
+	if ctxt.FormFieldIsSet("post") {
+		returnURL = urlStem
+	} else if ctxt.FormFieldIsSet("postnext") {
+		returnURL = urlStem // TODO
+	} else if ctxt.FormFieldIsSet("posttopics") {
+		returnURL = fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid"))
+	} else {
+		return ui.ErrorPage(ctxt, errors.New("unknown post button"))
+	}
+	maxPost, err := ctxt.FormFieldInt("xp")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if int32(maxPost) < topic.TopMessage {
+		// Slippage detected! Display the slipped posts and another post box.
+		// TODO
+		return "framed_template", "???", nil
+	}
+	// start by checking the title and pseud
+	checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-pseud")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	checker.Append(ctxt.FormField("pseud"))
+	checker.Finish()
+	postPseud, _ := checker.Value()
+
+	// now check the post data itself
+	checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-body")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+	checker.Append(ctxt.FormField("pb"))
+	checker.Finish()
+	postText, _ := checker.Value()
+	lines, _ := checker.Lines()
+
+	// Add the post!
+	hdr, err := database.AmNewPost(ctxt.Ctx(), conf, topic, ctxt.CurrentUser(), postPseud, postText, int32(lines))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	if !ctxt.FormFieldIsSet("attach") {
+		return "redirect", returnURL, nil // no attachment - just redisplay topic list
+	}
+
+	// go upload the attachment
+	ctxt.VarMap().Set("target", returnURL)
+	ctxt.VarMap().Set("post", hdr.PostId)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
+	return "framed_template", "attachment_upload.jet", nil
+}

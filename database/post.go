@@ -118,3 +118,86 @@ func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]*Po
 	}
 	return rc, nil
 }
+
+/* AmNewPost adds a new post to a topic.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     conf - Pointer to conference containing the topic.
+ *     topic - Pointer to topic.
+ *     user - Pointer to user posting the message.
+ *     pseud - Pseud for the new post.
+ *     post - New post text.
+ *     postLines - Number of lines in the post text.
+ * Returns:
+ *     New post header pointer.
+ *     Standard Go error status.
+ */
+func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, pseud string, post string, postLines int32) (*PostHeader, error) {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	unlock := true
+	tx.ExecContext(ctx, "LOCK TABLES topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
+	defer func() {
+		if unlock {
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
+		}
+	}()
+
+	// Add the post header information.
+	rs, err := tx.ExecContext(ctx, "INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, ?, ?, ?, NOW(), ?)",
+		topic.TopicId, topic.TopMessage+1, postLines, user.Uid, pseud)
+	if err != nil {
+		return nil, err
+	}
+	xid, err := rs.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	// Read back the post header.
+	var dbdata []PostHeader
+	if err := tx.SelectContext(ctx, &dbdata, "SELECT * FROM posts WHERE postid = ?", xid); err != nil {
+		return nil, err
+	}
+	if len(dbdata) == 0 {
+		return nil, errors.New("AmNewPost: new post not found")
+	}
+	if len(dbdata) > 1 {
+		return nil, fmt.Errorf("AmNewPost: too many entries (%d) for post ID %d", len(dbdata), xid)
+	}
+	hdr := &(dbdata[0])
+
+	// Add the post data.
+	_, err = tx.ExecContext(ctx, "INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), hdr.PostId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update the topic.
+	_, err = tx.ExecContext(ctx, "UPDATE topics SET top_message = ?, lastupdate = ? WHERE topicid = ?", hdr.Num, hdr.Posted, topic.TopicId)
+	if err != nil {
+		return nil, err
+	}
+	topic.TopMessage = hdr.Num
+	topic.LastUpdate = hdr.Posted
+
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
+	unlock = false
+
+	// update the "last posted" date in the conference settings
+	_, err = conf.TouchPost(ctx, tx, user, hdr.Posted)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	success = true
+	return hdr, nil
+}

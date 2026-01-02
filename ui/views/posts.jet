@@ -106,11 +106,8 @@
         <hr class="border-gray-400 mb-6">
         <h2 class="text-2xl font-bold text-black mb-4">Post Message in "{{ topicName }}":</h2>
         
-        <form method="POST" action="/TODO">
-            <input type="hidden" name="sd" value="4">
-            <input type="hidden" name="conf" value="2">
-            <input type="hidden" name="cc" value="2">
-            <input type="hidden" name="top" value="4">
+        <form method="POST" action="{{ post_stem }}">
+            <input type="hidden" name="xp" value="{{ post_max }}"/>
 
             <div class="bg-gray-50 p-6 rounded-lg space-y-4">
                 <div>
@@ -137,6 +134,7 @@
                 <div class="flex justify-center gap-4">
                     <button type="submit" name="preview" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">Preview</button>
                     <button type="submit" name="post" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Reload</button>
+                    <button type="submit" name="postnext" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Go Next</button>
                     <button type="submit" name="posttopics" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Go Topics</button>
                 </div>
             </div>
