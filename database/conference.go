@@ -178,6 +178,15 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 	return &(dbdata[0]), nil
 }
 
+// TouchUpdate updates the "last update" date/time in the conference.
+func (c *Conference) TouchUpdate(ctx context.Context, tx *sqlx.Tx, lastUpdate time.Time) error {
+	_, err := tx.ExecContext(ctx, "UPDATE confs SET lastupdate = ? WHERE confid = ?", lastUpdate, c.ConfId)
+	if err == nil {
+		c.LastUpdate = &lastUpdate
+	}
+	return err
+}
+
 // TouchRead updates the "last posted" date/time in the conference for the user.
 func (c *Conference) TouchRead(ctx context.Context, tx *sqlx.Tx, u *User) (*ConferenceSettings, error) {
 	cs, err := c.Settings(ctx, u)

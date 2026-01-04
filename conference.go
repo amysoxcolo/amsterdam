@@ -558,6 +558,8 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	// Locate community, conference, and topic.
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	level := ctxt.GetScratch("levelInConference").(uint16)
+
 	var topic *database.Topic = nil
 	if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
 		topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(rawTopic))
@@ -571,6 +573,22 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", urlStem, nil
 	}
+
+	if !conf.TestPermission("Conference.Post", level) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("you do not have permission to post in this conference"))
+	}
+
+	if topic.Frozen && !conf.TestPermission("Conference.Hide", level) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("this topic is frozen, and you do not have permission to post to it"))
+	}
+
+	if topic.Archived && !conf.TestPermission("Conference.Hide", level) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, errors.New("this topic is archived, and you do not have permission to post to it"))
+	}
+
 	if ctxt.FormFieldIsSet("preview") {
 		// Preview the post.
 		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
@@ -595,7 +613,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), topic.Number))
 		checker.Append(postdata)
 		checker.Finish()
 		v, _ = checker.Value()
@@ -628,8 +646,51 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	}
 	if int32(maxPost) < topic.TopMessage {
 		// Slippage detected! Display the slipped posts and another post box.
-		// TODO
-		return "framed_template", "???", nil
+		// Get the slipped posts.
+		posts, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(maxPost), topic.TopMessage)
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+
+		// start with escaping the post data
+		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		checker.Append(ctxt.FormField("pseud"))
+		checker.Finish()
+		v, _ := checker.Value()
+		ctxt.VarMap().Set("pseud", v)
+
+		// escape the data
+		postdata := ctxt.FormField("pb")
+		checker.Reset()
+		checker.Append(postdata)
+		checker.Finish()
+		v, _ = checker.Value()
+		ctxt.VarMap().Set("pb", v)
+		if ctxt.FormFieldIsSet("attach") {
+			ctxt.VarMap().Set("attachFile", true)
+		}
+
+		plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
+		topicConferenceRef := plc.AsString()
+		plc.Community = comm.Alias
+		topicPostRef := plc.AsString()
+
+		ctxt.VarMap().Set("post_confRef", topicConferenceRef)
+		ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
+		ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
+		ctxt.VarMap().SetFunc("post_getText", templatePostText)
+		ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
+		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
+		ctxt.VarMap().Set("post_max", topic.TopMessage)
+		ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
+		ctxt.VarMap().Set("posts", posts)
+		ctxt.VarMap().Set("topicName", topic.Name)
+		ctxt.VarMap().Set("amsterdam_pageTitle", "Slippage or Double-Click Detected")
+
+		return "framed_template", "slippage.jet", nil
 	}
 	// start by checking the title and pseud
 	checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-pseud")
@@ -645,14 +706,14 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), topic.Number))
 	checker.Append(ctxt.FormField("pb"))
 	checker.Finish()
 	postText, _ := checker.Value()
 	lines, _ := checker.Lines()
 
 	// Add the post!
-	hdr, err := database.AmNewPost(ctxt.Ctx(), conf, topic, ctxt.CurrentUser(), postPseud, postText, int32(lines))
+	hdr, err := database.AmNewPost(ctxt.Ctx(), conf, topic, ctxt.CurrentUser(), postPseud, postText, int32(lines), ctxt.RemoteIP())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
@@ -660,6 +721,8 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	if !ctxt.FormFieldIsSet("attach") {
 		return "redirect", returnURL, nil // no attachment - just redisplay topic list
 	}
+
+	// TODO: whoever's subscribed needs to get a copy of this post in their E-mail
 
 	// go upload the attachment
 	ctxt.VarMap().Set("target", returnURL)

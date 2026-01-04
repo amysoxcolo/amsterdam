@@ -24,7 +24,6 @@
                 {{ m = map("post_cur", p, "post_userName", post_getUserName(p, .), "post_text", post_getText(p, .),
                            "post_overrideLine", post_getOverrideLine(p, .), "post_overrideLink", post_getOverrideLink(p, post_topicPermalink)) }}
                 {{ .SubRender2("singlepost.jet", m) | raw }}
-                {{ if pin == p.Num }}<hr/>{{ end }}
             {{ end }}
         </div>
 
@@ -34,8 +33,8 @@
 
         <!-- Posting Form -->
         <div class="max-w-3xl">
-            <form method="POST" action="{{ urlStem }}">
-                <input type="hidden" name="xp" value="{{ maxPost }}"/>
+            <form method="POST" action="{{ post_stem }}">
+                <input type="hidden" name="xp" value="{{ post_max }}"/>
                 <div class="bg-gray-50 p-6 rounded-lg space-y-4">
                     <!-- Your Name/Header and Attach File -->
                     <div>

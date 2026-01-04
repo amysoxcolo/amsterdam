@@ -128,12 +128,17 @@ func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]*Po
  *     pseud - Pseud for the new post.
  *     post - New post text.
  *     postLines - Number of lines in the post text.
+ *     ipaddr - IP address of user maing the post.
  * Returns:
  *     New post header pointer.
  *     Standard Go error status.
  */
-func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, pseud string, post string, postLines int32) (*PostHeader, error) {
+func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, pseud string, post string, postLines int32, ipaddr string) (*PostHeader, error) {
 	success := false
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
 	tx := amdb.MustBegin()
 	defer func() {
 		if !success {
@@ -141,7 +146,7 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 		}
 	}()
 	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
+	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
 	defer func() {
 		if unlock {
 			tx.ExecContext(ctx, "UNLOCK TABLES;")
@@ -189,7 +194,10 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	tx.ExecContext(ctx, "UNLOCK TABLES;")
 	unlock = false
 
-	// update the "last posted" date in the conference settings
+	// update the "last update" date of the conference and the "last posted" date in the conference settings
+	if err = conf.TouchUpdate(ctx, tx, hdr.Posted); err != nil {
+		return nil, err
+	}
 	_, err = conf.TouchPost(ctx, tx, user, hdr.Posted)
 	if err != nil {
 		return nil, err
@@ -199,5 +207,10 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 		return nil, err
 	}
 	success = true
+
+	// create audit record
+	ar = AmNewAudit(AuditConferencePostMessage, user.Uid, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
+		fmt.Sprintf("topic=%d", topic.Number), fmt.Sprintf("post=%d", hdr.PostId), fmt.Sprintf("pseud=%s", *hdr.Pseud))
+
 	return hdr, nil
 }
