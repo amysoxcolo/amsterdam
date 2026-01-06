@@ -15,6 +15,8 @@ import (
 	"io"
 	mrand "math/rand"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // authAlphabet is the set of characters from which we generate auth strings.
@@ -25,9 +27,7 @@ const authStringLen = 32
 
 // syllabary is used to generate random passwords.
 var syllabary = [...]string{
-	"ba",
-	"be",
-	"bi", "bo", "bu",
+	"ba", "be", "bi", "bo", "bu",
 	"da", "de", "di", "do", "du",
 	"cha", "chi", "cho", "chu",
 	"fa", "fe", "fi", "fo", "fu",
@@ -64,7 +64,12 @@ func GenerateRandomAuthString() string {
 
 // GenerateRandomConfirmationNumber generates a random 7-digit confirmation number.
 func GenerateRandomConfirmationNumber() int32 {
-	return mrand.Int31n(9000000) + 1000000
+	rc := mrand.Int31n(9000000) + 1000000
+	for rc < 1000000 || rc > 9999999 {
+		log.Errorf("*** GRCN out of range error! %d", rc)
+		rc = mrand.Int31n(9000000) + 1000000
+	}
+	return rc
 }
 
 // GenerateRandomPassword generates a random password string.
