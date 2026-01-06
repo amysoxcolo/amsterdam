@@ -242,13 +242,6 @@ func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP 
 	defer func() {
 		AmStoreAudit(ar)
 	}()
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
 
 	log.Debugf("ConfirmEMailAddress for UID %d", u.Uid)
 	u.Mutex.Lock()
@@ -262,16 +255,13 @@ func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP 
 		ar = AmNewAudit(AuditVerifyEmailFail, u.Uid, remoteIP, "Invalid confirmation number")
 		return errors.New("confirmation number is incorrect. Please try again")
 	}
-	_, err := tx.ExecContext(ctx, "UPDATE users SET verify_email = 1, base_lvl = ? WHERE uid = ?",
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET verify_email = 1, base_lvl = ? WHERE uid = ?",
 		AmDefaultRole("Global.AfterVerify").Level(), u.Uid)
 	if err == nil {
 		u.VerifyEMail = true
 		u.BaseLevel = AmDefaultRole("Global.AfterVerify").Level()
-		if err = AmAutoJoinCommunities(ctx, tx, u); err == nil {
-			if err = tx.Commit(); err == nil {
-				success = true
-				ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
-			}
+		if err = AmAutoJoinCommunities(ctx, u); err == nil {
+			ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
 		}
 	}
 	return err
@@ -765,17 +755,17 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	tx.ExecContext(ctx, "UNLOCK TABLES;")
 	unlock = false
 
-	// auto-join communities
-	if err = AmAutoJoinCommunities(ctx, tx, user); err != nil {
-		return nil, err
-	}
-
-	// TODO: copy conference hotlists
-
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 	success = true
+
+	// auto-join communities
+	if err = AmAutoJoinCommunities(ctx, user); err != nil {
+		return nil, err
+	}
+
+	// TODO: copy conference hotlists
 
 	// operation was a success - add an audit record
 	ar = AmNewAudit(AuditAccountCreated, user.Uid, remoteIP)

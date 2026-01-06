@@ -774,20 +774,19 @@ func AmGetCommunityAccessLevel(ctx context.Context, uid int32, commid int32) (ui
 /* AmAutoJoinCommunities joins the specified user to any communities they're not yet a part of.
  * Parameters:
  *     ctx - Standard Go context value.
- *     tx - The current transaction to be used for database access.
  *     user - The user to be auto-joined to communities.
  * Returns:
  *     Standard Go error status.
  */
-func AmAutoJoinCommunities(ctx context.Context, tx *sqlx.Tx, user *User) error {
+func AmAutoJoinCommunities(ctx context.Context, user *User) error {
 	// get list of current communities
 	var current []int32 = make([]int32, 0)
-	if err := tx.SelectContext(ctx, &current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid); err != nil {
+	if err := amdb.SelectContext(ctx, &current, "SELECT commid FROM commmember WHERE uid = ?", user.Uid); err != nil {
 		return err
 	}
 
 	// look for candidate communities
-	rows, err := tx.QueryxContext(ctx, `SELECT m.commid, m.locked FROM users u, communities c, commmember m
+	rows, err := amdb.QueryxContext(ctx, `SELECT m.commid, m.locked FROM users u, communities c, commmember m
 		WHERE m.uid = u.uid AND m.commid = c.commid AND u.is_anon = 1 AND c.join_lvl <= ?`, user.BaseLevel)
 	if err == nil {
 		defer rows.Close()
@@ -799,7 +798,7 @@ func AmAutoJoinCommunities(ctx context.Context, tx *sqlx.Tx, user *User) error {
 				break
 			}
 			if !slices.Contains(current, cid) {
-				_, err = tx.ExecContext(ctx, "INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
+				_, err = amdb.ExecContext(ctx, "INSERT INTO commmember (commid, uid, granted_lvl, locked) VALUES (?, ?, ?, ?)",
 					cid, user.Uid, grantLevel, lock)
 				if err != nil {
 					break
