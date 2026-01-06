@@ -178,7 +178,7 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	hdr := &(dbdata[0])
 
 	// Add the post data.
-	_, err = tx.ExecContext(ctx, "INSERT INTO postdata (postid, data) VALUES (?, ?)", int32(xid), hdr.PostId)
+	_, err = tx.ExecContext(ctx, "INSERT INTO postdata (postid, data) VALUES (?, ?)", hdr.PostId, post)
 	if err != nil {
 		return nil, err
 	}

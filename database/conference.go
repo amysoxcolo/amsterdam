@@ -178,6 +178,22 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 	return &(dbdata[0]), nil
 }
 
+// DefaultPseud returns the default pseud for a user in the conference.
+func (c *Conference) DefaultPseud(ctx context.Context, u *User) (string, error) {
+	settings, err := c.Settings(ctx, u)
+	if err != nil {
+		return "", err
+	}
+	if settings != nil && settings.DefaultPseud != nil {
+		return *settings.DefaultPseud, nil
+	}
+	ci, err := u.ContactInfo(ctx)
+	if err != nil {
+		return "", err
+	}
+	return ci.FullName(false), nil
+}
+
 // TouchUpdate updates the "last update" date/time in the conference.
 func (c *Conference) TouchUpdate(ctx context.Context, tx *sqlx.Tx, lastUpdate time.Time) error {
 	_, err := tx.ExecContext(ctx, "UPDATE confs SET lastupdate = ? WHERE confid = ?", lastUpdate, c.ConfId)

@@ -137,19 +137,11 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
 	ctxt.VarMap().Set("topicName", "")
-	cs, err := conf.Settings(ctxt.Ctx(), ctxt.CurrentUser())
+	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
-	if cs == nil || cs.DefaultPseud == nil {
-		ci, err := ctxt.CurrentUser().ContactInfo(ctxt.Ctx())
-		if err != nil {
-			return ui.ErrorPage(ctxt, err)
-		}
-		ctxt.VarMap().Set("pseud", ci.FullName(false))
-	} else {
-		ctxt.VarMap().Set("pseud", *cs.DefaultPseud)
-	}
+	ctxt.VarMap().Set("pseud", pseud)
 	ctxt.VarMap().Set("pb", "")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Topic")
 	return "framed_template", "new_topic.jet", nil
@@ -524,6 +516,13 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	plc.LastPost = postRange[1]
 	postsPostRef := plc.AsString()
 
+	// Set the user's pseud.
+	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	ctxt.VarMap().Set("pseud", pseud)
+
 	// Render the output.
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	ctxt.VarMap().Set("topicName", topic.Name)
@@ -589,26 +588,29 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("this topic is archived, and you do not have permission to post to it"))
 	}
 
+	// Set the escaped version of the text into the varmap, because it'll be needed if we do anything other than redirect.
+	checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	checker.Append(ctxt.FormField("pseud"))
+	checker.Finish()
+	v, _ := checker.Value()
+	ctxt.VarMap().Set("pseud", v)
+	postdata := ctxt.FormField("pb")
+	checker.Reset()
+	checker.Append(postdata)
+	checker.Finish()
+	v, _ = checker.Value()
+	ctxt.VarMap().Set("pb", v)
+
+	// also set the "attach" flag into the post data
+	if ctxt.FormFieldIsSet("attach") {
+		ctxt.VarMap().Set("attachFile", true)
+	}
+
 	if ctxt.FormFieldIsSet("preview") {
 		// Preview the post.
-		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
-		if err != nil {
-			return ui.ErrorPage(ctxt, err)
-		}
-		checker.Append(ctxt.FormField("pseud"))
-		checker.Finish()
-		v, _ := checker.Value()
-		ctxt.VarMap().Set("pseud", v)
-
-		// escape the data
-		postdata := ctxt.FormField("pb")
-		checker.Reset()
-		checker.Append(postdata)
-		checker.Finish()
-		v, _ = checker.Value()
-		ctxt.VarMap().Set("pb", v)
-
-		// run the preview
 		checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "preview")
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
@@ -622,9 +624,6 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("nError", nErr)
 
 		ctxt.VarMap().Set("maxPost", ctxt.FormField("xp"))
-		if ctxt.FormFieldIsSet("attach") {
-			ctxt.VarMap().Set("attachFile", true)
-		}
 		ctxt.VarMap().Set("urlStem", urlStem)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Previewing Message")
 		return "framed_template", "preview_post.jet", nil
@@ -652,27 +651,6 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 			return ui.ErrorPage(ctxt, err)
 		}
 
-		// start with escaping the post data
-		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
-		if err != nil {
-			return ui.ErrorPage(ctxt, err)
-		}
-		checker.Append(ctxt.FormField("pseud"))
-		checker.Finish()
-		v, _ := checker.Value()
-		ctxt.VarMap().Set("pseud", v)
-
-		// escape the data
-		postdata := ctxt.FormField("pb")
-		checker.Reset()
-		checker.Append(postdata)
-		checker.Finish()
-		v, _ = checker.Value()
-		ctxt.VarMap().Set("pb", v)
-		if ctxt.FormFieldIsSet("attach") {
-			ctxt.VarMap().Set("attachFile", true)
-		}
-
 		plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
 		topicConferenceRef := plc.AsString()
 		plc.Community = comm.Alias
@@ -692,8 +670,8 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 
 		return "framed_template", "slippage.jet", nil
 	}
-	// start by checking the title and pseud
-	checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-pseud")
+	// if we get here, we are posting - start by checking the title and pseud
+	checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-pseud")
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}

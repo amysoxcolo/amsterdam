@@ -113,7 +113,7 @@
                 <div>
                     <label for="pseud" class="block text-black text-sm font-medium mb-2">Your name/header:</label>
                     <div class="flex items-center gap-4">
-                        <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="System Administrator"
+                        <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="{{ pseud }}"
                                 class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="attach" name="attach" value="Y" class="w-4 h-4 text-blue-600 border-gray-300 rounded">
