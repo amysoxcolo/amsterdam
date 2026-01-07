@@ -79,18 +79,18 @@ func lookupUserContact(ctx context.Context, uid int32) (int32, error) {
 func (ci *ContactInfo) FullName(ps bool) string {
 	var b strings.Builder
 	writeSpace := false
-	if ps && ci.Prefix != nil && *ci.Prefix != "" {
+	if ps && ci.Prefix != nil && strings.TrimSpace(*ci.Prefix) != "" {
 		b.WriteString(*ci.Prefix)
 		writeSpace = true
 	}
-	if ci.GivenName != nil && *ci.GivenName != "" {
+	if ci.GivenName != nil && strings.TrimSpace(*ci.GivenName) != "" {
 		if writeSpace {
 			b.WriteString(" ")
 		}
 		b.WriteString(*ci.GivenName)
 		writeSpace = true
 	}
-	if ci.MiddleInit != nil && *ci.MiddleInit != "" {
+	if ci.MiddleInit != nil && strings.TrimSpace(*ci.MiddleInit) != "" {
 		if writeSpace {
 			b.WriteString(" ")
 		}
@@ -98,14 +98,14 @@ func (ci *ContactInfo) FullName(ps bool) string {
 		b.WriteString(".")
 		writeSpace = true
 	}
-	if ci.FamilyName != nil && *ci.FamilyName != "" {
+	if ci.FamilyName != nil && strings.TrimSpace(*ci.FamilyName) != "" {
 		if writeSpace {
 			b.WriteString(" ")
 		}
 		b.WriteString(*ci.FamilyName)
 		writeSpace = true
 	}
-	if ps && ci.Suffix != nil && *ci.Suffix != "" {
+	if ps && ci.Suffix != nil && strings.TrimSpace(*ci.Suffix) != "" {
 		if writeSpace {
 			b.WriteString(" ")
 		}
