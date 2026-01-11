@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@ import (
 const AMSTERDAM_VERSION = "0.0.1"
 
 // AMSTERDAM_COPYRIGHT contains the copyright dates for Amsterdam.
-const AMSTERDAM_COPYRIGHT = "2025"
+const AMSTERDAM_COPYRIGHT = "2025-2026"
 
 // AmCLI is the command-line interface arguments structure.
 type AmCLI struct {

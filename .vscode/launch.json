@@ -5,11 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Amsterdam",
+            "name": "Amsterdam",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}"
-        }
+        },
+        {
+            "name": "Amsterdam Test Config",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args": ["-C", "${workspaceFolder}/test.yaml"]
+        },
     ]
 }
