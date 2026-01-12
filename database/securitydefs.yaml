@@ -10,9 +10,9 @@ scopes:
   - name: Global
     index: 0
   - name: Community
-    index: 1
+    index: 3
   - name: Conference
-    index: 2
+    index: 6
 roles:
   - name: "NotInList"
     display: "Not In List"

@@ -31,13 +31,13 @@ type securityScope struct {
 
 // scopelist defines the boundaries of the known scopes.  There are 16 in all, most are unused.
 var scopelist = []securityScope{
-	{0, 1999, 63000, 64999},    // global scope
-	{2000, 3999, 61000, 62999}, // community scope
-	{4000, 5999, 59000, 60999}, // conference scope
-	{6000, 7999, 57000, 58999},
+	{0, 1999, 63000, 64999}, // global scope
+	{2000, 3999, 61000, 62999},
+	{4000, 5999, 59000, 60999},
+	{6000, 7999, 57000, 58999}, // community scope
 	{8000, 9999, 55000, 56999},
 	{10000, 11999, 53000, 54999},
-	{12000, 13999, 51000, 52999},
+	{12000, 13999, 51000, 52999}, // conference scope
 	{14000, 15999, 49000, 50999},
 	{16000, 17999, 47000, 48999},
 	{18000, 19999, 45000, 46999},
