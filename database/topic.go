@@ -229,13 +229,13 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 		if !ignoreSticky {
 			tail = "(t.sticky = 1 OR " + tail + ")"
 		}
-		whereClause = "t.archived = 0 AND hidden = 0 AND " + tail
+		whereClause = "t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0) AND " + tail
 	case TopicViewActive, TopicViewAllVisible:
-		whereClause = "t.archived = 0 AND hidden = 0"
+		whereClause = "t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)"
 	case TopicViewHidden:
-		whereClause = "hidden = 1"
+		whereClause = "s.hidden = 1"
 	case TopicViewArchive:
-		whereClause = "t.archived = 1 AND hidden = 0"
+		whereClause = "t.archived = 1 AND (s.hidden IS NULL OR s.hidden = 0)"
 	default:
 		return nil, errors.New("invalid view option specified")
 	}

@@ -83,7 +83,7 @@
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <a href="{{ urlStem }}/r/{{ t.Number }}" 
-                                    class="text-blue-700 hover:text-blue-900 font-medium">{{ t.Name }}</a>
+                                    class="text-blue-700 hover:text-blue-900 font-medium">{{ t.Name | raw }}</a>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
                                 <a href="{{ urlStem }}/r/{{ t.Number }}" 
