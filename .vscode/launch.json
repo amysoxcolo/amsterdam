@@ -12,7 +12,7 @@
             "program": "${workspaceFolder}"
         },
         {
-            "name": "Amsterdam Test Config",
+            "name": "Test Config",
             "type": "go",
             "request": "launch",
             "mode": "auto",

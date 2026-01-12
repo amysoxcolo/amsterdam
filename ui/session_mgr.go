@@ -27,6 +27,39 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func AmSessionGet(sess *sessions.Session, key any) (any, bool) {
+	if sess == nil {
+		return 0, false
+	}
+	mtx := sess.Values["_mutex"].(*sync.RWMutex)
+	mtx.RLock()
+	defer mtx.RUnlock()
+	rc, ok := sess.Values[key]
+	return rc, ok
+}
+
+func AmSessionPut(sess *sessions.Session, key, value any) {
+	if sess != nil {
+		mtx := sess.Values["_mutex"].(*sync.RWMutex)
+		mtx.Lock()
+		defer mtx.Unlock()
+		sess.Values[key] = value
+	}
+}
+
+func AmSessionErase(sess *sessions.Session) {
+	if sess != nil {
+		mtx := sess.Values["_mutex"].(*sync.RWMutex)
+		mtx.Lock()
+		defer mtx.Unlock()
+		for k := range sess.Values {
+			if k != "_mutex" {
+				delete(sess.Values, k)
+			}
+		}
+	}
+}
+
 // AmsterdamStore is our implewmentation of the Gorilla session store that works close to HttpSession in Java.
 type AmsterdamStore struct {
 	mutex        sync.RWMutex
@@ -81,6 +114,7 @@ func (st *AmsterdamStore) Get(r *http.Request, name string) (*sessions.Session, 
 func (st *AmsterdamStore) New(r *http.Request, name string) (*sessions.Session, error) {
 	session := sessions.NewSession(st, name)
 	session.IsNew = true
+	session.Values["_mutex"] = new(sync.RWMutex)
 	idBytes := make([]byte, 32)
 	if _, err := rand.Read(idBytes); err != nil {
 		return nil, err
@@ -121,7 +155,7 @@ func (st *AmsterdamStore) sweep(tick <-chan time.Time, done chan bool) {
 			st.mutex.RLock()
 			zap := make([]string, 0, len(st.sessions))
 			for k, v := range st.sessions {
-				lastTime, ok := v.Values["lasthit"]
+				lastTime, ok := AmSessionGet(v, "lasthit")
 				if ok && time.Since(lastTime.(time.Time)) > st.expiry {
 					zap = append(zap, k)
 				}
@@ -134,9 +168,7 @@ func (st *AmsterdamStore) sweep(tick <-chan time.Time, done chan bool) {
 				s, ok := st.sessions[k]
 				if ok {
 					delete(st.sessions, k)
-					for q := range s.Values {
-						delete(s.Values, q)
-					}
+					AmSessionErase(s)
 				}
 				st.mutex.Unlock()
 			}
@@ -153,10 +185,12 @@ func (st *AmsterdamStore) sessionInfo() (int, []string, int) {
 	users := make([]string, 0, len(st.sessions))
 	st.mutex.RLock()
 	for _, s := range st.sessions {
-		if s.Values["user_anon"].(bool) {
+		v, ok := AmSessionGet(s, "user_anon")
+		if ok && v.(bool) {
 			anons++
 		} else {
-			users = append(users, s.Values["user_name"].(string))
+			name, _ := AmSessionGet(s, "user_name")
+			users = append(users, name.(string))
 		}
 	}
 	st.mutex.RUnlock()
@@ -205,8 +239,13 @@ func SetupSessionManager() func() {
 }
 
 // AmSessionUid returns the current user ID of the session.
-func AmSessionUid(session *sessions.Session) int32 {
-	return session.Values["user_id"].(int32)
+func AmSessionUid(session *sessions.Session) (int32, bool) {
+	rc, ok := AmSessionGet(session, "user_id")
+	if ok {
+		return rc.(int32), ok
+	} else {
+		return -1, ok
+	}
 }
 
 /* AmSetSessionUser sets the user for the session.
@@ -215,9 +254,9 @@ func AmSessionUid(session *sessions.Session) int32 {
  *     user - The user to be associated with the session.
  */
 func AmSetSessionUser(session *sessions.Session, user *database.User) {
-	session.Values["user_id"] = user.Uid
-	session.Values["user_name"] = user.Username
-	session.Values["user_anon"] = user.IsAnon
+	AmSessionPut(session, "user_id", user.Uid)
+	AmSessionPut(session, "user_name", user.Username)
+	AmSessionPut(session, "user_anon", user.IsAnon)
 }
 
 // setSessionAnon sets the user for the session to the anonymous user.
@@ -236,25 +275,23 @@ var lastHitMutex sync.Mutex
 func AmSessionFirstTime(ctx context.Context, session *sessions.Session) {
 	lastHitMutex.Lock()
 	setSessionAnon(ctx, session)
-	session.Values["lasthit"] = time.Now()
+	AmSessionPut(session, "lasthit", time.Now())
 	lastHitMutex.Unlock()
 }
 
 // AmResetSession clears the specified session.
 func AmResetSession(ctx context.Context, session *sessions.Session) {
 	lastHitMutex.Lock()
-	for k := range session.Values {
-		delete(session.Values, k)
-	}
+	AmSessionErase(session)
 	setSessionAnon(ctx, session)
-	session.Values["lasthit"] = time.Now()
+	AmSessionPut(session, "lasthit", time.Now())
 	lastHitMutex.Unlock()
 }
 
 // AmHitSession "hits" a session, updating its "last hit" time.
 func AmHitSession(session *sessions.Session) {
 	lastHitMutex.Lock()
-	session.Values["lasthit"] = time.Now()
+	AmSessionPut(session, "lasthit", time.Now())
 	lastHitMutex.Unlock()
 }
 

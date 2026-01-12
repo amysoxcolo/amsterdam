@@ -135,7 +135,7 @@ func (c *amContext) Ctx() context.Context {
 // CurrentCommunity returns the current community, if one's been set.
 func (c *amContext) CurrentCommunity() *database.Community {
 	if c.community == nil {
-		cv, ok := c.session.Values["lastCommunity"]
+		cv, ok := AmSessionGet(c.session, "lastCommunity")
 		if ok && !c.CurrentUser().IsAnon {
 			c.SetCommunityContext(fmt.Sprintf("%d", cv))
 		}
@@ -146,7 +146,14 @@ func (c *amContext) CurrentCommunity() *database.Community {
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
 	if c.user == nil {
-		u, err := database.AmGetUser(c.echoContext.Request().Context(), AmSessionUid(c.session))
+		id, ok := AmSessionUid(c.session)
+		var err error
+		var u *database.User
+		if ok {
+			u, err = database.AmGetUser(c.echoContext.Request().Context(), id)
+		} else {
+			u, err = database.AmGetAnonUser(c.echoContext.Request().Context())
+		}
 		if err != nil {
 			log.Errorf("unable to retrieve current user")
 		}
@@ -158,7 +165,15 @@ func (c *amContext) CurrentUser() *database.User {
 
 // CurrentUserId returns the current user ID.
 func (c *amContext) CurrentUserId() int32 {
-	return AmSessionUid(c.session)
+	rc, ok := AmSessionUid(c.session)
+	if ok {
+		return rc
+	}
+	u, err := database.AmGetAnonUser(c.echoContext.Request().Context())
+	if err == nil {
+		return u.Uid
+	}
+	return 0
 }
 
 // EffectiveLevel returns the user's effective access level (in terms of current community, if any).
@@ -241,7 +256,12 @@ func (c *amContext) IsMemberLocked() bool {
 
 // LeftMenu returns the current left menu selector.
 func (c *amContext) LeftMenu() string {
-	return c.session.Values["leftMenu"].(string)
+	rc, ok := AmSessionGet(c.session, "leftMenu")
+	if ok {
+		return rc.(string)
+	} else {
+		return "top"
+	}
 }
 
 // RC returns the HTTP result code for the current operation.
@@ -370,7 +390,7 @@ func (c *amContext) SetCommunityContext(param string) error {
 			c.effectiveLevel = level
 		}
 		if mbr {
-			c.session.Values["lastCommunity"] = comm.Id
+			AmSessionPut(c.session, "lastCommunity", comm.Id)
 		}
 	}
 	return nil
@@ -378,7 +398,7 @@ func (c *amContext) SetCommunityContext(param string) error {
 
 // SetLeftMenu sets the current topmost left menu name value.
 func (c *amContext) SetLeftMenu(name string) {
-	c.session.Values["leftMenu"] = name
+	AmSessionPut(c.session, "leftMenu", name)
 }
 
 /* SetLoginCookie adds the login cookie to the result output.
@@ -416,17 +436,18 @@ func (c *amContext) SetScratch(name string, val any) {
 
 // GetSession returns a session variable.
 func (c *amContext) GetSession(name string) any {
-	return c.session.Values["x."+name]
+	rc, _ := AmSessionGet(c.session, "x."+name)
+	return rc
 }
 
 // SetSession sets a session variable.
 func (c *amContext) SetSession(name string, value any) {
-	c.session.Values["x."+name] = value
+	AmSessionPut(c.session, "x."+name, value)
 }
 
 // IsSession tests to see whether a session value is set.
 func (c *amContext) IsSession(name string) bool {
-	_, ok := c.session.Values["x."+name]
+	_, ok := AmSessionGet(c.session, "x."+name)
 	return ok
 }
 
@@ -507,15 +528,21 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 			AmHitSession(sess)
 		}
 	}
-	rc.user, err = database.AmGetUser(ctxt.Request().Context(), AmSessionUid(sess))
-	if err == nil {
-		rc.effectiveLevel = rc.user.BaseLevel
+	id, ok := AmSessionUid(sess)
+	if ok {
+		rc.user, err = database.AmGetUser(ctxt.Request().Context(), id)
+		if err == nil {
+			rc.effectiveLevel = rc.user.BaseLevel
+		} else {
+			rc.user = nil
+			rc.effectiveLevel = database.AmRole("NotInList").Level()
+		}
 	} else {
 		rc.user = nil
 		rc.effectiveLevel = database.AmRole("NotInList").Level()
 	}
-	if !rc.user.IsAnon {
-		cp, ok := sess.Values["lastCommunity"]
+	if rc.user != nil && !rc.user.IsAnon {
+		cp, ok := AmSessionGet(sess, "lastCommunity")
 		if ok {
 			rc.SetCommunityContext(fmt.Sprintf("%d", cp))
 		}
@@ -532,8 +559,11 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 func AmContextFromEchoContext(ctxt echo.Context) AmContext {
 	myctxt := ctxt.Get("__amsterdam_context")
 	if myctxt != nil {
-		rc, ok := myctxt.(AmContext)
+		rc, ok := myctxt.(*amContext)
 		if ok {
+			if rc.echoContext == nil {
+				rc.echoContext = ctxt
+			}
 			return rc
 		}
 	}

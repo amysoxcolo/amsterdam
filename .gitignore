@@ -2,3 +2,5 @@
 amsterdam
 __debug_bin*
 
+# Ignore test files
+/test.yaml
