@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -230,8 +230,10 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 			tail = "(t.sticky = 1 OR " + tail + ")"
 		}
 		whereClause = "t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0) AND " + tail
-	case TopicViewActive, TopicViewAllVisible:
+	case TopicViewActive:
 		whereClause = "t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)"
+	case TopicViewAllVisible:
+		whereClause = "(s.hidden IS NULL OR s.hidden = 0)"
 	case TopicViewHidden:
 		whereClause = "s.hidden = 1"
 	case TopicViewArchive:
