@@ -9,7 +9,7 @@
  <div class="p-4">
     <!-- Page Title -->
     <div class="mb-6">
-        <h1 class="text-blue-800 text-4xl font-bold inline">{{ topicName }}</h1>
+        <h1 class="text-blue-800 text-4xl font-bold inline">{{ topicName | raw }}</h1>
         <span class="text-blue-800 text-xl font-bold ml-2">{{ summaryLine }}</span>
         <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
     </div>
@@ -74,13 +74,31 @@
 
         <!-- Messages -->
         <div class="space-y-6 mb-8">
-            {{ m := map("foo", "bar") }}
-            {{ range i, p := posts }}
-                {{ m = map("post_cur", p, "post_userName", post_getUserName(p, .), "post_text", post_getText(p, .),
-                           "post_overrideLine", post_getOverrideLine(p, .), "post_overrideLink", post_getOverrideLink(p, post_topicPermalink)) }}
-                {{ .SubRender2("singlepost.jet", m) | raw }}
-                {{ if pin == p.Num }}<hr/>{{ end }}
-            {{ end }}
+            {{ if advancedControls }}<div class="flex gap-4">{{ end }}
+                {{ m := map("foo", "bar") }}
+                {{ range i, p := posts }}
+                    {{ m = map("post_cur", p, "post_userName", post_getUserName(p, .), "post_text", post_getText(p, .),
+                            "post_overrideLine", post_getOverrideLine(p, .), "post_overrideLink", post_getOverrideLink(p, post_topicPermalink)) }}
+                    {{ .SubRender2("singlepost.jet", m) | raw }}
+                    {{ if advancedControls }}
+                        <div class="flex flex-col gap-2">
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
+                                Hide
+                            </button>
+                            <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
+                                Scribble
+                            </button>
+                            <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
+                                Nuke
+                            </button>
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
+                                Publish
+                            </button>
+                        </div>
+                    {{ end }}
+                    {{ if pin == p.Num }}<hr/>{{ end }}
+                {{ end }}
+            {{ if advancedControls }}</div>{{ end }}
         </div>
 
         <!-- Bottom Navigation -->
@@ -104,7 +122,7 @@
 
         <!-- Reply Form -->
         <hr class="border-gray-400 mb-6">
-        <h2 class="text-2xl font-bold text-black mb-4">Post Message in "{{ topicName }}":</h2>
+        <h2 class="text-2xl font-bold text-black mb-4">Post Message in "{{ topicName | raw }}":</h2>
         
         <form method="POST" action="{{ post_stem }}">
             <input type="hidden" name="xp" value="{{ post_max }}"/>

@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ amsterdam_pageTitle }} - {{ GlobalConfig.Site.Title }}</title>
+    <title>{{ amsterdam_pageTitle | raw }} - {{ GlobalConfig.Site.Title }}</title>
     <link rel="icon" href="/img/builtin/AmsterdamIcon32.png" type="image/png" />
     <link rel="shortcut icon" href="/img/builtin/AmsterdamIcon32.ico" />
     {{ if isset(amsterdam_genRefresh) && GlobalConfig.Site.TopRefresh > 0 }}

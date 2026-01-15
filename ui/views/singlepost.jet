@@ -6,7 +6,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
-<div class="border-2 border-gray-300 rounded-lg p-4 bg-white">
+<div class="flex-1 border-2 border-gray-300 rounded-lg p-4 bg-white">
     <div class="flex justify-between items-start mb-3">
         <div class="text-sm text-gray-600">
             <a href="{{ post_stem }}?r={{ post_cur.Num }}&ac=1" class="text-blue-700 hover:text-blue-900 font-mono">{{ post_cur.Num }}</a> of 

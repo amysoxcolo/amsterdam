@@ -489,7 +489,9 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 		postRange[0] = lastRead + 1
 		postRange[1] = topic.TopMessage
 		count := postRange[1] - postRange[0] + 1
-		if count > ctxt.Globals().PostsPerPage {
+		if count == 0 {
+			postRange[0] = max(postRange[1]-ctxt.Globals().PostsPerPage+1, 0)
+		} else if count > ctxt.Globals().PostsPerPage {
 			postRange[0] = postRange[1] - ctxt.Globals().PostsPerPage + 1
 		} else if count < ctxt.Globals().PostsPerPage {
 			pin = postRange[0] - 1
@@ -525,6 +527,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("pseud", pseud)
 
 	// Render the output.
+	ctxt.VarMap().Set("advancedControls", ctxt.HasParameter("ac") && len(posts) == 1)
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	ctxt.VarMap().Set("topicName", topic.Name)
 	ctxt.VarMap().Set("summaryLine", summaryLine)
