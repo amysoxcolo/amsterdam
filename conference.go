@@ -457,6 +457,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// Locate community, conference, and topic.
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	var topic *database.Topic = nil
 	if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
 		topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(rawTopic))
@@ -526,8 +527,46 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("pseud", pseud)
 
+	// Set permission and status flags.
+	hidden, _ := topic.IsHidden(ctxt.Ctx(), ctxt.CurrentUser())
+	ctxt.VarMap().Set("isTopicHidden", hidden)
+	confHidePerm := conf.TestPermission("Conference.Hide", myLevel)
+	ctxt.VarMap().Set("canFreeze", confHidePerm)
+	ctxt.VarMap().Set("canArchive", confHidePerm)
+	ctxt.VarMap().Set("canStick", confHidePerm)
+	ctxt.VarMap().Set("isFrozen", topic.Frozen)
+	ctxt.VarMap().Set("isArchived", topic.Archived)
+	ctxt.VarMap().Set("isSticky", topic.Sticky)
+	confNukePerm := conf.TestPermission("Conference.Nuke", myLevel)
+	ctxt.VarMap().Set("canDelete", confNukePerm)
+	ctxt.VarMap().Set("canPost", (!(topic.Frozen || topic.Archived) || confHidePerm) && conf.TestPermission("Conference.Post", myLevel))
+
+	// Set advanced controls.
+	advancedControls := ctxt.HasParameter("ac") && (len(posts) == 1)
+	if advancedControls {
+		isMyPost := (posts[0].CreatorUid == ctxt.CurrentUserId()) && !ctxt.CurrentUser().IsAnon
+		isScribbled := posts[0].IsScribbled()
+		canHide := !isScribbled && (isMyPost || confHidePerm)
+		ctxt.VarMap().Set("canHide", canHide)
+		ctxt.VarMap().Set("isPostHidden", posts[0].Hidden)
+		canScribble := !isScribbled && (isMyPost || confNukePerm)
+		ctxt.VarMap().Set("canScribble", canScribble)
+		ctxt.VarMap().Set("canNuke", confNukePerm)
+		canPublish := !isScribbled && database.AmTestPermission("Global.PublishFP", myLevel)
+		if canPublish {
+			published, _ := posts[0].IsPublished(ctxt.Ctx())
+			if published {
+				canPublish = false
+			}
+		}
+		ctxt.VarMap().Set("canPublish", canPublish)
+		if !canHide && !canScribble && !confNukePerm && !canPublish {
+			advancedControls = false
+		}
+	}
+	ctxt.VarMap().Set("advancedControls", advancedControls)
+
 	// Render the output.
-	ctxt.VarMap().Set("advancedControls", ctxt.HasParameter("ac") && len(posts) == 1)
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	ctxt.VarMap().Set("topicName", topic.Name)
 	ctxt.VarMap().Set("summaryLine", summaryLine)

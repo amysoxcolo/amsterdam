@@ -44,6 +44,20 @@ func (p *PostHeader) IsScribbled() bool {
 	return p.ScribbleUid != nil && p.ScribbleDate != nil
 }
 
+// IsPublished returns true if the post has been published to the front page.
+func (p *PostHeader) IsPublished(ctx context.Context) (bool, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM postpublish WHERE postid = ?", p.PostId)
+	if err != nil {
+		return false, err
+	}
+	if !rs.Next() {
+		return false, errors.New("internal failure in IsPublished")
+	}
+	ct := 0
+	err = rs.Scan(&ct)
+	return ct > 0, err
+}
+
 /* SetAttachment sets the attachment data for a post.
  * Parameters:
  *     ctx - Standard Go context value.

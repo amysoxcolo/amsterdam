@@ -81,6 +81,19 @@ func (t *Topic) SetLastRead(ctx context.Context, u *User, postNum int32) error {
 	return err
 }
 
+// IsHidden tells us whether the user has the topic hidden.
+func (t *Topic) IsHidden(ctx context.Context, u *User) (bool, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT hidden FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
+	if err != nil {
+		return false, err
+	}
+	rc := false
+	if rs.Next() {
+		err = rs.Scan(&rc)
+	}
+	return rc, err
+}
+
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
 	TopicId     int32      `db:"topicid"`      // unique ID of the topic

@@ -20,22 +20,46 @@
             <div class="flex gap-2 flex-wrap">
                 <a href="{{ topicListLink }}" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Topic List</a>
-                <a href="/TODO" 
-                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Hide Topic</a>
+                <a href="/TODO/hide" 
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                    {{ if isTopicHidden }}Show Topic{{ else }}Hide Topic{{ end }}
+                </a>
+                {{ if false }}{* TODO *}
+                    <a href="/TODO" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Next Topic</a>
+                    {{ if false }}{* TODO *}
+                        <a href="/TODO" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Next & Keep New</a>
+                    {{ end }}
+                {{ end }}
                 <a href="/TODO" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Find</a>
                 <a href="/TODO" 
                     class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Manage</a>
             </div>
             <div class="flex gap-2 flex-wrap">
-                <a href="/TODO" 
-                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Stick Topic</a>
-                <a href="/TODO" 
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Freeze Topic</a>
-                <a href="/TODO" 
-                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Archive Topic</a>
-                <a href="/TODO" 
-                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Delete Topic</a>
+                {{ if canStick }}
+                    <a href="/TODO" 
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        {{ if isSticky }}Unstick Topic{{ else }}Stick Topic{{ end }}
+                    </a>
+                {{ end }}
+                {{ if canFreeze }}
+                    <a href="/TODO" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        {{ if isFrozen }}Unfreeze Topic{{ else }}Freeze Topic{{ end }}
+                    </a>
+                {{ end }}
+                {{ if canArchive }}
+                    <a href="/TODO" 
+                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        {{ if isArchived }}Unarchive Topic{{ else }}Archive Topic{{ end }}
+                    </a>
+                {{ end }}
+                {{ if canDelete }}
+                    <a href="/TODO" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Delete Topic</a>
+                {{ end }}
             </div>
         </div>
 
@@ -82,18 +106,32 @@
                     {{ .SubRender2("singlepost.jet", m) | raw }}
                     {{ if advancedControls }}
                         <div class="flex flex-col gap-2">
-                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
-                                Hide
-                            </button>
-                            <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
-                                Scribble
-                            </button>
-                            <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
-                                Nuke
-                            </button>
-                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
-                                Publish
-                            </button>
+                            {{ if canHide }}
+                                <a href="/TODO" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
+                                    {{ if isPostHidden }}Show{{ else }}Hide{{ end }}
+                                </a>
+                            {{ end }}
+                            {{ if canScribble }}
+                                <a href="/TODO" 
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Scribble</a>
+                            {{ end }}
+                            {{ if false }}{* TODO *}
+                                <a href="/TODO" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Filter User</a>
+                            {{ end }}
+                            {{ if canNuke }}
+                                <a href="/TODO" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Nuke</a>
+                            {{ end }}
+                            {{ if false }}{* TODO *}
+                                <a href="/TODO" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Move</a>
+                            {{ end }}
+                            {{ if canPublish }}
+                                <a href="/TODO" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Publish</a>
+                            {{ end }}
                         </div>
                     {{ end }}
                     {{ if pin == p.Num }}<hr/>{{ end }}
@@ -121,41 +159,43 @@
         </div>
 
         <!-- Reply Form -->
-        <hr class="border-gray-400 mb-6">
-        <h2 class="text-2xl font-bold text-black mb-4">Post Message in "{{ topicName | raw }}":</h2>
-        
-        <form method="POST" action="{{ post_stem }}">
-            <input type="hidden" name="xp" value="{{ post_max }}"/>
+        {{ if canPost }}
+            <hr class="border-gray-400 mb-6">
+            <h2 class="text-2xl font-bold text-black mb-4">Post Message in "{{ topicName | raw }}":</h2>
+            
+            <form method="POST" action="{{ post_stem }}">
+                <input type="hidden" name="xp" value="{{ post_max }}"/>
 
-            <div class="bg-gray-50 p-6 rounded-lg space-y-4">
-                <div>
-                    <label for="pseud" class="block text-black text-sm font-medium mb-2">Your name/header:</label>
-                    <div class="flex items-center gap-4">
-                        <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="{{ pseud }}"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="attach" name="attach" value="Y" class="w-4 h-4 text-blue-600 border-gray-300 rounded">
-                            <label for="attach" class="text-black text-sm">Attach a file</label>
+                <div class="bg-gray-50 p-6 rounded-lg space-y-4">
+                    <div>
+                        <label for="pseud" class="block text-black text-sm font-medium mb-2">Your name/header:</label>
+                        <div class="flex items-center gap-4">
+                            <input type="text" id="pseud" name="pseud" size="37" maxlength="255" value="{{ pseud }}"
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="attach" name="attach" value="Y" class="w-4 h-4 text-blue-600 border-gray-300 rounded">
+                                <label for="attach" class="text-black text-sm">Attach a file</label>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label for="pb" class="text-black text-sm font-medium">Message:</label>
-                        <a href="/TODO" target="_blank" class="text-blue-700 hover:text-blue-900 text-sm">HTML Guide</a>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="pb" class="text-black text-sm font-medium">Message:</label>
+                            <a href="/TODO" target="_blank" class="text-blue-700 hover:text-blue-900 text-sm">HTML Guide</a>
+                        </div>
+                        <textarea id="pb" name="pb" wrap="soft" rows="7" cols="51" placeholder="Enter your post..."
+                                    class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                     </div>
-                    <textarea id="pb" name="pb" wrap="soft" rows="7" cols="51" placeholder="Enter your post..."
-                                class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
 
-                <div class="flex justify-center gap-4">
-                    <button type="submit" name="preview" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">Preview</button>
-                    <button type="submit" name="post" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Reload</button>
-                    <button type="submit" name="postnext" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Go Next</button>
-                    <button type="submit" name="posttopics" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Go Topics</button>
+                    <div class="flex justify-center gap-4">
+                        <button type="submit" name="preview" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">Preview</button>
+                        <button type="submit" name="post" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Reload</button>
+                        <button type="submit" name="postnext" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Go Next</button>
+                        <button type="submit" name="posttopics" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Post & Go Topics</button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        {{ end }}
     </div>
 </div>
