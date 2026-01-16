@@ -77,9 +77,10 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		v := ctxt.GetSession("topic.conf").(int32)
 		if v == conf.ConfId {
 			trustSessionValues = true
-		} else {
-			ctxt.SetSession("topic.conf", conf.ConfId)
 		}
+	}
+	if !trustSessionValues {
+		ctxt.SetSession("topic.conf", conf.ConfId)
 	}
 	view := database.TopicViewActive
 	if trustSessionValues && ctxt.IsSession("topic.view") {
