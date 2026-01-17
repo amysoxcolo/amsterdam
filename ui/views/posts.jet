@@ -24,13 +24,13 @@
                     class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                     {{ if isTopicHidden }}Show Topic{{ else }}Hide Topic{{ end }}
                 </a>
-                {{ if false }}{* TODO *}
-                    <a href="/TODO" 
+                {{ if isset(urlNextTopic) }}
+                    <a href="{{ urlNextTopic }}" 
                         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Next Topic</a>
-                    {{ if false }}{* TODO *}
-                        <a href="/TODO" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Next & Keep New</a>
-                    {{ end }}
+                {{ end }}
+                {{ if isset(urlNextKeepNew) }}
+                    <a href="{{ urlNextKeepNew }}" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Next & Keep New</a>
                 {{ end }}
                 <a href="/TODO" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Find</a>

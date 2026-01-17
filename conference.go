@@ -100,6 +100,9 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 
+	traverser := ui.NewTopicTraverser(topics)
+	ctxt.SetSession("topic.traverser", traverser)
+
 	tz := prefs.Location()
 	loc := prefs.Localizer()
 	fdate := make([]string, len(topics))
@@ -107,10 +110,17 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		fdate[i] = loc.Strftime("%x %X", t.LastUpdate.In(tz))
 	}
 
+	// create the "read new" URL
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid"))
+	firstTopic := traverser.FirstTopic()
+	if firstTopic >= 1 {
+		ctxt.VarMap().Set("urlReadNew", fmt.Sprintf("%s/r/%d", urlStem, firstTopic))
+	}
+
 	ctxt.VarMap().Set("canCreate", conf.TestPermission("Conference.Create", myLevel))
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlBack", fmt.Sprintf("/comm/%s/conf", comm.Alias))
-	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
+	ctxt.VarMap().Set("urlStem", urlStem)
 	ctxt.VarMap().Set("permalink", "TODO")
 	ctxt.VarMap().Set("view", view)
 	ctxt.VarMap().Set("sort", sort)
@@ -433,6 +443,12 @@ func templateOverrideLink(args jet.Arguments) reflect.Value {
  *     Standard Go error status.
  */
 func ReadPosts(ctxt ui.AmContext) (string, any, error) {
+	// Extract the traverser first, so we can unclear it in background tasks.
+	var traverser ui.TopicTraverser = nil
+	if ctxt.IsSession("topic.traverser") {
+		traverser = ctxt.GetSession("topic.traverser").(ui.TopicTraverser)
+	}
+
 	// If we need to reset a topic's last read count (as with "Next & Keep New"), spin the task off.
 	if ctxt.HasParameter("rst") {
 		rst := strings.Split(ctxt.Parameter("rst"), ",")
@@ -445,6 +461,9 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 					topic, _ := database.AmGetTopic(ctx, int32(topicId))
 					if topic != nil {
 						topic.SetLastRead(ctx, user, int32(lastRead))
+						if traverser != nil && int32(lastRead) < topic.TopMessage {
+							traverser.UnclearTopic(topic.Number)
+						}
 					}
 				}
 			})
@@ -567,6 +586,18 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("advancedControls", advancedControls)
 
+	// Adjust the traverser and get the "next" link.
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string))
+	if traverser != nil {
+		traverser.ClearTopic(topic.Number)
+		nextTopic := traverser.NextTopic(topic.Number)
+		if nextTopic >= 0 {
+			nextTopicURL := fmt.Sprintf("%s/r/%d", urlStem, nextTopic)
+			ctxt.VarMap().Set("urlNextTopic", nextTopicURL)
+			ctxt.VarMap().Set("urlNextKeepNew", fmt.Sprintf("%s?rst=%d,%d", nextTopicURL, topic.TopicId, lastRead))
+		}
+	}
+
 	// Render the output.
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	ctxt.VarMap().Set("topicName", topic.Name)
@@ -578,7 +609,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 	ctxt.VarMap().SetFunc("post_getText", templatePostText)
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
-	ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
+	ctxt.VarMap().Set("post_stem", fmt.Sprintf("%s/r/%d", urlStem, topic.Number))
 	ctxt.VarMap().Set("post_max", topic.TopMessage)
 	ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
 	ctxt.VarMap().Set("posts", posts)
@@ -586,7 +617,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("pin", pin)
 	ctxt.VarMap().Set("rangeEnd", postRange[1])
 	ctxt.VarMap().Set("rangeStart", postRange[0])
-	ctxt.VarMap().Set("topicListLink", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string)))
+	ctxt.VarMap().Set("topicListLink", urlStem)
 	ctxt.VarMap().Set("topicNum", topic.Number)
 	if resetLastRead {
 		user := ctxt.CurrentUser()

@@ -26,6 +26,12 @@
                     Add Topic
                 </a>
             {{ end }}
+            {{ if isset(urlReadNew) }}
+                <a href="{{ urlReadNew }}"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                    Read New
+                </a>
+            {{ end }}
             <a href="/TODO/find"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                 Find
