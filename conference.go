@@ -531,14 +531,30 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// Determine other required data.
+	hidden, _ := topic.IsHidden(ctxt.Ctx(), ctxt.CurrentUser())
+	ctxt.VarMap().Set("isTopicHidden", hidden)
+	var flags strings.Builder
+	if topic.Sticky {
+		flags.WriteString("📌")
+	}
+	if hidden {
+		flags.WriteString("🙈")
+	}
+	if topic.Archived {
+		flags.WriteString("🗄️")
+	} else if topic.Frozen {
+		flags.WriteString("🧊")
+	}
 	summaryLine := fmt.Sprintf("%d Total; %d New; Last: %s", topic.TopMessage+1, topic.TopMessage-lastRead, prefs.Localizer().Strftime("%b %e, %Y %r", topic.LastUpdate))
+	ctxt.VarMap().Set("summaryLine", flags.String()+summaryLine)
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s%s", topic.Name, flags.String(), summaryLine))
 	plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
-	topicConferenceRef := plc.AsString()
+	ctxt.VarMap().Set("post_confRef", plc.AsString())
 	plc.Community = comm.Alias
-	topicPostRef := plc.AsString()
+	ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
 	plc.FirstPost = postRange[0]
 	plc.LastPost = postRange[1]
-	postsPostRef := plc.AsString()
+	ctxt.VarMap().Set("postsPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
 
 	// Set the user's pseud.
 	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
@@ -548,8 +564,6 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("pseud", pseud)
 
 	// Set permission and status flags.
-	hidden, _ := topic.IsHidden(ctxt.Ctx(), ctxt.CurrentUser())
-	ctxt.VarMap().Set("isTopicHidden", hidden)
 	confHidePerm := conf.TestPermission("Conference.Hide", myLevel)
 	ctxt.VarMap().Set("canFreeze", confHidePerm)
 	ctxt.VarMap().Set("canArchive", confHidePerm)
@@ -599,21 +613,16 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// Render the output.
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s", topic.Name, summaryLine))
 	ctxt.VarMap().Set("topicName", topic.Name)
-	ctxt.VarMap().Set("summaryLine", summaryLine)
 	ctxt.VarMap().Set("lastRead", lastRead)
 	ctxt.VarMap().Set("pageSize", ctxt.Globals().PostsPerPage)
-	ctxt.VarMap().Set("post_confRef", topicConferenceRef)
 	ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
 	ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 	ctxt.VarMap().SetFunc("post_getText", templatePostText)
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 	ctxt.VarMap().Set("post_stem", fmt.Sprintf("%s/r/%d", urlStem, topic.Number))
 	ctxt.VarMap().Set("post_max", topic.TopMessage)
-	ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
 	ctxt.VarMap().Set("posts", posts)
-	ctxt.VarMap().Set("postsPermalink", fmt.Sprintf("/go/%s", postsPostRef))
 	ctxt.VarMap().Set("pin", pin)
 	ctxt.VarMap().Set("rangeEnd", postRange[1])
 	ctxt.VarMap().Set("rangeStart", postRange[0])
@@ -727,18 +736,16 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		}
 
 		plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
-		topicConferenceRef := plc.AsString()
+		ctxt.VarMap().Set("post_confRef", plc.AsString())
 		plc.Community = comm.Alias
-		topicPostRef := plc.AsString()
+		ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
 
-		ctxt.VarMap().Set("post_confRef", topicConferenceRef)
 		ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
 		ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 		ctxt.VarMap().SetFunc("post_getText", templatePostText)
 		ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
 		ctxt.VarMap().Set("post_max", topic.TopMessage)
-		ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", topicPostRef))
 		ctxt.VarMap().Set("posts", posts)
 		ctxt.VarMap().Set("topicName", topic.Name)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Slippage or Double-Click Detected")
