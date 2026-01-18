@@ -90,16 +90,16 @@
                 {{ end }}
                 {{ .SetScratch("__menu", m) }}
                 {{ if m.Tag == "community" }}
-                    {{ .SubRender("menu_left_comm.jet") | raw }}
+                    {{ include "menu_left_comm.jet" }}
                 {{ else }}
-                    {{ .SubRender("menu_left.jet") | raw }}
+                    {{ include "menu_left.jet" }}
                 {{ end }}
             {{ end }}
         </div>
 
         <!-- MAIN CONTENT -->
         <div class="flex-1 bg-white">
-            {{ .SubRender(amsterdam_innerPage) | raw }}
+            {{ include amsterdam_innerPage }}
         </div>
     </div>
 

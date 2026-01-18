@@ -19,11 +19,20 @@
 
         <!-- Messages -->
         <div class="space-y-6 mb-8">
-            {{ m := map("foo", "bar") }}
+            {{ post_cur := nil }}
+            {{ post_userName := "" }}
+            {{ post_text := "" }}
+            {{ post_overrideLine := "" }}
+            {{ post_overrideLink := "" }}
             {{ range i, p := posts }}
                 {{ m = map("post_cur", p, "post_userName", post_getUserName(p, .), "post_text", post_getText(p, .),
                            "post_overrideLine", post_getOverrideLine(p, .), "post_overrideLink", post_getOverrideLink(p, post_topicPermalink)) }}
-                {{ .SubRender2("singlepost.jet", m) | raw }}
+                {{ post_cur = p }}
+                {{ post_userName = post_getUserName(p, .) }}
+                {{ post_text = post_getText(p, .) }}
+                {{ post_overrideLine = post_getOverrideLine(p, .) }}
+                {{ post_overrideLink = post_getOverrideLink(p, post_topicPermalink) }}
+                {{ include "singlepost.jet" }}
             {{ end }}
         </div>
 

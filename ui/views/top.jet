@@ -49,10 +49,9 @@
 
     <!-- RIGHT SIDEBAR -->
     <div class="w-80 p-4">
-        {{ ctxt := . }}
-        {{ range sideboxes }}
-            {{ ctxt.SetScratch("__sidebox", .) }}
-            {{ ctxt.SubRender(.TemplateName) | raw }}
+        {{ range i, s := sideboxes }}
+            {{ .SetScratch("__sidebox", s) }}
+            {{ include s.TemplateName }}
         {{ end }}
 
         {{ if !.CurrentUser().IsAnon }}

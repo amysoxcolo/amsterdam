@@ -11,10 +11,8 @@
 package ui
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"maps"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -62,8 +60,6 @@ type AmContext interface {
 	RemoteIP() string
 	ReplaceUser(*database.User)
 	SaveSession() error
-	SubRender(string) ([]byte, error)
-	SubRender2(string, map[string]any) ([]byte, error)
 	SetCommunityContext(string) error
 	SetLeftMenu(string)
 	SetLoginCookie(string)
@@ -319,52 +315,6 @@ func (c *amContext) ReplaceUser(u *database.User) {
 // SaveSession saves the session link to cookies.
 func (c *amContext) SaveSession() error {
 	return c.session.Save(c.echoContext.Request(), c.echoContext.Response())
-}
-
-/* SubRender renders a subtemplate to the output.
- * Parameters:
- *	   name = The name of the template to be rendered.
- * Returns:
- *     Byte array with the rendered data to be output.
- *     Standard Go error status.
- */
-func (c *amContext) SubRender(name string) ([]byte, error) {
-	view, err := views.GetTemplate(name)
-	if err != nil {
-		log.Errorf("unable to load template \"%s\": %v", name, err)
-		return nil, err
-	}
-	buf := new(bytes.Buffer)
-	if err = view.Execute(buf, c.VarMap(), c); err != nil {
-		log.Errorf("template \"%s\" failed subrender exec: %v", name, err)
-	}
-	return buf.Bytes(), err
-}
-
-/* SubRender2 renders a subtemplate to the output, with extra variables to be set.
- * Parameters:
- *	   name = The name of the template to be rendered.
- *     vals = Additional variable values to be set.
- * Returns:
- *     Byte array with the rendered data to be output.
- *     Standard Go error status.
- */
-func (c *amContext) SubRender2(name string, vals map[string]any) ([]byte, error) {
-	view, err := views.GetTemplate(name)
-	if err != nil {
-		log.Errorf("unable to load template \"%s\": %v", name, err)
-		return nil, err
-	}
-	newmap := make(jet.VarMap)
-	maps.Copy(newmap, c.VarMap())
-	for k, v := range vals {
-		newmap.Set(k, v)
-	}
-	buf := new(bytes.Buffer)
-	if err = view.Execute(buf, newmap, c); err != nil {
-		log.Errorf("template \"%s\" failed subrender exec: %v", name, err)
-	}
-	return buf.Bytes(), err
 }
 
 /* SetCommunityContext establishes the community context from a (ID or alias) parameter.
