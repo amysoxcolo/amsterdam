@@ -575,9 +575,7 @@ func contextRecycler(incoming chan *amContext, done chan bool) {
 	for c := range incoming {
 		c.echoContext = nil
 		c.httprc = http.StatusOK
-		for k := range c.rendervars {
-			delete(c.rendervars, k)
-		}
+		c.rendervars = make(jet.VarMap)
 		c.outputType = ""
 		c.session = nil
 		c.globals = nil

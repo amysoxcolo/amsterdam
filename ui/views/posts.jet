@@ -71,7 +71,7 @@
                 <button type="submit" name="go" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Go</button>
             </form>
             <div class="flex items-center gap-2 text-sm" name="top">
-                <span>[</span>
+                <a name="top"><span>[</span></a>
                 <a href="{{ post_stem }}?r=0,-1" class="text-blue-700 hover:text-blue-900">View All</a>
                 {{ if rangeStart > 0 }}
                     <span>|</span>
@@ -141,7 +141,7 @@
 
         <!-- Bottom Navigation -->
         <div class="flex justify-end items-center mb-6 text-sm" name="bottom">
-            <span>[</span>
+            <a name="bottom"><span>[</span></a>
             <a href="{{ post_stem }}?r=0,-1" class="text-blue-700 hover:text-blue-900 mx-2">View All</a>
             {{ if rangeStart > 0 }}
                 <span>|</span>
