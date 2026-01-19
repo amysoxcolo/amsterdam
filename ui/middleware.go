@@ -12,8 +12,10 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -119,6 +121,7 @@ func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// SetConference is middleware that sets the conference context based on the URL.
 func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
@@ -137,6 +140,25 @@ func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 		ctxt.SetScratch("currentConference", conf)
 		ctxt.SetScratch("currentAlias", ctxt.URLParam("confid"))
 		ctxt.SetScratch("levelInConference", myLevel)
+		return next(c)
+	}
+}
+
+// SetTopic is middleware that sets the topic context based on the URL.
+func SetTopic(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctxt := AmContextFromEchoContext(c)
+		conf := ctxt.GetScratch("currentConference").(*database.Conference)
+
+		var topic *database.Topic = nil
+		if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
+			topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(rawTopic))
+		}
+		if topic == nil {
+			ctxt.SetRC(http.StatusNotFound)
+			return middlewareErrorPage(c, ctxt, fmt.Errorf("topic not found: %s", ctxt.URLParam("topic")))
+		}
+		ctxt.SetScratch("currentTopic", topic)
 		return next(c)
 	}
 }

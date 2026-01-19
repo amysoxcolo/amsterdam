@@ -49,7 +49,7 @@ func setupEcho() *echo.Echo {
 	fn := ui.AmWrap(NotImplPage)
 	e.GET("/TODO/*", fn)
 	e.POST("/TODO/*", fn)
-	e.GET("/img/*", ui.AmWrap(ui.AmServeImage))
+	e.GET("/img/*", ui.AmServeImage)
 	e.GET("/static/*", ui.AmStaticFileHandler())
 	e.GET("/go/:postlink", fn)
 
@@ -98,8 +98,8 @@ func setupEcho() *echo.Echo {
 	confGroup.GET("", ui.AmWrap(Topics))
 	confGroup.GET("/new_topic", ui.AmWrap(NewTopicForm))
 	confGroup.POST("/new_topic", ui.AmWrap(NewTopic))
-	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts))
-	confGroup.POST("/r/:topic", ui.AmWrap(PostInTopic))
+	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)
+	confGroup.POST("/r/:topic", ui.AmWrap(PostInTopic), ui.SetTopic)
 
 	return e
 }

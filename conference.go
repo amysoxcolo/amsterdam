@@ -478,14 +478,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
-	var topic *database.Topic = nil
-	if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
-		topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(rawTopic))
-	}
-	if topic == nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, fmt.Errorf("topic not found: %s", ctxt.URLParam("topic")))
-	}
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 
 	// Determine the range of posts to display.  The "pin" is the post number after which we display the horizontal line separating old and new posts.
 	lastRead, err := topic.GetLastRead(ctxt.Ctx(), ctxt.CurrentUser())
@@ -642,17 +635,9 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	level := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 
-	var topic *database.Topic = nil
-	if rawTopic, err := strconv.ParseInt(ctxt.URLParam("topic"), 10, 16); err == nil {
-		topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(rawTopic))
-	}
-	if topic == nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, fmt.Errorf("topic not found: %s", ctxt.URLParam("topic")))
-	}
-
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.URLParam("confid"), topic.Number)
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", urlStem, nil
 	}

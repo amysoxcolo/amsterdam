@@ -28,6 +28,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/disintegration/imaging"
+	"github.com/labstack/echo/v4"
 )
 
 //go:embed static_images/*
@@ -55,14 +56,12 @@ func mimeTypeFromFilename(filename string) string {
 
 /* AmServeImage serves an image from internal storage.
  * Parameters:
- *     ctxt - The AmContext for the request.
+ *     c - The Echo context for this request.
  * Returns:
- *     Type of content to be rendered
- *     Content to be rendered
- *     Standard Go error return
+ *     Standard Go error return.
  */
-func AmServeImage(ctxt AmContext) (string, any, error) {
-	components := strings.SplitAfter(ctxt.URLPath(), "/")
+func AmServeImage(c echo.Context) error {
+	components := strings.SplitAfter(c.Request().URL.Path, "/")
 	var err error = nil
 	if len(components) == 4 {
 		switch components[2] {
@@ -70,27 +69,24 @@ func AmServeImage(ctxt AmContext) (string, any, error) {
 			var b []byte
 			b, err = static_images.ReadFile(filepath.Join("static_images", components[3]))
 			if err == nil {
-				ctxt.SetOutputType(mimeTypeFromFilename(components[3]))
-				return "bytes", b, nil
+				return c.Blob(http.StatusOK, mimeTypeFromFilename(components[3]), b)
 			}
 		case "store/":
 			var id int
 			id, err = strconv.Atoi(components[3])
 			if err == nil {
 				var img *database.ImageStore
-				img, err = database.AmLoadImage(ctxt.Ctx(), int32(id))
+				img, err = database.AmLoadImage(c.Request().Context(), int32(id))
 				if err == nil {
-					ctxt.SetOutputType(img.MimeType)
-					return "bytes", img.Data, nil
+					return c.Blob(http.StatusOK, img.MimeType, img.Data)
 				}
 			}
 		}
 	}
-	ctxt.SetRC(http.StatusNotFound)
 	if err == nil {
-		err = fmt.Errorf("image not found: %s", ctxt.URLPath())
+		err = fmt.Errorf("image not found: %s", c.Request().URL.Path)
 	}
-	return ErrorPage(ctxt, err)
+	return c.String(http.StatusNotFound, err.Error())
 }
 
 /* AmProcessUploadedImage takes an image and resizes it to a specified size, returning its data.
