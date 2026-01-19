@@ -350,11 +350,15 @@ func breakRange(topic *database.Topic, into []int32, param string, sep string) e
 	}
 	into[0] = int32(v)
 	if len(rstr) > 1 {
-		v, err = strconv.ParseInt(strings.TrimSpace(rstr[1]), 10, 32)
-		if err != nil {
-			return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
+		if len(rstr[1]) == 0 {
+			into[1] = -1
+		} else {
+			v, err = strconv.ParseInt(strings.TrimSpace(rstr[1]), 10, 32)
+			if err != nil {
+				return fmt.Errorf("posts not found: %s in topic %d", param, topic.Number)
+			}
+			into[1] = int32(v)
 		}
-		into[1] = int32(v)
 	} else {
 		into[1] = into[0]
 	}
@@ -566,7 +570,9 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("isSticky", topic.Sticky)
 	confNukePerm := conf.TestPermission("Conference.Nuke", myLevel)
 	ctxt.VarMap().Set("canDelete", confNukePerm)
-	ctxt.VarMap().Set("canPost", (!(topic.Frozen || topic.Archived) || confHidePerm) && conf.TestPermission("Conference.Post", myLevel))
+	confPostPerm := conf.TestPermission("Conference.Post", myLevel)
+	ctxt.VarMap().Set("canPost", (!(topic.Frozen || topic.Archived) || confHidePerm) && confPostPerm)
+	ctxt.VarMap().Set("showFrozenArchiveMessages", confPostPerm)
 
 	// Set advanced controls.
 	advancedControls := ctxt.HasParameter("ac") && (len(posts) == 1)

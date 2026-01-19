@@ -90,10 +90,10 @@
         </div>
 
         <!-- Permalink Info -->
-        <div class="text-center text-xs text-gray-600 mb-6">
-            <a href="{{ post_topicPermalink }}" class="text-blue-700 hover:text-blue-900">[Permalink to this topic]</a>
+        <div class="text-center text-sm text-gray-600 mb-6">
+            <a href="{{ post_topicPermalink }}" class="text-blue-700 hover:text-blue-900" title="Permalink to this topic">🔗Topic</a>
             <span class="mx-2">·</span>
-            <a href="{{ postsPermalink }}" class="text-blue-700 hover:text-blue-900">[Permalink to these posts]</a>
+            <a href="{{ postsPermalink }}" class="text-blue-700 hover:text-blue-900" title="Permalink to these posts">🔗Posts</a>
         </div>
 
         <!-- Messages -->
@@ -203,6 +203,14 @@
                     </div>
                 </div>
             </form>
+        {{ else if showFrozenArchiveMessages }}
+            <div class="text-center text-md text-gray-600">
+                {{ if isArchived }}
+                    <b>This Is an <i>Archived</i> Topic</b>
+                {{ else if isFrozen }}
+                    <b>This Is a <i>Frozen</i> Topic</b>
+                {{ end }}
+            </div>
         {{ end }}
     </div>
 </div>
