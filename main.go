@@ -24,7 +24,6 @@ import (
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -43,8 +42,8 @@ func setupEcho() *echo.Echo {
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
-	e.Use(LogrusMiddleware, session.Middleware(ui.SessionStore))
-	e.Use(ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest)
+	e.Use(LogrusMiddleware, ui.SessionStoreInjector, ui.ContextCreator)
+	e.Use(ui.IPBanTest, ui.CookieLoginTest)
 
 	fn := ui.AmWrap(NotImplPage)
 	e.GET("/TODO/*", fn)
@@ -120,7 +119,7 @@ func main() {
 	defer closer()
 	htmlcheck.SetupDicts()
 	ui.SetupTemplates()
-	closer = ui.SetupSessionManager()
+	closer = ui.SetupAmSessionManager()
 	defer closer()
 	closer = ui.SetupAmContext()
 	defer closer()

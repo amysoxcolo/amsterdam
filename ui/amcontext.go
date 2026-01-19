@@ -22,8 +22,6 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
-	"github.com/gorilla/sessions"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -88,7 +86,7 @@ type amContext struct {
 	httprc         int
 	rendervars     jet.VarMap
 	outputType     string
-	session        *sessions.Session
+	session        AmSession
 	globals        *database.Globals
 	globalFlags    *util.OptionSet
 	user           *database.User
@@ -118,7 +116,7 @@ func (c *amContext) ClearLoginCookie() {
 
 // ClearSession clears the current session.
 func (c *amContext) ClearSession() {
-	AmResetSession(c.echoContext.Request().Context(), c.session)
+	c.session.Reset(c.echoContext.Request().Context())
 	c.user = nil
 	c.effectiveLevel = 0
 }
@@ -131,7 +129,7 @@ func (c *amContext) Ctx() context.Context {
 // CurrentCommunity returns the current community, if one's been set.
 func (c *amContext) CurrentCommunity() *database.Community {
 	if c.community == nil {
-		cv, ok := AmSessionGet(c.session, "lastCommunity")
+		cv, ok := c.session.Get("lastCommunity")
 		if ok && !c.CurrentUser().IsAnon {
 			c.SetCommunityContext(fmt.Sprintf("%d", cv))
 		}
@@ -142,7 +140,7 @@ func (c *amContext) CurrentCommunity() *database.Community {
 // CurrentUser returns the current user from the session.
 func (c *amContext) CurrentUser() *database.User {
 	if c.user == nil {
-		id, ok := AmSessionUid(c.session)
+		id, ok := c.session.Uid()
 		var err error
 		var u *database.User
 		if ok {
@@ -161,8 +159,7 @@ func (c *amContext) CurrentUser() *database.User {
 
 // CurrentUserId returns the current user ID.
 func (c *amContext) CurrentUserId() int32 {
-	rc, ok := AmSessionUid(c.session)
-	if ok {
+	if rc, ok := c.session.Uid(); ok {
 		return rc
 	}
 	u, err := database.AmGetAnonUser(c.echoContext.Request().Context())
@@ -252,7 +249,7 @@ func (c *amContext) IsMemberLocked() bool {
 
 // LeftMenu returns the current left menu selector.
 func (c *amContext) LeftMenu() string {
-	rc, ok := AmSessionGet(c.session, "leftMenu")
+	rc, ok := c.session.Get("leftMenu")
 	if ok {
 		return rc.(string)
 	} else {
@@ -307,7 +304,7 @@ func (c *amContext) RemoteIP() string {
  *     u - New user to associate with the context.
  */
 func (c *amContext) ReplaceUser(u *database.User) {
-	AmSetSessionUser(c.session, u)
+	c.session.SetUser(u)
 	c.user = u
 	c.effectiveLevel = u.BaseLevel
 }
@@ -340,7 +337,7 @@ func (c *amContext) SetCommunityContext(param string) error {
 			c.effectiveLevel = level
 		}
 		if mbr {
-			AmSessionPut(c.session, "lastCommunity", comm.Id)
+			c.session.Set("lastCommunity", comm.Id)
 		}
 	}
 	return nil
@@ -348,7 +345,7 @@ func (c *amContext) SetCommunityContext(param string) error {
 
 // SetLeftMenu sets the current topmost left menu name value.
 func (c *amContext) SetLeftMenu(name string) {
-	AmSessionPut(c.session, "leftMenu", name)
+	c.session.Set("leftMenu", name)
 }
 
 /* SetLoginCookie adds the login cookie to the result output.
@@ -386,18 +383,18 @@ func (c *amContext) SetScratch(name string, val any) {
 
 // GetSession returns a session variable.
 func (c *amContext) GetSession(name string) any {
-	rc, _ := AmSessionGet(c.session, "x."+name)
+	rc, _ := c.session.Get("x." + name)
 	return rc
 }
 
 // SetSession sets a session variable.
 func (c *amContext) SetSession(name string, value any) {
-	AmSessionPut(c.session, "x."+name, value)
+	c.session.Set("x."+name, value)
 }
 
 // IsSession tests to see whether a session value is set.
 func (c *amContext) IsSession(name string) bool {
-	_, ok := AmSessionGet(c.session, "x."+name)
+	_, ok := c.session.Get("x." + name)
 	return ok
 }
 
@@ -427,7 +424,7 @@ func (c *amContext) VarMap() jet.VarMap {
 }
 
 // defoptions is the default options for the HTTP session.
-var defoptions *sessions.Options = &sessions.Options{
+var defoptions *AmSessionOptions = &AmSessionOptions{
 	Path:     "/",
 	MaxAge:   86400,
 	HttpOnly: true,
@@ -468,17 +465,18 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 
 	rc.echoContext = ctxt
 	ctxt.Set("__amsterdam_context", rc)
-	sess, err := session.Get("AMSTERDAM_SESSION", ctxt)
+	store := ctxt.Get("AmSessionStore").(AmSessionStore)
+	sess, err := store.Get(ctxt.Request(), "AMSTERDAM_SESSION")
 	if err == nil {
 		rc.session = sess
-		sess.Options = defoptions
-		if sess.IsNew {
-			AmSessionFirstTime(ctxt.Request().Context(), sess)
+		sess.SetOptions(defoptions)
+		if sess.IsNew() {
+			sess.FirstTime(ctxt.Request().Context())
 		} else {
-			AmHitSession(sess)
+			sess.Hit()
 		}
 	}
-	id, ok := AmSessionUid(sess)
+	id, ok := sess.Uid()
 	if ok {
 		rc.user, err = database.AmGetUser(ctxt.Request().Context(), id)
 		if err == nil {
@@ -492,7 +490,7 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 		rc.effectiveLevel = database.AmRole("NotInList").Level()
 	}
 	if rc.user != nil && !rc.user.IsAnon {
-		cp, ok := AmSessionGet(sess, "lastCommunity")
+		cp, ok := sess.Get("lastCommunity")
 		if ok {
 			rc.SetCommunityContext(fmt.Sprintf("%d", cp))
 		}
