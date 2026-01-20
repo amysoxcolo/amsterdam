@@ -45,3 +45,10 @@ rendering:
     prioritize: US
 posting:
   externalDictionary: ""
+  uploads:
+    maxSize: "1M"
+    noCompressTypes:
+      - "image/gif"
+      - "image/jpg"
+      - "image/jpeg"
+      - "image/png"

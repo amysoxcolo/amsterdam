@@ -43,6 +43,11 @@ type PostAttachInfo struct {
 	Length   int32  // length in bytes of attached file
 }
 
+const (
+	stgMethodPlain = 0 // attachment stored as raw data
+	stgMethodGZIP  = 1 // attachment stored as GZIP data
+)
+
 // ErrNoPostData is returned if post data is missing.
 var ErrNoPostData = errors.New("no post data")
 
@@ -88,6 +93,7 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
 /* SetAttachment sets the attachment data for a post.
  * Parameters:
  *     ctx - Standard Go context value.
+ *     u - user attempting to upload attachment data
  *     fileName - Name of the original attachment file.
  *     mimeType - MIME type of the attachment data.
  *     length - Length of the attachment data in bytes.
@@ -95,8 +101,22 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
  * Returns:
  *     Standard Go error status.
  */
-func (p *PostHeader) SetAttachment(ctx context.Context, fileName string, mimeType string, length int32, data []byte) error {
-	_, err := amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, data) VALUES (?, ?, ?, ?, ?)",
+func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string, mimeType string, length int32, data []byte) error {
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("cannot attach to scribbled post")
+	}
+	if u.Uid != p.CreatorUid {
+		return errors.New("cannot attach to a post that is not yours")
+	}
+	ai, err := p.AttachmentInfo(ctx)
+	if err != nil {
+		return err
+	}
+	if ai != nil {
+		return errors.New("attachment already present for this post")
+	}
+	// TODO
+	_, err = amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, data) VALUES (?, ?, ?, ?, ?)",
 		p.PostId, length, fileName, mimeType, data)
 	return err
 }

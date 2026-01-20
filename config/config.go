@@ -13,10 +13,10 @@ package config
 import (
 	_ "embed"
 	"fmt"
+	"maps"
 	"os"
 
 	argparse "github.com/alexflint/go-arg"
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -88,6 +88,10 @@ type AmConfig struct {
 	} `yaml:"rendering"`
 	Posting struct {
 		ExternalDictionary string `yaml:"externalDictionary"`
+		Uploads            struct {
+			MaxSize         string   `yaml:"maxSize"`
+			NoCompressTypes []string `yaml:"noCompressTypes"`
+		} `yaml:"uploads"`
 	} `yaml:"posting"`
 }
 
@@ -119,6 +123,21 @@ func overlayString(loaded string, defaulted string) string {
 		return defaulted
 	}
 	return loaded
+}
+
+func overlayStringArray(loaded, defaulted []string) []string {
+	m := make(map[string]bool)
+	for _, s := range defaulted {
+		m[s] = true
+	}
+	for _, s := range loaded {
+		m[s] = true
+	}
+	rc := make([]string, 0, len(m))
+	for s := range maps.Keys(m) {
+		rc = append(rc, s)
+	}
+	return rc
 }
 
 /* overlayInt is a helper that takes a loaded or defaulted integer and returns it.
@@ -168,6 +187,8 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
 	dest.Rendering.CountryList.Prioritize = overlayString(loaded.Rendering.CountryList.Prioritize, defaults.Rendering.CountryList.Prioritize)
 	dest.Posting.ExternalDictionary = overlayString(loaded.Posting.ExternalDictionary, defaults.Posting.ExternalDictionary)
+	dest.Posting.Uploads.MaxSize = overlayString(loaded.Posting.Uploads.MaxSize, defaults.Posting.Uploads.MaxSize)
+	dest.Posting.Uploads.NoCompressTypes = overlayStringArray(loaded.Posting.Uploads.NoCompressTypes, defaults.Posting.Uploads.NoCompressTypes)
 }
 
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.
@@ -188,5 +209,4 @@ func SetupConfig() {
 	} else {
 		GlobalConfig = defaultConfig // just copy over the defaults
 	}
-	log.Infof("Global config: %v", GlobalConfig)
 }

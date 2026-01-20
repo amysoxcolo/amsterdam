@@ -312,7 +312,7 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
 					var data []byte
 					data, err = slurpFile(file)
 					if err == nil {
-						err = post.SetAttachment(ctxt.Ctx(), file.Filename, file.Header.Get("Content-Type"), int32(file.Size), data)
+						err = post.SetAttachment(ctxt.Ctx(), ctxt.CurrentUser(), file.Filename, file.Header.Get("Content-Type"), int32(file.Size), data)
 						if err == nil {
 							return "redirect", target, nil
 						}
