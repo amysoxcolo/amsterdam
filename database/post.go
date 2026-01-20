@@ -36,6 +36,13 @@ type PostData struct {
 	Data   *string `db:"data"`   // actual post data
 }
 
+// PostAttachInfo contains information about a file attachment to a post.
+type PostAttachInfo struct {
+	Filename string // name of attached file
+	MIMEType string // MIME type of attached file
+	Length   int32  // length in bytes of attached file
+}
+
 // ErrNoPostData is returned if post data is missing.
 var ErrNoPostData = errors.New("no post data")
 
@@ -56,6 +63,26 @@ func (p *PostHeader) IsPublished(ctx context.Context) (bool, error) {
 	ct := 0
 	err = rs.Scan(&ct)
 	return ct > 0, err
+}
+
+/* AttachmentInfo returns attachment information for a post.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ * Returns:
+ *     Pointer to structure with post attachment info.
+ *     Standard Go error status.
+ */
+func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT filename, mimetype, datalen FROM postattach WHERE postid = ?", p.PostId)
+	if err != nil {
+		return nil, err
+	}
+	if !rs.Next() {
+		return nil, nil
+	}
+	var rc PostAttachInfo
+	err = rs.Scan(&(rc.Filename), &(rc.MIMEType), &(rc.Length))
+	return &rc, err
 }
 
 /* SetAttachment sets the attachment data for a post.

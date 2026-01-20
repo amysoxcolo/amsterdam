@@ -438,6 +438,17 @@ func templateOverrideLink(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// templateAttachmentInfo gets the attachment info for a post.
+func templateAttachmentInfo(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	rc, _ := post.AttachmentInfo(ctxt.Ctx())
+	if rc == nil {
+		rc = &database.PostAttachInfo{}
+	}
+	return reflect.ValueOf(rc)
+}
+
 /* ReadPosts displays posts in a topic.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -619,6 +630,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 	ctxt.VarMap().SetFunc("post_getText", templatePostText)
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
+	ctxt.VarMap().SetFunc("post_getAttachmentInfo", templateAttachmentInfo)
 	ctxt.VarMap().Set("post_stem", fmt.Sprintf("%s/r/%d", urlStem, topic.Number))
 	ctxt.VarMap().Set("post_max", topic.TopMessage)
 	ctxt.VarMap().Set("posts", posts)
@@ -741,6 +753,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 		ctxt.VarMap().SetFunc("post_getText", templatePostText)
 		ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
+		ctxt.VarMap().SetFunc("post_getAttachmentInfo", templateAttachmentInfo)
 		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
 		ctxt.VarMap().Set("post_max", topic.TopMessage)
 		ctxt.VarMap().Set("posts", posts)
