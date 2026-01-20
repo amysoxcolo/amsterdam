@@ -45,6 +45,9 @@
     <div class="max-w-3xl">
         <form method="POST" action="{{ urlStem }}">
             <input type="hidden" name="xp" value="{{ maxPost }}"/>
+            {{ if isset(urlNextTopic) }}
+                <input type="hidden" name="nextlink" value="{{ urlNextTopic }}"/>
+            {{ end }}
             <div class="bg-gray-50 p-6 rounded-lg space-y-4">
                 <!-- Your Name/Header and Attach File -->
                 <div>

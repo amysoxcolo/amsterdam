@@ -111,7 +111,7 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// create the "read new" URL
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid"))
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	firstTopic := traverser.FirstTopic()
 	if firstTopic >= 1 {
 		ctxt.VarMap().Set("urlReadNew", fmt.Sprintf("%s/r/%d", urlStem, firstTopic))
@@ -147,7 +147,7 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create topics in this conference"))
 	}
 	ctxt.VarMap().Set("conferenceName", conf.Name)
-	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid")))
+	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("topicName", "")
 	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
@@ -176,7 +176,7 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create topics in this conference"))
 	}
 
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid"))
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", urlStem, nil
 	}
@@ -679,9 +679,13 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	v, _ = checker.Value()
 	ctxt.VarMap().Set("pb", v)
 
-	// also set the "attach" flag into the post data
+	// also set the "attach" flag and "next topic" link (where applicable) into the post data
 	if ctxt.FormFieldIsSet("attach") {
 		ctxt.VarMap().Set("attachFile", true)
+	}
+	urlNextTopic := ctxt.FormField("nextlink")
+	if len(urlNextTopic) > 0 {
+		ctxt.VarMap().Set("urlNextTopic", urlNextTopic)
 	}
 
 	if ctxt.FormFieldIsSet("preview") {
@@ -707,20 +711,22 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	var returnURL string
 	if ctxt.FormFieldIsSet("post") {
 		returnURL = urlStem
-	} else if ctxt.FormFieldIsSet("postnext") {
-		returnURL = urlStem // TODO
+	} else if ctxt.FormFieldIsSet("postnext") && len(urlNextTopic) > 0 {
+		returnURL = urlNextTopic
 	} else if ctxt.FormFieldIsSet("posttopics") {
-		returnURL = fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.URLParam("confid"))
+		returnURL = fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	} else {
 		return ui.ErrorPage(ctxt, errors.New("unknown post button"))
 	}
+
+	// Check for slippage.
 	maxPost, err := ctxt.FormFieldInt("xp")
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
 	if int32(maxPost) < topic.TopMessage {
 		// Slippage detected! Display the slipped posts and another post box.
-		// Get the slipped posts.
+		// Start by getting the slipped posts.
 		posts, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(maxPost), topic.TopMessage)
 		if err != nil {
 			return ui.ErrorPage(ctxt, err)
@@ -735,7 +741,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
 		ctxt.VarMap().SetFunc("post_getText", templatePostText)
 		ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
-		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
+		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
 		ctxt.VarMap().Set("post_max", topic.TopMessage)
 		ctxt.VarMap().Set("posts", posts)
 		ctxt.VarMap().Set("topicName", topic.Name)
@@ -769,11 +775,11 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 
-	if !ctxt.FormFieldIsSet("attach") {
-		return "redirect", returnURL, nil // no attachment - just redisplay topic list
-	}
-
 	// TODO: whoever's subscribed needs to get a copy of this post in their E-mail
+
+	if !ctxt.FormFieldIsSet("attach") {
+		return "redirect", returnURL, nil // no attachment - just bounce directly to the destination
+	}
 
 	// go upload the attachment
 	ctxt.VarMap().Set("target", returnURL)
