@@ -94,6 +94,18 @@ func (t *Topic) IsHidden(ctx context.Context, u *User) (bool, error) {
 	return rc, err
 }
 
+// SetHidden sets the "hidden" state on a topic for a user.
+func (t *Topic) SetHidden(ctx context.Context, u *User, hidden bool) error {
+	rs, err := amdb.ExecContext(ctx, "UPDATE topicsettings SET hidden = ? WHERE topicid = ? AND uid = ?", hidden, t.TopicId, u.Uid)
+	if err == nil {
+		nrow, _ := rs.RowsAffected()
+		if nrow == 0 {
+			_, err = amdb.ExecContext(ctx, "INSERT INTO topicsettings (topicid, uid, hidden) VALUES (?, ?, ?)", t.TopicId, u.Uid, hidden)
+		}
+	}
+	return err
+}
+
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
 	TopicId     int32      `db:"topicid"`      // unique ID of the topic

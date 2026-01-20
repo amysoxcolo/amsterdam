@@ -99,6 +99,8 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/new_topic", ui.AmWrap(NewTopic))
 	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)
 	confGroup.POST("/r/:topic", ui.AmWrap(PostInTopic), ui.SetTopic)
+	opsGroup := confGroup.Group("/op/:topic", ui.SetTopic)
+	opsGroup.GET("/hide", ui.AmWrap(HideTopic))
 
 	return e
 }
