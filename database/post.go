@@ -10,10 +10,14 @@
 package database
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	"git.erbosoft.com/amy/amsterdam/config"
 )
 
 // PostHeader represents the "header" of a post, everything except for its text and attachment.
@@ -115,9 +119,33 @@ func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string
 	if ai != nil {
 		return errors.New("attachment already present for this post")
 	}
-	// TODO
-	_, err = amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, data) VALUES (?, ?, ?, ?, ?)",
-		p.PostId, length, fileName, mimeType, data)
+	if length > config.GlobalComputedConfig.UploadMaxSize {
+		return fmt.Errorf("file too large to be attached; maximum size is %s", config.GlobalConfig.Posting.Uploads.MaxSize)
+	}
+
+	// Compress the data with GZIP if we need to.
+	var stgmethod int16
+	var realData []byte
+	if _, ok := config.GlobalComputedConfig.UploadNoCompress[mimeType]; ok {
+		realData = data
+		stgmethod = stgMethodPlain
+	} else {
+		buf := new(bytes.Buffer)
+		w := gzip.NewWriter(buf)
+		_, err := w.Write(data)
+		if err == nil {
+			err = w.Close()
+		}
+		if err != nil {
+			return err
+		}
+		realData = buf.Bytes()
+		stgmethod = stgMethodGZIP
+	}
+
+	// Write to the database.
+	_, err = amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, stgmethod, data) VALUES (?, ?, ?, ?, ?, ?)",
+		p.PostId, length, fileName, mimeType, stgmethod, realData)
 	return err
 }
 

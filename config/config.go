@@ -12,9 +12,12 @@ package config
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
+	"regexp"
+	"strconv"
 
 	argparse "github.com/alexflint/go-arg"
 	"gopkg.in/yaml.v3"
@@ -95,6 +98,11 @@ type AmConfig struct {
 	} `yaml:"posting"`
 }
 
+type AmConfigComputed struct {
+	UploadMaxSize    int32
+	UploadNoCompress map[string]bool
+}
+
 //go:embed default.yaml
 var defaultConfigData []byte
 
@@ -103,6 +111,9 @@ var defaultConfig AmConfig
 
 // GlobalConfig holds the global configuration.
 var GlobalConfig AmConfig
+
+// GlobalComputedConfig holds the computed values based on GlobalConfig.
+var GlobalComputedConfig AmConfigComputed
 
 // init prepares the default configuration for the application.
 func init() {
@@ -125,6 +136,14 @@ func overlayString(loaded string, defaulted string) string {
 	return loaded
 }
 
+/* overlayString is a helper that takes a loaded or defaulted string array and returns it. (It merges the two
+ * if two different arrays are specified.)
+ * Parameters:
+ *     loaded - The array loaded from a configuration file.
+ *     defaulted - The default value of this array.
+ * Returns:
+ *     Merged version of the two arrays.
+ */
 func overlayStringArray(loaded, defaulted []string) []string {
 	m := make(map[string]bool)
 	for _, s := range defaulted {
@@ -191,6 +210,31 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Posting.Uploads.NoCompressTypes = overlayStringArray(loaded.Posting.Uploads.NoCompressTypes, defaults.Posting.Uploads.NoCompressTypes)
 }
 
+// parseDataSize converts the data size in bytes, kilobytes, megabytes, or gigabytes to a number value.
+func parseDataSize(s string) (int32, error) {
+	re, err := regexp.Compile(`^\s*(\d+)\s*([KkMmGg]?)[Bb]?`)
+	if err != nil {
+		return -1, err
+	}
+	m := re.FindStringSubmatch(s)
+	if m == nil {
+		return -1, errors.New("invalid value spacified")
+	}
+	rc, err := strconv.Atoi(m[1])
+	if err != nil {
+		return -1, err
+	}
+	switch m[2] {
+	case "k", "K":
+		rc *= 1024
+	case "m", "M":
+		rc *= (1024 * 1024)
+	case "g", "G":
+		rc *= (1024 * 1024 * 1024)
+	}
+	return int32(rc), nil
+}
+
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.
 func SetupConfig() {
 	argparse.MustParse(&CommandLine)
@@ -208,5 +252,16 @@ func SetupConfig() {
 		overlayConfig(&GlobalConfig, &loadedConfig, &defaultConfig)
 	} else {
 		GlobalConfig = defaultConfig // just copy over the defaults
+	}
+
+	// Compute additional values.
+	tmp, err := parseDataSize(GlobalConfig.Posting.Uploads.MaxSize)
+	if err != nil {
+		panic(err.Error())
+	}
+	GlobalComputedConfig.UploadMaxSize = tmp
+	GlobalComputedConfig.UploadNoCompress = make(map[string]bool)
+	for _, s := range GlobalConfig.Posting.Uploads.NoCompressTypes {
+		GlobalComputedConfig.UploadNoCompress[s] = true
 	}
 }
