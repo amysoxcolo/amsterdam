@@ -13,7 +13,9 @@ package ui
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/klauspost/lctime"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -89,6 +91,9 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
 	return "framed_template", "error.jet", nil
 }
 
+// expireTime is the expiration time sent in the dynamic headers.
+var expireTime string = lctime.Strftime("%c", time.Unix(1, 0))
+
 /* AmWrap wraps the Amsterdam handler function in a wrapper that implements the spec for
  * Echo handler functions.
  * Parameters:
@@ -99,6 +104,12 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
 func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
 	return func(ctxt echo.Context) error {
 		amctxt := AmContextFromEchoContext(ctxt)
+
+		// Add the dynamic headers.
+		ctxt.Response().Header().Set("Pragma", "No-cache")
+		ctxt.Response().Header().Set("Cache-Control", "no-cache")
+		ctxt.Response().Header().Set("Expires", expireTime)
+
 		// Exec the wrapped function.
 		what, rc, err := myfunc(amctxt)
 		if err == nil {

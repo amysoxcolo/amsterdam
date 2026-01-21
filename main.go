@@ -75,6 +75,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
 	e.POST("/attachment_upload", ui.AmWrap(AttachmentUpload))
+	e.GET("/attachment/:post", ui.AmWrap(AttachmentSend))
 
 	// community group
 	commGroup := e.Group("/comm/:cid", ui.SetCommunity)

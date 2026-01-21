@@ -82,6 +82,9 @@ func (p *PostHeader) IsPublished(ctx context.Context) (bool, error) {
  *     Standard Go error status.
  */
 func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error) {
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return nil, errors.New("no attachment data for scribbled post")
+	}
 	rs, err := amdb.QueryContext(ctx, "SELECT filename, mimetype, datalen FROM postattach WHERE postid = ?", p.PostId)
 	if err != nil {
 		return nil, err
@@ -92,6 +95,50 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
 	var rc PostAttachInfo
 	err = rs.Scan(&(rc.Filename), &(rc.MIMEType), &(rc.Length))
 	return &rc, err
+}
+
+/* AttachmentData returns attachment data for a post.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ * Returns:
+ *     Attachment data as a byte array.
+ *     Standard Go error status.
+ */
+func (p *PostHeader) AttachmentData(ctx context.Context) ([]byte, error) {
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return nil, errors.New("no attachment data for scribbled post")
+	}
+	rs, err := amdb.QueryContext(ctx, "SELECT datalen, stgmethod, data FROM postattach WHERE postid = ?", p.PostId)
+	if err != nil {
+		return nil, err
+	}
+	if !rs.Next() {
+		return nil, nil
+	}
+	var datalen int32
+	var stgmethod int16
+	var dbdata []byte
+	err = rs.Scan(&datalen, &stgmethod, &dbdata)
+	if err != nil {
+		return nil, err
+	}
+	if stgmethod == stgMethodPlain {
+		return dbdata, nil
+	}
+	r, err := gzip.NewReader(bytes.NewReader(dbdata))
+	if err != nil {
+		return nil, err
+	}
+	outdata := make([]byte, 0, datalen)
+	n, err := r.Read(outdata)
+	r.Close()
+	if err != nil || n < int(datalen) {
+		if err == nil {
+			err = errors.New("unable to read entire attachment")
+		}
+		return nil, err
+	}
+	return outdata, nil
 }
 
 /* SetAttachment sets the attachment data for a post.
@@ -105,7 +152,11 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
  * Returns:
  *     Standard Go error status.
  */
-func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string, mimeType string, length int32, data []byte) error {
+func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string, mimeType string, length int32, data []byte, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
 	if p.ScribbleDate != nil && p.ScribbleUid != nil {
 		return errors.New("cannot attach to scribbled post")
 	}
@@ -146,6 +197,18 @@ func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string
 	// Write to the database.
 	_, err = amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, stgmethod, data) VALUES (?, ?, ?, ?, ?, ?)",
 		p.PostId, length, fileName, mimeType, stgmethod, realData)
+	// Generate an audit record.
+	ar = AmNewAudit(AuditConferenceUploadAttachment, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId),
+		fmt.Sprintf("len=%d,type=%s,name=%s,method=%d", length, mimeType, fileName, stgmethod))
+	return err
+}
+
+// HitAttachment records a "hit" on an attachment.
+func (p *PostHeader) HitAttachment(ctx context.Context) error {
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("no attachment on scribbled post")
+	}
+	_, err := amdb.ExecContext(ctx, "UPDATE postattach SET hits = hits + 1, lasthit = NOW() WHERE postid = ?", p.PostId)
 	return err
 }
 

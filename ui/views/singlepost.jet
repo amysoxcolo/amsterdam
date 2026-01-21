@@ -21,7 +21,7 @@
             <a href="/user/{{ post_userName }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ post_userName }}</a>, 
             {{ DisplayDateTime(post_cur.Posted, .) }}</em>)
             {{ if post_attach.Filename != "" }}
-                <a href="/TODO" title="(Attachment {{ post_attach.Filename }} - {{ post_attach.Length }} bytes)"
+                <a href="/attachment/{{ post_cur.PostId }}" title="(Attachment {{ post_attach.Filename }} - {{ post_attach.Length }} bytes)"
                     {{ if hasPrefix(post_attach.MIMEType, "text/") || hasPrefix(post_attach.MIMEType, "image/" )}}
                         target="_blank"
                     {{ end }}

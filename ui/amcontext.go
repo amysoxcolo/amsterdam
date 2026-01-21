@@ -33,6 +33,7 @@ import (
 
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
+	AddHeader(string, string)
 	ClearCommunityContext()
 	ClearLoginCookie()
 	ClearSession()
@@ -59,6 +60,7 @@ type AmContext interface {
 	ReplaceUser(*database.User)
 	SaveSession() error
 	SetCommunityContext(string) error
+	SetHeader(string, string)
 	SetLeftMenu(string)
 	SetLoginCookie(string)
 	SetOutputType(string)
@@ -94,6 +96,11 @@ type amContext struct {
 	community      *database.Community
 	isMember       bool
 	isMemberLocked bool
+}
+
+// AddHeader adds a header to the response.
+func (c *amContext) AddHeader(key, value string) {
+	c.echoContext.Response().Header().Add(key, value)
 }
 
 // ClearCommunityContext clears the community context so changes will be reflected.
@@ -341,6 +348,11 @@ func (c *amContext) SetCommunityContext(param string) error {
 		}
 	}
 	return nil
+}
+
+// SetHeader sets a header on the output.
+func (c *amContext) SetHeader(key, value string) {
+	c.echoContext.Response().Header().Set(key, value)
 }
 
 // SetLeftMenu sets the current topmost left menu name value.
