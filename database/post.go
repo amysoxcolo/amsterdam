@@ -227,6 +227,105 @@ func (p *PostHeader) Text(ctx context.Context) (string, error) {
 	return *dbdata[0].Data, nil
 }
 
+// SetHidden sets the "hidden" flag on a post.
+func (p *PostHeader) SetHidden(ctx context.Context, u *User, flag bool, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("cannot hide or unhide scribbled post")
+	}
+	if p.Hidden == flag {
+		return nil // no-op
+	}
+	_, err := amdb.ExecContext(ctx, "UPDATE posts SET hidden = ? WHERE postid = ?", flag, p.PostId)
+	if err == nil {
+		p.Hidden = flag
+		ar = AmNewAudit(AuditConferenceHideMessage, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId), fmt.Sprintf("hidden=%t", flag))
+	}
+	return err
+}
+
+// Scribble causes a post to be scribbled.
+func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("cannot scribble an already-scribbled post")
+	}
+
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	unlock := true
+	tx.ExecContext(ctx, "LOCK TABLES posts WRITE, postdata WRITE, postattach WRITE, postpublish WRITE;")
+	defer func() {
+		if unlock {
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
+		}
+	}()
+
+	// Scribble on the post header.
+	scribblePseud := "<EM><B>(Scribbled)</B></EM>" // FUTURE: configurable option
+	_, err := tx.ExecContext(ctx, "UPDATE posts SET linecount = 0, hidden = 0, scribble_uid = ?, scribble_date = NOW(), pseud = ? WHERE postid = ?", u.Uid, scribblePseud, p.PostId)
+	if err != nil {
+		return err
+	}
+
+	// Reread the scribble date.
+	rs, err := tx.QueryContext(ctx, "SELECT scribble_date FROM posts WHERE postid = ?", p.PostId)
+	if err != nil {
+		return err
+	}
+	if !rs.Next() {
+		return errors.New("internal error while scribbling")
+	}
+	var newScribbleDate time.Time
+	if err = rs.Scan(&newScribbleDate); err != nil {
+		return err
+	}
+
+	// Delete all auxiliary data.
+	_, err = tx.ExecContext(ctx, "DELETE FROM postdata WHERE postid = ?", p.PostId)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM postattach WHERE postid = ?", p.PostId)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM postpublish WHERE postid = ?", p.PostId)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// Unlock tables and commit.
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
+	unlock = false
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+
+	// Patch fields in the post header
+	var newLines int32 = 0
+	p.LineCount = &newLines
+	p.Hidden = false
+	newUid := u.Uid
+	p.ScribbleUid = &newUid
+	p.ScribbleDate = &newScribbleDate
+	p.Pseud = &scribblePseud
+
+	// Audit the operation.
+	ar = AmNewAudit(AuditConferenceScribbleMessage, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId))
+	return nil
+}
+
 /* AmGetPost gets a single post from the database by ID.
  * Parameters:
  *     ctx - Standard Go context value.
