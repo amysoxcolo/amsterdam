@@ -326,6 +326,65 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error
 	return nil
 }
 
+// Nuke causes a post to be nuked (deleted entirely from the topic).
+func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	unlock := true
+	tx.ExecContext(ctx, "LOCK TABLES posts WRITE, postdata WRITE, postattach WRITE, postdogear WRITE, postpublish WRITE, topics WRITE;")
+	defer func() {
+		if unlock {
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
+		}
+	}()
+
+	// Delete all the references to this post.
+	_, err := tx.ExecContext(ctx, "DELETE FROM posts WHERE postid = ?", p.PostId)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM postdata WHERE postid = ?", p.PostId)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM postattach WHERE postid = ?", p.PostId)
+			if err == nil {
+				_, err = tx.ExecContext(ctx, "DELETE FROM postdogear WHERE postid = ?", p.PostId)
+				if err == nil {
+					_, err = tx.ExecContext(ctx, "DELETE FROM postpublish WHERE postid = ?", p.PostId)
+				}
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// Renumber phase 1 - renumber posts in the same topic with a number higher than the nuked post
+	if _, err = tx.ExecContext(ctx, "UPDATE posts SET num = (num - 1) WHERE topicid = ? AND num > ?", p.TopicId, p.Num); err != nil {
+		return err
+	}
+	// Renumber phase 2 - reset the top message in this topic
+	if _, err = tx.ExecContext(ctx, "UPDATE topics SET top_message = (top_message - 1) WHERE topicid = ?", p.TopicId); err != nil {
+		return err
+	}
+
+	// Unlock tables and commit.
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
+	unlock = false
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	ar = AmNewAudit(AuditConferenceNukeMessage, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId))
+	return nil
+}
+
 /* AmGetPost gets a single post from the database by ID.
  * Parameters:
  *     ctx - Standard Go context value.
