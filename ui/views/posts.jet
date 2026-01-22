@@ -118,7 +118,7 @@
                     {{ if advancedControls }}
                         <div class="flex flex-col gap-2">
                             {{ if canHide }}
-                                <a href="/TODO" 
+                                <a href="{{ topicListLink }}/op/{{ topicNum }}/hide/{{ p.Num }}" 
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">
                                     {{ if isPostHidden }}Show{{ else }}Hide{{ end }}
                                 </a>

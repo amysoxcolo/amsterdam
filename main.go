@@ -102,6 +102,7 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/r/:topic", ui.AmWrap(PostInTopic), ui.SetTopic)
 	opsGroup := confGroup.Group("/op/:topic", ui.SetTopic)
 	opsGroup.GET("/hide", ui.AmWrap(HideTopic))
+	opsGroup.GET("/hide/:msg", ui.AmWrap(HideMessage))
 
 	return e
 }
