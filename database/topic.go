@@ -56,14 +56,9 @@ func (t *Topic) GetPost(ctx context.Context, num int32) (*PostHeader, error) {
 
 // GetLastRead returns the "last read" message for a user on a topic.
 func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
-	if err != nil {
-		return -1, err
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	var rc int32 = -1
-	if rs.Next() {
-		err = rs.Scan(&rc)
-	}
+	err := row.Scan(&rc)
 	return rc, err
 }
 
@@ -83,14 +78,9 @@ func (t *Topic) SetLastRead(ctx context.Context, u *User, postNum int32) error {
 
 // IsHidden tells us whether the user has the topic hidden.
 func (t *Topic) IsHidden(ctx context.Context, u *User) (bool, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT hidden FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
-	if err != nil {
-		return false, err
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT hidden FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	rc := false
-	if rs.Next() {
-		err = rs.Scan(&rc)
-	}
+	err := row.Scan(&rc)
 	return rc, err
 }
 

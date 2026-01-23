@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"sync"
@@ -119,19 +120,16 @@ func (c *Conference) HostsQ(ctx context.Context) []*User {
 
 // Membership returns a membership flag and granted level for the user in this conference.
 func (c *Conference) Membership(ctx context.Context, u *User) (bool, uint16, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
-	if err != nil {
-		return false, 0, err
+	row := amdb.QueryRowContext(ctx, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	var level uint16
+	err := row.Scan(&level)
+	switch err {
+	case nil:
+		return true, level, nil
+	case sql.ErrNoRows:
+		return false, 0, nil
 	}
-	rc := false
-	if rs.Next() {
-		rc = true
-		var level uint16
-		if err = rs.Scan(&level); err == nil {
-			return rc, level, nil
-		}
-	}
-	return rc, 0, err
+	return false, 0, err
 }
 
 /* TestPermission is shorthand that tests if a user has a permission with respect to the conference.
@@ -306,14 +304,11 @@ func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, err
 	if ok {
 		confid = xconf.(int32)
 	} else {
-		rs, err := amdb.QueryContext(ctx, "SELECT confid FROM confalias WHERE alias = ?", alias)
-		if err != nil {
-			return nil, err
-		}
-		if !rs.Next() {
+		row := amdb.QueryRowContext(ctx, "SELECT confid FROM confalias WHERE alias = ?", alias)
+		err := row.Scan(&confid)
+		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("alias not found: %s", alias)
-		}
-		if err = rs.Scan(&confid); err != nil {
+		} else if err != nil {
 			return nil, err
 		}
 		conferenceAliasMap.Store(alias, confid)
@@ -331,19 +326,17 @@ func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, err
  *     Standard Go error status.
  */
 func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias string) (*Conference, error) {
-	rs, err := amdb.QueryContext(ctx, `SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
+	row := amdb.QueryRowContext(ctx, `SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
 		AND c.commid = ? AND a.alias = ?`, cid, alias)
-	if err != nil {
-		return nil, err
-	}
-	if !rs.Next() {
+	var confid int32
+	err := row.Scan(&confid)
+	switch err {
+	case nil:
+		AmGetConference(ctx, confid)
+	case sql.ErrNoRows:
 		return nil, errors.New("conference not found")
 	}
-	var confid int32
-	if err = rs.Scan(&confid); err != nil {
-		return nil, err
-	}
-	return AmGetConference(ctx, confid)
+	return nil, err
 }
 
 /* AmGetCommunityConferences returns all conferences for a given community.

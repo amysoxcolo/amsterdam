@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,6 +12,7 @@ package database
 import (
 	"context"
 	"crypto/sha1"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -465,18 +466,8 @@ func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, erro
 // getAnonUserID retrieves the UID of the "anonymous" user from the database.
 func getAnonUserID(ctx context.Context) (int32, error) {
 	if anonUid < 0 {
-		rows, err := amdb.QueryContext(ctx, "SELECT uid FROM users WHERE is_anon = 1")
-		if err == nil {
-			defer rows.Close()
-			if rows.Next() {
-				err = rows.Scan(&anonUid)
-				if err == nil && rows.Next() {
-					err = fmt.Errorf("should be only one anonymous user in Amsterdam database")
-				}
-			} else {
-				err = fmt.Errorf("no anonymous user in Amsterdam database")
-			}
-		}
+		row := amdb.QueryRowContext(ctx, "SELECT uid FROM users WHERE is_anon = 1")
+		err := row.Scan(&anonUid)
 		if err != nil {
 			return -1, err
 		}
@@ -706,12 +697,12 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	}()
 
 	// Test if the user name is already taken.
-	rs, err := tx.QueryContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
-	if err != nil {
-		return nil, err
-	} else if rs.Next() {
+	row := tx.QueryRowContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
+	if row.Err() == nil {
 		log.Warnf("username \"%s\" already exists", username)
 		return nil, errors.New("that user name already exists. Please try again")
+	} else if row.Err() != sql.ErrNoRows {
+		return nil, row.Err()
 	}
 
 	// Insert the user record.
@@ -730,7 +721,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	log.Debugf("...created new user \"%s\" with UID %d", username, user.Uid)
 
 	// add user preferences
-	_, err = tx.ExecContext(ctx, "INSERT INTO userprefs (uid) VALUES (?)", user.Uid)
+	_, err := tx.ExecContext(ctx, "INSERT INTO userprefs (uid) VALUES (?)", user.Uid)
 	if err != nil {
 		return nil, err
 	}
@@ -895,20 +886,16 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 		return nil, -1, errors.New("invalid operator selector")
 	}
 	q := queryPortion.String()
-	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q)
-	if err != nil {
-		return nil, -1, err
-	}
-	if !rs.Next() {
-		return nil, -1, errors.New("internal error getting count")
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q)
 	var total int
-	if err = rs.Scan(&total); err != nil {
+	err := row.Scan(&total)
+	if err != nil {
 		return nil, -1, err
 	}
 	if total == 0 {
 		return make([]*User, 0), 0, nil
 	}
+	var rs *sql.Rows
 	if offset > 0 {
 		rs, err = amdb.QueryContext(ctx, "SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
 			" ORDER BY u.username LIMIT ? OFFSET ?", max, offset)

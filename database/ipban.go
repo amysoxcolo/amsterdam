@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"math/big"
 	"net"
@@ -65,21 +66,17 @@ func AmTestIPBan(ctx context.Context, ip_address string) (string, error) {
 	iv.SetBytes(addr)
 	iv_lo := big.NewInt(0).And(iv, low64mask).Uint64()
 	iv_hi := big.NewInt(0).Rsh(iv, 64).Uint64()
-	rows, err := amdb.QueryContext(ctx, `SELECT message FROM ipban WHERE (address_lo & mask_lo) = (? & mask_lo)
+	row := amdb.QueryRowContext(ctx, `SELECT message FROM ipban WHERE (address_lo & mask_lo) = (? & mask_lo)
 			AND (address_hi & mask_hi) = (? & mask_hi) AND (expire IS NULL OR expire >= ?)
 			AND enable <> 0 ORDER BY mask_hi DESC, mask_lo DESC`, iv_lo, iv_hi, time.Now().UTC())
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-	if rows.Next() {
-		err = rows.Scan(&rc)
-		if err != nil {
-			return "", err
-		}
+	err := row.Scan(&rc)
+	switch err {
+	case nil:
 		knownBans[ip_address] = rc
 		return rc, nil
+	case sql.ErrNoRows:
+		knownGood[ip_address] = true
+		return "", nil
 	}
-	knownGood[ip_address] = true
-	return "", nil
+	return "", err
 }

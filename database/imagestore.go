@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -86,17 +86,12 @@ func AmLoadImage(ctx context.Context, id int32) (*ImageStore, error) {
  *     Standard Go error status.
  */
 func AmStoreImage(ctx context.Context, typecode int16, owner int32, mimetype string, data []byte) (*ImageStore, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT imgid FROM imagestore WHERE typecode = ? AND ownerid = ?", typecode, owner)
-	if err != nil {
-		return nil, err
-	}
 	var img *ImageStore
-	if rs.Next() {
-		var id int32
-		err = rs.Scan(&id)
-		if err != nil {
-			return nil, err
-		}
+	row := amdb.QueryRowContext(ctx, "SELECT imgid FROM imagestore WHERE typecode = ? AND ownerid = ?", typecode, owner)
+	var id int32
+	err := row.Scan(&id)
+	switch err {
+	case nil:
 		img, err = AmLoadImage(ctx, id)
 		if err != nil {
 			return nil, err
@@ -104,7 +99,7 @@ func AmStoreImage(ctx context.Context, typecode int16, owner int32, mimetype str
 		img.MimeType = mimetype
 		img.Length = int32(len(data))
 		img.Data = data
-	} else {
+	case sql.ErrNoRows:
 		img = &ImageStore{
 			ImgId:    -1,
 			TypeCode: typecode,
@@ -113,6 +108,8 @@ func AmStoreImage(ctx context.Context, typecode int16, owner int32, mimetype str
 			Length:   int32(len(data)),
 			Data:     data,
 		}
+	default:
+		return nil, err
 	}
 	err = img.Save(ctx)
 	if err != nil {

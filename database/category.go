@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"slices"
 	"strings"
@@ -64,19 +65,13 @@ func loadCategories(ctx context.Context) error {
 	categoryMutex.Lock()
 	defer categoryMutex.Unlock()
 	if allCategories == nil {
-		rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM refcategory")
-		if err != nil {
-			return err
-		}
-		if !rs.Next() {
-			return errors.New("internal error loading categories")
-		}
+		row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM refcategory")
 		var ncats int32
-		if err = rs.Scan(&ncats); err != nil {
+		if err := row.Scan(&ncats); err != nil {
 			return err
 		}
 		allCategories = make([]Category, 0, ncats)
-		if err = amdb.SelectContext(ctx, &allCategories, "SELECT * FROM refcategory ORDER BY parent, name"); err != nil {
+		if err := amdb.SelectContext(ctx, &allCategories, "SELECT * FROM refcategory ORDER BY parent, name"); err != nil {
 			return err
 		}
 		for i, c := range allCategories {
@@ -234,20 +229,15 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 		queryString.WriteString(" AND hide_search = 0")
 	}
 	q := queryString.String()
-	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM refcategory WHERE "+q)
-	if err != nil {
-		return nil, -1, err
-	}
-	if !rs.Next() {
-		return nil, -1, errors.New("internal error getting category total")
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM refcategory WHERE "+q)
 	var total int
-	if err = rs.Scan(&total); err != nil {
+	if err = row.Scan(&total); err != nil {
 		return nil, total, err
 	}
 	if total == 0 {
 		return make([]*Category, 0), 0, nil
 	}
+	var rs *sql.Rows
 	if offset > 0 {
 		rs, err = amdb.QueryContext(ctx, "SELECT catid FROM refcategory WHERE "+q+" ORDER BY parent, name LIMIT ? OFFSET ?", max, offset)
 	} else {

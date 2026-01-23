@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -63,15 +64,9 @@ func (p *PostHeader) IsScribbled() bool {
 
 // IsPublished returns true if the post has been published to the front page.
 func (p *PostHeader) IsPublished(ctx context.Context) (bool, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT COUNT(*) FROM postpublish WHERE postid = ?", p.PostId)
-	if err != nil {
-		return false, err
-	}
-	if !rs.Next() {
-		return false, errors.New("internal failure in IsPublished")
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM postpublish WHERE postid = ?", p.PostId)
 	ct := 0
-	err = rs.Scan(&ct)
+	err := row.Scan(&ct)
 	return ct > 0, err
 }
 
@@ -86,16 +81,16 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
 	if p.ScribbleDate != nil && p.ScribbleUid != nil {
 		return nil, errors.New("no attachment data for scribbled post")
 	}
-	rs, err := amdb.QueryContext(ctx, "SELECT filename, mimetype, datalen FROM postattach WHERE postid = ?", p.PostId)
-	if err != nil {
-		return nil, err
-	}
-	if !rs.Next() {
+	row := amdb.QueryRowContext(ctx, "SELECT filename, mimetype, datalen FROM postattach WHERE postid = ?", p.PostId)
+	var rc PostAttachInfo
+	err := row.Scan(&(rc.Filename), &(rc.MIMEType), &(rc.Length))
+	switch err {
+	case nil:
+		return &rc, nil
+	case sql.ErrNoRows:
 		return nil, nil
 	}
-	var rc PostAttachInfo
-	err = rs.Scan(&(rc.Filename), &(rc.MIMEType), &(rc.Length))
-	return &rc, err
+	return nil, err
 }
 
 /* AttachmentData returns attachment data for a post.
@@ -109,18 +104,14 @@ func (p *PostHeader) AttachmentData(ctx context.Context) ([]byte, error) {
 	if p.ScribbleDate != nil && p.ScribbleUid != nil {
 		return nil, errors.New("no attachment data for scribbled post")
 	}
-	rs, err := amdb.QueryContext(ctx, "SELECT datalen, stgmethod, data FROM postattach WHERE postid = ?", p.PostId)
-	if err != nil {
-		return nil, err
-	}
-	if !rs.Next() {
-		return nil, nil
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT datalen, stgmethod, data FROM postattach WHERE postid = ?", p.PostId)
 	var datalen int32
 	var stgmethod int16
 	var dbdata []byte
-	err = rs.Scan(&datalen, &stgmethod, &dbdata)
-	if err != nil {
+	err := row.Scan(&datalen, &stgmethod, &dbdata)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 	if stgmethod == stgMethodPlain {
@@ -281,15 +272,9 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error
 	}
 
 	// Reread the scribble date.
-	rs, err := tx.QueryContext(ctx, "SELECT scribble_date FROM posts WHERE postid = ?", p.PostId)
-	if err != nil {
-		return err
-	}
-	if !rs.Next() {
-		return errors.New("internal error while scribbling")
-	}
+	row := tx.QueryRowContext(ctx, "SELECT scribble_date FROM posts WHERE postid = ?", p.PostId)
 	var newScribbleDate time.Time
-	if err = rs.Scan(&newScribbleDate); err != nil {
+	if err = row.Scan(&newScribbleDate); err != nil {
 		return err
 	}
 

@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,7 +9,10 @@
 // The database package contains database management and storage logic.
 package database
 
-import "context"
+import (
+	"context"
+	"database/sql"
+)
 
 /* AmIsEmailAddressBanned returns true if the given E-mail address is on the "banned" list.
  * Parameters:
@@ -20,9 +23,12 @@ import "context"
  *     Standard Go error status.
  */
 func AmIsEmailAddressBanned(ctx context.Context, address string) (bool, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT by_uid FROM emailban WHERE address = ?", address)
-	if err != nil {
-		return false, err
+	row := amdb.QueryRowContext(ctx, "SELECT by_uid FROM emailban WHERE address = ?", address)
+	switch row.Err() {
+	case nil:
+		return true, nil
+	case sql.ErrNoRows:
+		return false, nil
 	}
-	return rs.Next(), nil
+	return false, row.Err()
 }

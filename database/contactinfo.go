@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@ package database
 
 import (
 	"context"
-	"errors"
+	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
@@ -54,24 +54,16 @@ type ContactInfo struct {
 // lookupCommunityContact looks up the ID of a contact for a community.
 func lookupCommunityContact(ctx context.Context, id int32) (int32, error) {
 	var rc int32 = -1
-	rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
-	if err == nil {
-		if rs.Next() {
-			err = rs.Scan(&rc)
-		}
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
+	err := row.Scan(&rc)
 	return rc, err
 }
 
 // lookupUserContact looks up the ID of a contact for a user.
 func lookupUserContact(ctx context.Context, uid int32) (int32, error) {
 	var rc int32 = -1
-	rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
-	if err == nil {
-		if rs.Next() {
-			err = rs.Scan(&rc)
-		}
-	}
+	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
+	err := row.Scan(&rc)
 	return rc, err
 }
 
@@ -150,12 +142,12 @@ func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
 	}
 	if !emailChange {
 		// we don't THINK the E-mail address is changing, but we could be wrong...
-		rs, err := amdb.QueryContext(ctx, "SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
-		if err != nil {
-			return false, err
-		}
-		if !rs.Next() {
+		row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
+		err := row.Err()
+		if err == sql.ErrNoRows {
 			emailChange = true
+		} else if err != nil {
+			return false, err
 		}
 	}
 	// Handle the database heavy lifting.
@@ -184,14 +176,11 @@ func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
 		contactCache.Add(ci.ContactId, ci)
 	}
 	// Refresh the last update date.
-	rs, err := amdb.QueryContext(ctx, "SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
+	row := amdb.QueryRowContext(ctx, "SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
+	err := row.Scan(&(ci.LastUpdate))
 	if err != nil {
 		return false, err
 	}
-	if !rs.Next() {
-		return false, errors.New("internal error rereading update timestamp")
-	}
-	err = rs.Scan(&ci.LastUpdate)
 	return emailChange, err
 }
 

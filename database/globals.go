@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"sync"
 
@@ -115,23 +116,20 @@ func AmGlobals(ctx context.Context) (*Globals, error) {
 func AmGetGlobalProperty(ctx context.Context, index int32) (string, error) {
 	globalPropMutex.Lock()
 	defer globalPropMutex.Unlock()
+	var err error = nil
 	rc, ok := globalProps[index]
 	if !ok {
-		rs, err := amdb.QueryContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
-		if err != nil {
-			return "", err
-		}
-		if rs.Next() {
-			err = rs.Scan(&rc)
-			if err != nil {
-				return "", err
-			}
+		row := amdb.QueryRowContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
+		err = row.Scan(&rc)
+		switch err {
+		case nil:
 			globalProps[index] = rc
-			return rc, nil
+		case sql.ErrNoRows:
+			rc = ""
+			err = nil
 		}
-		rc = ""
 	}
-	return rc, nil
+	return rc, err
 }
 
 /* AmSetGlobalProperty sets the value of a global property.
@@ -147,11 +145,15 @@ func AmSetGlobalProperty(ctx context.Context, index int32, value string) error {
 	defer globalPropMutex.Unlock()
 	_, updateMode := globalProps[index]
 	if !updateMode {
-		rs, err := amdb.QueryContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
-		if err != nil {
-			return err
+		row := amdb.QueryRowContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
+		switch row.Err() {
+		case nil:
+			updateMode = true
+		case sql.ErrNoRows:
+			updateMode = false
+		default:
+			return row.Err()
 		}
-		updateMode = rs.Next()
 	}
 	var err error = nil
 	if updateMode {
