@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -407,7 +408,7 @@ func AmGetPost(ctx context.Context, postId int64) (*PostHeader, error) {
 	return &(dbdata[0]), nil
 }
 
-/* AmGetPostRage gets a range of posts from a topic by post numbers.
+/* AmGetPostRange gets a range of posts from a topic by post numbers.
  * Parameters:
  *     ctx - Standard Go context value.
  *     topic - Topic pointer to retrieve posts from.
@@ -523,4 +524,69 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 		fmt.Sprintf("topic=%d", topic.Number), fmt.Sprintf("post=%d", hdr.PostId), fmt.Sprintf("pseud=%s", *hdr.Pseud))
 
 	return hdr, nil
+}
+
+/* AmGetPublishedPosts gets all posts published to the front page, up to the maximum number configured in the database.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ * Returns:
+ *     Array of post headers, or nil.
+ *     Standard Go error status.
+ */
+func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, error) {
+	// Read the globals.
+	gv, err := AmGlobals(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Read the published posts.
+	rs, err := amdb.QueryContext(ctx, "SELECT postid FROM postpublish ORDER BY on_date DESC")
+	if err != nil {
+		return nil, err
+	}
+	// Extract post IDs to an array.
+	pids := make([]int64, gv.FrontPagePosts)
+	i := 0
+	for i < int(gv.FrontPagePosts) && rs.Next() {
+		if err = rs.Scan(&(pids[i])); err != nil {
+			return nil, err
+		}
+		i++
+	}
+	if i < int(gv.FrontPagePosts) {
+		pids = pids[:i] // truncate if we have fewer posts than spaces
+	}
+
+	// Use the post IDs to build a SQL statement.
+	pidStrs := make([]string, len(pids))
+	for i, pid := range pids {
+		pidStrs[i] = fmt.Sprintf("%d", pid)
+	}
+	sql := fmt.Sprintf("SELECT * FROM posts WHERE postid IN (%s)", strings.Join(pidStrs, ", "))
+
+	// Use the SQL to read in all the post headers using a single database query.
+	var data []PostHeader
+	if err = amdb.SelectContext(ctx, &data, sql); err != nil {
+		return nil, err
+	}
+	if len(data) < len(pids) {
+		return nil, errors.New("internal error reading post headers")
+	}
+
+	// Build the return array by making sure we point to the post headers in the same order the post IDs were returned.
+	rc := make([]*PostHeader, len(pids))
+	q := 0
+	for i := range data {
+		for j := range pids {
+			if data[i].PostId == pids[j] {
+				rc[j] = &(data[i])
+				q++
+			}
+		}
+	}
+	if q < len(pids) {
+		return nil, errors.New("internal error generating output")
+	}
+
+	return rc, nil
 }
