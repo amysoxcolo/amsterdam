@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,6 +90,83 @@ func (d *PostLinkData) AsString() string {
 		b.WriteString(s)
 	}
 	return b.String()
+}
+
+/* Classify tells us what kind of post link this is and where we should interpret it from.
+ * Returns:
+ *     String value indicating the scope of the link:
+ *         "global" - Scope across the entire site.
+ *         "community" - Scope within a community.
+ *         "conference" - Scope within a conference.
+ *         "topic" - Scope within a specific topic.
+ *         Empty string - Null link.
+ *     String value indicating what the link points to:
+ *         "community" - Points to a community.
+ *         "conference" - Points to a conference.
+ *         "topic" - Points to a topic.
+ *         "post" - Points to a single post within the topic.
+ *         "postrange" - Points to a range of posts within the topic.
+ *         "postopenrange" - Points to an open-ended range of posts within the topic.
+ *         Empty string - Null link.
+ */
+func (d *PostLinkData) Classify() (string, string) {
+	if d.Community == "" {
+		if d.Conference == "" {
+			if d.Topic == -1 {
+				if d.FirstPost == -1 {
+					return "", ""
+				} else if d.LastPost == -1 {
+					return "topic", "postopenrange"
+				} else if d.LastPost == d.FirstPost {
+					return "topic", "post"
+				} else {
+					return "topic", "postrange"
+				}
+			} else {
+				if d.FirstPost == -1 {
+					return "conference", "topic"
+				} else if d.LastPost == -1 {
+					return "conference", "postopenrange"
+				} else if d.LastPost == d.FirstPost {
+					return "conference", "post"
+				} else {
+					return "conference", "postrange"
+				}
+			}
+		} else {
+			if d.Topic == -1 {
+				return "community", "conference"
+			} else {
+				if d.FirstPost == -1 {
+					return "community", "topic"
+				} else if d.LastPost == -1 {
+					return "community", "postopenrange"
+				} else if d.LastPost == d.FirstPost {
+					return "community", "post"
+				} else {
+					return "community", "postrange"
+				}
+			}
+		}
+	} else {
+		if d.Conference == "" {
+			return "global", "community"
+		} else {
+			if d.Topic == -1 {
+				return "global", "conference"
+			} else {
+				if d.FirstPost == -1 {
+					return "global", "topic"
+				} else if d.LastPost == -1 {
+					return "global", "postopenrange"
+				} else if d.LastPost == d.FirstPost {
+					return "global", "post"
+				} else {
+					return "global", "postrange"
+				}
+			}
+		}
+	}
 }
 
 // Maximum lengths of the components.

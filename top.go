@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,6 +11,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -209,4 +210,43 @@ func AboutPage(ctxt ui.AmContext) (string, any, error) {
 	// Set the page title.
 	ctxt.VarMap().Set("amsterdam_pageTitle", "About Amsterdam")
 	return "framed_template", "about.jet", nil
+}
+
+/* JumpToShortcut resolves "/go" links by redirecting them to the appropriate page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func JumpToShortcut(ctxt ui.AmContext) (string, any, error) {
+	link, err := database.AmDecodePostLink(ctxt.URLParam("postlink"))
+	if err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, fmt.Errorf("not found: %s (%v)", ctxt.URLParam("postlink"), err))
+	}
+	scope, target := link.Classify()
+	if scope != "global" {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, fmt.Errorf("not found: %s", ctxt.URLParam("postlink")))
+	}
+	if err = link.VerifyNames(ctxt.Ctx()); err != nil {
+		ctxt.SetRC(http.StatusNotFound)
+		return ui.ErrorPage(ctxt, fmt.Errorf("not found: %s (%v)", ctxt.URLParam("postlink"), err))
+	}
+	targetURL := ""
+	switch target {
+	case "community":
+		targetURL = fmt.Sprintf("/comm/%s", link.Community)
+	case "conference":
+		targetURL = fmt.Sprintf("/comm/%s/conf/%s", link.Community, link.Conference)
+	case "topic":
+		targetURL = fmt.Sprintf("/comm/%s/conf/%s/r/%d", link.Community, link.Conference, link.Topic)
+	case "post", "postrange", "postopenrange":
+		targetURL = fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d,%d", link.Community, link.Conference, link.Topic, link.FirstPost, link.LastPost)
+	default:
+		return ui.ErrorPage(ctxt, fmt.Errorf("invalid target '%s' for link: %s", target, ctxt.URLParam("postlink")))
+	}
+	return "redirect", targetURL, nil
 }

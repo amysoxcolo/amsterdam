@@ -50,7 +50,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/TODO/*", fn)
 	e.GET("/img/*", ui.AmServeImage)
 	e.GET("/static/*", ui.AmStaticFileHandler())
-	e.GET("/go/:postlink", fn)
+	e.GET("/go/:postlink", ui.AmWrap(JumpToShortcut))
 
 	e.GET("/", ui.AmWrap(TopPage))
 	e.GET("/about", ui.AmWrap(AboutPage))
@@ -79,7 +79,9 @@ func setupEcho() *echo.Echo {
 
 	// community group
 	commGroup := e.Group("/comm/:cid", ui.SetCommunity)
-	commGroup.GET("/profile", ui.AmWrap(ShowCommunity))
+	fn1 := ui.AmWrap(ShowCommunity)
+	commGroup.GET("", fn1)
+	commGroup.GET("/profile", fn1)
 	commGroup.GET("/join", ui.AmWrap(JoinCommunity))
 	commGroup.POST("/join", ui.AmWrap(JoinCommunityWithKey))
 	commGroup.GET("/unjoin", ui.AmWrap(UnjoinCommunity))
