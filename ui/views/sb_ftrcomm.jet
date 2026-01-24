@@ -1,6 +1,6 @@
 {*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@
                     <div class="flex items-center">
                         <span class="mr-2">🟣</span>
                         <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
-                        {{ if .Flags["admin"] }}<span class="ml-1">👑</span>{{ end }}
+                        {{ if .Flags["admin"] }}<span class="ml-1" title="You are a host of this community">👑</span>{{ end }}
                     </div>
                 {{ end }}
             {{ else }}
