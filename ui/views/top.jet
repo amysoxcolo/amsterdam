@@ -20,30 +20,34 @@
             </div>
         {{ end }}
 
-        <!-- Venice Currents Section -->
+        <!-- Front Page Posts Section -->
         <div>
-            <h2 class="text-blue-800 text-4xl font-bold mb-2">Venice Currents</h2>
+            <h2 class="text-blue-800 text-4xl font-bold mb-2">Latest from the Conferences</h2>
             <hr class="border-2 border-gray-400 w-4/5 mb-4">
             
-            <div class="text-black text-sm">
-                <div class="mb-2">
-                    <strong>Amy, formerly Eric</strong>
-                    (<em>
-                        <a href="http://necrovenice:8080/venice/user/Administrator" 
-                            target="_blank" 
-                            class="text-blue-700 hover:text-blue-900">Administrator</a>,
-                        Sep 8, 2025 5:17:02 PM
-                    </em>)
+            {{ user := "" }}
+            {{ text := "" }}
+            {{ topic := nil }}
+            {{ link := "" }}
+            {{ range i, p := posts }}
+                {{ user = post_getUserName(p, .) }}
+                {{ text = post_getText(p, .) }}
+                {{ topic = post_topic(p, .) }}
+                {{ link = post_topicLink(topic, .) }}
+                <div class="text-black text-sm">
+                    <div class="mb-2">
+                        <strong>{{ p.Pseud | raw }}</strong>
+                        (<em>
+                            <a href="/user/{{ user }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ user }}</a>,
+                            {{ DisplayDateTime(p.Posted, .) }}</em>)
+                        </em>)
+                    </div>
+                    <pre class="mb-4 amsPost whitespace-pre-wrap">{{ text | postRewrite | raw }}</pre>
+                    <div class="text-xs mb-8 italic">
+                        (From the topic: <a href="/go/{{ link }}" class="text-blue-700 hover:text-blue-900">{{ topic.Name | raw }}</a>)
+                    </div>
                 </div>
-                <pre class="mb-4 whitespace-pre-wrap">This is a test.
-    This is only a test.
-    If this had been an <em>actual</em> emergency, we would all be 
-    dead by now.</pre>
-                <div class="text-xs italic">
-                    (From the topic: <a href="http://necrovenice:8080/venice/go/Piazza!General.1" 
-                                        class="text-blue-700 hover:text-blue-900">It Works Again!</a>)
-                </div>
-            </div>
+            {{ end }}
         </div>
     </div>
 

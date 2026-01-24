@@ -112,6 +112,28 @@ func (c *Conference) Hosts(ctx context.Context) ([]*User, error) {
 	return rc, nil
 }
 
+// ContainedBy returns the communities that contain this conference.
+func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT commid FROM commtoconf WHERE confid = ?", c.ConfId)
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]*Community, 0, 1)
+	for rs.Next() {
+		var cid int32
+		if err = rs.Scan(&cid); err != nil {
+			return nil, err
+		}
+		comm, err := AmGetCommunity(ctx, cid)
+		if err == nil {
+			rc = append(rc, comm)
+		} else {
+			return nil, err
+		}
+	}
+	return rc, nil
+}
+
 // Hosts returns the list of users that host this conference, quietly.
 func (c *Conference) HostsQ(ctx context.Context) []*User {
 	rc, _ := c.Hosts(ctx)
@@ -174,6 +196,25 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 		return nil, fmt.Errorf("conference.Settings(c=%d,u=%d): too many results (%d)", c.ConfId, u.Uid, len(dbdata))
 	}
 	return &(dbdata[0]), nil
+}
+
+// Link returns a link string to this conference.
+func (c *Conference) Link(ctx context.Context, scope string) (string, error) {
+	aliases, err := c.Aliases(ctx)
+	if err != nil {
+		return "", err
+	}
+	if scope == "community" {
+		return fmt.Sprintf("%s.", aliases[0]), nil
+	}
+	if scope == "global" {
+		comms, err := c.ContainedBy(ctx)
+		if err == nil {
+			return fmt.Sprintf("%s!%s", comms[0].Alias, aliases[0]), nil
+		}
+		return "", err
+	}
+	return "", errors.New("invalid scope")
 }
 
 // DefaultPseud returns the default pseud for a user in the conference.

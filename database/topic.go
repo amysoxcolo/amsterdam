@@ -35,6 +35,29 @@ type Topic struct {
 	Name       string    `db:"name"`        // topic name
 }
 
+// Link returns a link string to this topic.
+func (t *Topic) Link(ctx context.Context, scope string) (string, error) {
+	if scope == "conference" {
+		return fmt.Sprintf("%d.", t.Number), nil
+	}
+	if scope == "community" || scope == "global" {
+		conf, err := AmGetConference(ctx, t.ConfId)
+		if err == nil {
+			var plink string
+			plink, err = conf.Link(ctx, scope)
+			if err == nil {
+				if strings.HasSuffix(plink, ".") {
+					return fmt.Sprintf("%s%d", plink, t.Number), nil
+				} else {
+					return fmt.Sprintf("%s.%d", plink, t.Number), nil
+				}
+			}
+		}
+		return "", err
+	}
+	return "", errors.New("invalid scope")
+}
+
 // GetPost returns a post in the topic by number.
 func (t *Topic) GetPost(ctx context.Context, num int32) (*PostHeader, error) {
 	if num > t.TopMessage {

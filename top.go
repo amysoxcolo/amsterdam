@@ -12,9 +12,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"github.com/CloudyKit/jet/v6"
 )
 
 // RenderedSideboxItem is an item for display inside a rendered sidebox.
@@ -164,6 +166,22 @@ func buildRenderedSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in
 	}
 }
 
+// templateGetTopic returns the pointer to the topic.
+func templateGetTopic(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	topic, _ := database.AmGetTopic(ctxt.Ctx(), post.TopicId)
+	return reflect.ValueOf(topic)
+}
+
+// templateTopicLink returns the link string for the given topic.
+func templateTopicLink(args jet.Arguments) reflect.Value {
+	topic := args.Get(0).Convert(reflect.TypeFor[*database.Topic]()).Interface().(*database.Topic)
+	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	link, _ := topic.Link(ctxt.Ctx(), "global")
+	return reflect.ValueOf(link)
+}
+
 /* TopPage renders the "top level" Amsterdam page (the "home page").
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -176,18 +194,30 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	// Set the page title.
 	ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
 
+	// Retrieve the published posts.
+	hdrs, err := database.AmGetPublishedPosts(ctxt.Ctx())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	ctxt.VarMap().Set("posts", hdrs)
+	ctxt.VarMap().SetFunc("post_getText", templatePostText)
+	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
+	ctxt.VarMap().SetFunc("post_topic", templateGetTopic)
+	ctxt.VarMap().SetFunc("post_topicLink", templateTopicLink)
+
 	// Retrieve the sideboxes and create the data to be presented.
 	uid := ctxt.CurrentUserId()
 	sboxes, err := database.AmGetSideboxes(ctxt.Ctx(), uid)
 	if err != nil {
-		return "string", "Unable to retrieve sideboxes", err
+		return ui.ErrorPage(ctxt, err)
 	}
 
 	rc := make([]RenderedSidebox, len(sboxes))
 	for i, sb := range sboxes {
 		err = buildRenderedSidebox(ctxt, uid, &(rc[i]), sb)
 		if err != nil {
-			return "string", "Unable to render sideboxes", err
+			return ui.ErrorPage(ctxt, err)
 		}
 	}
 	ctxt.VarMap().Set("sideboxes", rc)
