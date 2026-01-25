@@ -1,0 +1,48 @@
+TODOs list:
+- Topics list: Set up Conference permalink
+- Send out E-mails to topic subscribers when a post is made
+- Error handling: shift titles and templates for different error codes
+- Find Posts
+- Services mechanism: Conference vtable
+- User creation: copy conference hotlists 
+- Calendar (top menu link)
+- Chat (top menu link)
+- Documentation (top menu link)
+- Sysadmin Menu:
+  - Edit Global Properties
+  - View/Edit IP Address Bans
+  - View/Edit Banned Users
+  - User Account Management
+  - System Audit Logs
+  - Import User Accounts
+- Community Admin Menu:
+  - Set Community Category
+  - Set Community Services
+  - Membership Control
+  - E-Mail to All Members
+  - Display Audit Records
+  - Delete Community
+- Community Profile: Invite
+- Help link atop page headers
+- Policy page
+- Member List: Export
+- HTML reference for post boxes
+- Posts view:
+  - Find
+  - Manage
+  - Stick/Unstick
+  - Freeze/Unfreeze
+  - Archive/Unarchive
+  - Delete
+  - Post Scribble
+  - Post Nuke
+  - Post Filter User
+  - Post Move
+  - Post Publish
+- Manage Communities on sidebox
+- Sidebox configuration
+- Topics view:
+  - Find
+  - Manage
+  - Add to Hotlist/Remove from Hotlist
+
