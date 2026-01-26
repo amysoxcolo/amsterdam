@@ -1,4 +1,5 @@
-TODOs list:
+# TODOs list:
+
 - Topics list: Set up Conference permalink
 - Send out E-mails to topic subscribers when a post is made
 - Error handling: shift titles and templates for different error codes
@@ -39,7 +40,8 @@ TODOs list:
   - Post Filter User
   - Post Move
   - Post Publish
-- Manage Communities on sidebox
+- Manage Communities on communities sidebox
+- Conference Hotlist sidebox
 - Sidebox configuration
 - Topics view:
   - Find
