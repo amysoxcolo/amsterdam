@@ -1,6 +1,6 @@
 # TODOs list:
 
-- Topics list: Set up Conference permalink
+- ~~Topics list: Set up Conference permalink~~
 - Send out E-mails to topic subscribers when a post is made
 - Error handling: shift titles and templates for different error codes
 - Find Posts

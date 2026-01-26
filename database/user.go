@@ -680,7 +680,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	defer func() {
 		AmStoreAudit(ar)
 	}()
-	anon, _ := getAnonUserID(ctx)
+	anon, _ := AmGetAnonUser(ctx)
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -728,7 +728,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 
 	// add user properties
 	props := make([]UserProperties, 0)
-	if err = tx.SelectContext(ctx, &props, "SELECT * FROM propuser WHERE uid = ?", anon); err != nil {
+	if err = tx.SelectContext(ctx, &props, "SELECT * FROM propuser WHERE uid = ?", anon.Uid); err != nil {
 		return nil, err
 	}
 	for _, p := range props {
@@ -739,7 +739,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	}
 
 	// add user sideboxes
-	if err = copySideboxes(ctx, tx, user.Uid, anon); err != nil {
+	if err = copySideboxes(ctx, tx, user.Uid, anon.Uid); err != nil {
 		return nil, err
 	}
 
@@ -756,7 +756,10 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 		return nil, err
 	}
 
-	// TODO: copy conference hotlists
+	// copy conference hotlists
+	if err = AmCopyConferenceHotlist(ctx, anon, user); err != nil {
+		return nil, err
+	}
 
 	// operation was a success - add an audit record
 	ar = AmNewAudit(AuditAccountCreated, user.Uid, remoteIP)

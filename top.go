@@ -22,6 +22,7 @@ import (
 // RenderedSideboxItem is an item for display inside a rendered sidebox.
 type RenderedSideboxItem struct {
 	Text  string
+	Text2 string
 	Link  *string
 	Flags map[string]bool
 }
@@ -95,15 +96,50 @@ func buildCommunitiesSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox,
 
 /* buildFeaturedConferences creates the data for the "Featured Conferences" sidebox.
  * Parameters:
+ *     ctxt - AmContext for the operation.
  *     uid - UID of the user rendering the page.
  *     out - The RenderedSidebox to be built.
  *     in - The sidebox data from the database.
  * Returns:
  *     Standard Go error status.
  */
-func buildFeaturedConferences(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	out.TemplateName = "sb_ftrconf.jet"
-	return nil
+func buildFeaturedConferences(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in *database.Sidebox) error {
+	user, err := database.AmGetUser(ctxt.Ctx(), uid)
+	if err == nil {
+		if user.IsAnon {
+			out.Title = "Featured Conferences"
+		} else {
+			out.Title = "Your Conference Hotlist"
+		}
+		var hl []database.ConferenceHotlist
+		hl, err := database.AmGetConferenceHotlist(ctxt.Ctx(), user)
+		if err == nil {
+			out.Items = make([]RenderedSideboxItem, len(hl))
+			for i, h := range hl {
+				comm, err := h.Community(ctxt.Ctx())
+				if err != nil {
+					break
+				}
+				conf, err := h.Conference(ctxt.Ctx())
+				if err != nil {
+					break
+				}
+				alias, err := conf.Aliases(ctxt.Ctx())
+				if err != nil {
+					break
+				}
+				out.Items[i].Text = conf.Name
+				out.Items[i].Text2 = comm.Name
+				lk := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias[0])
+				out.Items[i].Link = &lk
+				out.Items[i].Flags = make(map[string]bool)
+				// TODO: add "New" indicator
+			}
+			out.Flags = make(map[string]bool)
+			out.TemplateName = "sb_ftrconf.jet"
+		}
+	}
+	return err
 }
 
 /* buildUsersOnline creates the data for the "Users Online" sidebox.
@@ -158,7 +194,7 @@ func buildRenderedSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in
 	case 1:
 		return buildCommunitiesSidebox(ctxt, uid, out, in)
 	case 2:
-		return buildFeaturedConferences(uid, out, in)
+		return buildFeaturedConferences(ctxt, uid, out, in)
 	case 3:
 		return buildUsersOnline(uid, out, in)
 	default:

@@ -119,7 +119,7 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlBack", fmt.Sprintf("/comm/%s/conf", comm.Alias))
 	ctxt.VarMap().Set("urlStem", urlStem)
-	ctxt.VarMap().Set("permalink", "TODO")
+	ctxt.VarMap().Set("permalink", fmt.Sprintf("/go/%s!%s", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("view", view)
 	ctxt.VarMap().Set("sort", sort)
 	ctxt.VarMap().Set("topics", topics)
