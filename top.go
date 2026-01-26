@@ -136,6 +136,7 @@ func buildFeaturedConferences(ctxt ui.AmContext, uid int32, out *RenderedSidebox
 				// TODO: add "New" indicator
 			}
 			out.Flags = make(map[string]bool)
+			out.Flags["canManage"] = !(user.IsAnon)
 			out.TemplateName = "sb_ftrconf.jet"
 		}
 	}

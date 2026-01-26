@@ -880,7 +880,8 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 
 	// validate alias does not already exist
 	row := tx.QueryRowContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
-	err := row.Err()
+	var tmpcid int32
+	err := row.Scan(&tmpcid)
 	if err != sql.ErrNoRows {
 		if err == nil {
 			err = errors.New("a community with that alias already exists")

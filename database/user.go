@@ -698,31 +698,32 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 
 	// Test if the user name is already taken.
 	row := tx.QueryRowContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
-	if row.Err() == nil {
+	var tmpuid int32
+	err := row.Scan(&tmpuid)
+	if err == nil {
 		log.Warnf("username \"%s\" already exists", username)
 		return nil, errors.New("that user name already exists. Please try again")
-	} else if row.Err() != sql.ErrNoRows {
-		return nil, row.Err()
+	} else if err != sql.ErrNoRows {
+		return nil, err
 	}
 
 	// Insert the user record.
-	_, err2 := tx.ExecContext(ctx, `INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
+	_, err = tx.ExecContext(ctx, `INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
 		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
 		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
 		reminder, dob)
-	if err2 != nil {
-		return nil, err2
+	if err != nil {
+		return nil, err
 	}
 	// Read back the user, which also puts it in the cache.
-	user, err3 := AmGetUserByName(ctx, username, tx)
-	if err3 != nil {
-		return nil, err3
+	user, err := AmGetUserByName(ctx, username, tx)
+	if err != nil {
+		return nil, err
 	}
 	log.Debugf("...created new user \"%s\" with UID %d", username, user.Uid)
 
 	// add user preferences
-	_, err := tx.ExecContext(ctx, "INSERT INTO userprefs (uid) VALUES (?)", user.Uid)
-	if err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO userprefs (uid) VALUES (?)", user.Uid); err != nil {
 		return nil, err
 	}
 
@@ -732,8 +733,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 		return nil, err
 	}
 	for _, p := range props {
-		_, err := tx.ExecContext(ctx, "INSERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data)
-		if err != nil {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO propuser (uid, ndx, data) VALUES (?, ?, ?)", user.Uid, p.Index, p.Data); err != nil {
 			return nil, err
 		}
 	}

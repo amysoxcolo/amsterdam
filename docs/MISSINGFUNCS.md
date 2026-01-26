@@ -5,7 +5,7 @@
 - Error handling: shift titles and templates for different error codes
 - Find Posts
 - Services mechanism: Conference vtable
-- User creation: copy conference hotlists 
+- ~~User creation: copy conference hotlists ~~
 - Calendar (top menu link)
 - Chat (top menu link)
 - Documentation (top menu link)
@@ -41,7 +41,9 @@
   - Post Move
   - Post Publish
 - Manage Communities on communities sidebox
-- Conference Hotlist sidebox
+- ~~Conference Hotlist sidebox~~
+- "New" flag on Conference Hotlist sidebox
+- Manage on Conference Hotlist sidebox
 - Sidebox configuration
 - Topics view:
   - Find

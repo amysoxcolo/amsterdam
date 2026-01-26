@@ -146,13 +146,15 @@ func AmSetGlobalProperty(ctx context.Context, index int32, value string) error {
 	_, updateMode := globalProps[index]
 	if !updateMode {
 		row := amdb.QueryRowContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
-		switch row.Err() {
+		var tmpdata string
+		err := row.Scan(&tmpdata)
+		switch err {
 		case nil:
 			updateMode = true
 		case sql.ErrNoRows:
 			updateMode = false
 		default:
-			return row.Err()
+			return err
 		}
 	}
 	var err error = nil

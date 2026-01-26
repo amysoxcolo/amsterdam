@@ -24,11 +24,13 @@ import (
  */
 func AmIsEmailAddressBanned(ctx context.Context, address string) (bool, error) {
 	row := amdb.QueryRowContext(ctx, "SELECT by_uid FROM emailban WHERE address = ?", address)
-	switch row.Err() {
+	var uid int32
+	err := row.Scan(&uid)
+	switch err {
 	case nil:
 		return true, nil
 	case sql.ErrNoRows:
 		return false, nil
 	}
-	return false, row.Err()
+	return false, err
 }

@@ -56,6 +56,9 @@ func lookupCommunityContact(ctx context.Context, id int32) (int32, error) {
 	var rc int32 = -1
 	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
 	err := row.Scan(&rc)
+	if err == sql.ErrNoRows {
+		return -1, nil
+	}
 	return rc, err
 }
 
@@ -64,6 +67,9 @@ func lookupUserContact(ctx context.Context, uid int32) (int32, error) {
 	var rc int32 = -1
 	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
 	err := row.Scan(&rc)
+	if err == sql.ErrNoRows {
+		return -1, nil
+	}
 	return rc, err
 }
 
@@ -143,7 +149,8 @@ func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
 	if !emailChange {
 		// we don't THINK the E-mail address is changing, but we could be wrong...
 		row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
-		err := row.Err()
+		var tmpcid int32
+		err := row.Scan(&tmpcid)
 		if err == sql.ErrNoRows {
 			emailChange = true
 		} else if err != nil {
