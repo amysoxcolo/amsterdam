@@ -22,6 +22,7 @@
                             <a href="{{ item.Link }}" class="text-blue-700 hover:text-blue-900 font-bold">{{ item.Text }}</a>
                             <span class="text-black"> ({{ item.Text2 }})</span>
                         </div>
+                        {{ if item.Flags["new"] }}<span class="ml-1" title="There are new messages in this conference">🔔</span>{{ end }}
                     </div>
                 {{ end }}
             {{ else }}

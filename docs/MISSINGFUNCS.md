@@ -42,7 +42,7 @@
   - Post Publish
 - Manage Communities on communities sidebox
 - ~~Conference Hotlist sidebox~~
-- "New" flag on Conference Hotlist sidebox
+- ~~"New" flag on Conference Hotlist sidebox~~
 - Manage on Conference Hotlist sidebox
 - Sidebox configuration
 - Topics view:

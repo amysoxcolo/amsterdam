@@ -302,6 +302,16 @@ func (c *Conference) TouchPost(ctx context.Context, tx *sqlx.Tx, u *User, lastPo
 	return cs, nil
 }
 
+// UnreadMessages returns the total number of unread messages in a conference for a user.
+func (c *Conference) UnreadMessages(ctx context.Context, u *User) (int32, error) {
+	row := amdb.QueryRowContext(ctx, `SELECT SUM(t.top_message - IFNULL(s.last_message,-1))
+		FROM topics t LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ?
+		WHERE t.confid = ? AND t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)`, u.Uid, c.ConfId)
+	var rc int32
+	err := row.Scan(&rc)
+	return rc, err
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.

@@ -133,13 +133,20 @@ func buildFeaturedConferences(ctxt ui.AmContext, uid int32, out *RenderedSidebox
 				lk := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias[0])
 				out.Items[i].Link = &lk
 				out.Items[i].Flags = make(map[string]bool)
-				// TODO: add "New" indicator
+				out.Items[i].Flags["new"] = false
+				if !user.IsAnon {
+					nnew, err := conf.UnreadMessages(ctxt.Ctx(), user)
+					if err == nil {
+						out.Items[i].Flags["new"] = (nnew > 0)
+					}
+				}
 			}
 			out.Flags = make(map[string]bool)
 			out.Flags["canManage"] = !(user.IsAnon)
 			out.TemplateName = "sb_ftrconf.jet"
 		}
 	}
+	_ = in
 	return err
 }
 
