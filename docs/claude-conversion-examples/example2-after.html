@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topics in General Discussion - Venice Test</title>
+    <link rel="icon" href="http://necrovenice:8080/venice/images/venice-icon.png" type="image/png">
+    <link rel="shortcut icon" href="http://necrovenice:8080/venice/images/venice-favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-blue-400 font-sans">
+    <!-- PAGE HEADER -->
+    <div class="bg-blue-600 w-full">
+        <div class="flex items-center justify-between px-2 py-2">
+            <!-- Site Logo -->
+            <div class="w-1/5">
+                <a href="http://venice.sourceforge.net/">
+                    <img src="./Topics in General Discussion - Venice Test_files/powered-by-venice.gif" 
+                         alt="Venice Test" 
+                         class="w-35 h-20 mx-2 my-2">
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="w-2/5 text-center">
+                <div class="text-white font-bold text-base mb-2">
+                    <a href="http://necrovenice:8080/venice/top.js.vs" class="text-yellow-300 hover:text-yellow-400">
+                        Front Page
+                    </a>
+                </div>
+                <div class="text-white font-bold text-base">
+                    <a href="http://necrovenice:8080/TODO" class="text-yellow-300 hover:text-yellow-400">Help</a>
+                    <span class="mx-2">|</span>
+                    <a href="http://necrovenice:8080/venice/find.js.vs" class="text-yellow-300 hover:text-yellow-400">Find</a>
+                </div>
+            </div>
+
+            <!-- Banner Ad -->
+            <div class="w-2/5 flex justify-end">
+                <img src="./Topics in General Discussion - Venice Test_files/deadpoets.gif" 
+                     alt="" 
+                     class="w-96 h-15 mx-2 my-2">
+            </div>
+        </div>
+
+        <!-- User Status Section -->
+        <div class="bg-blue-600 text-center py-2">
+            <span class="text-white text-base">
+                You are logged in as <strong>Administrator</strong>
+                <span class="mx-2">-</span>
+                <a href="http://necrovenice:8080/venice/logout.js.vs?tgt=conf%2Ftopics.js.vs%3Fcc%3D2%26conf%3D2" 
+                   class="text-yellow-300 hover:text-yellow-400">Log Out</a>
+                <span class="mx-2">|</span>
+                <a href="http://necrovenice:8080/venice/profile.js.vs?tgt=conf%2Ftopics.js.vs%3Fcc%3D2%26conf%3D2" 
+                   class="text-yellow-300 hover:text-yellow-400">Profile</a>
+            </span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex">
+        <!-- LEFT SIDEBAR -->
+        <div class="w-32 bg-blue-400 p-2">
+            <!-- Community Section -->
+            <div class="mb-4">
+                <div class="text-black text-sm">
+                    <div class="mb-2">
+                        <img src="./Topics in General Discussion - Venice Test_files/sig_other.jpg" 
+                             alt="La Piazza" 
+                             class="w-28 h-16 rounded">
+                    </div>
+                    <div class="font-bold mb-2">La Piazza</div>
+                    <div class="space-y-1">
+                        <a href="http://necrovenice:8080/venice/conf/conferences.js.vs?cc=2" 
+                           class="block text-blue-700 hover:text-blue-900 text-xs">Conferences</a>
+                        <a href="http://necrovenice:8080/venice/comm/members.js.vs?cc=2" 
+                           class="block text-blue-700 hover:text-blue-900 text-xs">Members</a>
+                        <a href="http://necrovenice:8080/venice/comm/show.js.vs?cc=2" 
+                           class="block text-blue-700 hover:text-blue-900 text-xs">Profile</a>
+                        <a href="http://necrovenice:8080/venice/comm/admin_menu.js.vs?cc=2" 
+                           class="block text-blue-700 hover:text-blue-900 text-xs">Administration</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About This Site Section -->
+            <div class="mt-4">
+                <div class="text-black text-sm">
+                    <div class="font-bold mb-1">About This Site</div>
+                    <div class="text-gray-500 mb-1 text-xs">Documentation</div>
+                    <a href="http://necrovenice:8080/venice/frame/about-venice.html" 
+                       class="text-blue-700 hover:text-blue-900 text-xs">About Venice</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1 bg-white p-4">
+            <!-- Page Title -->
+            <div class="mb-6">
+                <h1 class="text-blue-800 text-4xl font-bold mb-2">Topics in General Discussion</h1>
+                <hr class="border-2 border-gray-400 w-4/5 mb-6">
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="max-w-6xl mb-6">
+                <div class="flex gap-2 flex-wrap mb-4">
+                    <a href="http://necrovenice:8080/venice/conf/conferences.js.vs?cc=2&conf=2"
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        Conference List
+                    </a>
+                    <a href="http://necrovenice:8080/venice/conf/new_topic.js.vs?cc=2&conf=2"
+                       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        Add Topic
+                    </a>
+                    <a href="http://necrovenice:8080/venice/conf/find.js.vs?cc=2&conf=2"
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        Find
+                    </a>
+                    <a href="http://necrovenice:8080/venice/conf/manage_conf.js.vs?cc=2&conf=2"
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+                        Manage
+                    </a>
+                </div>
+                <div class="text-xs text-gray-600">
+                    <a href="http://necrovenice:8080/venice/go/Piazza!General" 
+                       class="text-blue-700 hover:text-blue-900">
+                        [Permalink to this conference]
+                    </a>
+                </div>
+            </div>
+
+            <!-- Topics Table -->
+            <div class="max-w-6xl">
+                <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 border-b border-gray-300">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&sort=-1" 
+                                       class="text-blue-700 hover:text-blue-900">#</a>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&sort=2" 
+                                       class="text-blue-700 hover:text-blue-900">Topic Name</a>
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&sort=3" 
+                                       class="text-blue-700 hover:text-blue-900">New</a>
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&sort=4" 
+                                       class="text-blue-700 hover:text-blue-900">Total</a>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                    <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&sort=5" 
+                                       class="text-blue-700 hover:text-blue-900">Last Response</a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <!-- Topic 1 -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=1&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900 font-medium">1</a>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=1&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900 font-medium">It Works Again!</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=1&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900">0</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=1&p1=0&p2=-1" 
+                                       class="text-blue-700 hover:text-blue-900">2</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=1&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900">Sep 8, 2025 11:18:04 AM</a>
+                                </td>
+                            </tr>
+
+                            <!-- Topic 2 -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=2&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900 font-medium">2</a>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=2&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900 font-medium">Planes, Trains, and Automobiles</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=2&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900">0</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=2&p1=0&p2=-1" 
+                                       class="text-blue-700 hover:text-blue-900">1</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=2&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900">Oct 27, 2025 9:13:14 PM</a>
+                                </td>
+                            </tr>
+
+                            <!-- Topic 3 -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=3&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900 font-medium">3</a>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=3&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900 font-medium">Love is a many splendored thing</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=3&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900">0</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=3&p1=0&p2=-1" 
+                                       class="text-blue-700 hover:text-blue-900">2</a>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <a href="http://necrovenice:8080/venice/conf/posts.js.vs?cc=2&conf=2&top=3&rnm=1" 
+                                       class="text-blue-700 hover:text-blue-900">Oct 27, 2025 9:14:32 PM</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- View Filter -->
+                <div class="mt-6 text-center">
+                    <div class="inline-flex items-center gap-2 text-sm">
+                        <span class="font-bold">[</span>
+                        <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&view=1" 
+                           class="text-blue-700 hover:text-blue-900">New</a>
+                        <span class="font-bold">|</span>
+                        <span class="font-bold">Active</span>
+                        <span class="font-bold">|</span>
+                        <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&view=3" 
+                           class="text-blue-700 hover:text-blue-900">All</a>
+                        <span class="font-bold">|</span>
+                        <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&view=4" 
+                           class="text-blue-700 hover:text-blue-900">Hidden</a>
+                        <span class="font-bold">|</span>
+                        <a href="http://necrovenice:8080/venice/conf/topics.js.vs?cc=2&conf=2&view=5" 
+                           class="text-blue-700 hover:text-blue-900">Archived</a>
+                        <span class="font-bold">]</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="flex">
+        <div class="w-32 bg-blue-400">&nbsp;</div>
+        <div class="flex-1 bg-white p-4">
+            <hr class="border-gray-400 w-4/5 mx-auto mb-4">
+            <div class="flex justify-center items-start gap-6">
+                <div class="text-right text-xs text-black leading-relaxed">
+                    All trademarks and copyrights on this page are owned by their respective companies.<br>
+                    All messages posted by users on this page are owned by those users.<br>
+                    The rest: Copyright © 2001-2006 
+                    <a href="http://www.silverwrist.com/" class="text-blue-700 hover:text-blue-900">Silverwrist Design Studios</a>,
+                    All Rights Reserved.<br>
+                    See our <a href="http://necrovenice:8080/TODO" class="text-blue-700 hover:text-blue-900">Policy Page</a> 
+                    for our copyright and privacy policies.
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="http://venice.users.sf.net/" target="_blank">
+                        <img src="./Topics in General Discussion - Venice Test_files/powered-by-venice.gif" 
+                             alt="Powered By Venice" 
+                             class="w-32 h-26">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
