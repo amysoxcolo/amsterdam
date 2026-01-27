@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -82,6 +83,9 @@ func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
 	row := amdb.QueryRowContext(ctx, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	var rc int32 = -1
 	err := row.Scan(&rc)
+	if err == sql.ErrNoRows {
+		return -1, nil
+	}
 	return rc, err
 }
 
