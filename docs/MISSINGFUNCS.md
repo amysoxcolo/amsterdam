@@ -1,14 +1,16 @@
 # TODOs list:
 
+_(italicized items can be deferred)_
+
 - ~~Topics list: Set up Conference permalink~~
 - Send out E-mails to topic subscribers when a post is made
-- Error handling: shift titles and templates for different error codes
+- _Error handling: shift titles and templates for different error codes_
 - Find Posts
 - Services mechanism: Conference vtable
 - ~~User creation: copy conference hotlists ~~
-- Calendar (top menu link)
-- Chat (top menu link)
-- Documentation (top menu link)
+- _Calendar (top menu link)_
+- _Chat (top menu link)_
+- _Documentation (top menu link)_
 - Sysadmin Menu:
   - Edit Global Properties
   - View/Edit IP Address Bans
@@ -24,8 +26,8 @@
   - Display Audit Records
   - Delete Community
 - Community Profile: Invite
-- Help link atop page headers
-- Policy page
+- _Help link atop page headers_
+- _Policy page_
 - Member List: Export
 - HTML reference for post boxes
 - Posts view:
@@ -49,4 +51,3 @@
   - Find
   - Manage
   - ~~Add to Hotlist/Remove from Hotlist~~
-
