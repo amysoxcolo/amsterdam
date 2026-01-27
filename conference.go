@@ -98,6 +98,11 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 
+	hotlistTest, err := database.AmIsInHotlist(ctxt.Ctx(), ctxt.CurrentUser(), comm.Id, conf.ConfId)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
 	traverser := ui.NewTopicTraverser(topics)
 	ctxt.SetSession("topic.traverser", traverser)
 
@@ -116,6 +121,7 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	ctxt.VarMap().Set("canCreate", conf.TestPermission("Conference.Create", myLevel))
+	ctxt.VarMap().Set("showHotlist", !hotlistTest)
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlBack", fmt.Sprintf("/comm/%s/conf", comm.Alias))
 	ctxt.VarMap().Set("urlStem", urlStem)

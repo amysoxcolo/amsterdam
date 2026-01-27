@@ -476,3 +476,69 @@ func QuickEMail(ctxt ui.AmContext) (string, any, error) {
 	msg.Send()
 	return "redirect", "/user/" + user.Username, nil
 }
+
+/* Hotlist displays and edits the user's conference hotlist.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func Hotlist(ctxt ui.AmContext) (string, any, error) {
+	me := ctxt.CurrentUser()
+	if me.IsAnon {
+		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+	}
+	hotlist, err := database.AmGetConferenceHotlist(ctxt.Ctx(), me)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	if ctxt.HasParameter("m") {
+		index := ctxt.QueryParamInt("m", -1)
+		dir := ctxt.QueryParamInt("n", 0)
+		if index >= 0 && (index+dir) != index {
+			err := database.AmReorderHotlist(ctxt.Ctx(), me, hotlist[index].Sequence, hotlist[index+dir].Sequence)
+			if err != nil {
+				return ui.ErrorPage(ctxt, err)
+			}
+			tmp := hotlist[index].CommId
+			hotlist[index].CommId = hotlist[index+dir].CommId
+			hotlist[index+dir].CommId = tmp
+			tmp = hotlist[index].ConfId
+			hotlist[index].ConfId = hotlist[index+dir].ConfId
+			hotlist[index+dir].ConfId = tmp
+		}
+	} else if ctxt.HasParameter("d") {
+		index := ctxt.QueryParamInt("d", -1)
+		if index >= 0 {
+			err := database.AmRemoveEntryFromHotlist(ctxt.Ctx(), me, hotlist[index].Sequence)
+			if err != nil {
+				return ui.ErrorPage(ctxt, err)
+			}
+			hotlist = append(hotlist[:index], hotlist[index+1:]...)
+		}
+	}
+
+	communities := make([]string, len(hotlist))
+	conferences := make([]string, len(hotlist))
+	for i := range hotlist {
+		comm, err := hotlist[i].Community(ctxt.Ctx())
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		communities[i] = comm.Name
+		conf, err := hotlist[i].Conference(ctxt.Ctx())
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		conferences[i] = conf.Name
+	}
+
+	ctxt.VarMap().Set("hotlist", hotlist)
+	ctxt.VarMap().Set("communities", communities)
+	ctxt.VarMap().Set("conferences", conferences)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Your Conference Hotlist")
+	return "framed_template", "hotlist.jet", nil
+}

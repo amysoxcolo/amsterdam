@@ -32,7 +32,7 @@
         {{ if sb.Flags["canManage"] }}
             <div class="mt-3 text-center">
                 <span class="text-black text-xs font-bold">
-                    [ <a href="/TODO/manage_hotlist" class="text-blue-700 hover:text-blue-900">Manage</a> ]
+                    [ <a href="/hotlist" class="text-blue-700 hover:text-blue-900">Manage</a> ]
                 </span>
             </div>
         {{ end }}

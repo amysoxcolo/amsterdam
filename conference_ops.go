@@ -122,7 +122,25 @@ func AttachmentSend(ctxt ui.AmContext) (string, any, error) {
 	return "bytes", data, nil
 }
 
-/* HideTopic hides or shows rthe current topic for the current user.
+/* AddToHotlist adds the current community and conference to the user's hotlist..
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func AddToHotlist(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	err := database.AmAppendToHotlist(ctxt.Ctx(), ctxt.CurrentUser(), comm.Id, conf.ConfId)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+}
+
+/* HideTopic hides or shows the current topic for the current user.
  * Parameters:
  *     ctxt - The AmContext for the request.
  * Returns:

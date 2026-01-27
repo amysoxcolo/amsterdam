@@ -1,0 +1,74 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">Your Conference Hotlist</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Hotlist Table -->
+    <div class="max-w-4xl mb-8">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-full">
+                <tbody class="divide-y divide-gray-200">
+                    {{ range i, hl := hotlist }}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                {{ if i < (len(hotlist) - 1) }}
+                                    <a href="/hotlist?m={{ i }}&n=1" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                        title="Move Down">⬇️</a>
+                                {{ else }}
+                                    <span class="text-2xl text-gray-300">&nbsp;</span>
+                                {{ end }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                {{ if i > 0 }}
+                                    <a href="/hotlist?m={{ i }}&n=-1" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                        title="Move Up">⬆️</a>
+                                {{ else }}
+                                    <span class="text-2xl text-gray-300">&nbsp;</span>
+                                {{ end }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                <a href="/hotlist?d={{ i }}" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                    title="Remove">❌</a>
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <div class="font-bold text-black">{{ conferences[i] }}</div>
+                                <div class="text-gray-600">({{ communities[i] }})</div>
+                            </td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="max-w-4xl">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h2 class="text-blue-800 font-bold text-lg mb-3">How to update the hotlist:</h2>
+            <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⬇️</span>
+                    <span class="text-gray-700">Click this symbol to move the specified conference down in your hotlist.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⬆️</span>
+                    <span class="text-gray-700">Click this symbol to move the specified conference up in your hotlist.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">❌</span>
+                    <span class="text-gray-700">Click this symbol to remove the specified conference from your hotlist.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

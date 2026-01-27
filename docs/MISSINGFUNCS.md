@@ -43,10 +43,10 @@
 - Manage Communities on communities sidebox
 - ~~Conference Hotlist sidebox~~
 - ~~"New" flag on Conference Hotlist sidebox~~
-- Manage on Conference Hotlist sidebox
+- ~~Manage on Conference Hotlist sidebox~~
 - Sidebox configuration
 - Topics view:
   - Find
   - Manage
-  - Add to Hotlist/Remove from Hotlist
+  - ~~Add to Hotlist/Remove from Hotlist~~
 

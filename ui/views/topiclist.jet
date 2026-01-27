@@ -40,8 +40,8 @@
                 class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                 Manage
             </a>
-            {{ if false }}{* TODO *}
-                <a href="/TODO{{ urlStem }}/hotlist"
+            {{ if showHotlist }}
+                <a href="{{ urlStem }}/hotlist"
                     class="bg-orange-600 hover:bg-orange-700 text-black px-4 py-2 rounded text-sm font-medium transition-colors">
                     Add to Hotlist
                 </a>

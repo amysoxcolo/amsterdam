@@ -9,7 +9,11 @@
 // The database package contains database management and storage logic.
 package database
 
-import "context"
+import (
+	"context"
+	"database/sql"
+	"errors"
+)
 
 // ConferenceHotlist represents a user's conference hotlist.
 type ConferenceHotlist struct {
@@ -18,6 +22,8 @@ type ConferenceHotlist struct {
 	CommId   int32 `db:"commid"`
 	ConfId   int32 `db:"confid"`
 }
+
+const HOTLIST_SEQUENCE_SPACING = 100
 
 // Community gets the community pointer from the hotlist.
 func (h *ConferenceHotlist) Community(ctx context.Context) (*Community, error) {
@@ -61,4 +67,106 @@ func AmCopyConferenceHotlist(ctx context.Context, from, to *User) error {
 	}
 	success = true
 	return nil
+}
+
+// AmReorderHotlist exchanges the position of two items on the user's hotlist.
+func AmReorderHotlist(ctx context.Context, u *User, seq1, seq2 int16) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	_, err := tx.ExecContext(ctx, "UPDATE confhotlist SET sequence = -1 WHERE uid = ? AND sequence = ?", u.Uid, seq1)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "UPDATE confhotlist SET sequence = ? WHERE uid = ? AND sequence = ?", seq1, u.Uid, seq2)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "UPDATE confhotlist SET sequence = ? WHERE uid = ? AND sequence = -1", seq2, u.Uid)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+// AmRemoveEntryFromHotlist removes an entry from the user's hotlist.
+func AmRemoveEntryFromHotlist(ctx context.Context, u *User, seq int16) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	_, err := tx.ExecContext(ctx, "DELETE FROM confhotlist WHERE uid = ? AND sequence = ?", u.Uid, seq)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "UPDATE confhotlist SET sequence = sequence - ? WHERE uid = ? AND sequence > ?", HOTLIST_SEQUENCE_SPACING, u.Uid, seq)
+	}
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+// AmAppendToHotlist adds a community/conference ID to the end of the user's hotlist.
+func AmAppendToHotlist(ctx context.Context, u *User, commid, confid int32) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	var newseq int16
+	row := tx.QueryRowContext(ctx, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
+	err := row.Scan(&newseq)
+	if err == nil {
+		return errors.New("community/conference already exist in hotlist")
+	} else if err != sql.ErrNoRows {
+		return err
+	}
+	row = tx.QueryRowContext(ctx, "SELECT MAX(sequence) FROM confhotlist WHERE uid = ?", u.Uid)
+	err = row.Scan(&newseq)
+	if err == sql.ErrNoRows {
+		newseq = 0
+	} else if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx, "INSERT INTO confhotlist (uid, sequence, commid, confid) VALUES (?, ?, ?, ?)",
+		u.Uid, newseq+HOTLIST_SEQUENCE_SPACING, commid, confid)
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+// AmIsInHotlist returns true if the community/conference pair is in the hotlist.
+func AmIsInHotlist(ctx context.Context, u *User, commid, confid int32) (bool, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
+	var tmp int16
+	err := row.Scan(&tmp)
+	switch err {
+	case nil:
+		return true, nil
+	case sql.ErrNoRows:
+		return false, nil
+	}
+	return false, err
 }

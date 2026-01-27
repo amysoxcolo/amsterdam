@@ -383,7 +383,7 @@ func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias str
 	err := row.Scan(&confid)
 	switch err {
 	case nil:
-		AmGetConference(ctx, confid)
+		return AmGetConference(ctx, confid)
 	case sql.ErrNoRows:
 		return nil, errors.New("conference not found")
 	}
