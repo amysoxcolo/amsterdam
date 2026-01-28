@@ -1,0 +1,33 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+messagedefs:
+  - id: "nuke"
+    title: "Nuke Message"
+    tone: "red"
+    destructive: true
+    message: "You are about to nuke a message!"
+    warningIcon: "💣"
+    warningLines:
+      - text: "Warning: This action cannot be undone!"
+        bold: true
+      - text: "Nuking this message will permanently delete it from the system."
+        bold: false
+    buttons:
+      - id: "yes"
+        link: "placeholder"
+        confirm: true
+        tone: "red"
+        icon: "✓"
+        text: "Yes, Nuke It"
+      - id: "no"
+        link: "placeholder"
+        confirm: false
+        tone: "green"
+        icon: "✗"
+        text: "No, Cancel"
