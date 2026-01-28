@@ -40,7 +40,7 @@ _(italicized items can be deferred)_
   - Freeze/Unfreeze
   - Archive/Unarchive
   - Delete
-  - Post Scribble
+  - ~~Post Scribble~~
   - Post Nuke
   - Post Filter User
   - Post Move

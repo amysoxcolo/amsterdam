@@ -115,6 +115,8 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		if firstTopic >= 1 {
 			ctxt.VarMap().Set("urlReadNew", fmt.Sprintf("%s/r/%d", urlStem, firstTopic))
 		}
+	} else {
+		ctxt.SetSession("topic.traverser", nil)
 	}
 
 	tz := prefs.Location()

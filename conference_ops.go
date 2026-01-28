@@ -239,6 +239,43 @@ func HideMessage(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
 }
 
+/* ScribbleMessage scribbles a topic message.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ScribbleMessage(ctxt ui.AmContext) (string, any, error) {
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	} else if len(hdrs) != 1 {
+		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+	}
+	if (hdrs[0].CreatorUid != ctxt.CurrentUserId()) && !conf.TestPermission("Conference.Nuke", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	err = hdrs[0].Scribble(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+}
+
 /* TopicManage displays the "manage topic" page.
  * Parameters:
  *     ctxt - The AmContext for the request.

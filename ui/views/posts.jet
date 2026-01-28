@@ -126,7 +126,7 @@
                                 </a>
                             {{ end }}
                             {{ if canScribble }}
-                                <a href="/TODO" 
+                                <a href="{{ topicListLink }}/op/{{ topicNum }}/scribble/{{ p.Num }}" 
                                     class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Scribble</a>
                             {{ end }}
                             {{ if false }}{* TODO *}

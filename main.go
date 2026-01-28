@@ -108,6 +108,7 @@ func setupEcho() *echo.Echo {
 	opsGroup := confGroup.Group("/op/:topic", ui.SetTopic)
 	opsGroup.GET("/hide", ui.AmWrap(HideTopic))
 	opsGroup.GET("/hide/:msg", ui.AmWrap(HideMessage))
+	opsGroup.GET("/scribble/:msg", ui.AmWrap(ScribbleMessage))
 	opsGroup.GET("/manage", ui.AmWrap(TopicManage))
 
 	return e
