@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -89,6 +89,30 @@ func (mdef *MenuDefinition) FilterCommunity(comm *database.Community) *MenuDefin
 	for i, it := range mdef.Items {
 		newmd.Items[i].Text = it.Text
 		newmd.Items[i].Link = strings.ReplaceAll(it.Link, "[CID]", comm.Alias)
+		newmd.Items[i].Disabled = it.Disabled
+		newmd.Items[i].Hazard = it.Hazard
+		newmd.Items[i].Permission = it.Permission
+		newmd.Items[i].Ifdef = it.Ifdef
+		newmd.Items[i].P = &newmd
+	}
+	return &newmd
+}
+
+// FilterConference creates a copy of this menu filtered to the specified community and conference.
+func (mdef *MenuDefinition) FilterConference(comm *database.Community, confAlias string) *MenuDefinition {
+	newmd := MenuDefinition{
+		ID:       mdef.ID,
+		Title:    mdef.Title,
+		Subtitle: strings.ReplaceAll(mdef.Subtitle, "[CNAME]", comm.Name),
+		PermSet:  mdef.PermSet,
+		Warning:  mdef.Warning,
+		Items:    make([]MenuItem, len(mdef.Items)),
+		Tag:      mdef.Tag,
+	}
+	for i, it := range mdef.Items {
+		newmd.Items[i].Text = it.Text
+		s1 := strings.ReplaceAll(it.Link, "[CID]", comm.Alias)
+		newmd.Items[i].Link = strings.ReplaceAll(s1, "[CONFID]", confAlias)
 		newmd.Items[i].Disabled = it.Disabled
 		newmd.Items[i].Hazard = it.Hazard
 		newmd.Items[i].Permission = it.Permission

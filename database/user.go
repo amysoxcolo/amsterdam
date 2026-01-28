@@ -564,8 +564,14 @@ func AmAuthenticateUser(ctx context.Context, name string, password string, remot
 		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out")
 		return nil, errors.New("this account has been administratively locked; please contact the system administrator for assistance")
 	}
-	h := hashPassword(password)
-	if h != user.Passhash {
+	passok := false
+	if user.Passhash == "" {
+		passok = (password == "")
+	} else {
+		h := hashPassword(password)
+		passok = strings.EqualFold(h, user.Passhash)
+	}
+	if !passok {
 		log.Warn("...invalid password")
 		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Bad password")
 		return nil, errors.New("the password you have specified is incorrect; please try again")

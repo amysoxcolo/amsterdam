@@ -1,6 +1,6 @@
 #
 # Amsterdam Web Communities System
-# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
 # 
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -83,4 +83,30 @@ menudefs:
       - text: "Delete Community"
         link: "/TODO/comm/[CID]/admin/delete"
         permission: "Community.Delete"
+        hazard: true
+  - id: "confhost"
+    title: "Host Tools"
+    permset: "conference"
+    warning: >
+      <strong>Note:</strong> These tools provide access to sensitive administrative features for the
+      conference. Use with care and review all changes before applying them to the conference.
+    items:
+      - text: "Change Conference Information"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/info"
+      - text: "Manage Conference Aliases"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/aliases"
+      - text: "Manage Conference Members"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/members"
+      - text: "Customize Conference Appearance"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/custom"
+      - text: "Conference Activity Reports"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/activity"
+      - text: "Conference E-Mail"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/email"
+      - text: "Export Messages"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/export"
+      - text: "Import Messages"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/import"
+      - text: "Delete Conference"
+        link: "/TODO/comm/[CID]/conf/[CONFID]/delete"
         hazard: true

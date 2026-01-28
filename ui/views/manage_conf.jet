@@ -1,0 +1,91 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Top Title -->
+    <div class="mb-2">
+        <h1 class="text-blue-800 text-4xl font-bold inline">Manage Conference:</h1>
+        <span class="text-blue-800 text-xl font-bold ml-2">{{ confName }}</span>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ urlStem }}">Return to Topic List</a>
+    </div>
+
+    <!-- Pseud setter -->
+    <div class="flex justify-between items-center mb-4">
+        <form method="POST" action="/TODO/{{ urlStem }}/pseud" class="flex items-center gap-2">
+            <label for="pseud" 
+                    class="w-64 text-right pr-4 text-black text-sm">Set default pseud for conference:</label>
+            <input type="text" name="pseud" value="{{ pseud }}" size="37" maxlength="255"
+                    class="px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="submit" name="set" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Set</button>
+        </form>
+    </div>
+
+    <!-- Fixseen link -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="/TODO/{{ urlStem }}/fixseen">Mark entire conference as read (fixseen)</a>
+    </div>
+
+    {{ if canInvite }}
+        <!-- Invite header -->
+        <div class="mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold inline">Send Invitation</h1>
+            <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+        </div>
+
+        <!-- Invite text and link -->
+        <div class="mb-4 text-black text-sm">
+            You may send an invitation via E-mail to outside individuals to join this community and read this conference.
+        </div>
+        <div class="mb-4">
+            <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="/TODO/{{ urlStem }}/invite">Click here to send an invitation</a>
+        </div>
+    {{ end }}
+
+    {{ if isset(menu) }}
+        <!-- Host Tools menu header -->
+        <div class="mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold inline">{{ menu.Title }}</h1>
+            <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+        </div>
+
+        <!-- Host Tools menu -->
+        <div class="max-w-2xl">
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <nav class="space-y-3">
+                    {{ range i, it := menu.Items }}
+                        {{ if it.Show(.) }}
+                            <div class="flex items-start gap-3">
+                                <span class="text-lg pt-0.5">🟣</span>
+                                {{ if it.Disabled }}
+                                    <span class="text-gray-500 font-medium">{{ it.Text }}</span>
+                                {{ else }}
+                                    {{ if it.Hazard }}
+                                        <a href="{{ it.Link }}" class="text-red-700 hover:text-red-900 font-medium">⚠️ {{ it.Text }}</a>
+                                    {{ else }}
+                                        <a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900 font-medium">{{ it.Text }}</a>
+                                    {{ end }}
+                                {{ end }}
+                            </div>
+                        {{ end }}
+                    {{ end }}
+                </nav>
+            </div>
+            {{ if menu.Warning != "" }}
+                <div class="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+                    <p class="text-sm text-gray-700">{{ menu.Warning | raw }}</p>
+                </div>
+            {{ end }}
+        </div>
+    {{ end }}
+
+</div>

@@ -49,5 +49,17 @@ _(italicized items can be deferred)_
 - Sidebox configuration
 - Topics view:
   - Find
-  - Manage
+  - Manage:
+    - Set pseud
+    - Fixseen
+    - Send invite
+    - Change information
+    - Manage aliases
+    - Manage members
+    - Custom appearance
+    - Activity reports
+    - E-mail
+    - Export Messages
+    - Import Messages
+    - Delete Conference
   - ~~Add to Hotlist/Remove from Hotlist~~

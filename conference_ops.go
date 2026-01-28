@@ -122,6 +122,47 @@ func AttachmentSend(ctxt ui.AmContext) (string, any, error) {
 	return "bytes", data, nil
 }
 
+/* ConfManage displays the "manage conference" page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ConfManage(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("urlStem", urlStem)
+
+	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	ctxt.VarMap().Set("pseud", pseud)
+
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.VarMap().Set("canInvite", false)
+	} else {
+		member, _, _, err := comm.Membership(ctxt.Ctx(), ctxt.CurrentUser())
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		ctxt.VarMap().Set("canInvite", member)
+	}
+
+	if conf.TestPermission("Conference.Change", myLevel) || conf.TestPermission("Conference.Delete", myLevel) {
+		menu := ui.AmMenu("confhost").FilterConference(comm, ctxt.GetScratch("currentAlias").(string))
+		ctxt.VarMap().Set("menu", menu)
+	}
+
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Conference: "+conf.Name)
+	return "framed_template", "manage_conf.jet", nil
+}
+
 /* AddToHotlist adds the current community and conference to the user's hotlist..
  * Parameters:
  *     ctxt - The AmContext for the request.
