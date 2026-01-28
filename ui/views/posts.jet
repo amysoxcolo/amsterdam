@@ -36,8 +36,10 @@
                 {{ end }}
                 <a href="/TODO" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Find</a>
-                <a href="/TODO" 
-                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Manage</a>
+                {{ if !isAnon }}
+                    <a href="{{ topicListLink }}/op/{{ topicNum }}/manage" 
+                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Manage</a>
+                {{ end }}
             </div>
             <div class="flex gap-2 flex-wrap">
                 {{ if canStick }}

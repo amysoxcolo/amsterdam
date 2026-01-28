@@ -32,7 +32,10 @@ _(italicized items can be deferred)_
 - HTML reference for post boxes
 - Posts view:
   - Find
-  - Manage
+  - Manage:
+    - Subscribe to Topic
+    - Send invite
+    - Filtered Users (list/remove)
   - Stick/Unstick
   - Freeze/Unfreeze
   - Archive/Unarchive

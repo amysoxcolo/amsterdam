@@ -98,13 +98,24 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 
-	hotlistTest, err := database.AmIsInHotlist(ctxt.Ctx(), ctxt.CurrentUser(), comm.Id, conf.ConfId)
-	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+	var hotlistTest bool = false
+	if !ctxt.CurrentUser().IsAnon {
+		hotlistTest, err = database.AmIsInHotlist(ctxt.Ctx(), ctxt.CurrentUser(), comm.Id, conf.ConfId)
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
 	}
 
-	traverser := ui.NewTopicTraverser(topics)
-	ctxt.SetSession("topic.traverser", traverser)
+	// create the "read new" URL
+	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+	if !ctxt.CurrentUser().IsAnon {
+		traverser := ui.NewTopicTraverser(topics)
+		ctxt.SetSession("topic.traverser", traverser)
+		firstTopic := traverser.FirstTopic()
+		if firstTopic >= 1 {
+			ctxt.VarMap().Set("urlReadNew", fmt.Sprintf("%s/r/%d", urlStem, firstTopic))
+		}
+	}
 
 	tz := prefs.Location()
 	loc := prefs.Localizer()
@@ -113,15 +124,9 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 		fdate[i] = loc.Strftime("%x %X", t.LastUpdate.In(tz))
 	}
 
-	// create the "read new" URL
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
-	firstTopic := traverser.FirstTopic()
-	if firstTopic >= 1 {
-		ctxt.VarMap().Set("urlReadNew", fmt.Sprintf("%s/r/%d", urlStem, firstTopic))
-	}
-
-	ctxt.VarMap().Set("canCreate", conf.TestPermission("Conference.Create", myLevel))
-	ctxt.VarMap().Set("showHotlist", !hotlistTest)
+	ctxt.VarMap().Set("isAnon", ctxt.CurrentUser().IsAnon)
+	ctxt.VarMap().Set("canCreate", !ctxt.CurrentUser().IsAnon && conf.TestPermission("Conference.Create", myLevel))
+	ctxt.VarMap().Set("showHotlist", !ctxt.CurrentUser().IsAnon && !hotlistTest)
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlBack", fmt.Sprintf("/comm/%s/conf", comm.Alias))
 	ctxt.VarMap().Set("urlStem", urlStem)
@@ -572,6 +577,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	// Render the output.
+	ctxt.VarMap().Set("isAnon", ctxt.CurrentUser().IsAnon)
 	ctxt.VarMap().Set("topicName", topic.Name)
 	ctxt.VarMap().Set("lastRead", lastRead)
 	ctxt.VarMap().Set("pageSize", ctxt.Globals().PostsPerPage)

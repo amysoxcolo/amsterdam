@@ -80,6 +80,9 @@ func (t *Topic) GetPost(ctx context.Context, num int32) (*PostHeader, error) {
 
 // GetLastRead returns the "last read" message for a user on a topic.
 func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
+	if u.IsAnon {
+		return -1, nil
+	}
 	row := amdb.QueryRowContext(ctx, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	var rc int32 = -1
 	err := row.Scan(&rc)
@@ -91,6 +94,9 @@ func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
 
 // SetLastRead sets the "last read" message for a user on a topic.
 func (t *Topic) SetLastRead(ctx context.Context, u *User, postNum int32) error {
+	if u.IsAnon {
+		return nil
+	}
 	rs, err := amdb.ExecContext(ctx, "UPDATE topicsettings SET last_message = ?, last_read = NOW() WHERE topicid = ? AND uid = ?",
 		postNum, t.TopicId, u.Uid)
 	if err == nil {

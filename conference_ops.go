@@ -238,3 +238,33 @@ func HideMessage(ctxt ui.AmContext) (string, any, error) {
 	}
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
 }
+
+/* TopicManage displays the "manage topic" page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func TopicManage(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	opsLink := fmt.Sprintf("/comm/%s/conf/%s/op/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	ctxt.VarMap().Set("opsLink", opsLink)
+	ctxt.VarMap().Set("topicName", topic.Name)
+
+	// Get the invitation flag.
+	member, _, _, err := comm.Membership(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	ctxt.VarMap().Set("canInvite", member)
+
+	ctxt.VarMap().Set("subscribed", false)        // TODO
+	ctxt.VarMap().Set("bozos", make([]string, 0)) // TODO
+
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Topic: "+topic.Name)
+	return "framed_template", "manage_topic.jet", nil
+}
