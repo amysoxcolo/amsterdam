@@ -36,9 +36,9 @@ _(italicized items can be deferred)_
     - Subscribe to Topic
     - Send invite
     - ~~Filtered Users (list/remove)~~
-  - Stick/Unstick
-  - Freeze/Unfreeze
-  - Archive/Unarchive
+  - ~~Stick/Unstick~~
+  - ~~Freeze/Unfreeze~~
+  - ~~Archive/Unarchive~~
   - Delete
   - ~~Post Scribble~~
   - ~~Post Nuke~~

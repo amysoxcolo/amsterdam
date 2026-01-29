@@ -43,19 +43,19 @@
             </div>
             <div class="flex gap-2 flex-wrap">
                 {{ if canStick }}
-                    <a href="/TODO" 
+                    <a href="{{ topicListLink }}/op/{{ topicNum }}/stick" 
                         class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                         {{ if isSticky }}Unstick Topic{{ else }}Stick Topic{{ end }}
                     </a>
                 {{ end }}
                 {{ if canFreeze }}
-                    <a href="/TODO" 
+                    <a href="{{ topicListLink }}/op/{{ topicNum }}/freeze" 
                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                         {{ if isFrozen }}Unfreeze Topic{{ else }}Freeze Topic{{ end }}
                     </a>
                 {{ end }}
                 {{ if canArchive }}
-                    <a href="/TODO" 
+                    <a href="{{ topicListLink }}/op/{{ topicNum }}/archive" 
                         class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
                         {{ if isArchived }}Unarchive Topic{{ else }}Archive Topic{{ end }}
                     </a>

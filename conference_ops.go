@@ -202,6 +202,75 @@ func HideTopic(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
 }
 
+/* FreezeTopic freezes or unfreezes the current topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func FreezeTopic(ctxt ui.AmContext) (string, any, error) {
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	if !conf.TestPermission("Conference.Hide", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	err := topic.SetFrozen(ctxt.Ctx(), !topic.Frozen, ctxt.CurrentUser(), ctxt.RemoteIP())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+}
+
+/* ArchiveTopic archives or unarchives the current topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ArchiveTopic(ctxt ui.AmContext) (string, any, error) {
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	if !conf.TestPermission("Conference.Hide", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	err := topic.SetArchived(ctxt.Ctx(), !topic.Archived, ctxt.CurrentUser(), ctxt.RemoteIP())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+}
+
+/* StickTopic sticks or unsticks the current topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func StickTopic(ctxt ui.AmContext) (string, any, error) {
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	if !conf.TestPermission("Conference.Hide", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	err := topic.SetSticky(ctxt.Ctx(), !topic.Sticky, ctxt.CurrentUser(), ctxt.RemoteIP())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+}
+
 /* HideMessage hides or shows a topic message.
  * Parameters:
  *     ctxt - The AmContext for the request.

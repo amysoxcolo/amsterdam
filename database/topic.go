@@ -129,6 +129,48 @@ func (t *Topic) SetHidden(ctx context.Context, u *User, hidden bool) error {
 	return err
 }
 
+// SetFrozen sets a topic's "frozen" state.
+func (t *Topic) SetFrozen(ctx context.Context, frozen bool, u *User, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	_, err := amdb.ExecContext(ctx, "UPDATE topics SET frozen = ? WHERE topicid = ?", frozen, t.TopicId)
+	if err == nil {
+		t.Frozen = frozen
+		ar = AmNewAudit(AuditConferenceFreezeTopic, u.Uid, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("frozen=%t", frozen))
+	}
+	return err
+}
+
+// SetArchived sets a topic's "archived" state.
+func (t *Topic) SetArchived(ctx context.Context, archived bool, u *User, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	_, err := amdb.ExecContext(ctx, "UPDATE topics SET archived = ? WHERE topicid = ?", archived, t.TopicId)
+	if err == nil {
+		t.Archived = archived
+		ar = AmNewAudit(AuditConferenceArchiveTopic, u.Uid, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("archived=%t", archived))
+	}
+	return err
+}
+
+// SetSticky sets a topic's "sticky" state.
+func (t *Topic) SetSticky(ctx context.Context, sticky bool, u *User, ipaddr string) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	_, err := amdb.ExecContext(ctx, "UPDATE topics SET sticky = ? where topicid = ?", sticky, t.TopicId)
+	if err == nil {
+		t.Sticky = sticky
+		ar = AmNewAudit(AuditConferenceStickyTopic, u.Uid, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("sticky=%t", sticky))
+	}
+	return err
+}
+
 // IsBozo returns true if the specified test UID is filtered for the specified user.
 func (t *Topic) IsBozo(ctx context.Context, u *User, testUid int32) (bool, error) {
 	if u.IsAnon {
