@@ -61,6 +61,39 @@
     </div>
 
     {{ if len(bozos) > 0 }}
+        <div class="max-w-4xl mb-8">
+            <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+                <table class="w-full">
+                    <tbody class="divide-y divide-gray-200">
+                        {{ range i, b := bozos }}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-2 py-1 whitespace-nowrap text-center w-12">
+                                    <a href="{{ opsLink }}/rmbozo/{{ b.Uid }}" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                        title="Remove">❌</a>
+                                </td>
+                                <td class="px-2 py-1 text-sm">
+                                    &lt;<a class="text-blue-700 hover:text-blue-900 text-sm font-bold" target="_blank" href="/user/{{ b.Username }}">{{ b.Username }}</a>&gt;
+                                    <i>{{ b.GivenName }} {{ b.FamilyName }}</i>
+                                </td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="max-w-4xl">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h2 class="text-blue-800 font-bold text-lg mb-3">How to update the filtered users:</h2>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">❌</span>
+                        <span class="text-gray-700">Click this symbol to cease filtering this user in this topic.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     {{ end }}
 
 </div>

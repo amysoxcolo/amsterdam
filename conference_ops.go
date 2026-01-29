@@ -360,9 +360,37 @@ func TopicManage(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("canInvite", member)
 
-	ctxt.VarMap().Set("subscribed", false)        // TODO
-	ctxt.VarMap().Set("bozos", make([]string, 0)) // TODO
+	// Get the filtered users list.
+	bozos, err := topic.GetBozos(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	ctxt.VarMap().Set("bozos", bozos)
+
+	ctxt.VarMap().Set("subscribed", false) // TODO
 
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Topic: "+topic.Name)
 	return "framed_template", "manage_topic.jet", nil
+}
+
+/* TopicRemoveBozo removes filtering from a specified user in the topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func TopicRemoveBozo(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	bozoUid, err := strconv.Atoi(ctxt.URLParam("uid"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	err = topic.SetBozo(ctxt.Ctx(), ctxt.CurrentUser(), int32(bozoUid), false)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
 }

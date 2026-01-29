@@ -181,7 +181,8 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
 		return make([]TopicBozo, 0), nil
 	}
 	rs, err := amdb.QueryContext(ctx, `SELECT b.bozo_uid, u.username, c.given_name, c.family_name
-		FROM topicbozo b, users u, contacts c WHERE b.topicid = ? AND b.uid = ? AND b.bozo_uid = u.uid AND u.contactid = c.contactid`, t.TopicId, u.Uid)
+		FROM topicbozo b, users u, contacts c WHERE b.topicid = ? AND b.uid = ? AND b.bozo_uid = u.uid AND u.contactid = c.contactid
+		ORDER BY u.username`, t.TopicId, u.Uid)
 	if err != nil {
 		return nil, err
 	}
