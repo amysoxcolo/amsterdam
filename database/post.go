@@ -57,6 +57,11 @@ const (
 // ErrNoPostData is returned if post data is missing.
 var ErrNoPostData = errors.New("no post data")
 
+// Creator returns the creator of the post.
+func (p *PostHeader) Creator(ctx context.Context) (*User, error) {
+	return AmGetUser(ctx, p.CreatorUid)
+}
+
 // IsScribbled returns true if the post has been scribbled, false if not.
 func (p *PostHeader) IsScribbled() bool {
 	return p.ScribbleUid != nil && p.ScribbleDate != nil
@@ -219,6 +224,29 @@ func (p *PostHeader) Text(ctx context.Context) (string, error) {
 	return *dbdata[0].Data, nil
 }
 
+// Link returns a link string to this post.
+func (p *PostHeader) Link(ctx context.Context, scope string) (string, error) {
+	if scope == "topic" {
+		return fmt.Sprintf("%d", p.Num), nil
+	}
+	if scope == "conference" || scope == "community" || scope == "global" {
+		topic, err := AmGetTopic(ctx, p.TopicId)
+		if err != nil {
+			return "", err
+		}
+		parent, err := topic.Link(ctx, scope)
+		if err != nil {
+			return "", err
+		}
+		if strings.HasSuffix(parent, ".") {
+			return fmt.Sprintf("%s%d", parent, p.Num), nil
+		} else {
+			return fmt.Sprintf("%s.%d", parent, p.Num), nil
+		}
+	}
+	return "", errors.New("invalid scope")
+}
+
 // SetHidden sets the "hidden" flag on a post.
 func (p *PostHeader) SetHidden(ctx context.Context, u *User, flag bool, ipaddr string) error {
 	var ar *AuditRecord = nil
@@ -326,7 +354,7 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 		}
 	}()
 	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES posts WRITE, postdata WRITE, postattach WRITE, postdogear WRITE, postpublish WRITE, topics WRITE;")
+	tx.ExecContext(ctx, "LOCK TABLES posts WRITE, postdata WRITE, postattach WRITE, postdogear WRITE, postpublish WRITE, topics WRITE, topicsettings WRITE;")
 	defer func() {
 		if unlock {
 			tx.ExecContext(ctx, "UNLOCK TABLES;")
@@ -355,8 +383,19 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 	if _, err = tx.ExecContext(ctx, "UPDATE posts SET num = (num - 1) WHERE topicid = ? AND num > ?", p.TopicId, p.Num); err != nil {
 		return err
 	}
+	row := tx.QueryRowContext(ctx, "SELECT top_message FROM topics WHERE topicid = ?", p.TopicId)
 	// Renumber phase 2 - reset the top message in this topic
-	if _, err = tx.ExecContext(ctx, "UPDATE topics SET top_message = (top_message - 1) WHERE topicid = ?", p.TopicId); err != nil {
+	var topMessage int32
+	if err = row.Scan(&topMessage); err != nil {
+		return err
+	}
+	topMessage--
+	if _, err = tx.ExecContext(ctx, "UPDATE topics SET top_message = ? WHERE topicid = ?", topMessage, p.TopicId); err != nil {
+		return err
+	}
+	// Renumber phase 3 - adjust the last message in all settings for that topic
+	if _, err = tx.ExecContext(ctx, "UPDATE topicsettings SET last_message = ? WHERE topicid = ? AND last_message > ?",
+		topMessage, p.TopicId, topMessage); err != nil {
 		return err
 	}
 

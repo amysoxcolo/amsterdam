@@ -276,6 +276,67 @@ func ScribbleMessage(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
 }
 
+/* NukeMessage nukes (deletes entirely) a topic message.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func NukeMessage(ctxt ui.AmContext) (string, any, error) {
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	} else if len(hdrs) != 1 {
+		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+	}
+	if !conf.TestPermission("Conference.Nuke", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	// Load the message box, and, if we have a valid "yes," then perform the nuke!
+	mbox, err := ui.AmLoadMessageBox("nuke")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if mbox.Validate(ctxt, "yes") {
+		// do the nuking!
+		err := hdrs[0].Nuke(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	}
+
+	// Set up to display the message box.
+	link, err := hdrs[0].Link(ctxt.Ctx(), "community")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	creator, err := hdrs[0].Creator(ctxt.Ctx())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	mbox.SetMessage(fmt.Sprintf(`You are about to nuke message <span class="font-mono font-bold text-red-600">&lt;%s&gt;</span>, 
+                        		originally composed by <span class="font-bold text-red-600">&lt;%s&gt;</span>!`, link, creator.Username))
+	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
+	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/op/%d/nuke/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
+	return mbox.Render(ctxt)
+}
+
 /* TopicManage displays the "manage topic" page.
  * Parameters:
  *     ctxt - The AmContext for the request.

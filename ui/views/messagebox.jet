@@ -13,7 +13,7 @@
             <!-- Dialog Header -->
             <div class="bg-{{ tone }}-600 px-6 py-4">
                 <h1 class="text-white text-2xl font-bold text-center flex items-center justify-center gap-3">
-                    {{ if destructive }}span class="text-3xl">⚠️</span>{{ end }}
+                    {{ if destructive }}<span class="text-3xl">⚠️</span>{{ end }}
                     {{ amsterdam_pageTitle }}
                     {{ if destructive }}<span class="text-3xl">⚠️</span>{{ end }}
                 </h1>
@@ -23,9 +23,7 @@
             <div class="px-8 py-8">
                 <div class="text-center mb-8">
                     <p class="text-gray-800 text-lg leading-relaxed">
-                        {{ message }}
-                        {* You are about to nuke message <span class="font-mono font-bold text-red-600">&lt;Playground.129.16&gt;</span>, 
-                        originally composed by <span class="font-bold text-red-600">&lt;erbo&gt;</span>! *}
+                        {{ message | raw }}
                     </p>
                     {{ if destructive }}
                         <p class="text-gray-800 text-lg font-bold mt-4">Are you sure you want to do this?</p>
@@ -53,7 +51,7 @@
                 <!-- Action Buttons -->
                 <div class="flex gap-4 justify-center">
                     {{ range i, bt := buttons }}
-                        <a href="{{ bt.Link }}"
+                        <a href="{{ buttonLinks[i] }}"
                             class="bg-{{ bt.Tone }}-600 hover:bg-{{ bt.Tone }}-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
                             <span class="text-xl">{{ bt.Icon }}</span>
                             {{ bt.Text }}

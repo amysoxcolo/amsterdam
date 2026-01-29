@@ -10,8 +10,14 @@
 package ui
 
 import (
+	"crypto/sha1"
 	_ "embed"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -41,11 +47,13 @@ type MessageBoxDefinition struct {
 	WarningIcon  string            `yaml:"warningIcon"`
 	WarningLines []MBoxWarningLine `yaml:"warningLines"`
 	Buttons      []MBoxButton      `yaml:"buttons"`
+	useConfirm   bool
 }
 
 // MessageBoxDefs is the top-level structure for defining message boxes.
 type MessageBoxDefs struct {
-	D []MessageBoxDefinition `yaml:"messagedefs"`
+	D     []MessageBoxDefinition `yaml:"messagedefs"`
+	table map[string]*MessageBoxDefinition
 }
 
 //go:embed messagedefs.yaml
@@ -59,4 +67,104 @@ func init() {
 	if err := yaml.Unmarshal(initMessageData, &messageBoxDefs); err != nil {
 		panic(err) // can't happen
 	}
+	messageBoxDefs.table = make(map[string]*MessageBoxDefinition)
+	for i, def := range messageBoxDefs.D {
+		messageBoxDefs.table[def.Id] = &(messageBoxDefs.D[i])
+		messageBoxDefs.D[i].useConfirm = false
+		for _, b := range messageBoxDefs.D[i].Buttons {
+			if b.Confirm {
+				messageBoxDefs.D[i].useConfirm = true
+				break
+			}
+		}
+	}
+}
+
+// MessageBox is the structure for a working message box.
+type MessageBox struct {
+	def         *MessageBoxDefinition
+	message     string
+	buttonLinks []string
+}
+
+// SetMessage sets the actual message inside the message box.
+func (mb *MessageBox) SetMessage(t string) {
+	mb.message = t
+}
+
+// SetLink sets the link for a specific button in the box.
+func (mb *MessageBox) SetLink(id, link string) {
+	for i := range mb.def.Buttons {
+		if mb.def.Buttons[i].Id == id {
+			mb.buttonLinks[i] = link
+			break
+		}
+	}
+}
+
+// Render sets up to render the message box.
+func (mb *MessageBox) Render(ctxt AmContext) (string, any, error) {
+	blinks := mb.buttonLinks
+	if mb.def.useConfirm {
+		nonce := util.GenerateRandomAuthString()
+		blinks = make([]string, len(mb.buttonLinks))
+		for i := range mb.buttonLinks {
+			if mb.def.Buttons[i].Confirm {
+				hasher := sha1.New()
+				hasher.Write([]byte(mb.def.Buttons[i].Id))
+				confirmString := hex.EncodeToString(hasher.Sum([]byte(nonce)))
+				if strings.Contains(mb.buttonLinks[i], "?") {
+					blinks[i] = fmt.Sprintf("%s&confirm=%s", mb.buttonLinks[i], confirmString)
+				} else {
+					blinks[i] = fmt.Sprintf("%s?confirm=%s", mb.buttonLinks[i], confirmString)
+				}
+			} else {
+				blinks[i] = mb.buttonLinks[i]
+			}
+		}
+		ctxt.SetSession("mbconfirm."+mb.def.Id, nonce)
+	}
+	ctxt.VarMap().Set("amsterdam_pageTitle", mb.def.Title)
+	ctxt.VarMap().Set("tone", mb.def.Tone)
+	ctxt.VarMap().Set("destructive", mb.def.Destructive)
+	ctxt.VarMap().Set("message", mb.message)
+	ctxt.VarMap().Set("useWarning", len(mb.def.WarningIcon) > 0 && len(mb.def.WarningLines) > 0)
+	ctxt.VarMap().Set("warningIcon", mb.def.WarningIcon)
+	ctxt.VarMap().Set("warningLines", mb.def.WarningLines)
+	ctxt.VarMap().Set("buttons", mb.def.Buttons)
+	ctxt.VarMap().Set("buttonLinks", blinks)
+	return "framed_template", "messagebox.jet", nil
+}
+
+// Validate validates that the correct button was clicked by verifying the confirmation parameter.
+func (mb *MessageBox) Validate(ctxt AmContext, buttonid string) bool {
+	var nonceAny any
+	nonceAny = ctxt.GetSession("mbconfirm." + mb.def.Id)
+	ctxt.SetSession("mbconfirm."+mb.def.Id, "")
+	if nonce, ok := nonceAny.(string); ok {
+		confirm := ctxt.Parameter("confirm")
+		hasher := sha1.New()
+		hasher.Write([]byte(buttonid))
+		confirmString := hex.EncodeToString(hasher.Sum([]byte(nonce)))
+		if confirm == confirmString {
+			return true
+		}
+	}
+	return false
+}
+
+// AmLoadMessageBox loads a message box structure by ID.
+func AmLoadMessageBox(id string) (*MessageBox, error) {
+	if def, ok := messageBoxDefs.table[id]; ok {
+		mbox := MessageBox{
+			def:         def,
+			message:     def.Message,
+			buttonLinks: make([]string, len(def.Buttons)),
+		}
+		for i := range def.Buttons {
+			mbox.buttonLinks[i] = def.Buttons[i].Link
+		}
+		return &mbox, nil
+	}
+	return nil, errors.New("message box not found")
 }

@@ -41,7 +41,7 @@ _(italicized items can be deferred)_
   - Archive/Unarchive
   - Delete
   - ~~Post Scribble~~
-  - Post Nuke
+  - ~~Post Nuke~~
   - Post Filter User
   - Post Move
   - Post Publish
