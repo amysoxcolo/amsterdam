@@ -12,6 +12,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -258,7 +259,7 @@ func internalContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
 /* AmGetContactInfo retrieves the contact info for a given identifier.
  * Parameters:
  *     ctx - Standard Go context value.
- *     id - The contact info ID top retrieve.
+ *     id - The contact info ID to retrieve.
  * Returns:
  *	   ContactInfo retrieved, or nil.
  *     Standard Go error status.
@@ -276,6 +277,27 @@ func AmGetContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
 			contactCache.Add(id, rc2)
 		}
 		return rc2, nil
+	}
+	return nil, err
+}
+
+/* AmGetContactInfoForUser retrieves the contact info for a given user ID.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     uid - The UID to get the contact info for.
+ * Returns:
+ *	   ContactInfo retrieved, or nil.
+ *     Standard Go error status.
+ */
+func AmGetContactInfoForUser(ctx context.Context, uid int32) (*ContactInfo, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
+	var cid int32
+	err := row.Scan(&cid)
+	switch err {
+	case nil:
+		return AmGetContactInfo(ctx, cid)
+	case sql.ErrNoRows:
+		return nil, errors.New("contact not found")
 	}
 	return nil, err
 }

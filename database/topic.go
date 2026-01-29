@@ -240,6 +240,25 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
 	return rc, nil
 }
 
+// GetSubscribers returns an array of UIDs of every user that subscribed to the topic.
+func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT uid FROM topicsettings WHERE topicid = ? AND subscribe <> 0", t.TopicId)
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]int32, 0)
+	for rs.Next() {
+		var tmp int32
+		err = rs.Scan(&tmp)
+		if err == nil {
+			rc = append(rc, tmp)
+		} else {
+			break
+		}
+	}
+	return rc, err
+}
+
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
 	TopicId     int32      `db:"topicid"`      // unique ID of the topic

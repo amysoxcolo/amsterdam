@@ -3,7 +3,7 @@
 _(italicized items can be deferred)_
 
 - ~~Topics list: Set up Conference permalink~~
-- Send out E-mails to topic subscribers when a post is made
+- ~~Send out E-mails to topic subscribers when a post is made~~
 - _Error handling: shift titles and templates for different error codes_
 - Find Posts
 - Services mechanism: Conference vtable

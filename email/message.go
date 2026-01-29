@@ -24,6 +24,7 @@ type Message interface {
 	AddTo(string, string)
 	AddCC(string, string)
 	AddBCC(string, string)
+	GetSubject() string
 	SetSubject(string)
 	SetText(string)
 	AddHeader(string, string)
@@ -83,6 +84,11 @@ func (m *amMessage) AddCC(addr string, name string) {
 func (m *amMessage) AddBCC(addr string, name string) {
 	m.bcc = append(m.bcc, formatAddress(addr, name))
 	m.toAddrs = append(m.toAddrs, addr)
+}
+
+// GetSubject gets the message's subject.
+func (m *amMessage) GetSubject() string {
+	return m.subject
 }
 
 // SetSubject sets the message's subject.

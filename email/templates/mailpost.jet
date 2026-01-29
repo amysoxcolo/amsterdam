@@ -1,0 +1,22 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+{{ .SetSubject("New Post in " + topicName)}}
+The following message was just posted by "{{ userName }}" to the
+"{{ topicName | raw }}" topic in the "{{ conferenceName }}" conference
+of the "{{ communityName }}" community on the Amsterdam community system.
+--------------------------------------------------------------------------
+{{ pseud | raw }}
+
+{{ text | raw }}
+--------------------------------------------------------------------------
+Join the ongoing discussion at:
+{{ GlobalConfig.Site.BaseURL }}/go/{{ topicLink }}
+
+To stop receiving new posts in this topic by E-mail, visit the above URL,
+click the "Manage" button, and click the "Stop Subscribing To This Topic" link.

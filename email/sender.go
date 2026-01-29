@@ -49,7 +49,7 @@ var auth smtp.Auth
 
 // formatMessage takes a message and turns it into serialized bytes for sending.
 func formatMessage(ctx context.Context, m *amMessage) ([]byte, error) {
-	if m.template != "" {
+	if m.template != "" && m.text == "" {
 		// Render the template for the message, which may reset Subject.
 		templ, err := emailRenderer.GetTemplate(m.template)
 		if err == nil {

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
@@ -770,7 +771,19 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 
-	// TODO: whoever's subscribed needs to get a copy of this post in their E-mail
+	// Check who's subscribed to this topic.
+	subs, err := topic.GetSubscribers(ctxt.Ctx())
+	if err != nil {
+		log.Errorf("unable to deliver message to subscribers: %v", err)
+	} else if len(subs) > 0 {
+		// kick off a task to compose E-mails and deliver them to everyone
+		alias := ctxt.GetScratch("currentAlias").(string)
+		poster := ctxt.CurrentUser()
+		ipaddr := ctxt.RemoteIP()
+		ampool.Submit(func(ctx context.Context) {
+			email.AmDeliverSubscription(ctx, comm, conf, alias, topic, poster, hdr, postText, subs, ipaddr)
+		})
+	}
 
 	if !ctxt.FormFieldIsSet("attach") {
 		return "redirect", returnURL, nil // no attachment - just bounce directly to the destination
