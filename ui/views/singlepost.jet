@@ -15,29 +15,37 @@
                title="Permalink to this post">🔗&lt;{{ post_confRef }}.{{ post_cur.Num }}&gt;</a>
         </div>
     </div>
-    <div class="mb-2">
-        <strong class="text-lg">{{ post_cur.Pseud | raw }}</strong>
-        <span class="text-gray-600 text-sm ml-2">(<em>
-            <a href="/user/{{ post_userName }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ post_userName }}</a>, 
-            {{ DisplayDateTime(post_cur.Posted, .) }}</em>)
-            {{ if post_attach.Filename != "" }}
-                <a href="/attachment/{{ post_cur.PostId }}" title="(Attachment {{ post_attach.Filename }} - {{ post_attach.Length }} bytes)"
-                    {{ if hasPrefix(post_attach.MIMEType, "text/") || hasPrefix(post_attach.MIMEType, "image/" )}}
-                        target="_blank"
-                    {{ end }}
-                   class="text-lg">📎</a>
-            {{ end }}
-        </span>
-    </div>
-    {{ if post_overrideLine != "" }}
-        <div class="mb-2">
-            {{ if post_overrideLink != "" }}
-                <a href="{{ post_overrideLink }}" target="_blank" class="text-blue-700 hover:text-blue-900"><span class="italic font-bold">{{ post_overrideLine }}</span></a>
-            {{ else }}
-                <span class="italic text-bold">{{ post_overrideLine }}</span>
-            {{ end }}
+    {{ if post_bozo }}
+        <div class="mt-4 mb-2">
+            <span class="italic font-bold">
+                (User filtered; <a class="text-blue-700 hover:text-blue-900" href="{{ post_stem }}?r={{ post_cur.Num }}&ac=1&bozo=0">remove filter</a>)
+            </span>
         </div>
     {{ else }}
-        <pre class="amsPost font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">{{ post_text | postRewrite | raw }}</pre>
+        <div class="mb-2">
+            <strong class="text-lg">{{ post_cur.Pseud | raw }}</strong>
+            <span class="text-gray-600 text-sm ml-2">(<em>
+                <a href="/user/{{ post_userName }}" target="_blank" class="text-blue-700 hover:text-blue-900">{{ post_userName }}</a>, 
+                {{ DisplayDateTime(post_cur.Posted, .) }}</em>)
+                {{ if post_attach.Filename != "" }}
+                    <a href="/attachment/{{ post_cur.PostId }}" title="(Attachment {{ post_attach.Filename }} - {{ post_attach.Length }} bytes)"
+                        {{ if hasPrefix(post_attach.MIMEType, "text/") || hasPrefix(post_attach.MIMEType, "image/" )}}
+                            target="_blank"
+                        {{ end }}
+                    class="text-lg">📎</a>
+                {{ end }}
+            </span>
+        </div>
+        {{ if post_overrideLine != "" }}
+            <div class="mb-2">
+                {{ if post_overrideLink != "" }}
+                    <a href="{{ post_overrideLink }}" target="_blank" class="text-blue-700 hover:text-blue-900"><span class="italic font-bold">{{ post_overrideLine }}</span></a>
+                {{ else }}
+                    <span class="italic text-bold">{{ post_overrideLine }}</span>
+                {{ end }}
+            </div>
+        {{ else }}
+            <pre class="amsPost font-mono text-sm whitespace-pre-wrap bg-gray-50 p-4 rounded border border-gray-200">{{ post_text | postRewrite | raw }}</pre>
+        {{ end }}
     {{ end }}
 </div>

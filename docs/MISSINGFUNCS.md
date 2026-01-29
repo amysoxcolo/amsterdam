@@ -42,7 +42,7 @@ _(italicized items can be deferred)_
   - Delete
   - ~~Post Scribble~~
   - ~~Post Nuke~~
-  - Post Filter User
+  - ~~Post Filter User~~
   - Post Move
   - Post Publish
 - Manage Communities on communities sidebox

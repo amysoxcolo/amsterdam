@@ -129,6 +129,74 @@ func (t *Topic) SetHidden(ctx context.Context, u *User, hidden bool) error {
 	return err
 }
 
+// IsBozo returns true if the specified test UID is filtered for the specified user.
+func (t *Topic) IsBozo(ctx context.Context, u *User, testUid int32) (bool, error) {
+	if u.IsAnon {
+		return false, nil
+	}
+	row := amdb.QueryRowContext(ctx, "SELECT bozo_uid FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, testUid)
+	var tmp int32
+	err := row.Scan(&tmp)
+	switch err {
+	case nil:
+		return true, nil
+	case sql.ErrNoRows:
+		return false, nil
+	}
+	return false, err
+}
+
+// SetBozo adds or removes a filter of a subject UID for the specified user.
+func (t *Topic) SetBozo(ctx context.Context, u *User, subjectUid int32, bozo bool) error {
+	var err error = nil
+	if !u.IsAnon {
+		if bozo { // Flipping the bozo bit!
+			row := amdb.QueryRowContext(ctx, "SELECT bozo_uid FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, subjectUid)
+			var tmp int32
+			err = row.Scan(&tmp)
+			switch err {
+			case nil:
+				return nil
+			case sql.ErrNoRows:
+				_, err = amdb.ExecContext(ctx, "INSERT INTO topicbozo (topicid, uid, bozo_uid) VALUES (?, ?, ?)", t.TopicId, u.Uid, subjectUid)
+			}
+		} else {
+			_, err = amdb.ExecContext(ctx, "DELETE FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, subjectUid)
+		}
+	}
+	return err
+}
+
+// TopicBozo is a structure that returns all information about a filtered user.
+type TopicBozo struct {
+	Uid        int32
+	Username   string
+	GivenName  string
+	FamilyName string
+}
+
+// GetBozos returns all filtered users for a given user on the topic.
+func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
+	if u.IsAnon {
+		return make([]TopicBozo, 0), nil
+	}
+	rs, err := amdb.QueryContext(ctx, `SELECT b.bozo_uid, u.username, c.given_name, c.family_name
+		FROM topicbozo b, users u, contacts c WHERE b.topicid = ? AND b.uid = ? AND b.bozo_uid = u.uid AND u.contactid = c.contactid`, t.TopicId, u.Uid)
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]TopicBozo, 0)
+	for rs.Next() {
+		var tb TopicBozo
+		err = rs.Scan(&(tb.Uid), &(tb.Username), &(tb.GivenName), &(tb.FamilyName))
+		if err != nil {
+			return nil, err
+		}
+		rc = append(rc, tb)
+	}
+	return rc, nil
+}
+
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.
 type TopicSettings struct {
 	TopicId     int32      `db:"topicid"`      // unique ID of the topic

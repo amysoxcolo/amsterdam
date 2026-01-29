@@ -405,6 +405,15 @@ func templateAttachmentInfo(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// templateBozo returns true if the post's creator user has been filtered by the current one.
+func templateBozo(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	topic := args.Get(1).Convert(reflect.TypeFor[*database.Topic]()).Interface().(*database.Topic)
+	ctxt := args.Get(2).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	rc, _ := topic.IsBozo(ctxt.Ctx(), ctxt.CurrentUser(), post.CreatorUid)
+	return reflect.ValueOf(rc)
+}
+
 /* ReadPosts displays posts in a topic.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -450,6 +459,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	ctxt.VarMap().Set("post_topic", topic)
 
 	// Determine the range of posts to display.  The "pin" is the post number after which we display the horizontal line separating old and new posts.
 	lastRead, err := topic.GetLastRead(ctxt.Ctx(), ctxt.CurrentUser())
@@ -544,6 +554,13 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// Set advanced controls.
 	advancedControls := ctxt.HasParameter("ac") && (len(posts) == 1)
 	if advancedControls {
+		nbozo := ctxt.QueryParamInt("bozo", -1)
+		if nbozo >= 0 {
+			err = topic.SetBozo(ctxt.Ctx(), ctxt.CurrentUser(), posts[0].CreatorUid, nbozo != 0)
+			if err != nil {
+				return ui.ErrorPage(ctxt, err)
+			}
+		}
 		isMyPost := (posts[0].CreatorUid == ctxt.CurrentUserId()) && !ctxt.CurrentUser().IsAnon
 		isScribbled := posts[0].IsScribbled()
 		canHide := !isScribbled && (isMyPost || confHidePerm)
@@ -560,9 +577,6 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 		ctxt.VarMap().Set("canPublish", canPublish)
-		if !canHide && !canScribble && !confNukePerm && !canPublish {
-			advancedControls = false
-		}
 	}
 	ctxt.VarMap().Set("advancedControls", advancedControls)
 
@@ -588,6 +602,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().SetFunc("post_getText", templatePostText)
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 	ctxt.VarMap().SetFunc("post_getAttachmentInfo", templateAttachmentInfo)
+	ctxt.VarMap().SetFunc("post_isBozo", templateBozo)
 	ctxt.VarMap().Set("post_stem", fmt.Sprintf("%s/r/%d", urlStem, topic.Number))
 	ctxt.VarMap().Set("post_max", topic.TopMessage)
 	ctxt.VarMap().Set("posts", posts)
@@ -605,12 +620,21 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "posts.jet", nil
 }
 
+/* PostInTopic adds a new post to a topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	// Locate community, conference, and topic.
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	level := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	ctxt.VarMap().Set("post_topic", topic)
 
 	urlStem := fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 	if ctxt.FormFieldIsSet("cancel") {
@@ -711,6 +735,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().SetFunc("post_getText", templatePostText)
 		ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 		ctxt.VarMap().SetFunc("post_getAttachmentInfo", templateAttachmentInfo)
+		ctxt.VarMap().SetFunc("post_isBozo", templateBozo)
 		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
 		ctxt.VarMap().Set("post_max", topic.TopMessage)
 		ctxt.VarMap().Set("posts", posts)
