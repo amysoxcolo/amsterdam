@@ -33,7 +33,7 @@ _(italicized items can be deferred)_
 - Posts view:
   - Find
   - Manage:
-    - Subscribe to Topic
+    - ~~Subscribe to Topic~~
     - Send invite
     - ~~Filtered Users (list/remove)~~
   - ~~Stick/Unstick~~

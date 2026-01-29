@@ -240,6 +240,36 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
 	return rc, nil
 }
 
+// IsSubscribed returns true if the given user is subscribed to receive E-mails of topic posts.
+func (t *Topic) IsSubscribed(ctx context.Context, u *User) (bool, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT subscribe FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
+	var rc bool
+	err := row.Scan(&rc)
+	switch err {
+	case nil:
+		return rc, nil
+	case sql.ErrNoRows:
+		return false, nil
+	}
+	return false, err
+}
+
+// SetSubscribed sets the "subscribed" flag for the given user.
+func (t *Topic) SetSubscribed(ctx context.Context, u *User, flag bool) error {
+	if u.IsAnon {
+		return nil
+	}
+	rs, err := amdb.ExecContext(ctx, "UPDATE topicsettings SET subscribe = ? WHERE topicid = ? AND uid = ?", flag, t.TopicId, u.Uid)
+	if err == nil {
+		var rows int64
+		rows, err = rs.RowsAffected()
+		if err == nil && rows == 0 {
+			_, err = amdb.ExecContext(ctx, "INSERT INTO topicsettings (topicid, uid, subscribe)", t.TopicId, u.Uid, flag)
+		}
+	}
+	return err
+}
+
 // GetSubscribers returns an array of UIDs of every user that subscribed to the topic.
 func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT uid FROM topicsettings WHERE topicid = ? AND subscribe <> 0", t.TopicId)

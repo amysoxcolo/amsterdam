@@ -429,6 +429,13 @@ func TopicManage(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("canInvite", member)
 
+	// Get the E-mail subscription status.
+	sub, err := topic.IsSubscribed(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	ctxt.VarMap().Set("subscribed", sub)
+
 	// Get the filtered users list.
 	bozos, err := topic.GetBozos(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
@@ -436,10 +443,34 @@ func TopicManage(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("bozos", bozos)
 
-	ctxt.VarMap().Set("subscribed", false) // TODO
-
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Topic: "+topic.Name)
 	return "framed_template", "manage_topic.jet", nil
+}
+
+/* TopicSetSubscribe toggles the "subscription" flag on the current topic for the current user.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func TopicSetSubscribe(ctxt ui.AmContext) (string, any, error) {
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	comm := ctxt.CurrentCommunity()
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	flag, err := topic.IsSubscribed(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	err = topic.SetSubscribed(ctxt.Ctx(), ctxt.CurrentUser(), !flag)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
 }
 
 /* TopicRemoveBozo removes filtering from a specified user in the topic.

@@ -29,7 +29,7 @@
         {{ end }}
     </div>
     <div class="mb-4">
-        <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="/TODO/{{ opsLink }}/subscribe">
+        <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="{{ opsLink }}/subscribe">
             {{ if subscribed }}
                 Click Here To Stop Subscribing To This Topic
             {{ else }}
