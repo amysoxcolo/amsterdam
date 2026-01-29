@@ -35,7 +35,7 @@ _(italicized items can be deferred)_
   - Manage:
     - Subscribe to Topic
     - Send invite
-    - Filtered Users (list/remove)
+    - ~~Filtered Users (list/remove)~~
   - Stick/Unstick
   - Freeze/Unfreeze
   - Archive/Unarchive
