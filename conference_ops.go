@@ -466,6 +466,38 @@ func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "move_message.jet", nil
 }
 
+/* PublishMessage publishes a message to the front page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func PublishMessage(ctxt ui.AmContext) (string, any, error) {
+	if !ctxt.TestPermission("Global.PublishFP") {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	comm := ctxt.CurrentCommunity()
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	} else if len(hdrs) != 1 {
+		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+	}
+
+	if err = hdrs[0].Publish(ctxt.Ctx(), comm, ctxt.CurrentUser(), ctxt.RemoteIP()); err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+}
+
 /* MoveMessage moves a message to a different topic.
  * Parameters:
  *     ctxt - The AmContext for the request.

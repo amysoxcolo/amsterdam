@@ -144,7 +144,7 @@
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Move</a>
                             {{ end }}
                             {{ if canPublish }}
-                                <a href="/TODO" 
+                                <a href="{{ topicListLink }}/op/{{ topicNum }}/publish/{{ p.Num }}" 
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Publish</a>
                             {{ end }}
                         </div>

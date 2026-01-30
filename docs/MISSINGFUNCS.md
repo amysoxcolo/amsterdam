@@ -44,7 +44,7 @@ _(italicized items can be deferred)_
   - ~~Post Nuke~~
   - ~~Post Filter User~~
   - ~~Post Move~~
-  - Post Publish
+  - ~~Post Publish~~
 - Manage Communities on communities sidebox
 - ~~Conference Hotlist sidebox~~
 - ~~"New" flag on Conference Hotlist sidebox~~

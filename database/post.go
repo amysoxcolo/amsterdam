@@ -410,6 +410,47 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 	return nil
 }
 
+// Publish publishes this message to the front page.
+func (p *PostHeader) Publish(ctx context.Context, comm *Community, publisher *User, ipaddr string) error {
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("cannot publish scribbled post")
+	}
+
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	// Check if we were already published.
+	row := tx.QueryRowContext(ctx, "SELECT by_uid FROM postpublish WHERE postid = ?", p.PostId)
+	var tmp int32
+	err := row.Scan(&tmp)
+	if err == nil {
+		return errors.New("post already published")
+	} else if err != sql.ErrNoRows {
+		return err
+	}
+
+	// Publish it!
+	if _, err = tx.ExecContext(ctx, "INSERT INTO postpublish (commid, postid, by_uid, on_date) VALUES (?, ?, ?, NOW())",
+		comm.Id, p.PostId, publisher.Uid); err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	ar = AmNewAudit(AuditPublishToFrontPage, publisher.Uid, ipaddr, fmt.Sprintf("comm=%d,post=%d", comm.Id, p.PostId))
+	return nil
+}
+
 // MoveTo moves this message to a new topic.
 func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, ipaddr string) error {
 	if target.TopicId == p.TopicId {
