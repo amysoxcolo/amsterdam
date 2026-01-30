@@ -89,6 +89,7 @@ func setupEcho() *echo.Echo {
 	commGroup.POST("/unjoin", ui.AmWrap(UnjoinCommunityConfirm))
 	commGroup.GET("/members", ui.AmWrap(MemberList))
 	commGroup.POST("/members", ui.AmWrap(MemberSearch))
+	commGroup.GET("/invite", ui.AmWrap(InviteToCommunity))
 	commGroup.GET("/admin", ui.AmWrap(CommunityAdminMenu))
 	commGroup.GET("/admin/profile", ui.AmWrap(CommunityProfileForm))
 	commGroup.POST("/admin/profile", ui.AmWrap(EditCommunityProfile))
@@ -103,6 +104,7 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/new_topic", ui.AmWrap(NewTopic))
 	confGroup.GET("/manage", ui.AmWrap(ConfManage))
 	confGroup.GET("/hotlist", ui.AmWrap(AddToHotlist))
+	confGroup.GET("/invite", ui.AmWrap(InviteToConference))
 	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)
 	confGroup.POST("/r/:topic", ui.AmWrap(PostInTopic), ui.SetTopic)
 	opsGroup := confGroup.Group("/op/:topic", ui.SetTopic)
@@ -117,6 +119,7 @@ func setupEcho() *echo.Echo {
 	opsGroup.POST("/move/:msg", ui.AmWrap(MoveMessage))
 	opsGroup.GET("/manage", ui.AmWrap(TopicManage))
 	opsGroup.GET("/subscribe", ui.AmWrap(TopicSetSubscribe))
+	opsGroup.GET("/invite", ui.AmWrap(InviteToTopic))
 	opsGroup.GET("/rmbozo/:uid", ui.AmWrap(TopicRemoveBozo))
 
 	return e

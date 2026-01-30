@@ -50,7 +50,7 @@
             You may send an invitation via E-mail to outside individuals to join this community and read this topic.
         </div>
         <div class="mb-4">
-            <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="/TODO/{{ opsLink }}/invite">Click here to send an invitation</a>
+            <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="{{ opsLink }}/invite">Click here to send an invitation</a>
         </div>
     {{ end }}
 
