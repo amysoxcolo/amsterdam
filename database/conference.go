@@ -48,6 +48,7 @@ type ConferenceSettings struct {
 	DefaultPseud *string    `db:"default_pseud"` // default pseud to use in this conference
 	LastRead     *time.Time `db:"last_read"`     // last read time
 	LastPost     *time.Time `db:"last_post"`     // last post time
+	newflag      bool
 }
 
 // conferenceCache is the cache for Conference objects.
@@ -66,6 +67,22 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// Save saves the conference settings.
+func (cs *ConferenceSettings) Save(ctx context.Context) error {
+	var err error = nil
+	if cs.newflag {
+		_, err = amdb.ExecContext(ctx, "INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
+			cs.ConfId, cs.Uid, cs.DefaultPseud, cs.LastRead, cs.LastPost)
+		if err == nil {
+			cs.newflag = false
+		}
+	} else {
+		_, err = amdb.ExecContext(ctx, "UPDATE confsettings SET default_pseud = ?, last_read = ?, last_post = ? WHERE confid = ? AND uid = ?",
+			cs.DefaultPseud, cs.LastRead, cs.LastPost, cs.ConfId, cs.Uid)
+	}
+	return err
 }
 
 // Aliases returns the list of aliases for this conference.
@@ -204,11 +221,20 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 		return nil, err
 	}
 	if len(dbdata) == 0 {
-		return nil, nil
+		settings := ConferenceSettings{
+			ConfId:       c.ConfId,
+			Uid:          u.Uid,
+			DefaultPseud: nil,
+			LastRead:     nil,
+			LastPost:     nil,
+			newflag:      true,
+		}
+		return &settings, nil
 	}
 	if len(dbdata) > 1 {
 		return nil, fmt.Errorf("conference.Settings(c=%d,u=%d): too many results (%d)", c.ConfId, u.Uid, len(dbdata))
 	}
+	dbdata[0].newflag = false
 	return &(dbdata[0]), nil
 }
 
@@ -247,6 +273,19 @@ func (c *Conference) DefaultPseud(ctx context.Context, u *User) (string, error) 
 	return ci.FullName(false), nil
 }
 
+// SetDefaultPseud sets the default pseud for a user in the conference.
+func (c *Conference) SetDefaultPseud(ctx context.Context, u *User, pseud string) error {
+	if u.IsAnon {
+		return nil
+	}
+	settings, err := c.Settings(ctx, u)
+	if err != nil {
+		return err
+	}
+	settings.DefaultPseud = &pseud
+	return settings.Save(ctx)
+}
+
 // TouchUpdate updates the "last update" date/time in the conference.
 func (c *Conference) TouchUpdate(ctx context.Context, tx *sqlx.Tx, lastUpdate time.Time) error {
 	_, err := tx.ExecContext(ctx, "UPDATE confs SET lastupdate = ? WHERE confid = ?", lastUpdate, c.ConfId)
@@ -263,24 +302,18 @@ func (c *Conference) TouchRead(ctx context.Context, tx *sqlx.Tx, u *User) (*Conf
 		return nil, err
 	}
 	if !u.IsAnon { // anon user can't update squat
-		if cs == nil {
-			ci, cerr := u.ContactInfo(ctx)
-			if cerr != nil {
-				return nil, cerr
+		if cs.newflag {
+			err = cs.Save(ctx)
+			if err != nil {
+				return cs, err
 			}
-			_, err = tx.ExecContext(ctx, "INSERT INTO confsettings (confid, uid, default_pseud, last_read) VALUES (?, ?, ?, NOW())",
-				c.ConfId, u.Uid, ci.FullName(false))
-		} else {
-			_, err = tx.ExecContext(ctx, "UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 		}
+		_, err = tx.ExecContext(ctx, "UPDATE confsettings SET last_read = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 		if err == nil {
-			cs, err = c.Settings(ctx, u) // reread to get updated or inserted values
-		}
-		if err != nil {
-			return nil, err
+			cs, err = c.Settings(ctx, u) // reread settings
 		}
 	}
-	return cs, nil
+	return cs, err
 }
 
 // TouchPost updates the "last posted" date/time in the conference for the user.
@@ -290,30 +323,18 @@ func (c *Conference) TouchPost(ctx context.Context, tx *sqlx.Tx, u *User, lastPo
 		return nil, err
 	}
 	if !u.IsAnon { // anon user can't update squat
-		if cs == nil {
-			ci, cerr := u.ContactInfo(ctx)
-			if cerr != nil {
-				return nil, cerr
+		if cs.newflag {
+			err = cs.Save(ctx)
+			if err != nil {
+				return cs, err
 			}
-			defaultPseud := ci.FullName(false)
-			cs = &ConferenceSettings{
-				ConfId:       c.ConfId,
-				Uid:          u.Uid,
-				DefaultPseud: &defaultPseud,
-				LastRead:     &lastPost,
-				LastPost:     &lastPost,
-			}
-			_, err = tx.ExecContext(ctx, "INSERT INTO confsettings (confid, uid, default_pseud, last_read, last_post) VALUES (?, ?, ?, ?, ?)",
-				c.ConfId, u.Uid, defaultPseud, lastPost, lastPost)
-		} else {
-			_, err = tx.ExecContext(ctx, "UPDATE confsettings SET last_post = ? WHERE confid = ? AND uid = ?", lastPost, c.ConfId, u.Uid)
-			cs.LastPost = &lastPost
 		}
-		if err != nil {
-			return nil, err
+		_, err = tx.ExecContext(ctx, "UPDATE confsettings SET last_post = NOW() WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+		if err == nil {
+			cs, err = c.Settings(ctx, u) // reread settings
 		}
 	}
-	return cs, nil
+	return cs, err
 }
 
 // UnreadMessages returns the total number of unread messages in a conference for a user.
