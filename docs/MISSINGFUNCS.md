@@ -43,7 +43,7 @@ _(italicized items can be deferred)_
   - ~~Post Scribble~~
   - ~~Post Nuke~~
   - ~~Post Filter User~~
-  - Post Move
+  - ~~Post Move~~
   - Post Publish
 - Manage Communities on communities sidebox
 - ~~Conference Hotlist sidebox~~

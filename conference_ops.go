@@ -21,7 +21,9 @@ import (
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	log "github.com/sirupsen/logrus"
 )
 
 var ENOPERM error = errors.New("you are not permitted to perform this operation")
@@ -406,6 +408,14 @@ func NukeMessage(ctxt ui.AmContext) (string, any, error) {
 	return mbox.Render(ctxt)
 }
 
+/* MoveMessageForm displays the form for moving a message..
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
 	if ctxt.CurrentUser().IsAnon {
 		ctxt.SetRC(http.StatusForbidden)
@@ -454,6 +464,80 @@ func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Move Message")
 
 	return "framed_template", "move_message.jet", nil
+}
+
+/* MoveMessage moves a message to a different topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func MoveMessage(ctxt ui.AmContext) (string, any, error) {
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	} else if len(hdrs) != 1 {
+		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+	}
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+	}
+	if !conf.TestPermission("Conference.Nuke", myLevel) || !conf.TestPermission("Conference.Post", myLevel) || topic.TopMessage == 0 {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	targetId, err := ctxt.FormFieldInt("target")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	target, err := database.AmGetTopic(ctxt.Ctx(), int32(targetId))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	// Move the topic!
+	err = hdrs[0].MoveTo(ctxt.Ctx(), target, ctxt.CurrentUser(), ctxt.RemoteIP())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	// Now, we need to send this post to whoever subscribed to the NEW topic. But it's tricky because we don't have
+	// all the information that we'd have if the post was just posted. Spool off any database operations in the task function.
+	subs, err := target.GetSubscribers(ctxt.Ctx())
+	if err != nil {
+		log.Errorf("unable to deliver message to subscribers: %v", err)
+	} else if len(subs) > 0 {
+		// kick off a task to compose E-mails and deliver them to everyone
+		alias := ctxt.GetScratch("currentAlias").(string)
+		ipaddr := ctxt.RemoteIP()
+		poster := ctxt.CurrentUser() // N.B.: only used for E-mail headers
+		hdr := hdrs[0]
+		ampool.Submit(func(ctx context.Context) {
+			var postText string
+			postText, err = hdr.Text(ctx)
+			if err == nil {
+				email.AmDeliverSubscription(ctx, comm, conf, alias, target, poster, hdr, postText, subs, ipaddr)
+			} else {
+				log.Errorf("unable to start AmDeliverSubscription - %v", err)
+			}
+		})
+	}
+
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
 }
 
 /* TopicManage displays the "manage topic" page.

@@ -22,7 +22,7 @@
     </div>
 
     <!-- Topic Selection Form -->
-    <form method="POST" action="{{ formLink }}">
+    <form method="POST" class="max-w-6xl" action="{{ formLink }}">
         <div class="bg-gray-50 p-6 rounded-lg space-y-4">
             <label for="target" class="block text-black text-sm font-bold mb-2">Move to topic:</label>
             <select id="target" name="target" size="1"

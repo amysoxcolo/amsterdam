@@ -114,6 +114,7 @@ func setupEcho() *echo.Echo {
 	opsGroup.GET("/scribble/:msg", ui.AmWrap(ScribbleMessage))
 	opsGroup.GET("/nuke/:msg", ui.AmWrap(NukeMessage))
 	opsGroup.GET("/move/:msg", ui.AmWrap(MoveMessageForm))
+	opsGroup.POST("/move/:msg", ui.AmWrap(MoveMessage))
 	opsGroup.GET("/manage", ui.AmWrap(TopicManage))
 	opsGroup.GET("/subscribe", ui.AmWrap(TopicSetSubscribe))
 	opsGroup.GET("/rmbozo/:uid", ui.AmWrap(TopicRemoveBozo))

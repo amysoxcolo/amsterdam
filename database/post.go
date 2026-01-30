@@ -410,6 +410,110 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 	return nil
 }
 
+// MoveTo moves this message to a new topic.
+func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, ipaddr string) error {
+	if target.TopicId == p.TopicId {
+		return nil // this is a no-op
+	}
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("cannot move a scribbled message")
+	}
+
+	oldTopic, err := AmGetTopic(ctx, p.TopicId)
+	if err != nil {
+		return err
+	}
+	if oldTopic.ConfId != target.ConfId {
+		return errors.New("target topic must be in the same conference")
+	}
+	if oldTopic.TopMessage == 0 {
+		return errors.New("cannot move the only message out of a conference")
+	}
+	conf, err := AmGetConference(ctx, oldTopic.ConfId)
+	if err != nil {
+		return err
+	}
+
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	unlock := true
+	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, posts WRITE, topicsettings WRITE;")
+	defer func() {
+		if unlock {
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
+		}
+	}()
+
+	// Adjust post record in the database to make it part of the new topic.
+	_, err = tx.ExecContext(ctx, "UPDATE posts SET parent = 0, topicid = ?, num = ? WHERE postid = ?", target.TopicId, target.TopMessage+1, p.PostId)
+	if err != nil {
+		return err
+	}
+	// Adjust the topic values in the database to reflect that it has a new post.
+	_, err = tx.ExecContext(ctx, "UPDATE topics SET top_message = top_message + 1, lastupdate = NOW() WHERE topicid = ?", target.TopicId)
+	if err != nil {
+		return err
+	}
+	// Read back the last update.
+	row := tx.QueryRowContext(ctx, "SELECT lastupdate FROM topics WHERE topicid = ?", target.TopicId)
+	var lastUpdate time.Time
+	err = row.Scan(&lastUpdate)
+	if err != nil {
+		return err
+	}
+
+	// Now we have to renumber the posts in the OLD topic just as if the old post was nuked.
+	_, err = tx.ExecContext(ctx, "UPDATE posts SET num = num - 1 WHERE topicid = ? AND num > ?", p.TopicId, p.Num)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "UPDATE topics SET top_message = top_message - 1 WHERE topicid = ?", p.TopicId)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "UPDATE posts SET parent = ? WHERE parent = ?", p.Parent, p.PostId)
+			if err == nil {
+				_, err = tx.ExecContext(ctx, "UPDATE topicsettings SET last_message = ? WHERE topicid = ? AND last_message > ?",
+					oldTopic.TopMessage-1, p.TopicId, oldTopic.TopMessage-1)
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// Touch the "update" in the conference.
+	err = conf.TouchUpdate(ctx, tx, lastUpdate)
+	if err != nil {
+		return err
+	}
+
+	// Unlock tables and commit.
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
+	unlock = false
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+
+	// Now patch the data structures we have.
+	p.Parent = 0
+	p.TopicId = target.TopicId
+	p.Num = target.TopMessage + 1
+	target.TopMessage++
+	target.LastUpdate = lastUpdate
+
+	// And audit the result.
+	ar = AmNewAudit(AuditConferenceMoveMessage, u.Uid, ipaddr, fmt.Sprintf("conf=%d,post=%d", conf.ConfId, p.PostId),
+		fmt.Sprintf("fromTopic=%d", oldTopic.TopicId), fmt.Sprintf("toTopic=%d", target.TopicId))
+	return nil
+}
+
 /* AmGetPost gets a single post from the database by ID.
  * Parameters:
  *     ctx - Standard Go context value.
