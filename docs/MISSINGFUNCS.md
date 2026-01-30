@@ -53,7 +53,7 @@ _(italicized items can be deferred)_
 - Topics view:
   - Find
   - Manage:
-    - Set pseud
+    - ~~Set pseud~~
     - Fixseen
     - ~~Send invite~~
     - Change information
