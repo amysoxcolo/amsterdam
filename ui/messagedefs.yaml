@@ -31,3 +31,27 @@ messagedefs:
         tone: "green"
         icon: "✗"
         text: "No, Cancel"
+  - id: "deleteTopic"
+    title: "Delete Topic"
+    tone: "red"
+    destructive: true
+    message: "You are about to delete a topic!"
+    warningIcon: "💣"
+    warningLines:
+      - text: "Warning: This action cannot be undone!"
+        bold: true
+      - text: "Deleting this topic will permanently remove it from the system."
+        bold: false
+    buttons:
+      - id: "yes"
+        link: "placeholder"
+        confirm: true
+        tone: "red"
+        icon: "✓"
+        text: "Yes, Delete It"
+      - id: "no"
+        link: "placeholder"
+        confirm: false
+        tone: "green"
+        icon: "✗"
+        text: "No, Cancel"

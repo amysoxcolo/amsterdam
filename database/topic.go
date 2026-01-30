@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
@@ -287,6 +288,116 @@ func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
 		}
 	}
 	return rc, err
+}
+
+// backgroundPurgeTopic removes all posts from a topic that's been deleted.
+func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	// Get some stats on the posts we have to remove.
+	row := tx.QueryRowContext(ctx, "SELECT MAX(postid) FROM posts WHERE topicid = ?", topicid)
+	var postMax int32
+	err := row.Scan(&postMax)
+	if err != nil {
+		return err
+	}
+
+	// Perform wholesale deletes on auxiliary tables.
+	_, err = tx.ExecContext(ctx, "DELETE FROM postdata WHERE postid IN (SELECT postid FROM posts WHERE topicid = ? AND postid <= ?)", topicid, postMax)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM postattach WHERE postid IN (SELECT postid FROM posts WHERE topicid = ? AND postid <= ?)", topicid, postMax)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM postdogear WHERE postid IN (SELECT postid FROM posts WHERE topicid = ? AND postid <= ?)", topicid, postMax)
+			if err == nil {
+				_, err = tx.ExecContext(ctx, "DELETE FROM postpublish WHERE postid IN (SELECT postid FROM posts WHERE topicid = ? AND postid <= ?)", topicid, postMax)
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// Now delete from the main posts table.
+	_, err = tx.ExecContext(ctx, "DELETE FROM posts WHERE topicid = ? AND postid <= ?", topicid, postMax)
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+// Delete deletes this topic.
+func (t *Topic) Delete(ctx context.Context, u *User, ipaddr string, background *util.WorkerPool) error {
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	unlock := true
+	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, topicbozo WRITE;")
+	defer func() {
+		if unlock {
+			tx.ExecContext(ctx, "UNLOCK TABLES;")
+		}
+	}()
+
+	conf, err := AmGetConference(ctx, t.ConfId)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, "DELETE FROM topics WHERE topicid = ?", t.TopicId)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM topicsettings WHERE topicid = ?", t.TopicId)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM topicbozo WHERE topicid = ?", t.TopicId)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	err = conf.TouchUpdate(ctx, tx, time.Now())
+	if err != nil {
+		return err
+	}
+	tx.ExecContext(ctx, "UNLOCK TABLES;")
+	unlock = false
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+
+	// create audit record
+	ar = AmNewAudit(AuditConferenceDeleteTopic, u.Uid, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
+		fmt.Sprintf("topic=%d", t.TopicId))
+
+	// Spin off a background task to finish deleting this topic.
+	myTopicId := t.TopicId
+	background.Submit(func(ctx context.Context) {
+		err := backgroundPurgeTopic(ctx, myTopicId)
+		if err != nil {
+			log.Errorf("backgroundTopicPurge FAILED with %v", err)
+		}
+	})
+
+	return nil
 }
 
 // TopicSettings contains per-user settings for topics, including the "last read" message pointer.

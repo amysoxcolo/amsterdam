@@ -39,7 +39,7 @@ _(italicized items can be deferred)_
   - ~~Stick/Unstick~~
   - ~~Freeze/Unfreeze~~
   - ~~Archive/Unarchive~~
-  - Delete
+  - ~~Delete~~
   - ~~Post Scribble~~
   - ~~Post Nuke~~
   - ~~Post Filter User~~

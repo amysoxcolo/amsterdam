@@ -273,6 +273,48 @@ func StickTopic(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
 }
 
+/* DeleteTopic deletes the current topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func DeleteTopic(ctxt ui.AmContext) (string, any, error) {
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	if !conf.TestPermission("Conference.Nuke", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	// Load the message box, and, if we have a valid "yes," then perform the delete
+	mbox, err := ui.AmLoadMessageBox("deleteTopic")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	if mbox.Validate(ctxt, "yes") {
+		err := topic.Delete(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP(), ampool)
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias")), nil
+	}
+
+	// Set up to display the message box.
+	mbox.SetMessage(fmt.Sprintf(`You are about to detele the topic <span class="font-bold text-red-600">"%s"</span>
+		from the <span class="font-bold text-red-600">"%s"</span> conference!`, topic.Name, conf.Name))
+	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/op/%d/delete", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	return mbox.Render(ctxt)
+}
+
 /* HideMessage hides or shows a topic message.
  * Parameters:
  *     ctxt - The AmContext for the request.

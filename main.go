@@ -113,6 +113,7 @@ func setupEcho() *echo.Echo {
 	opsGroup.GET("/freeze", ui.AmWrap(FreezeTopic))
 	opsGroup.GET("/archive", ui.AmWrap(ArchiveTopic))
 	opsGroup.GET("/stick", ui.AmWrap(StickTopic))
+	opsGroup.GET("/delete", ui.AmWrap(DeleteTopic))
 	opsGroup.GET("/hide/:msg", ui.AmWrap(HideMessage))
 	opsGroup.GET("/scribble/:msg", ui.AmWrap(ScribbleMessage))
 	opsGroup.GET("/nuke/:msg", ui.AmWrap(NukeMessage))
