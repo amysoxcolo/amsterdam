@@ -1,0 +1,35 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+{{ .SetSubject("Invitation to " + comm.Name + " Community")}}
+Hi! I would like to invite you to join the "{{ comm.Name }}" community on
+{{ GlobalConfig.Site.Title }}.  To do so, you must register as a user, which
+is absolutely free!  Just point your Web browser at
+<{{ GlobalConfig.Site.BaseURL }}/comm/{{ comm.Alias }}> and click the "Create Account"
+link at the top of the page, or click the "Log In" link if you already have
+a Amsterdam account.  Once you have completed the process, click the "Join Now"
+button.  You will be prompted for the "password" for this community, which is
+"{{ comm.JoinKey }}". You will then be able to take part in the conferences that are
+going on in the community.
+{{ if mode == "conference" }}
+After you've joined the "{{ comm.Name }}" community, check out the
+"{{ conf.Name }}" conference.  To find it, after joining the community,
+click "Conferences" on the left menu bar, then click on the
+"{{ conf.Name }}" conference name in the conference list.
+{{ else if mode == "topic" }}
+After you've joined the "{{ comm.Name }}" community, check out the
+"{{ topic.Name | raw }}" topic in the "{{ conf.Name }}" conference.  To find it,
+after joining the community, click "Conferences" on the left menu bar, then
+click on the "{{ conf.Name }}" conference name in the conference list,
+then click on the "{{ topic.Name | raw }}" topic name in the topic list.
+{{ end }}
+{{ personal }}
+
+Hope to see you in "{{ comm.Name }}" soon!
+
+-- {{ fullname }} (Amsterdam user ID: {{ username }})

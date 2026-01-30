@@ -112,6 +112,20 @@ func (c *Conference) Hosts(ctx context.Context) ([]*User, error) {
 	return rc, nil
 }
 
+// InCommunity returns true if the specified conference is in the community.
+func (c *Conference) InCommunity(ctx context.Context, comm *Community) (bool, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT commid FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
+	var tmp int32
+	err := row.Scan(&tmp)
+	switch err {
+	case nil:
+		return true, nil
+	case sql.ErrNoRows:
+		return false, nil
+	}
+	return false, err
+}
+
 // ContainedBy returns the communities that contain this conference.
 func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT commid FROM commtoconf WHERE confid = ?", c.ConfId)

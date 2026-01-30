@@ -16,7 +16,7 @@
 
     <!-- Invitation Form -->
     <div class="max-w-3xl">
-        <form method="POST" action="TODO">
+        <form method="POST" action="/__invite_send">
             <input type="hidden" name="backlink" value="{{ backlink }}"/>
             {{ if isset(cid) }}
                 <input type="hidden" name="cid" value="{{ cid }}"/>

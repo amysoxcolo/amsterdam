@@ -25,16 +25,16 @@ _(italicized items can be deferred)_
   - E-Mail to All Members
   - Display Audit Records
   - Delete Community
-- Community Profile: Invite
+- ~~Community Profile: Invite~~
 - _Help link atop page headers_
 - _Policy page_
 - Member List: Export
 - HTML reference for post boxes
 - Posts view:
   - Find
-  - Manage:
+  - ~~Manage:~~
     - ~~Subscribe to Topic~~
-    - Send invite
+    - ~~Send invite~~
     - ~~Filtered Users (list/remove)~~
   - ~~Stick/Unstick~~
   - ~~Freeze/Unfreeze~~
@@ -55,7 +55,7 @@ _(italicized items can be deferred)_
   - Manage:
     - Set pseud
     - Fixseen
-    - Send invite
+    - ~~Send invite~~
     - Change information
     - Manage aliases
     - Manage members
