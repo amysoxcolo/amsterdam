@@ -1,0 +1,46 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Top Title -->
+    <div class="mb-2">
+        <h1 class="text-blue-800 text-4xl font-bold inline">Move Message</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-2">
+    </div>
+
+    <!-- Post Identifier -->
+    <div class="mb-2">
+        Message {{ post.Num }} of {{ topMessage }}: {{ if post.Hidden }}<b><em>(Hidden)</em></b>{{ end }}
+    </div>
+    <div class="mb-6">
+        <b>{{ post.Pseud | raw }}</b> (<em><a href="/user/{{ creator.Username }}">{{ creator.Username }}</a>, {{ DisplayDateTime(post.Posted, .) }}</em>)
+    </div>
+
+    <!-- Topic Selection Form -->
+    <form method="POST" action="{{ formLink }}">
+        <div class="bg-gray-50 p-6 rounded-lg space-y-4">
+            <label for="target" class="block text-black text-sm font-bold mb-2">Move to topic:</label>
+            <select id="target" name="target" size="1"
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                {{ range i, t := topiclist }}
+                    <option value="{{ t.TopicID }}">{{ t.Name | raw }}</option>
+                {{ end }}
+            </select>
+        </div>
+        <div class="flex justify-center gap-4 pt-4">
+            <button type="submit" name="move"
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                Move
+            </button>
+            <button type="submit" name="cancel"
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>

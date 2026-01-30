@@ -139,8 +139,8 @@
                                 <a href="{{ topicListLink }}/op/{{ topicNum }}/nuke/{{ p.Num }}" 
                                     class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Nuke</a>
                             {{ end }}
-                            {{ if false }}{* TODO *}
-                                <a href="/TODO" 
+                            {{ if canMove }}
+                                <a href="{{ topicListLink }}/op/{{ topicNum }}/move/{{ p.Num }}" 
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors whitespace-nowrap">Move</a>
                             {{ end }}
                             {{ if canPublish }}

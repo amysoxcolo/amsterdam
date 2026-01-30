@@ -406,6 +406,56 @@ func NukeMessage(ctxt ui.AmContext) (string, any, error) {
 	return mbox.Render(ctxt)
 }
 
+func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
+	if ctxt.CurrentUser().IsAnon {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	} else if len(hdrs) != 1 {
+		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+	}
+	if !conf.TestPermission("Conference.Nuke", myLevel) || !conf.TestPermission("Conference.Post", myLevel) || topic.TopMessage == 0 {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	creator, err := hdrs[0].Creator(ctxt.Ctx())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	ctxt.VarMap().Set("creator", creator)
+
+	topiclist, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), database.TopicViewAll, database.TopicSortName, true)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	for i := range topiclist {
+		if topiclist[i].TopicID == topic.TopicId {
+			topiclist = append(topiclist[:i], topiclist[i+1:]...)
+			break
+		}
+	}
+	ctxt.VarMap().Set("topiclist", topiclist)
+
+	ctxt.VarMap().Set("post", hdrs[0])
+	ctxt.VarMap().Set("topMessage", topic.TopMessage)
+	formLink := fmt.Sprintf("/comm/%s/conf/%s/op/%d/move/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+	ctxt.VarMap().Set("formLink", formLink)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Move Message")
+
+	return "framed_template", "move_message.jet", nil
+}
+
 /* TopicManage displays the "manage topic" page.
  * Parameters:
  *     ctxt - The AmContext for the request.

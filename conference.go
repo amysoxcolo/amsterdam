@@ -570,6 +570,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 		canScribble := !isScribbled && (isMyPost || confNukePerm)
 		ctxt.VarMap().Set("canScribble", canScribble)
 		ctxt.VarMap().Set("canNuke", confNukePerm)
+		ctxt.VarMap().Set("canMove", confNukePerm && conf.TestPermission("Conference.Post", myLevel) && topic.TopMessage > 0)
 		canPublish := !isScribbled && database.AmTestPermission("Global.PublishFP", myLevel)
 		if canPublish {
 			published, _ := posts[0].IsPublished(ctxt.Ctx())
