@@ -165,6 +165,25 @@ func ConfManage(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "manage_conf.jet", nil
 }
 
+/* SetPseud sets the user's default pseud for the conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func SetPseud(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	pseud := ctxt.FormField("pseud")
+	err := conf.SetDefaultPseud(ctxt.Ctx(), ctxt.CurrentUser(), pseud)
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+}
+
 /* AddToHotlist adds the current community and conference to the user's hotlist..
  * Parameters:
  *     ctxt - The AmContext for the request.

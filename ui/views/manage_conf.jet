@@ -21,7 +21,7 @@
 
     <!-- Pseud setter -->
     <div class="flex justify-between items-center mb-4">
-        <form method="POST" action="/TODO/{{ urlStem }}/pseud" class="flex items-center gap-2">
+        <form method="POST" action="{{ urlStem }}/pseud" class="flex items-center gap-2">
             <label for="pseud" 
                     class="w-64 text-right pr-4 text-black text-sm">Set default pseud for conference:</label>
             <input type="text" name="pseud" value="{{ pseud }}" size="37" maxlength="255"
