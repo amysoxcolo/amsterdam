@@ -54,7 +54,7 @@ _(italicized items can be deferred)_
   - Find
   - Manage:
     - ~~Set pseud~~
-    - Fixseen
+    - ~~Fixseen~~
     - ~~Send invite~~
     - Change information
     - Manage aliases

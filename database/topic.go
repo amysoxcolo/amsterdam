@@ -349,14 +349,6 @@ func (t *Topic) Delete(ctx context.Context, u *User, ipaddr string, background *
 		}
 	}()
 
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, topicbozo WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
-		}
-	}()
-
 	conf, err := AmGetConference(ctx, t.ConfId)
 	if err != nil {
 		return err
@@ -373,12 +365,9 @@ func (t *Topic) Delete(ctx context.Context, u *User, ipaddr string, background *
 		return err
 	}
 
-	err = conf.TouchUpdate(ctx, tx, time.Now())
-	if err != nil {
+	if err = conf.TouchUpdate(ctx, tx, time.Now()); err != nil {
 		return err
 	}
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 	if err = tx.Commit(); err != nil {
 		return err
 	}
@@ -670,14 +659,6 @@ func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string,
 		}
 	}()
 
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
-		}
-	}()
-
 	// Insert the new topic into the database.
 	conf.Mutex.Lock()
 	rs, err := tx.ExecContext(ctx, "INSERT INTO topics (confid, num, creator_uid, createdate, lastupdate, name) VALUES (?, ?, ?, NOW(), NOW(), ?)",
@@ -731,9 +712,6 @@ func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string,
 	if err != nil {
 		return nil, err
 	}
-
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 
 	// update the "last posted" date in the conference settings
 	_, err = conf.TouchPost(ctx, tx, user, topic.CreateDate)

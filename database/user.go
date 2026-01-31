@@ -694,13 +694,6 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 			tx.Rollback()
 		}
 	}()
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES users WRITE, userprefs WRITE, propuser WRITE, commmember WRITE, sideboxes WRITE, confhotlist WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
-		}
-	}()
 
 	// Test if the user name is already taken.
 	row := tx.QueryRowContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
@@ -748,9 +741,6 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	if err = copySideboxes(ctx, tx, user.Uid, anon.Uid); err != nil {
 		return nil, err
 	}
-
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 
 	if err = tx.Commit(); err != nil {
 		return nil, err

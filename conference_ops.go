@@ -184,6 +184,24 @@ func SetPseud(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
 }
 
+/* ConfFixseen marks all messages in a conference as read.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ConfFixseen(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	err := conf.Fixseen(ctxt.Ctx(), ctxt.CurrentUser())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+}
+
 /* AddToHotlist adds the current community and conference to the user's hotlist..
  * Parameters:
  *     ctxt - The AmContext for the request.

@@ -347,6 +347,71 @@ func (c *Conference) UnreadMessages(ctx context.Context, u *User) (int32, error)
 	return rc, err
 }
 
+// fixseenData is a temporary structure used in assisting with Fixseen.
+type fixseenData struct {
+	topicid    int32
+	topmessage int32
+	insert     bool
+}
+
+// Fixseen marks all messages in a conference as read.
+func (c *Conference) Fixseen(ctx context.Context, u *User) error {
+	if u.IsAnon {
+		return nil
+	}
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+
+	// Get a count of topics beforehand.
+	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM topics WHERE confid = ?", c.ConfId)
+	count := 0
+	err := row.Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// Build the list of all topics.
+	rs, err := tx.QueryContext(ctx, `SELECT t.topicid, t.top_message, ISNULL(s.last_message) FROM topics t
+		LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ? WHERE t.confid = ?`, u.Uid, c.ConfId)
+	if err != nil {
+		return err
+	}
+	work := make([]fixseenData, 0, count)
+	for rs.Next() {
+		var d fixseenData
+		err = rs.Scan(&(d.topicid), &(d.topmessage), &(d.insert))
+		work = append(work, d)
+	}
+
+	// Adjust each topic in turn.
+	for _, d := range work {
+		if d.insert {
+			_, err = tx.ExecContext(ctx, "INSERT INTO topicsettings (topicid, uid, last_message, last_read) VALUES (?, ?, ?, NOW())", d.topicid, u.Uid, d.topmessage)
+		} else {
+			_, err = tx.ExecContext(ctx, "UPDATE topicsettings SET last_message = ?, last_read = NOW() WHERE topicid = ? AND uid = ?", d.topmessage, d.topicid, u.Uid)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	// Also update last-read in conference.
+	if _, err = c.TouchRead(ctx, tx, u); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.

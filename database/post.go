@@ -284,14 +284,6 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error
 			tx.Rollback()
 		}
 	}()
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES posts WRITE, postdata WRITE, postattach WRITE, postpublish WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
-		}
-	}()
-
 	// Scribble on the post header.
 	scribblePseud := "<EM><B>(Scribbled)</B></EM>" // FUTURE: configurable option
 	_, err := tx.ExecContext(ctx, "UPDATE posts SET linecount = 0, hidden = 0, scribble_uid = ?, scribble_date = NOW(), pseud = ? WHERE postid = ?", u.Uid, scribblePseud, p.PostId)
@@ -318,9 +310,6 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error
 		return err
 	}
 
-	// Unlock tables and commit.
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 	if err = tx.Commit(); err != nil {
 		return err
 	}
@@ -351,13 +340,6 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 	defer func() {
 		if !success {
 			tx.Rollback()
-		}
-	}()
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES posts WRITE, postdata WRITE, postattach WRITE, postdogear WRITE, postpublish WRITE, topics WRITE, topicsettings WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
 		}
 	}()
 
@@ -399,9 +381,6 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 		return err
 	}
 
-	// Unlock tables and commit.
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 	if err = tx.Commit(); err != nil {
 		return err
 	}
@@ -486,13 +465,6 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, ipaddr 
 			tx.Rollback()
 		}
 	}()
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, posts WRITE, topicsettings WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
-		}
-	}()
 
 	// Adjust post record in the database to make it part of the new topic.
 	_, err = tx.ExecContext(ctx, "UPDATE posts SET parent = 0, topicid = ?, num = ? WHERE postid = ?", target.TopicId, target.TopMessage+1, p.PostId)
@@ -534,9 +506,6 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, ipaddr 
 		return err
 	}
 
-	// Unlock tables and commit.
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 	if err = tx.Commit(); err != nil {
 		return err
 	}
@@ -625,13 +594,6 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 			tx.Rollback()
 		}
 	}()
-	unlock := true
-	tx.ExecContext(ctx, "LOCK TABLES confs WRITE, topics WRITE, topicsettings WRITE, posts WRITE, postdata WRITE;")
-	defer func() {
-		if unlock {
-			tx.ExecContext(ctx, "UNLOCK TABLES;")
-		}
-	}()
 
 	// Add the post header information.
 	rs, err := tx.ExecContext(ctx, "INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, ?, ?, ?, NOW(), ?)",
@@ -670,9 +632,6 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	}
 	topic.TopMessage = hdr.Num
 	topic.LastUpdate = hdr.Posted
-
-	tx.ExecContext(ctx, "UNLOCK TABLES;")
-	unlock = false
 
 	// update the "last update" date of the conference and the "last posted" date in the conference settings
 	if err = conf.TouchUpdate(ctx, tx, hdr.Posted); err != nil {

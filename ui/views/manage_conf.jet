@@ -32,7 +32,7 @@
 
     <!-- Fixseen link -->
     <div class="mb-4">
-        <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="/TODO/{{ urlStem }}/fixseen">Mark entire conference as read (fixseen)</a>
+        <a class="text-blue-700 hover:text-blue-900 text-sm font-bold" href="{{ urlStem }}/fixseen">Mark entire conference as read (fixseen)</a>
     </div>
 
     {{ if canInvite }}
