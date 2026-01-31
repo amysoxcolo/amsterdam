@@ -201,109 +201,173 @@
             <div class="text-sm text-black font-bold">{{ resultHeader }}</div>
         </div>
         {{ if isset(resultList) }}
-            <!-- Results List -->
-            <div class="bg-gray-50 p-6 rounded-lg">
-                <div class="space-y-4">
-                {{ range _, rx := resultList }}
-                    {{ if mode == "COM" }}
-                        <!-- Community Result -->
-                        <div class="flex items-start gap-3">
-                            <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
-                            <div class="flex-1">
-                                <div class="mb-2">
-                                    <a href="/comm/{{ rx.Alias }}/profile" 
-                                       class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Name }}</a>
-                                </div>
-                                <div class="text-sm text-gray-700 space-y-1">
-                                    <div>
-                                        <span class="font-medium">Host:</span>
-                                        {{ h := CommunityHost(rx, .) }}
-                                        <a href="/user/{{ h.Username }}" class="text-blue-700 hover:text-blue-900">{{ h.Username }}</a>
-                                        <span class="mx-2">-</span>
-                                        {{ n := DisplayMemberCount(rx, .) }}
-                                        {{ if n == 1 }}
-                                            <span>1 member</span>
-                                        {{ else }}
-                                            <span>{{ n }} members</span>
-                                        {{ end }}
-                                    </div>
-                                    <div>
-                                        <span class="font-medium">Latest activity:</span> {{ DisplayActivity(rx.LastAccess, .)}}
-                                    </div>
-                                    <div class="italic text-gray-600 mt-2">{{ rx.Synopsis }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    {{ else if mode == "USR" }}
-                        <!-- User Result -->
-                        <div class="flex items-start gap-3">
-                            <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
-                            <div class="flex-1">
-                                <div class="mb-2">
-                                    <a href="/user/{{ rx.Username }}" 
-                                       class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Username }}</a>
-                                </div>
-                                <div class="text-sm text-gray-700 space-y-1">
-                                    <div>
-                                        {{ ci := UserContactInfo(rx, .) }}
-                                        {{ DisplayFullName(ci) }}, from {{ ci.Locality }}, {{ ci.Region }} {{ ci.Country }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {{ else if mode == "CAT" }}
-                        <!-- Category Result -->
-                        <div class="flex items-start gap-3">
-                            <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
-                            <div class="flex-1 mb-2">
-                                <a href="/find?mode=COM&catid={{ rx.CatId }}" 
-                                    class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ DisplayExpandCat(rx, .) }}</a>
-                            </div>
-                        </div>
-                    {{ else if mode == "PST" }}
-                        TODO: I don't know PST yet
-                    {{ end }}
-                {{ end }}
+            {{ if mode == "PST" }}
+                <div class="overflow-x-auto">
+                    <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-100 border-b-2 border-gray-300">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Post Link</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Author</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Post Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Lines</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Preview</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {{ range _, rx := resultList }}
+                                    <tr class="hover:bg-blue-50">
+                                        <td class="px-4 py-3 text-sm">
+                                            <a href="http://necrovenice:8080/venice/go/minds!Playground.2.880" 
+                                            class="text-blue-700 hover:text-blue-900 font-mono">minds!Playground.2.880</a>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <a href="http://necrovenice:8080/venice/user/Beenherebefo" 
+                                            class="text-blue-700 hover:text-blue-900">Beenherebefo</a>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
+                                            Jan 1, 2002 10:57:06 PM
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">
+                                            12
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 italic">
+                                            Bold, the truth is that one entity can incorporate in only...
+                                        </td>
+                                    </tr>
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                {{ if isset(resultShowPrev) || isset(resultShowNext) }}
-                    <div class="flex justify-center gap-4 mt-6">
-                        {{ if isset(resultFromDirectory) }}
+
+                {{ if isset(resultShowPrev) || isset(resuiltShowNext) }}
+                    <!-- Bottom Navigation -->
+                    <div class="flex justify-end mt-6">
+                        <form method="POST" action="/find">
+                            <input type="hidden" name="mode" value="{{ mode }}"/>
+                            <input type="hidden" name="ofs" value="{{ ofs }}"/>
+                            <input type="hidden" name="field" value="{{ field }}"/>
+                            <input type="hidden" name="oper" value="{{ oper }}"/>
+                            <input type="hidden" name="term" value="{{ term }}"/>
                             {{ if isset(resultShowPrev) }}
-                                <a href="/find?mode=COM&catid={{ catid }}&ofs={{ ofs - 1 }}"
-                                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
-                                   ⏪ Prev
-                                </a>
+                                <button type="submit" name="prev"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                    ⏪ Prev
+                                </button>
                             {{ end }}
                             {{ if isset(resultShowNext) }}
-                                <a href="/find?mode=COM&catid={{ catid }}&ofs={{ ofs + 1 }}"
-                                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
-                                   Next ⏩
-                                </a>
+                                <button type="submit" name="next"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                    Next ⏩
+                                </button>
                             {{ end }}
-                        {{ else }}
-                            <form method="POST" action="/find">
-                                <input type="hidden" name="mode" value="{{ mode }}"/>
-                                <input type="hidden" name="ofs" value="{{ ofs }}"/>
-                                <input type="hidden" name="field" value="{{ field }}"/>
-                                <input type="hidden" name="oper" value="{{ oper }}"/>
-                                <input type="hidden" name="term" value="{{ term }}"/>
-                                {{ if isset(resultShowPrev) }}
-                                    <button type="submit" name="prev"
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
-                                        ⏪ Prev
-                                    </button>
-                                {{ end }}
-                                {{ if isset(resultShowNext) }}
-                                    <button type="submit" name="next"
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
-                                        Next ⏩
-                                    </button>
-                                {{ end }}
-                            </form>
-                        {{ end }}
+                        </form>
                     </div>
                 {{ end }}
-            </div>
+            {{ else }}
+                <!-- Results List -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <div class="space-y-4">
+                    {{ range _, rx := resultList }}
+                        {{ if mode == "COM" }}
+                            <!-- Community Result -->
+                            <div class="flex items-start gap-3">
+                                <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
+                                <div class="flex-1">
+                                    <div class="mb-2">
+                                        <a href="/comm/{{ rx.Alias }}/profile" 
+                                        class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Name }}</a>
+                                    </div>
+                                    <div class="text-sm text-gray-700 space-y-1">
+                                        <div>
+                                            <span class="font-medium">Host:</span>
+                                            {{ h := CommunityHost(rx, .) }}
+                                            <a href="/user/{{ h.Username }}" class="text-blue-700 hover:text-blue-900">{{ h.Username }}</a>
+                                            <span class="mx-2">-</span>
+                                            {{ n := DisplayMemberCount(rx, .) }}
+                                            {{ if n == 1 }}
+                                                <span>1 member</span>
+                                            {{ else }}
+                                                <span>{{ n }} members</span>
+                                            {{ end }}
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">Latest activity:</span> {{ DisplayActivity(rx.LastAccess, .)}}
+                                        </div>
+                                        <div class="italic text-gray-600 mt-2">{{ rx.Synopsis }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        {{ else if mode == "USR" }}
+                            <!-- User Result -->
+                            <div class="flex items-start gap-3">
+                                <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
+                                <div class="flex-1">
+                                    <div class="mb-2">
+                                        <a href="/user/{{ rx.Username }}" 
+                                        class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ rx.Username }}</a>
+                                    </div>
+                                    <div class="text-sm text-gray-700 space-y-1">
+                                        <div>
+                                            {{ ci := UserContactInfo(rx, .) }}
+                                            {{ DisplayFullName(ci) }}, from {{ ci.Locality }}, {{ ci.Region }} {{ ci.Country }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {{ else if mode == "CAT" }}
+                            <!-- Category Result -->
+                            <div class="flex items-start gap-3">
+                                <span class="text-sm pt-0.5 flex-shrink-0">🟣</span>
+                                <div class="flex-1 mb-2">
+                                    <a href="/find?mode=COM&catid={{ rx.CatId }}" 
+                                        class="text-blue-700 hover:text-blue-900 font-bold text-base">{{ DisplayExpandCat(rx, .) }}</a>
+                                </div>
+                            </div>
+                        {{ end }}
+                    {{ end }}
+                    </div>
+                    {{ if isset(resultShowPrev) || isset(resultShowNext) }}
+                        <div class="flex justify-center gap-4 mt-6">
+                            {{ if isset(resultFromDirectory) }}
+                                {{ if isset(resultShowPrev) }}
+                                    <a href="/find?mode=COM&catid={{ catid }}&ofs={{ ofs - 1 }}"
+                                    class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
+                                    ⏪ Prev
+                                    </a>
+                                {{ end }}
+                                {{ if isset(resultShowNext) }}
+                                    <a href="/find?mode=COM&catid={{ catid }}&ofs={{ ofs + 1 }}"
+                                    class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-xs font-medium transition-colors">
+                                    Next ⏩
+                                    </a>
+                                {{ end }}
+                            {{ else }}
+                                <form method="POST" action="/find">
+                                    <input type="hidden" name="mode" value="{{ mode }}"/>
+                                    <input type="hidden" name="ofs" value="{{ ofs }}"/>
+                                    <input type="hidden" name="field" value="{{ field }}"/>
+                                    <input type="hidden" name="oper" value="{{ oper }}"/>
+                                    <input type="hidden" name="term" value="{{ term }}"/>
+                                    {{ if isset(resultShowPrev) }}
+                                        <button type="submit" name="prev"
+                                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                            ⏪ Prev
+                                        </button>
+                                    {{ end }}
+                                    {{ if isset(resultShowNext) }}
+                                        <button type="submit" name="next"
+                                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                            Next ⏩
+                                        </button>
+                                    {{ end }}
+                                </form>
+                            {{ end }}
+                        </div>
+                    {{ end }}
+                </div>
+            {{ end }}
         {{ end }}
     {{ end }}
 </div>
