@@ -190,15 +190,6 @@ func (u *User) ContactInfo(ctx context.Context) (*ContactInfo, error) {
 	return AmGetContactInfo(ctx, u.ContactID)
 }
 
-// ContactInfo returns the contact info structure for the user, quietly.
-func (u *User) ContactInfoQ(ctx context.Context) *ContactInfo {
-	if u.ContactID < 0 {
-		return nil
-	}
-	ci, _ := AmGetContactInfo(ctx, u.ContactID)
-	return ci
-}
-
 // SetContactID sets the contact ID of a user.
 func (u *User) SetContactID(ctx context.Context, cid int32) error {
 	u.Mutex.Lock()

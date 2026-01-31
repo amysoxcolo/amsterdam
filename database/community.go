@@ -168,18 +168,6 @@ func (c *Community) Host(ctx context.Context) (*User, error) {
 	return AmGetUser(ctx, *c.HostUid)
 }
 
-// HostQ returns the reference to the community's host, quietly.
-func (c *Community) HostQ(ctx context.Context) *User {
-	if c.HostUid == nil {
-		return nil
-	}
-	u, err := AmGetUser(ctx, *c.HostUid)
-	if err != nil {
-		return nil
-	}
-	return u
-}
-
 // LanguageTag returns the tag for the community's language.
 func (c *Community) LanguageTag() (*language.Tag, error) {
 	if c.Language == nil {

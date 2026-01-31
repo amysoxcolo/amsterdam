@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -120,6 +120,28 @@ func extractCommunityLogo(a jet.Arguments) reflect.Value {
 		}
 	}
 	return reflect.ValueOf(rc)
+}
+
+// communityHost retrieves the community host for a community.
+func communityHost(a jet.Arguments) reflect.Value {
+	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	u, err := comm.Host(ctxt.Ctx())
+	if err != nil {
+		u, _ = database.AmGetAnonUser(ctxt.Ctx())
+	}
+	return reflect.ValueOf(u)
+}
+
+// userContactInfo retrieves the contact info for a user.
+func userContactInfo(a jet.Arguments) reflect.Value {
+	user := a.Get(0).Convert(reflect.TypeFor[*database.User]()).Interface().(*database.User)
+	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
+	ci, err := user.ContactInfo(ctxt.Ctx())
+	if err != nil {
+		ci = database.AmNewUserContactInfo(0)
+	}
+	return reflect.ValueOf(ci)
 }
 
 // displayDateTime formats a date and time value.
@@ -286,6 +308,8 @@ func SetupTemplates() {
 	views.AddGlobalFunc("MakeIntRange", makeIntRange)
 	views.AddGlobalFunc("MakeYearRange", makeYearRange)
 	views.AddGlobalFunc("ExtractCommunityLogo", extractCommunityLogo)
+	views.AddGlobalFunc("CommunityHost", communityHost)
+	views.AddGlobalFunc("UserContactInfo", userContactInfo)
 	views.AddGlobalFunc("DisplayActivity", displayActivity)
 	views.AddGlobalFunc("DisplayDateTime", displayDateTime)
 	views.AddGlobalFunc("DisplayMemberCount", displayMemberCount)
