@@ -305,6 +305,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "find.jet", nil
 }
 
+// commonFindGetBackend is the common "back end" function for Find Posts in Community/Conference/Topic.
 func commonFindGetBackend(ctxt ui.AmContext) (string, any, error) {
 	ofs := 0
 	p := ctxt.Parameter("ofs")
@@ -320,6 +321,14 @@ func commonFindGetBackend(ctxt ui.AmContext) (string, any, error) {
 	return "framed_template", "find_posts.jet", nil
 }
 
+/* FindPostsPageCommunity renders the page for finding posts in a community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func FindPostsPageCommunity(ctxt ui.AmContext) (string, any, error) {
 	comm := ctxt.CurrentCommunity()
 	ctxt.VarMap().Set("scope", "community")
@@ -329,6 +338,14 @@ func FindPostsPageCommunity(ctxt ui.AmContext) (string, any, error) {
 	return commonFindGetBackend(ctxt)
 }
 
+/* FindPostsPageConference renders the page for finding posts in a conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func FindPostsPageConference(ctxt ui.AmContext) (string, any, error) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
@@ -339,6 +356,14 @@ func FindPostsPageConference(ctxt ui.AmContext) (string, any, error) {
 	return commonFindGetBackend(ctxt)
 }
 
+/* FindPostsPageTopic renders the page for finding posts in a topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func FindPostsPageTopic(ctxt ui.AmContext) (string, any, error) {
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
@@ -347,4 +372,97 @@ func FindPostsPageTopic(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/conf/%s/op/%d/find", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
 	return commonFindGetBackend(ctxt)
+}
+
+// commonFindPostBackend is the common "back end" function for Find Posts in Community/Conference/Topic.
+func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *database.Conference, topic *database.Topic) (string, any, error) {
+	term := ctxt.FormField("term")
+	ctxt.VarMap().Set("term", term)
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Find Posts")
+	ofs, _ := ctxt.FormFieldInt("ofs")
+	if ctxt.FormFieldIsSet("search") {
+		ofs = 0
+	} else if ctxt.FormFieldIsSet("prev") {
+		ofs -= 1
+	} else if ctxt.FormFieldIsSet("next") {
+		ofs += 1
+	}
+	ctxt.VarMap().Set("ofs", ofs)
+	listMax := int(ctxt.Globals().MaxSearchPage)
+	var numResults int
+	postlist, total, err := database.AmSearchPosts(ctxt.Ctx(), term, ctxt.CurrentUser(), ofs*listMax, listMax, comm, conf, topic)
+	if err == nil {
+		numResults = len(postlist)
+		ctxt.VarMap().Set("resultList", postlist)
+	} else {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		return "framed_template", "find_posts.jet", nil
+	}
+	if numResults == 0 {
+		ctxt.VarMap().Set("resultHeader", "Search Results: (None)")
+	} else {
+		ctxt.VarMap().Set("resultHeader", fmt.Sprintf("Search Results: Displaying %d-%d of %d",
+			ofs*listMax+1, ofs*listMax+numResults, total))
+		if ofs > 0 {
+			ctxt.VarMap().Set("resultShowPrev", true)
+		}
+		if ofs*listMax+numResults < total {
+			ctxt.VarMap().Set("resultShowNext", true)
+		}
+	}
+	return "framed_template", "find_posts.jet", nil
+}
+
+/* FindPostsCommunity finds posts in a community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func FindPostsCommunity(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	ctxt.VarMap().Set("scope", "community")
+	ctxt.VarMap().Set("entityName", comm.Name)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf", comm.Alias))
+	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/find", comm.Alias))
+	return commonFindPostBackend(ctxt, comm, nil, nil)
+}
+
+/* FindPostsConference finds posts in a conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func FindPostsConference(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	ctxt.VarMap().Set("scope", "conference")
+	ctxt.VarMap().Set("entityName", conf.Name)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/conf/%s/find", comm.Alias, ctxt.GetScratch("currentAlias")))
+	return commonFindPostBackend(ctxt, comm, conf, nil)
+}
+
+/* FindPostsTopic finds posts in a topic.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func FindPostsTopic(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	ctxt.VarMap().Set("scope", "topic")
+	ctxt.VarMap().Set("entityName", topic.Name)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/conf/%s/op/%d/find", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	return commonFindPostBackend(ctxt, comm, conf, topic)
 }

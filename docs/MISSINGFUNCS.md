@@ -20,7 +20,7 @@ _(italicized items can be deferred)_
   - System Audit Logs
   - Import User Accounts
 - Conferences list:
-  - Find
+  - ~~Find~~
   - Manage (reorder/show/hide/delete)
   - Create New
 - Community Admin Menu:
@@ -35,8 +35,8 @@ _(italicized items can be deferred)_
 - _Policy page_
 - Member List: Export
 - HTML reference for post boxes
-- Posts view:
-  - Find
+- ~~Posts view:~~
+  - ~~Find~~
   - ~~Manage:~~
     - ~~Subscribe to Topic~~
     - ~~Send invite~~
@@ -56,7 +56,7 @@ _(italicized items can be deferred)_
 - ~~Manage on Conference Hotlist sidebox~~
 - Sidebox configuration
 - Topics view:
-  - Find
+  - ~~Find~~
   - Manage:
     - ~~Set pseud~~
     - ~~Fixseen~~

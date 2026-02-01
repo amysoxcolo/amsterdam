@@ -201,7 +201,7 @@
             <div class="text-sm text-black font-bold">{{ resultHeader }}</div>
         </div>
         {{ if isset(resultList) }}
-            {{ if mode == "PST" }}
+            {{ if mode == "PST" && len(resultList) > 0 }}
                 <div class="overflow-x-auto">
                     <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
                         <table class="w-full">
