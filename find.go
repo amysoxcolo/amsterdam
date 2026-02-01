@@ -304,3 +304,47 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 	}
 	return "framed_template", "find.jet", nil
 }
+
+func commonFindGetBackend(ctxt ui.AmContext) (string, any, error) {
+	ofs := 0
+	p := ctxt.Parameter("ofs")
+	if p != "" {
+		v, err := strconv.Atoi(p)
+		if err == nil {
+			ofs = v
+		}
+	}
+	ctxt.VarMap().Set("ofs", ofs)
+	ctxt.VarMap().Set("term", "")
+	ctxt.VarMap().Set("amsterdam_pageTitle", "Find Posts")
+	return "framed_template", "find_posts.jet", nil
+}
+
+func FindPostsPageCommunity(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	ctxt.VarMap().Set("scope", "community")
+	ctxt.VarMap().Set("entityName", comm.Name)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf", comm.Alias))
+	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/find", comm.Alias))
+	return commonFindGetBackend(ctxt)
+}
+
+func FindPostsPageConference(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	ctxt.VarMap().Set("scope", "conference")
+	ctxt.VarMap().Set("entityName", conf.Name)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/conf/%s/find", comm.Alias, ctxt.GetScratch("currentAlias")))
+	return commonFindGetBackend(ctxt)
+}
+
+func FindPostsPageTopic(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	ctxt.VarMap().Set("scope", "topic")
+	ctxt.VarMap().Set("entityName", topic.Name)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/conf/%s/op/%d/find", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	return commonFindGetBackend(ctxt)
+}

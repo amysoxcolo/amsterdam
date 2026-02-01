@@ -52,7 +52,7 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-4">
-            <a href="TODO"
+            <a href="/comm/{{ commAlias }}/find"
                 class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">
                 Find Posts
             </a>

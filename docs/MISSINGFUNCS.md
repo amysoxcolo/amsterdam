@@ -21,7 +21,7 @@ _(italicized items can be deferred)_
   - Import User Accounts
 - Conferences list:
   - Find
-  - Manage
+  - Manage (reorder/show/hide/delete)
   - Create New
 - Community Admin Menu:
   - Set Community Category

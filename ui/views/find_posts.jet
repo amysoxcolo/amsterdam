@@ -1,0 +1,138 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title with Tabs -->
+    <div class="mb-2">
+        <div class=" flex items-baseline gap-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Find Posts</h1>
+            {{ if scope == "community" }}
+                <span class="text-blue-800 text-xl font-bold ml-2">in Community: {{ entityName }}</span>
+            {{ else if scope == "conference" }}
+                <span class="text-blue-800 text-xl font-bold ml-2">in Conference: {{ entityName }}</span>
+            {{ else if scope == "topic" }}
+                <span class="text-blue-800 text-xl font-bold ml-2">in Topic: {{ entityName | raw }}</span>
+            {{ end }}
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-2">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        {{ if scope == "community" }}
+            <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backlink }}">Return to Conference List</a>
+        {{ else if scope == "conference" }}
+            <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backlink }}">Return to Topic List</a>
+        {{ else if scope == "topic" }}
+            <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backlink }}">Return to Topic</a>
+        {{ end }}
+    </div>
+
+    {{ if isset(errorMessage) }}
+        <!-- Error Message Banner -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-red-500 text-xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(errorMessage) }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+
+    <!-- Search Form -->
+    <div class="max-w-3xl mb-8">
+        <form method="POST" action="{{ postlink }}">
+            <input type="hidden" name="scope" value="{{ scope }}">
+            <input type="hidden" name="ofs" value="0">
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <div class="space-y-4">
+                    <!-- Keyword search criteria -->
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-black">Keywords:</span>
+                        <input type="text" name="term" size="32" maxlength="255" value="{{ term }}"
+                            placeholder="Enter search term..."
+                            class="flex-1 min-w-64 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <!-- Search Button -->
+                    <div>
+                        <button type="submit" name="search"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {{ if isset(resultHeader) }}
+        <!-- Search results -->
+        <hr class="border-gray-400 mb-4">
+        <div class="flex justify-between items-center mb-4">
+            <div class="text-sm text-black font-bold">{{ resultHeader }}</div>
+        </div>
+        {{ if isset(resultList) }}
+            <div class="overflow-x-auto">
+                <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 border-b-2 border-gray-300">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Post Link</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Author</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Post Date</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Lines</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Preview</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {{ range _, rx := resultList }}
+                                <tr class="hover:bg-blue-50">
+                                    <td class="px-4 py-3 text-sm">
+                                        <a href="/go/{{ rx.PostLink }}" class="text-blue-700 hover:text-blue-900 font-mono">{{ rx.PostLink }}</a>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <a href="/user/{{ rx.Author }}" class="text-blue-700 hover:text-blue-900">{{ rx.Author }}</a>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap text-gray-600">{{ DisplayDateTime( rx.PostDate, .) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600">{{ rx.Lines }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-600 italic">{{ rx.Excerpt }}</td>
+                                </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{ if isset(resultShowPrev) || isset(resultShowNext) }}
+                <!-- Bottom Navigation -->
+                <div class="flex justify-end mt-6">
+                    <form method="POST" action="{{ postlink }}">
+                        <input type="hidden" name="scope" value="{{ scope }}"/>
+                        <input type="hidden" name="ofs" value="{{ ofs }}"/>
+                        <input type="hidden" name="term" value="{{ term }}"/>
+                        {{ if isset(resultShowPrev) }}
+                            <button type="submit" name="prev"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                ⏪ Prev
+                            </button>
+                        {{ end }}
+                        {{ if isset(resultShowNext) }}
+                            <button type="submit" name="next"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                                Next ⏩
+                            </button>
+                        {{ end }}
+                    </form>
+                </div>
+            {{ end }}
+        {{ end }}
+    {{ end }}
+</div>

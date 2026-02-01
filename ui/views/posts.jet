@@ -34,7 +34,7 @@
                     <a href="{{ urlNextKeepNew }}" 
                         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Next & Keep New</a>
                 {{ end }}
-                <a href="/TODO" 
+                <a href="{{ topicListLink }}/op/{{ topicNum }}/find" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Find</a>
                 {{ if !isAnon }}
                     <a href="{{ topicListLink }}/op/{{ topicNum }}/manage" 
