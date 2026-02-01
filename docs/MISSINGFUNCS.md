@@ -11,6 +11,7 @@ _(italicized items can be deferred)_
 - _Calendar (top menu link)_
 - _Chat (top menu link)_
 - _Documentation (top menu link)_
+- Quote banner rotation
 - Sysadmin Menu:
   - Edit Global Properties
   - View/Edit IP Address Bans
@@ -20,6 +21,8 @@ _(italicized items can be deferred)_
   - Import User Accounts
 - Conferences list:
   - Find
+  - Manage
+  - Create New
 - Community Admin Menu:
   - Set Community Category
   - Set Community Services

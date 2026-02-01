@@ -46,6 +46,8 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 	ctxt.VarMap().Set("conferences", clist)
+	ctxt.VarMap().Set("canCreate", comm.TestPermission("Community.Create", ctxt.EffectiveLevel()))
+	ctxt.VarMap().Set("canManage", comm.TestPermission("Community.Create", ctxt.EffectiveLevel()))
 	return "framed_template", "conflist.jet", err
 }
 

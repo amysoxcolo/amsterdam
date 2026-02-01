@@ -52,10 +52,22 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-4">
-            <a href="/find?mode=PST"
+            <a href="TODO"
                 class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">
                 Find Posts
             </a>
+            {{ if canManage }}
+                <a href="TODO"
+                    class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                    Manage
+                </a>
+            {{ end }}
+            {{ if canCreate }}
+                <a href="TODO"
+                    class="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">
+                    Create New
+                </a>
+            {{ end }}
         </div>
 
         <!-- Information Note -->
