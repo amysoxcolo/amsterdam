@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // PostHeader represents the "header" of a post, everything except for its text and attachment.
@@ -717,4 +718,242 @@ func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, error) {
 	}
 
 	return rc, nil
+}
+
+type PostSearchResult struct {
+	PostLink string
+	Author   string
+	PostDate time.Time
+	Lines    int32
+	Excerpt  string
+}
+
+const EXCERPT_MAX = 60 // temporary implementation
+
+// decodeSearchScope turns the scope values from the AmSearchPosts call into a set of coherent values.
+func decodeSearchScope(ctx context.Context, scopeValues []any) (string, *Community, *Conference, *Topic, error) {
+	var myComm *Community = nil
+	var myConf *Conference = nil
+	var myTopic *Topic = nil
+
+	// Sort the items in the scopeValues array and fill them in the right slots.
+	for i := range scopeValues {
+		if scopeValues[i] == nil {
+			continue
+		}
+		if thisComm, ok := scopeValues[i].(*Community); ok {
+			if myComm != nil {
+				return "error", nil, nil, nil, errors.New("cannot specify multiple communities")
+			}
+			myComm = thisComm
+			continue
+		}
+		if thisConf, ok := scopeValues[i].(*Conference); ok {
+			if myConf != nil {
+				return "error", nil, nil, nil, errors.New("cannot specify multiple conferences")
+			}
+			myConf = thisConf
+			continue
+		}
+		if thisTopic, ok := scopeValues[i].(*Topic); ok {
+			if myTopic != nil {
+				return "error", nil, nil, nil, errors.New("cannot specify multiple topics")
+			}
+			myTopic = thisTopic
+			continue
+		}
+		return "error", nil, nil, nil, errors.New("invalid item specified in scope")
+	}
+
+	// Based on which slots are full, determine the scope. Also error-check relations between the specified slots.
+	if myComm == nil {
+		if myConf != nil || myTopic != nil {
+			return "error", nil, nil, nil, errors.New("conference/topic specified without community")
+		}
+		return "global", nil, nil, nil, nil
+	}
+	if myConf == nil {
+		if myTopic != nil {
+			return "error", nil, nil, nil, errors.New("topic specified without conference")
+		}
+		return "community", myComm, nil, nil, nil
+	}
+	f, err := myConf.InCommunity(ctx, myComm)
+	if err != nil {
+		return "error", nil, nil, nil, err
+	}
+	if !f {
+		return "error", nil, nil, nil, errors.New("community does not contain conference")
+	}
+	if myTopic == nil {
+		return "conference", myComm, myConf, nil, nil
+	}
+	if myTopic.ConfId != myConf.ConfId {
+		return "error", nil, nil, nil, errors.New("conference does not contain topic")
+	}
+	return "topic", myComm, myConf, myTopic, nil
+}
+
+/* AmSearchPosts finds posts by using full text search on their contents.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     searchTerms - The terms to search for in the text.
+ *     u - The user performing the search.
+ *     offset - How many posts in the results to skip.
+ *     max - Maximum number of posts to return.
+ *     scopeValues - Multiple object values to limit the scope. Put a Community pointer here to limit the scope to
+ *                   that community. Also add a Conference pointer (from that community) to limit the scope to that conference.
+ *                   Also add a Topic pointer (from that conference) to limit the scope to that topic.
+ * Returns:
+ *     Array of PostSearchResult structures with the results.
+ *     Total number of posts that match the search.
+ *     Standard Go error status.
+ */
+func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max int, scopeValues ...any) ([]PostSearchResult, int, error) {
+	// Decode the search scope.
+	scope, comm, conf, topic, err := decodeSearchScope(ctx, scopeValues)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	// Get the proper service index to match against the community services.
+	confService, err := AmGetServiceIndex("community", "Conference")
+	if err != nil {
+		return nil, -1, err
+	}
+
+	// Get the count of matching posts.
+	var row *sql.Row
+	switch scope {
+	case "global":
+		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, searchTerms)
+	case "community":
+		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, searchTerms)
+	case "conference":
+		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms)
+	case "topic":
+		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND q.commid = ? AND c.confid = ? AND t.topicid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`,
+			u.Uid, confService, comm.Id, conf.ConfId, topic.TopicId, searchTerms)
+	}
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		log.Errorf("AmSearchPosts query 1 error %v", err)
+		return nil, -1, err
+	}
+
+	// Get the matching posts themselves.
+	var rs *sql.Rows
+	switch scope {
+	case "global":
+		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
+			LIMIT ? OFFSET ?`, u.Uid, confService, searchTerms, max, offset)
+	case "community":
+		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
+			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, searchTerms, max, offset)
+	case "conference":
+		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
+			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms, max, offset)
+	case "topic":
+		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
+			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
+			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
+			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
+			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			AND q.commid = ? AND c.confid = ? AND t.topicid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
+			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, conf.ConfId, topic.TopicId, searchTerms, max, offset)
+	}
+	if err != nil {
+		log.Errorf("AmSearchPosts query 2 error %v", err)
+		return nil, count, err
+	}
+	rc := make([]PostSearchResult, max)
+	i := 0
+	for rs.Next() {
+		var commid int32
+		var commAlias string
+		var confid int32
+		var topicid int32
+		var topicNum int16
+		var postid int64
+		var postnum int32
+		err := rs.Scan(&commid, &commAlias, &confid, &topicid, &topicNum, &postid, &postnum, &(rc[i].Author), &(rc[i].PostDate),
+			&(rc[i].Lines), &(rc[i].Excerpt))
+		if err != nil {
+			return nil, count, err
+		}
+
+		// Get conference so we can get aliases.
+		conf, err := AmGetConference(ctx, confid)
+		if err != nil {
+			return nil, count, err
+		}
+		alias, err := conf.Aliases(ctx)
+		if err != nil {
+			return nil, count, err
+		}
+
+		// Build the post link.
+		plink := AmCreatePostLinkContext(commAlias, alias[0], topicNum)
+		plink.FirstPost = postnum
+		plink.LastPost = postnum
+		rc[i].PostLink = plink.AsString()
+
+		// Trim down the excerpt.
+		if len(rc[i].Excerpt) > EXCERPT_MAX {
+			choplen := min(len(rc[i].Excerpt), EXCERPT_MAX*3)
+			tmp := []rune(rc[i].Excerpt[:choplen])
+			choplen = min(len(tmp), EXCERPT_MAX)
+			rc[i].Excerpt = fmt.Sprintf("%s...", string(tmp[:choplen]))
+		}
+		i++ // go on to the next
+	}
+
+	if i < max {
+		rc = rc[:i] // slice off any empty entries at the end
+	}
+	return rc, count, nil
 }

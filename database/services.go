@@ -12,6 +12,7 @@ package database
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"slices"
 	"sync"
 
@@ -121,6 +122,23 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+/* AmGetServiceIndex returns the service index for the given service by domain and identifier.
+ * Parameters:
+ *     domain - The domain of the service to look for.
+ *     id - The identifier of the service.
+ * Returns:
+ *     The service index, if the service is found.
+ *     Standard Go error status.
+ */
+func AmGetServiceIndex(domain, id string) (int16, error) {
+	if d, ok := serviceRoot.byName[domain]; ok {
+		if svc, ok2 := d.byId[id]; ok2 {
+			return svc.Index, nil
+		}
+	}
+	return -1, errors.New("service not found")
 }
 
 /* AmGetCommunityServices returns all the community service definitions for a community.

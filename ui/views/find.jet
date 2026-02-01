@@ -218,22 +218,14 @@
                                 {{ range _, rx := resultList }}
                                     <tr class="hover:bg-blue-50">
                                         <td class="px-4 py-3 text-sm">
-                                            <a href="http://necrovenice:8080/venice/go/minds!Playground.2.880" 
-                                            class="text-blue-700 hover:text-blue-900 font-mono">minds!Playground.2.880</a>
+                                            <a href="/go/{{ rx.PostLink }}" class="text-blue-700 hover:text-blue-900 font-mono">{{ rx.PostLink }}</a>
                                         </td>
                                         <td class="px-4 py-3 text-sm">
-                                            <a href="http://necrovenice:8080/venice/user/Beenherebefo" 
-                                            class="text-blue-700 hover:text-blue-900">Beenherebefo</a>
+                                            <a href="/user/{{ rx.Author }}" class="text-blue-700 hover:text-blue-900">{{ rx.Author }}</a>
                                         </td>
-                                        <td class="px-4 py-3 text-sm whitespace-nowrap text-gray-600">
-                                            Jan 1, 2002 10:57:06 PM
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">
-                                            12
-                                        </td>
-                                        <td class="px-4 py-3 text-sm text-gray-600 italic">
-                                            Bold, the truth is that one entity can incorporate in only...
-                                        </td>
+                                        <td class="px-4 py-3 text-sm whitespace-nowrap text-gray-600">{{ DisplayDateTime( rx.PostDate, .) }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">{{ rx.Lines }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 italic">{{ rx.Excerpt }}</td>
                                     </tr>
                                 {{ end }}
                             </tbody>
@@ -241,7 +233,7 @@
                     </div>
                 </div>
 
-                {{ if isset(resultShowPrev) || isset(resuiltShowNext) }}
+                {{ if isset(resultShowPrev) || isset(resultShowNext) }}
                     <!-- Bottom Navigation -->
                     <div class="flex justify-end mt-6">
                         <form method="POST" action="/find">

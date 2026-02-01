@@ -279,7 +279,12 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 	case "PST":
-		// TODO
+		var postlist []database.PostSearchResult
+		postlist, total, err = database.AmSearchPosts(ctxt.Ctx(), term, ctxt.CurrentUser(), ofs*listMax, listMax)
+		if err == nil {
+			numResults = len(postlist)
+			ctxt.VarMap().Set("resultList", postlist)
+		}
 	}
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
