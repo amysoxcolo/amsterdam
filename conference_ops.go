@@ -26,8 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var ENOPERM error = errors.New("you are not permitted to perform this operation")
-
 // slurpFile reads the contrents of a multipart.File into memory.
 func slurpFile(file *multipart.FileHeader) ([]byte, error) {
 	f, err := file.Open()

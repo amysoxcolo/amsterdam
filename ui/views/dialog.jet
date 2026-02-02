@@ -1,6 +1,6 @@
 {*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,10 +9,12 @@
 <!-- BEGIN DIALOG {{ amsterdam_dialog.Name }} -->
 <div class="p-4">
     <div class="mb-6">
-        <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ amsterdam_dialog.Title }}</h1>
-        {{ if amsterdam_dialog.Subtitle != "" }}
-            <span class="text-blue-800 text-2xl font-bold ml-2">{{ amsterdam_dialog.Subtitle }}</span>
-        {{ end }}
+        <div class=" flex items-baseline gap-2">
+            <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ amsterdam_dialog.Title }}</h1>
+            {{ if amsterdam_dialog.Subtitle != "" }}
+                <span class="text-blue-800 text-2xl font-bold ml-2">{{ amsterdam_dialog.Subtitle }}</span>
+            {{ end }}
+        </div>
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>
     <form name="{{ amsterdam_dialog.FormName }}" method="POST" action="{{ amsterdam_dialog.Action }}" class="max-w-2xl">

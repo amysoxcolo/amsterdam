@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -236,6 +236,13 @@ func (d *Dialog) SetCommunity(comm *database.Community) {
 			d.Fields[i].Param = strings.ReplaceAll(fld.Param, "[CID]", comm.Alias)
 		}
 	}
+}
+
+// SetConference alters a dialog's content to reflect the conference.
+func (d *Dialog) SetConference(conf *database.Conference, alias string) {
+	d.Title = strings.ReplaceAll(d.Title, "[CONFNAME]", conf.Name)
+	d.Subtitle = strings.ReplaceAll(d.Subtitle, "[CONFNAME]", conf.Name)
+	d.Action = strings.ReplaceAll(d.Action, "[CONFID]", alias)
 }
 
 /* Field returns a pointer to a dialog's field, given its name.

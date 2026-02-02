@@ -432,7 +432,7 @@ func (c *Community) PermissionLevel(perm string) uint16 {
 	}
 }
 
-// GetFlags retrieves the flags from the properties.
+// Flags retrieves the flags from the properties.
 func (c *Community) Flags(ctx context.Context) (*util.OptionSet, error) {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
@@ -761,7 +761,7 @@ func AmAutoJoinCommunities(ctx context.Context, user *User) error {
 	return err
 }
 
-// internalGetProp is a helper used by the property functions.
+// internalGetCommProp is a helper used by the community property functions.
 func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityProperties, error) {
 	var err error = nil
 	key := fmt.Sprintf("%d:%d", cid, ndx)
@@ -785,7 +785,7 @@ func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityP
 	return rc.(*CommunityProperties), nil
 }
 
-/* AmGetCommunityProperty retrieves the value of a user property.
+/* AmGetCommunityProperty retrieves the value of a community property.
  * Parameters:
  *     ctx - Standard Go context value.
  *     cid - The ID of the community to get the property for.

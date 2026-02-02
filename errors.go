@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,12 +10,16 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
+
+// ENOPERM is the standard "not permitted" error message.
+var ENOPERM error = errors.New("you are not permitted to perform this operation")
 
 /* NotImplPage is used for all TODO links, to show that something hasn't yet been implemented.
  * Parameters:

@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
@@ -40,6 +41,7 @@ type Conference struct {
 	Description *string    `db:"descr"`      // conference description
 	IconUrl     *string    `db:"icon_url"`   // conference icon URL
 	Color       *string    `db:"color"`      // color for conference
+	flags       *util.OptionSet
 }
 
 type ConferenceSettings struct {
@@ -51,6 +53,23 @@ type ConferenceSettings struct {
 	newflag      bool
 }
 
+// ConferenceProperties represents a property entry for a conference.
+type ConferenceProperties struct {
+	ConfId int32   `db:"confid"` // conference ID
+	Index  int32   `db:"ndx"`    // property index
+	Data   *string `db:"data"`   // property data
+}
+
+// Conference property indexes defined.
+const (
+	ConferencePropFlags = int32(0)
+)
+
+// Flag values for conference property index ConferencePropFlags defined.
+const (
+	ConferenceFlagPicturesInPosts = uint(0)
+)
+
 // conferenceCache is the cache for Conference objects.
 var conferenceCache *lru.TwoQueueCache = nil
 
@@ -60,10 +79,20 @@ var getConferenceMutex sync.Mutex
 // conferenceAliasMap stores alias mappings.
 var conferenceAliasMap sync.Map
 
+// conferencePropCache is the cache for ConferenceProperties objects.
+var conferencePropCache *lru.Cache = nil
+
+// getConferencePropMutex is a mutex on AmGetConferenceProperty.
+var getConferencePropMutex sync.Mutex
+
 // init initializes the conference cache.
 func init() {
 	var err error
 	conferenceCache, err = lru.New2Q(100)
+	if err != nil {
+		panic(err)
+	}
+	conferencePropCache, err = lru.New(100)
 	if err != nil {
 		panic(err)
 	}
@@ -143,6 +172,20 @@ func (c *Conference) InCommunity(ctx context.Context, comm *Community) (bool, er
 	return false, err
 }
 
+// HiddenInList returns whether or not this conference is hidden in the community's conference list.
+func (c *Conference) HiddenInList(ctx context.Context, comm *Community) (bool, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT hide_list FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
+	var rc bool
+	err := row.Scan(&rc)
+	switch err {
+	case nil:
+		return rc, nil
+	case sql.ErrNoRows:
+		return false, errors.New("conference not in community")
+	}
+	return false, err
+}
+
 // ContainedBy returns the communities that contain this conference.
 func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT commid FROM commtoconf WHERE confid = ?", c.ConfId)
@@ -212,6 +255,36 @@ func (c *Conference) TestPermission(perm string, level uint16) bool {
 	default:
 		return AmTestPermission(perm, level)
 	}
+}
+
+// Flags retrieves the flags from the properties.
+func (c *Conference) Flags(ctx context.Context) (*util.OptionSet, error) {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	if c.flags == nil {
+		s, err := AmGetConferenceProperty(ctx, c.ConfId, ConferencePropFlags)
+		if err != nil {
+			return nil, err
+		}
+		if s == nil {
+			c.flags = util.NewOptionSet()
+		} else {
+			c.flags = util.OptionSetFromString(*s)
+		}
+	}
+	return c.flags, nil
+}
+
+// SaveFlags writes the flags to the database and stores them.
+func (c *Conference) SaveFlags(ctx context.Context, f *util.OptionSet) error {
+	s := f.AsString()
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	err := AmSetConferenceProperty(ctx, c.ConfId, ConferencePropFlags, &s)
+	if err == nil {
+		c.flags = f
+	}
+	return err
 }
 
 // Settings returns the settings for a user.
@@ -524,4 +597,78 @@ func AmGetCommunityConferences(ctx context.Context, cid int32, showHidden bool) 
 		}
 	}
 	return rc, nil
+}
+
+// internalGetConfProp is a helper used by the conference property functions.
+func internalGetConfProp(ctx context.Context, confid int32, ndx int32) (*ConferenceProperties, error) {
+	var err error = nil
+	key := fmt.Sprintf("%d:%d", confid, ndx)
+	getConferencePropMutex.Lock()
+	defer getConferencePropMutex.Unlock()
+	rc, ok := conferencePropCache.Get(key)
+	if !ok {
+		var dbdata []ConferenceProperties
+		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx); err != nil {
+			return nil, err
+		}
+		if len(dbdata) == 0 {
+			return nil, nil
+		}
+		if len(dbdata) > 1 {
+			return nil, fmt.Errorf("AmGetConferenceProperty(%d): too many responses(%d)", confid, len(dbdata))
+		}
+		rc = &(dbdata[0])
+		conferencePropCache.Add(key, rc)
+	}
+	return rc.(*ConferenceProperties), nil
+}
+
+/* AmGetConferenceProperty retrieves the value of a conference property.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     confid - The ID of the conference to get the property for.
+ *     ndx - The index of the property to retrieve.
+ * Returns:
+ *     Value of the property string.
+ *     Standard Go error status.
+ */
+func AmGetConferenceProperty(ctx context.Context, confid int32, ndx int32) (*string, error) {
+	p, err := internalGetConfProp(ctx, confid, ndx)
+	if err != nil {
+		return nil, err
+	} else if p == nil {
+		return nil, nil
+	}
+	return p.Data, nil
+}
+
+/* AmSetConferenceProperty sets the value of a conference property.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     confid - The ID of the conference to set the property for.
+ *     ndx - The index of the property to set.
+ *     val - The new value of the property.
+ * Returns:
+ *     Standard Go error status.
+ */
+func AmSetConferenceProperty(ctx context.Context, confid int32, ndx int32, val *string) error {
+	p, err := internalGetConfProp(ctx, confid, ndx)
+	if err != nil {
+		return err
+	}
+	getConferencePropMutex.Lock()
+	defer getConferencePropMutex.Unlock()
+	if p != nil {
+		_, err = amdb.ExecContext(ctx, "UPDATE propconf SET data = ? WHERE confid = ? AND ndx = ?", val, confid, ndx)
+		if err == nil {
+			p.Data = val
+		}
+	} else {
+		prop := ConferenceProperties{ConfId: confid, Index: ndx, Data: val}
+		_, err := amdb.NamedExecContext(ctx, "INSERT INTO propconf (confid, ndx, data) VALUES(:confid, :ndx, :data)", prop)
+		if err == nil {
+			conferencePropCache.Add(fmt.Sprintf("%d:%d", confid, ndx), prop)
+		}
+	}
+	return err
 }

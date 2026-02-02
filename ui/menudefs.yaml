@@ -92,7 +92,7 @@ menudefs:
       conference. Use with care and review all changes before applying them to the conference.
     items:
       - text: "Change Conference Information"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/info"
+        link: "/comm/[CID]/conf/[CONFID]/edit"
       - text: "Manage Conference Aliases"
         link: "/TODO/comm/[CID]/conf/[CONFID]/aliases"
       - text: "Manage Conference Members"
