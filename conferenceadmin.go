@@ -11,10 +11,12 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"git.erbosoft.com/amy/amsterdam/util"
 )
 
 /* EditConferenceForm displays the dialog for editing the conference properties.
@@ -64,4 +66,58 @@ func EditConferenceForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	dlg.Field("pic_in_post").SetChecked(flags.Get(database.ConferenceFlagPicturesInPosts))
 	return dlg.Render(ctxt)
+}
+
+/* EditConference saves the conference properties being edited.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func EditConference(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	dlg, err := ui.AmLoadDialog("edit_conference")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	button := dlg.WhichButton(ctxt)
+	if button == "cancel" {
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+	} else if button != "update" {
+		dlg.SetCommunity(comm)
+		dlg.SetConference(conf, ctxt.GetScratch("currentAlias").(string))
+		return dlg.RenderError(ctxt, "invalid button pressed")
+	}
+
+	dlg.LoadFromForm(ctxt)
+	if err = dlg.Validate(); err == nil {
+		if err = conf.SetInfo(ctxt.Ctx(), dlg.Field("name").Value, dlg.Field("descr").Value, dlg.Field("read_lvl").GetLevel(), dlg.Field("post_lvl").GetLevel(),
+			dlg.Field("create_lvl").GetLevel(), dlg.Field("hide_lvl").GetLevel(), dlg.Field("nuke_lvl").GetLevel(), dlg.Field("change_lvl").GetLevel(),
+			dlg.Field("delete_lvl").GetLevel()); err == nil {
+			if err = conf.SetHiddenInList(ctxt.Ctx(), comm, dlg.Field("hide").IsChecked()); err == nil {
+				var flags *util.OptionSet
+				flags, err = conf.Flags(ctxt.Ctx())
+				if err == nil {
+					flags.Set(database.ConferenceFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
+					err = conf.SaveFlags(ctxt.Ctx(), flags)
+				}
+			}
+		}
+	}
+	if err != nil {
+		dlg.SetCommunity(comm)
+		dlg.SetConference(conf, ctxt.GetScratch("currentAlias").(string))
+		return dlg.RenderError(ctxt, err.Error())
+	}
+
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
 }

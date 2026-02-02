@@ -186,6 +186,12 @@ func (c *Conference) HiddenInList(ctx context.Context, comm *Community) (bool, e
 	return false, err
 }
 
+// SetHiddenInList sets whether or not this conference is hidden in the community's conference list.
+func (c *Conference) SetHiddenInList(ctx context.Context, comm *Community, flag bool) error {
+	_, err := amdb.ExecContext(ctx, "UPDATE commtoconf SET hide_list = ? WHERE commid = ? AND confid = ?", flag, comm.Id, c.ConfId)
+	return err
+}
+
 // ContainedBy returns the communities that contain this conference.
 func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT commid FROM commtoconf WHERE confid = ?", c.ConfId)
@@ -328,6 +334,36 @@ func (c *Conference) Link(ctx context.Context, scope string) (string, error) {
 		return "", err
 	}
 	return "", errors.New("invalid scope")
+}
+
+// SetInfo sets the name, pseud, and security levels on a conference.
+func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl uint16) error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	_, err := amdb.ExecContext(ctx, `UPDATE confs SET name = ?, descr = ?, read_lvl = ?, post_lvl = ?, create_lvl = ?,
+		hide_lvl = ?, nuke_lvl = ?, change_lvl = ?, delete_lvl = ?, lastupdate = NOW() WHERE confid = ?`, name, descr, read_lvl, post_lvl,
+		create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl, c.ConfId)
+	if err == nil {
+		var tmp []Conference
+		err := amdb.SelectContext(ctx, &tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId)
+		if err == nil {
+			if len(tmp) != 1 {
+				err = errors.New("internal error rereading conference")
+			} else {
+				c.Name = tmp[0].Name
+				c.Description = tmp[0].Description
+				c.ReadLevel = tmp[0].ReadLevel
+				c.PostLevel = tmp[0].PostLevel
+				c.CreateLevel = tmp[0].CreateLevel
+				c.HideLevel = tmp[0].HideLevel
+				c.NukeLevel = tmp[0].NukeLevel
+				c.ChangeLevel = tmp[0].ChangeLevel
+				c.DeleteLevel = tmp[0].DeleteLevel
+				c.LastUpdate = tmp[0].LastUpdate
+			}
+		}
+	}
+	return err
 }
 
 // DefaultPseud returns the default pseud for a user in the conference.

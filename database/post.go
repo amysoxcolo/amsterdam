@@ -682,6 +682,9 @@ func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, error) {
 		}
 		i++
 	}
+	if i == 0 { // no published posts, short-circuit response
+		return make([]*PostHeader, 0), nil
+	}
 	if i < int(gv.FrontPagePosts) {
 		pids = pids[:i] // truncate if we have fewer posts than spaces
 	}
