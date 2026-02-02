@@ -63,7 +63,7 @@
                 </a>
             {{ end }}
             {{ if canCreate }}
-                <a href="TODO"
+                <a href="/comm/{{ commAlias }}/create_conf"
                     class="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium transition-colors">
                     Create New
                 </a>

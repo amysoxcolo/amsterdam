@@ -121,3 +121,26 @@ func EditConference(ctxt ui.AmContext) (string, any, error) {
 
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
 }
+
+/* CreateConferenceForm displays the dialog for creating a new conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func CreateConferenceForm(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Create", ctxt.EffectiveLevel()) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	dlg, err := ui.AmLoadDialog("create_conference")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	dlg.SetCommunity(comm)
+	return dlg.Render(ctxt)
+}

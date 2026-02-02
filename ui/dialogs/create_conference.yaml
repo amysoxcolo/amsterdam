@@ -1,0 +1,53 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+name: "conf.create"
+formName: "newconfform"
+menuSelector: "community"
+title: "Create New Conference"
+action: "/comm/[CID]/create_conf"
+fields:
+  - type: "text"
+    name: "name"
+    caption: "Conference Name"
+    required: true
+    size: 32
+    maxlength: 128
+  - type: "ams_id"
+    name: "alias"
+    caption: "Conference Alias"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "text"
+    name: "descr"
+    caption: "Description"
+    required: false
+    size: 32
+    maxlength: 255
+  - type: "dropdown"
+    name: "ctype"
+    caption: "Conference type"
+    required: true
+    choices:
+      - id: "0"
+        text: "Public"
+        default: true
+      - id: "1"
+        text: "Private"
+  - type: "checkbox"
+    name: "hide"
+    caption: "Hide conference in the community's conference list"
+  - type: "button"
+    name: "create"
+    caption: "Create"
+    param: "blue"
+  - type: "button"
+    name: "cancel"
+    caption: "Cancel"
+    param: "red"
