@@ -60,6 +60,9 @@ type ConferenceProperties struct {
 	Data   *string `db:"data"`   // property data
 }
 
+// Default spacing between sequence numbers in commtoconf table.
+const COMMTOCONF_SEQ_SPACING = 10
+
 // Conference property indexes defined.
 const (
 	ConferencePropFlags = int32(0)
@@ -707,4 +710,120 @@ func AmSetConferenceProperty(ctx context.Context, confid int32, ndx int32, val *
 		}
 	}
 	return err
+}
+
+/* AmCreateConference creates a new conference.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     comm - Community to create this conference in.
+ *     name - New conference name.
+ *     alias - New conference alias.
+ *     descr - Nw conference description.
+ *     private - true to create a private conference, false to create a public one.
+ *     hide_list - true if the conference should be hidden in the community conference list.
+ *     u - User creating the conference; this user will become the conference host.
+ *     ipaddr - IP address of the creation request.
+ * Returns:
+ *     Pointer to the new conference, or nil.
+ *     Standard Go error status.
+ */
+func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr string, private, hide_list bool, u *User, ipaddr string) (*Conference, error) {
+	newConf := Conference{
+		Name:        name,
+		HideLevel:   AmRoleList("Conference.Hide").Default().Level(),
+		NukeLevel:   AmRoleList("Conference.Nuke").Default().Level(),
+		ChangeLevel: AmRoleList("Conference.Change").Default().Level(),
+		DeleteLevel: AmRoleList("Conference.Delete").Default().Level(),
+	}
+	if descr != "" {
+		newConf.Description = &descr
+	}
+	if private {
+		newConf.ReadLevel = AmDefaultRole("Conference.Read.Private").Level()
+		newConf.PostLevel = AmDefaultRole("Conference.Post.Private").Level()
+		newConf.CreateLevel = AmDefaultRole("Conference.Create.Private").Level()
+	} else {
+		newConf.ReadLevel = AmDefaultRole("Conference.Read.Public").Level()
+		newConf.PostLevel = AmDefaultRole("Conference.Post.Public").Level()
+		newConf.CreateLevel = AmDefaultRole("Conference.Create.Public").Level()
+	}
+
+	var ar *AuditRecord = nil
+	defer func() {
+		AmStoreAudit(ar)
+	}()
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	getConferenceMutex.Lock()
+	defer getConferenceMutex.Unlock()
+
+	// Ensure the alias is not in use.
+	row := tx.QueryRowContext(ctx, "SELECT confid FROM confalias WHERE alias = ?", alias)
+	var tmp int32
+	err := row.Scan(&tmp)
+	if err == nil {
+		return nil, fmt.Errorf("the alias '%s' is already in use by a different conference", alias)
+	} else if err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	// Create the conference record and then reload it so we have its ID available.
+	rs, err := tx.NamedExecContext(ctx, `INSERT INTO confs (createdate, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl, name, descr)
+		VALUES (NOW(), :read_lvl, :post_lvl, :create_lvl, :hide_lvl, :nuke_lvl, :change_lvl, :delete_lvl, :name, :descr)`, &newConf)
+	if err != nil {
+		return nil, err
+	}
+	newId, err := rs.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	var rc []Conference
+	err = tx.SelectContext(ctx, &rc, "SELECT * FROM confs WHERE confid = ?", int32(newId))
+	if err != nil {
+		return nil, err
+	} else if len(rc) != 1 {
+		return nil, errors.New("internal error reading back conference")
+	}
+
+	// Attach the alias to the conference.
+	_, err = tx.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", rc[0].ConfId, alias)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the current "last" sequence number.
+	row = tx.QueryRowContext(ctx, "SELECT MAX(sequence) FROM commtoconf WHERE commid = ?", comm.Id)
+	var seq int
+	err = row.Scan(&seq)
+	if err != nil {
+		return nil, err
+	}
+
+	// Link the conference into the community, and set the hide flag.
+	_, err = tx.ExecContext(ctx, "INSERT INTO commtoconf (commid, confid, sequence, hide_list) VALUES (?, ?, ?, ?)", comm.Id, rc[0].ConfId,
+		int16(seq+COMMTOCONF_SEQ_SPACING), hide_list)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make the specified user the first host of the conference.
+	_, err = tx.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", rc[0].ConfId, u.Uid, AmDefaultRole("Conference.NewHost").Level())
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	success = true
+
+	// Add the new conference to the cache, and create our audit record.
+	conferenceCache.Add(rc[0].ConfId, &(rc[0]))
+	ar = AmNewAudit(AuditConferenceCreate, u.Uid, ipaddr, fmt.Sprintf("confid=%d", rc[0].ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias))
+	return &(rc[0]), nil
 }

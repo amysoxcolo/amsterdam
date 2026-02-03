@@ -101,6 +101,7 @@ func setupEcho() *echo.Echo {
 
 	// conference group
 	commGroup.GET("/create_conf", ui.AmWrap(CreateConferenceForm))
+	commGroup.POST("/create_conf", ui.AmWrap(CreateConference))
 	commGroup.GET("/conf", ui.AmWrap(Conferences), ui.ValidateConference)
 	confGroup := commGroup.Group("/conf/:confid", ui.ValidateConference, ui.SetConference)
 	confGroup.GET("", ui.AmWrap(Topics))

@@ -10,6 +10,7 @@ name: "conf.create"
 formName: "newconfform"
 menuSelector: "community"
 title: "Create New Conference"
+subtitle: "in Community: [CNAME]"
 action: "/comm/[CID]/create_conf"
 fields:
   - type: "text"

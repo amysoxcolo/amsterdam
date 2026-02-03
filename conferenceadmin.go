@@ -17,6 +17,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 )
 
 /* EditConferenceForm displays the dialog for editing the conference properties.
@@ -143,4 +144,42 @@ func CreateConferenceForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	dlg.SetCommunity(comm)
 	return dlg.Render(ctxt)
+}
+
+/* CreateConference creates a new conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func CreateConference(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Create", ctxt.EffectiveLevel()) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	dlg, err := ui.AmLoadDialog("create_conference")
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+	button := dlg.WhichButton(ctxt)
+	if button == "cancel" {
+		return "redirect", fmt.Sprintf("/comm/%s/conf", comm.Alias), nil
+	} else if button != "create" {
+		dlg.SetCommunity(comm)
+		return dlg.RenderError(ctxt, "invalid button pressed")
+	}
+	dlg.LoadFromForm(ctxt)
+	alias := dlg.Field("alias").Value
+	conf, err := database.AmCreateConference(ctxt.Ctx(), comm, dlg.Field("name").Value, alias, dlg.Field("descr").Value,
+		dlg.Field("ctype").Value == "1", dlg.Field("hide").IsChecked(), ctxt.CurrentUser(), ctxt.RemoteIP())
+	if err != nil {
+		dlg.SetCommunity(comm)
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	log.Infof("Created conference '%s'", conf.Name)
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias), nil
 }
