@@ -64,6 +64,8 @@ _(italicized items can be deferred)_
     - ~~Send invite~~
     - ~~Change information~~
     - Manage aliases
+      - Remove alias
+      - Add alias
     - Manage members
     - Custom appearance
     - Activity reports
