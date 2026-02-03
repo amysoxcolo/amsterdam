@@ -23,7 +23,7 @@ _(italicized items can be deferred)_
   - ~~Find~~
   - Manage (reorder/show/hide/delete)
   - ~~Create New~~
-- Conferences List honor "hide in list" flag
+- ~~Conferences List honor "hide in list" flag~~
 - Community Admin Menu:
   - Set Community Category
   - Set Community Services

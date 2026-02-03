@@ -1,6 +1,6 @@
 {*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,7 @@
     <div class="max-w-4xl">
         <div class="bg-gray-50 p-6 rounded-lg mb-6">
             <div class="space-y-6">
-                {{ range _, c := conferences }}
+                {{ range i, c := conferences }}
                     <div class="flex items-start gap-3">
                         <span class="text-lg pt-0.5 flex-shrink-0">🟣</span>
                         <div class="flex-1">
@@ -26,6 +26,9 @@
                                 <a href="/comm/{{ commAlias }}/conf/{{ c.AliasesQ(.Ctx())[0] }}" 
                                     class="text-blue-700 hover:text-blue-900 font-bold text-lg">{{ c.Name }}</a>
                                 <span class="text-gray-600 text-sm ml-2">- Latest activity: {{ DisplayActivity(c.LastUpdate, .) }}</span>
+                                {{ if newflag[i] }}
+                                    <span class="ml-2" title="There are new messages in this conference">🔔</span>
+                                {{ end }}
                             </div>
                             <div class="text-sm text-gray-700 mb-1">
                                 {{ hl := c.HostsQ(.Ctx()) }}
@@ -35,8 +38,8 @@
                                     <span class="font-medium">Hosts:</span>
                                 {{ end }}
                                 {{ if len(hl) > 0 }}
-                                    {{ range i, u := hl }}
-                                        {{ if i > 0 }}, {{ end }}
+                                    {{ range j, u := hl }}
+                                        {{ if j > 0 }}, {{ end }}
                                         <a href="/users/{{ u.Username }}" class="text-blue-700 hover:text-blue-900">{{ u.Username }}</a>
                                     {{ end }}
                                 {{ else }}

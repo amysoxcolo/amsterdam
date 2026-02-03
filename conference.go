@@ -46,6 +46,17 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, err)
 	}
 	ctxt.VarMap().Set("conferences", clist)
+	if len(clist) > 0 {
+		newflag := make([]bool, len(clist))
+		for i, conf := range clist {
+			msgCount, err := conf.UnreadMessages(ctxt.Ctx(), ctxt.CurrentUser())
+			if err != nil {
+				return ui.ErrorPage(ctxt, err)
+			}
+			newflag[i] = msgCount > 0
+		}
+		ctxt.VarMap().Set("newflag", newflag)
+	}
 	ctxt.VarMap().Set("canCreate", comm.TestPermission("Community.Create", ctxt.EffectiveLevel()))
 	ctxt.VarMap().Set("canManage", comm.TestPermission("Community.Create", ctxt.EffectiveLevel()))
 	return "framed_template", "conflist.jet", err
