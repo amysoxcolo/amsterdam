@@ -53,9 +53,7 @@ func (stk *Stack[T]) RemoveMostRecent(data T) bool {
 			} else if (i + 1) == len(stk.elements) {
 				stk.elements = stk.elements[:i]
 			} else {
-				high := stk.elements[i+1:]
-				stk.elements = stk.elements[:i]
-				stk.elements = append(stk.elements, high...)
+				stk.elements = append(stk.elements[:i], stk.elements[i+1:]...)
 			}
 			return true
 		}
