@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<!--
+    Amsterdam Web Communities System
+    Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ -->
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Amsterdam HTML Tags Reference</title>
+        <meta name="MSSmartTagsPreventParsing" content="TRUE">
+    </head>
+    <body>
+        <h3>Amsterdam HTML Tags Reference</h3>
+        <ul>
+        <li><a href="#taga">A</a></li>
+        <li><a href="#tagacronym">ACRONYM</a></li>
+        <li><a href="#tagaddress">ADDRESS</a></li>
+        <li><a href="#tagb">B</a></li>
+        <li><a href="#tagbig">BIG</a></li>
+        <li><a href="#tagblockquote">BLOCKQUOTE</a></li>
+        <li><a href="#tagbr">BR</a></li>
+        <li><a href="#tagcenter">CENTER</a></li>
+        <li><a href="#tagcite">CITE</a></li>
+        <li><a href="#tagcode">CODE</a></li>
+        <li><a href="#tagdd">DD</a></li>
+        <li><a href="#tagdfn">DFN</a></li>
+        <li><a href="#tagdir">DIR</a></li>
+        <li><a href="#tagdiv">DIV</a></li>
+        <li><a href="#tagdl">DL</a></li>
+        <li><a href="#tagdt">DT</a></li>
+        <li><a href="#tagem">EM</a></li>
+        <li><a href="#tagfont">FONT</a></li>
+        <li><a href="#taghxxx">H1, H2, H3, H4, H5, H6</a></li>
+        <li><a href="#taghr">HR</a></li>
+        <li><a href="#tagi">I</a></li>
+        <li><a href="#tagimg">IMG</a></li>
+        <li><a href="#tagkbd">KBD</a></li>
+        <li><a href="#tagli">LI</a></li>
+        <li><a href="#tagmenu">MENU</a></li>
+        <li><a href="#tagnobr">NOBR</a></li>
+        <li><a href="#tagol">OL</a></li>
+        <li><a href="#tagp">P</a></li>
+        <li><a href="#tagq">Q</a></li>
+        <li><a href="#tags">S</a></li>
+        <li><a href="#tagsamp">SAMP</a></li>
+        <li><a href="#tagsmall">SMALL</a></li>
+        <li><a href="#tagstrike">STRIKE</a></li>
+        <li><a href="#tagstrong">STRONG</a></li>
+        <li><a href="#tagsub">SUB</a></li>
+        <li><a href="#tagsup">SUP</a></li>
+        <li><a href="#tagtt">TT</a></li>
+        <li><a href="#tagu">U</a></li>
+        <li><a href="#tagul">UL</a></li>
+        <li><a href="#tagvar">VAR</a></li>
+        <li><a href="#wbr">WBR</a></li>
+        </ul>
+        <a href="#colors">Colors in HTML</a><br/>
+        <a href="#chars">Special Characters</a>
+        <hr/>
+
+        <a name="taga"><h3>A</h3></a>
+        The <i>anchor tag,</i> which encloses either text or graphics and either creates a hyperlink
+        to another page or a named reference which can be hyperlinked to.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;A [HREF=&quot;<i>reference</i>&quot;] [NAME=&quot;<i>name</i>&quot;]
+                [TARGET=&quot;<i>target-spec</i>&quot;] [TITLE=&quot;<i>title</i>&quot;] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>HREF=&quot;<i>reference</i>&quot;</b></p>
+                <p><i>Optional:</i> Specifies a destination address for a hyperlink, which must be in URL format.</p>
+                <p><b>NAME=&quot;<i>name</i>&quot;</b></p>
+                <p><i>Optional:</i> Specifies a named reference within a document.  Other pages can then link to this reference
+                    within the document by appending a pound sign (#) and the <i>name</i> to the URL for the document.</p>
+	            <p><b>TARGET=&quot;<i>target-spec</i>&quot;</b></p>
+	            <p><i>Optional:</i> Specifies a target frame name for the link to be loaded into.</p>
+	            <p><b>TITLE=&quot;<i>title</i>&quot;</b></p>
+	            <p><i>Optional:</i> Specifies the title that appears when the hyperlink is selected.</p>
+            </dd>
+            <dt><b>Notes</b></dt>
+	        <dd>Either <b>HREF</b> or <b>NAME</b>, but not both, should be used with this tag.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;A HREF=&quot;http://www.megatokyo.com&quot;&gt;This is a link to the MegaTokyo online comic/manga.&lt;/A&gt;&lt;P&gt;<br/>
+                &lt;A HREF=&quot;http://slashdot.org&quot; TARGET=&quot;_blank&quot;&gt;This link loads Slashdot into a new window.&lt;/A&gt;
+	        </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+	            <p><a href="http://www.megatokyo.com">This is a link to the MegaTokyo online comic/manga.</a></p>
+	            <p><a href="http://slashdot.org" target="_blank">This link loads Slashdot into a new window.</a></p>
+        </dl><hr/>
+
+        <a name="tagacronym"><h3>ACRONYM</h3></a>
+        Formats text as an acronym abbreviation.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;ACRONYM [TITLE=&quot;<i>title</i>&quot;] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+	            <p><b>TITLE=&quot;<i>title</i>&quot;</b></p>
+	            <p><i>Optional:</i> Specifies an advisory title for the acronym, which may be displayed by the
+	            browser via a tip window or other such mechanism.</p>
+            </dd>
+            <dt><b>Notes</b></dt>
+            <dd>The formatted text may be displayed differently in different browsers.  Usually, it is
+	        formatted as Roman type.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Sun uses the &lt;ACRONYM TITLE=&quot;Java Community Process&quot;&gt;JCP&lt;/ACRONYM&gt;<BR>
+	            (Java Community Process) to determine which enhancements will go into the Java language.
+	        </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>Sun uses the <acronym title="Java Community Process">JCP</acronym>
+	        (Java Community Process) to determine which enhancements will go into the Java language.</dd>
+        </dl><hr/>
+
+        <a name="tagaddress"><h3>ADDRESS</h3></a>
+        Specifies information such as address, signature, and ownership.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;ADDRESS&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>The formatted text may be displayed differently in different browsers.  Usually, it is formatted
+            as italic type.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Here's some text.<BR>
+	            &lt;ADDRESS&gt;Jabber.com Inc. - support@jabber.com&lt;/ADDRESS&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	Here's some text.
+	            <address>Jabber.com Inc. - support@jabber.com</address>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagb"><h3>B</h3></a>
+        Renders enclosed text in bold.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;B&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Some of the text on this line will be &lt;B&gt;rendered in bold face&lt;/B&gt; type.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>Some of the text on this line will be <b>rendered in bold face</b> type.</dd>
+        </dl><hr/>
+
+        <a name="tagbig"><h3>BIG</h3></a>
+        Renders enclosed text in larger type.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;BIG&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Some of the text on this line will be &lt;BIG&gt;rendered in large&lt;/BIG&gt; type.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>Some of the text on this line will be <big>rendered in large</big> type.</dd>
+        </dl><hr/>
+
+        <a name="tagblockquote"><h3>BLOCKQUOTE</h3></a>
+        Sets apart a long quotation in text.  Usually displayed as indented by a small amount.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;BIG&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Season 2 opening monologue:<BR>
+                &lt;BLOCKQUOTE&gt;The Babylon Project was our last, best hope for peace.  A self-contained<BR>
+                world five miles long, located in neutral territory.  A place of commerce and diplomacy for<BR>
+                a quarter of a million humans and aliens.  A shining beacon in space, all alone in the night.<BR>
+                It was the dawn of the Third Age of Mankind, the year the Great War came upon us all.  This is<BR>
+                the story of the last of the Babylon stations.  The year is 2259.  The name of the place is<BR>
+                Babylon 5.&lt;/BLOCKQUOTE&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Season 2 opening monologue:<br/>
+                <blockquote>The Babylon Project was our last, best hope for peace.  A self-contained
+                world five miles long, located in neutral territory.  A place of commerce and diplomacy for
+                a quarter of a million humans and aliens.  A shining beacon in space, all alone in the night.
+                It was the dawn of the Third Age of Mankind, the year the Great War came upon us all.  This is
+                the story of the last of the Babylon stations.  The year is 2259.  The name of the place is
+                Babylon 5.</blockquote>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagbr"><h3>BR</h3></a>
+        Inserts a line break.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;BR [CLEAR=LEFT|RIGHT|ALL]&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Forbidden</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>CLEAR=LEFT|RIGHT|ALL</b></p>
+            	<p>Inserts vertical space so that the next text displayed will be past left- or right-aligned
+	            &quot;floating&quot; images. The align-type can be <b>LEFT</b>, <b>RIGHT</b>, or <b>ALL</b>.</p>
+                <ul>
+                	<li><b>LEFT</b> inserts space so that the next text appears aligned with the
+	                left margin	directly below a left-aligned floating image.</li>
+	                <li><b>RIGHT</b> inserts space so that the next text appears aligned with the
+	                right margin directly below a right-aligned floating image.</li>
+	                <li><b>ALL</b>places the next text past all floating images.</li>
+                </ul>
+            </dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	This line illustrates&lt;BR&gt;a simple line break.&lt;P&gt;<BR>
+	            &lt;IMG SRC=&quot;htmlref/ref64yr.gif&quot; WIDTH=64 HEIGHT=64 HSPACE=5 ALIGN=LEFT&gt;<BR>
+	            A left aligned image.&lt;BR CLEAR=LEFT&gt;<BR>
+	            This shows the effect of the CLEAR=LEFT parameter.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <p>This line illustrates<br/>a simple line break.</p>
+                <p><img src="htmlref/ref64yr.gif" width="64" height="64" hspace="5" align="left">
+                A left aligned image.<br clear="left">
+                This shows the effect of the CLEAR=LEFT parameter.</p>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagcenter"><h3>CENTER</h3></a>
+        Centers text and images in the browser window.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;CENTER&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	&lt;CENTER&gt;These lines will be centered&lt;BR&gt;<BR>
+	            until the CENTER tag is closed.&lt;/CENTER&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+	            <center>These lines will be centered<br>
+	            until the CENTER tag is closed.</center>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagcite"><h3>CITE</h3></a>
+        Indicates a citation. Refers to a book, paper, or other published source material.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;CITE&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, though, it renders text as italic.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	You can find a reference to that in &lt;CITE&gt;The Cathedral and The Bazaar&lt;/CITE&gt;,<BR>
+	            by Eric Raymond.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	You can find a reference to that in <cite>The Cathedral and The Bazaar</cite>,
+	            by Eric Raymond.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagcode"><h3>CODE</h3></a>
+        Indicates a code sample. 
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;CODE&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, though, it renders text in a small fixed-width font.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Here's a recursive factorial function in Java:&lt;P&gt;<BR>
+                &lt;CODE&gt;public static long factorial(long n)&lt;BR&gt;<BR>
+                {&lt;BR&gt;<BR>
+                &amp;nbsp;&amp;nbsp;if (n==0)&lt;BR&gt;<BR>
+                &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;return 1;&lt;BR&gt;<BR>
+                &amp;nbsp;&amp;nbsp;else&lt;BR&gt;<BR>
+                &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;return n * factorial(n - 1);&lt;BR&gt;<BR>
+                }&lt;BR&gt;&lt;/CODE&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Here's a recursive factorial function in Java:<br><br>
+                <code>public static long factorial(long n)<br>
+                {<br>
+                &nbsp;&nbsp;if (n==0)<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;return 1;<br>
+                &nbsp;&nbsp;else<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;return n * factorial(n - 1);<br>
+                }<br></code>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagdd"><h3>DD</h3></a>
+        Specifies a definition in a definition list. Indicates that the text is a definition
+        of a term, and should therefore be displayed in the right-hand column of a definition list.
+        <dd>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;DD&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Optional</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;DL&gt;<BR>
+                &lt;DT&gt;&lt;EM&gt;Anla'shok&lt;/EM&gt;<BR>
+                &lt;DD&gt;The secret Minbari fighting force established by Valen after the last war with<BR>
+                the Shadows.  The name translates roughly as &quot;Rangers.&quot;  Valen was the first<BR>
+                leader of this force, or &quot;Ranger One&quot; (&lt;EM&gt;Anla'shok Na&lt;/EM&gt;);<BR>
+                this post was filled a thousand years later by Jeffrey Sinclair, and later by Delenn.<BR>
+                &lt;DT&gt;&lt;EM&gt;Denn'bok&lt;/EM&gt;<BR>
+                &lt;DD&gt;The Minbari fighting pike, nominally a compact cylinder approximately 1 foot<BR>
+                in length, but telescoping out to approximately 5 feet upon command.  A standard weapon<BR>
+                of the Rangers.<BR>
+                &lt;DT&gt;&lt;EM&gt;Entil'zha&lt;/EM&gt;<BR>
+                &lt;DD&gt;One of Valen's titles as leader of the Rangers.  The title's meaning is unknown;<BR>
+                it is thought to be of Vorlon origin.<BR>
+                &lt;/DL&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	<dl>
+	                <dt><i>Anla'shok</i></dt>
+	                <dd>The secret Minbari fighting force established by Valen after the last war with
+	                the Shadows.  The name translates roughly as "Rangers."  Valen was the first
+	                leader of this force, or "Ranger One" (<i>Anla'shok Na</i>);
+	                this post was filled a thousand years later by Jeffrey Sinclair, and later by Delenn.</dd>
+	                <dt><i>Denn'bok</i></dt>
+	                <dd>The Minbari fighting pike, nominally a compact cylinder approximately 1 foot
+	                in length, but telescoping out to approximately 5 feet upon command.  A standard weapon
+	                of the Rangers.</dd>
+	                <dt><i>Entil'zha</i></dt>
+	                <dd>One of Valen's titles as leader of the Rangers.  The title's meaning is unknown;
+	                it is thought to be of Vorlon origin.</dd>
+                </dl>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagdfn"><h3>DFN</h3></a>
+        Specifies a definition. Formats a term for its first appearance in a document.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;DFN&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	XMPP transmits all its messages in &lt;DFN&gt;XML (Extensible<BR>
+	            Markup Language),&lt;/DFN&gt; which contains plain text with some delimiting codes.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	XMPP transmits all its messages in <dfn>XML (Extensible
+	            Markup Language),</dfn> which contains plain text with some delimiting codes.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagdir"><h3>DIR</h3></a>
+        Denotes a directory list. Specifies that the following block consists of individual items,
+        each beginning with an LI element and none containing more than 20 characters, that should
+        be displayed in columns.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;DIR&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers, but will usually be rendered
+            similarly to the UL tag.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Listing for the directory:&lt;P&gt;<BR>
+                &lt;DIR&gt;<BR>
+                &lt;LI&gt;bin<BR>
+                &lt;LI&gt;etc<BR>
+                &lt;LI&gt;lib<BR>
+                &lt;LI&gt;opt<BR>
+                &lt;LI&gt;usr<BR>
+                &lt;LI&gt;var<BR>
+                &lt;/DIR&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Listing for the directory:<br><br>
+                <dir>
+                <li>bin</li>
+                <li>etc</li>
+                <li>lib</li>
+                <li>opt</li>
+                <li>usr</li>
+                <li>var</li>
+                </dir>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagdiv"><h3>DIV</h3></a>
+        Denotes a division of text.  Frequently used to align a block of text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;DIV [ALIGN=CENTER|LEFT|RIGHT]&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>ALIGN=CENTER|LEFT|RIGHT</b></p>
+                <p>Specifies the alignment of the lines within this particular division. The align-type can be
+	            <b>CENTER</b>, <b>LEFT</b>, or <b>RIGHT</b>.</p>
+                <ul>
+                    <li><b>CENTER</b> centers the lines of text within the division.</li>
+                    <li><b>LEFT</b> aligns the left edges of all the lines of text within the division
+	                with the left margin.  This is the default.</li>
+                    <li><b>RIGHT</b> aligns the right edges of all the lines of text within the division
+	                with the right margin.</li>
+                </ul>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	&lt;DIV ALIGN=CENTER&gt;These lines of text&lt;BR&gt;will be centered.&lt;/DIV&gt;<BR>
+	            &lt;DIV ALIGN=RIGHT&gt;These lines of text&lt;BR&gt;will be flush right.&lt;/DIV&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	<div align="center">These lines of text<br>will be centered.</div>
+	            <div align="right">These lines of text<br>will be flush right.</div>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagdl"><h3>DL</h3></a>
+        Specifies that the following block is a definition list, that is, an automatically
+        formatted two-column list with terms on the left and their definitions on the right.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;DL&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;DL&gt;<BR>
+                &lt;DT&gt;&lt;EM&gt;Anla'shok&lt;/EM&gt;<BR>
+                &lt;DD&gt;The secret Minbari fighting force established by Valen after the last war with<BR>
+                the Shadows.  The name translates roughly as &quot;Rangers.&quot;  Valen was the first<BR>
+                leader of this force, or &quot;Ranger One&quot; (&lt;EM&gt;Anla'shok Na&lt;/EM&gt;);<BR>
+                this post was filled a thousand years later by Jeffrey Sinclair, and later by Delenn.<BR>
+                &lt;DT&gt;&lt;EM&gt;Denn'bok&lt;/EM&gt;<BR>
+                &lt;DD&gt;The Minbari fighting pike, nominally a compact cylinder approximately 1 foot<BR>
+                in length, but telescoping out to approximately 5 feet upon command.  A standard weapon<BR>
+                of the Rangers.<BR>
+                &lt;DT&gt;&lt;EM&gt;Entil'zha&lt;/EM&gt;<BR>
+                &lt;DD&gt;One of Valen's titles as leader of the Rangers.  The title's meaning is unknown;<BR>
+                it is thought to be of Vorlon origin.<BR>
+                &lt;/DL&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	<dl>
+	                <dt><i>Anla'shok</i></dt>
+	                <dd>The secret Minbari fighting force established by Valen after the last war with
+	                the Shadows.  The name translates roughly as "Rangers."  Valen was the first
+	                leader of this force, or "Ranger One" (<i>Anla'shok Na</i>);
+	                this post was filled a thousand years later by Jeffrey Sinclair, and later by Delenn.</dd>
+	                <dt><i>Denn'bok</i></dt>
+	                <dd>The Minbari fighting pike, nominally a compact cylinder approximately 1 foot
+	                in length, but telescoping out to approximately 5 feet upon command.  A standard weapon
+	                of the Rangers.</dd>
+	                <dt><i>Entil'zha</i></dt>
+	                <dd>One of Valen's titles as leader of the Rangers.  The title's meaning is unknown;
+	                it is thought to be of Vorlon origin.</dd>
+                </dl>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagdt"><h3>DT</h3></a>
+        Specifies a term in a definition list. Indicates that the text is a term to be defined,
+        and should therefore be displayed in the left-hand column of a definition list.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;DT&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Optional</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;DL&gt;<BR>
+                &lt;DT&gt;&lt;EM&gt;Anla'shok&lt;/EM&gt;<BR>
+                &lt;DD&gt;The secret Minbari fighting force established by Valen after the last war with<BR>
+                the Shadows.  The name translates roughly as &quot;Rangers.&quot;  Valen was the first<BR>
+                leader of this force, or &quot;Ranger One&quot; (&lt;EM&gt;Anla'shok Na&lt;/EM&gt;);<BR>
+                this post was filled a thousand years later by Jeffrey Sinclair, and later by Delenn.<BR>
+                &lt;DT&gt;&lt;EM&gt;Denn'bok&lt;/EM&gt;<BR>
+                &lt;DD&gt;The Minbari fighting pike, nominally a compact cylinder approximately 1 foot<BR>
+                in length, but telescoping out to approximately 5 feet upon command.  A standard weapon<BR>
+                of the Rangers.<BR>
+                &lt;DT&gt;&lt;EM&gt;Entil'zha&lt;/EM&gt;<BR>
+                &lt;DD&gt;One of Valen's titles as leader of the Rangers.  The title's meaning is unknown;<BR>
+                it is thought to be of Vorlon origin.<BR>
+                &lt;/DL&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	<dl>
+	                <dt><i>Anla'shok</i></dt>
+	                <dd>The secret Minbari fighting force established by Valen after the last war with
+	                the Shadows.  The name translates roughly as "Rangers."  Valen was the first
+	                leader of this force, or "Ranger One" (<i>Anla'shok Na</i>);
+	                this post was filled a thousand years later by Jeffrey Sinclair, and later by Delenn.</dd>
+	                <dt><i>Denn'bok</i></dt>
+	                <dd>The Minbari fighting pike, nominally a compact cylinder approximately 1 foot
+	                in length, but telescoping out to approximately 5 feet upon command.  A standard weapon
+	                of the Rangers.</dd>
+	                <dt><i>Entil'zha</i></dt>
+	                <dd>One of Valen's titles as leader of the Rangers.  The title's meaning is unknown;
+	                it is thought to be of Vorlon origin.</dd>
+                </dl>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagem"><h3>EM</h3></a>
+        Specifies that the text is emphasized.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;EM&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, it is rendered as italics.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	A thing can have as much value from &lt;EM&gt;where&lt;/EM&gt; it is as from<BR>
+	            &lt;EM&gt;what&lt;/EM&gt; it is.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	A thing can have as much value from <em>where</em> it is as from
+	            <em>what</em> it is.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagfont"><h3>FONT</h3></a>
+        Specifies the size, font and color of text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;FONT [SIZE=<i>n</i>] [FACE=&quot;<i>name1</i> [,<i>name2</i> [...]]&quot; ]
+            [COLOR=&quot;<i>colorvalue</i>&quot;] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>SIZE=<i>n</i></b></p>
+                <p><i>Optional:</i> Specifies a font size between 1 and 7 (7 is largest).  A value with a
+	            + or - sign in front of it denotes a size relative to the current BASEFONT setting.
+	            Relative sizes are not cumulative, so two &lt;FONT SIZE=+1&gt; tags in a row will not
+	            increase the size by 2.  Default is no change.</p>
+                <p><b>FACE=&quot;<i>name1</i> [,<i>name2</i> [...]]&quot;</b></p>
+                <p><i>Optional:</i> Specifies the font face name to be used.  A list of font face names can
+	            be specified here; if the font face name specified by <i>name1</i> is installed on the
+	            target system, it will be used, otherwise the font face name specified by <i>name2</i>
+	            will be tried if it is specified, and so on.  If none of those fonts are available, the
+	            default font (as configured in the browser) will be used.  Default is no change.</p>
+                <p><b>COLOR=&quot;<i>colorvalue</i>&quot;</b></p>
+                <p><i>Optional:</i> Sets the color of the text.  <i>colorvalue</i> may either be specified
+	            as a hexadecimal color value or as a standard color name.  Default is no change.  See also
+	            <a href="#colors">Colors.</a></p>
+            </dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Comparison of font sizes:&lt;P&gt;<BR>
+                &lt;FONT SIZE=1&gt;Size 1&lt;/FONT&gt;<BR>
+                &lt;FONT SIZE=2&gt;Size 2&lt;/FONT&gt;<BR>
+                &lt;FONT SIZE=3&gt;Size 3&lt;/FONT&gt;<BR>
+                &lt;FONT SIZE=4&gt;Size 4&lt;/FONT&gt;<BR>
+                &lt;FONT SIZE=5&gt;Size 5&lt;/FONT&gt;<BR>
+                &lt;FONT SIZE=6&gt;Size 6&lt;/FONT&gt;<BR>
+                &lt;FONT SIZE=7&gt;Size 7&lt;/FONT&gt;&lt;P&gt;<BR>
+                &lt;FONT SIZE=5 FACE=&quot;Comic Sans MS, Arial, Helvetica&quot; COLOR=&quot;green&quot;&gt;<BR>
+                This text will be displayed in green Comic Sans MS if you have that font, otherwise either<BR>
+                Arial or Helvetica.&lt;/FONT&gt;&lt;P&gt;<BR>
+                &lt;FONT SIZE=2 COLOR=&quot;#007FFF&quot;&gt;A footnote in a cool blue color.&lt;/FONT&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Comparison of font sizes:<br><br>
+                <font size="1">Size 1</font><br>
+                <font size="2">Size 2</font><br>
+                <font size="3">Size 3</font><br>
+                <font size="4">Size 4</font><br>
+                <font size="5">Size 5</font><br>
+                <font size="6">Size 6</font><br>
+                <font size="7">Size 7</font><br><br>
+                <font size="5" face="Comic Sans MS, Arial, Helvetica" color="green">
+                This text will be displayed in green Comic Sans MS if you have that font, otherwise either
+                Arial or Helvetica.</font><br><br>
+                <font size="2" color="#007FFF">A footnote in a cool blue color.</font>
+            </dd>
+        </dl><hr/>
+ 
+        <a name="taghxxx"><h3>H1, H2, H3, H4, H5, H6</h3></a>
+        Renders text in heading style. Use H1 through H6 to specify different sizes and styles of
+        heading. 
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&&lt;H<i>n</i> [ALIGN=LEFT|CENTER|RIGHT] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b><i>n</i></b></p>
+                <p><i>Required:</i> Sets the heading level.  Valid values range from 1 to 6 (1 highest-level
+	            and usually largest).</p>
+                <p><b>ALIGN=CENTER|LEFT|RIGHT</b></p>
+                <p><i>Optional:</i> Specifies the alignment of the header text. Default is <b>LEFT</b>.</p>
+            </dd>
+            <dt><b>Notes</b></dt>
+            <dd>These styles may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;H1&gt;The most general topic&lt;/H1&gt;<BR>
+                &lt;H2&gt;A subhead under that general topic&lt;/H2&gt;<BR>
+                &lt;H3&gt;And a further subhead under that subhead&lt;/H3&gt;<BR>
+                &lt;H4&gt;A further specialization of that subhead&lt;/H4&gt;<BR>
+                &lt;H5&gt;A topic even more specific under these subheads&lt;/H5&gt;<BR>
+                &lt;H6&gt;The most specialized topic of all&lt;/H6&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <h1>The most general topic</h1>
+                <h2>A subhead under that general topic</h2>
+                <h3>And a further subhead under that subhead</h3>
+                <h4>A further specialization of that subhead</h4>
+                <h5>A topic even more specific under these subheads</h5>
+                <h6>The most specialized topic of all</h6>
+            </dd>
+        </dl><hr/>
+
+        <a name="taghr"><h3>HR</h3></a>
+        Draws a horizontal rule.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&&lt;HR [ALIGN=LEFT|CENTER|RIGHT] [COLOR=&quot;<i>colorvalue</i>&quot;]
+	            [NOSHADE] [SIZE=<i>n</i>] [WIDTH=<i>n</i>] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Forbidden</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>[ALIGN=LEFT|CENTER|RIGHT]</b></p>
+                <p><i>Optional:</i> Draws the rule left-aligned, right-aligned, or centered.  The default is <b>CENTER</b>.</p>
+                <p><b>COLOR=&quot;<i>colorvalue</i>&quot;</b></p>
+                <p><i>Optional:</i> Sets the color of the rule.  <i>colorvalue</i> may either be specified
+	            as a hexadecimal color value or as a standard color name.  Default is the standard 3-D color.
+	            See also <a href="#colors">Colors.</a></p>
+                <p><b>NOSHADE</b></p>
+                <p><i>Optional:</i> Draws the rule without 3-D shading.</p>
+                <p><b>SIZE=<i>n</i></b></p>
+                <p><i>Optional:</i> Specifies the height of the rule in pixels.</p>
+                <p><b>WIDTH=<i>n</i></b></p>
+                <p><i>Optional:</i> Specifies the width of the rule, either in pixels, or, if the percent (%)
+	            sign is appended to the value, as a percentage of total window width.  Default is 100%.</p>
+            </dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Here's a small line (half the width).&lt;HR WIDTH=50%&gt;<BR>
+                And a tiny green line, off to the right:&lt;HR WIDTH=96 ALIGN=RIGHT COLOR=&quot;green&quot; NOSHADE&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Here's a small line (half the width).<hr width=50%><br/>
+                And a tiny green line, off to the right:<hr width=96 align="right" color="green" noshade>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagi"><h3>I</h3></a>
+        Renders enclosed text in italics.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;I&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Some of the text on this line will be &lt;I&gt;rendered in italic&lt;/I&gt; type.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	Some of the text on this line will be <i>rendered in italic</i> type.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagimg"><h3>IMG</h3></a>
+        Inserts an image into the text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;IMG SRC=&quot;<i>location</i>&quot; [ALIGN=<i>alignoption</i>]
+        	[ALT=&quot;<i>text</i>&quot;] [BORDER=<i>n</i>] [HEIGHT=<i>n</i>] [HSPACE=<i>n</i>]
+        	[VSPACE=<i>n</i>] [WIDTH=<i>n</i>] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Forbidden</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>SRC=&quot;<i>location</i>&quot;</b></p>
+                <p><i>Required:</i> Specifies the URL of the picture to be inserted.</p>
+                <p><b>ALIGN=<i>alignoption</i></b></p>
+                <p><i>Optional:</i> Sets the alignment of the image relative to the surrounding text;
+	            <i>alignoption</i> may be one of the following values:</p>
+                <ul>
+                    <li><b>TOP</b> - Surrounding text is aligned with the top of the image.</li>
+                    <li><b>MIDDLE</b> - Surrounding text is aligned with the middle of the image.</li>
+                    <li><b>BOTTOM</b> - Surrounding text is aligned with the bottom of the image.</li>
+                    <li><b>LEFT</b> - The picture is drawn as a left-flush "floating image," and text
+	                flows around it.</li>
+                    <li><b>RIGHT</b> - The picture is drawn as a right-flush "floating image," and text
+	                flows around it. </li>
+                </ul>
+                <p><b>ALT=&quot;<i>text</i>&quot;</b></p>
+                <p><i>Optional:</i> Specifies text to be displayed in place of the picture if the browser is
+	            non-graphical or has images turned off.  Some browsers also display this text as a "tooltip"
+	            element when the mouse is held over the image.</p>
+                <p><b>BORDER=<i>n</i></b></p>
+                <p><i>Optional:</i> Specifies the size of a border to be drawn around the image. If the image
+	            is a hyperlink,	the border is drawn in the appropriate hyperlink color. If the image is not
+	            a hyperlink, the border is invisible.</p>
+                <p><b>HEIGHT=<i>n</i></b></p>
+                <p><i>Optional:</i> Along with <b>WIDTH=</b>, specifies the size at which the
+	            picture is drawn. If the picture's actual dimensions differ from those specified, the
+	            picture is stretched to match what's specified.</p>
+                <p><b>HSPACE=<i>n</i></b></p>
+                <p><i>Optional:</i> Along with <b>VSPACE=</b>, specifies margins for the image.
+	            Similar to <b>BORDER=</b>, except the margins are not painted with color when the
+	            image is a hyperlink.</p>
+                <p><b>VSPACE=<i>n</i></b></p>
+                <p><i>Optional:</i> Along with <b>HSPACE=</b>, specifies margins for the image.
+	            Similar to <b>BORDER=</b>, except the margins are not painted with color when the
+	            image is a hyperlink.</p>
+                <p><b>WIDTH=<i>n</i></b></p>
+                <p><i>Optional:</i> Along with <b>HEIGHT=</b>, specifies the size at which the
+	            picture is drawn. If the picture's actual dimensions differ from those specified, the
+	            picture is stretched to match what's specified.</p>
+            </dd>
+            <dt><b>Notes</b></dt>
+            <dd>Specification of <b>HEIGHT=</b> and <b>WIDTH=</b> speeds up display
+	        of the page, as the browser can then preallocate space for the image and lay out the text
+	        appropriately before the image data is downloaded.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                This image is positioned &lt;IMG SRC=&quot;htmlref/ref32smi.gif&quot; WIDTH=32 HEIGHT=32 ALIGN=BOTTOM&gt;<BR>
+                with bottom alignment.&lt;P&gt;<BR>
+                This image is positioned &lt;IMG SRC=&quot;htmlref/ref32smi.gif&quot; WIDTH=32 HEIGHT=32 ALIGN=TOP&gt;<BR>
+                with top alignment.&lt;P&gt;<BR>
+                This image is positioned &lt;IMG SRC=&quot;htmlref/ref32smi.gif&quot; WIDTH=32 HEIGHT=32 ALIGN=MIDDLE&gt;<BR>
+                with middle alignment.&lt;P&gt;<BR>
+                &lt;IMG SRC=&quot;htmlref/ref64yr.gif&quot; WIDTH=64 HEIGHT=64 HSPACE=5 ALIGN=LEFT&gt;<BR>
+                This is an image aligned on the left...&lt;P&gt;<BR>
+                &lt;IMG SRC=&quot;htmlref/ref64yr.gif&quot; WIDTH=64 HEIGHT=64 HSPACE=5 ALIGN=RIGHT&gt;<BR>
+                This is an image aligned on the right...&lt;BR CLEAR=BOTH&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                This image is positioned <IMG SRC="htmlref/ref32smi.gif" WIDTH=32 HEIGHT=32 ALIGN=BOTTOM>
+                with bottom alignment.<P>
+                This image is positioned <IMG SRC="htmlref/ref32smi.gif" WIDTH=32 HEIGHT=32 ALIGN=TOP>
+                with top alignment.<P>
+                This image is positioned <IMG SRC="htmlref/ref32smi.gif" WIDTH=32 HEIGHT=32 ALIGN=MIDDLE>
+                with middle alignment.<P>
+                <IMG SRC="htmlref/ref64yr.gif" WIDTH=64 HEIGHT=64 HSPACE=5 ALIGN=LEFT>
+                This is an image aligned on the left...<br><br>
+                <IMG SRC="htmlref/ref64yr.gif" WIDTH=64 HEIGHT=64 HSPACE=5 ALIGN=RIGHT>
+                This is an image aligned on the right...<BR CLEAR=BOTH>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagkbd"><h3>KBD</h3></a>
+        Specifies text to be entered at the keyboard.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;KBD&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, it is rendered as fixed-width type.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                To begin adding a new user account, enter the command &lt;KBD&gt;vi /etc/passwd&lt;/KBD&gt;<BR>
+                at the shell prompt.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	To begin adding a new user account, enter the command <kbd>vi /etc/passwd</kbd>
+	            at the shell prompt.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagli"><h3>LI</h3></a>
+        Denotes the beginning of a new list item within a DIR, MENU, OL, or UL block.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;LI [TYPE=<i>order-type</i>] [VALUE=<i>n</i>] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Optional</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>TYPE=<i>order-type</i></b></p>
+                <p><i>Optional:</i> Specifies a new style for an ordered list.  The <i>order-type</i>
+	            can be one of these values:</p>
+                <ul>
+                    <li><b>A</b> - Use upper-case letters.</li>
+                    <li><b>a</b> - Use lower-case letters.</li>
+                    <li><b>I</b> - Use upper-case Roman numerals.</li>
+                    <li><b>i</b> - Use lower-case Roman numerals.</li>
+                    <li><b>1</b> - Use Arabic numerals.</li>
+                </ul>
+                <p><b>VALUE=<i>n</i></b></p>
+                <p><i>Optional:</i> Changes the count for an ordered list as it progresses.</p>
+            </dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Things to get in life:<BR>
+                &lt;UL&gt;<BR>
+                &lt;LI&gt;Good education<BR>
+                &lt;LI&gt;Exact change<BR>
+                &lt;LI&gt;Happiness<BR>
+                &lt;LI&gt;Portable stereo<BR>
+                &lt;LI&gt;Sense of self-worth<BR>
+                &lt;LI&gt;Account on Electric Minds<BR>
+                &lt;/UL&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Things to get in life:
+                <ul>
+                <li>Good education</li>
+                <li>Exact change</li>
+                <li>Happiness</li>
+                <li>Portable stereo</li>
+                <li>Sense of self-worth</li>
+                <li>Account on Electric Minds</li>
+                </ul>
+            </dd>
+        </dl><hr/>
+
+    </body>
+</html>
+-------------------------------------------------------------------------------------------
+<HTML>
+<BODY>
+    <A NAME="tagmenu"><H3>MENU</H3></A>
+    Denotes a list of items. Specifies that the following block consists of individual items,
+    each beginning with an LI element.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;MENU&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>No
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers, but will usually be rendered
+	similarly to the UL tag.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	Information about Linux:<BR>
+	&lt;MENU&gt;<BR>
+	&lt;LI&gt;&lt;A HREF=&quot;http://www.linux.com&quot;&gt;Linux.com&lt;/A&gt;<BR>
+	&lt;LI&gt;&lt;A HREF=&quot;http://linuxtoday.com&quot;&gt;Linux Today&lt;/A&gt;<BR>
+	&lt;LI&gt;&lt;A HREF=&quot;http://lwn.net&quot;&gt;USA Today&lt;/A&gt;<BR>
+	&lt;LI&gt;&lt;A HREF=&quot;http://www.freshmeat.net&quot;&gt;Freshmeat&lt;/A&gt;<BR>
+	&lt;LI&gt;&lt;A HREF=&quot;http://slashdot.org&quot;&gt;Slashdot&lt;/A&gt;<BR>
+	&lt;/MENU&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	Information about Linux:
+	<MENU>
+	<LI><A HREF="http://www.linux.com">Linux.com</A>
+	<LI><A HREF="http://linuxtoday.com">Linux Today</A>
+	<LI><A HREF="http://lwn.net">Linux Weekly News</A>
+	<LI><A HREF="http://www.freshmeat.net">Freshmeat</A>
+	<LI><A HREF="http://slashdot.org">Slashdot</A>
+	</MENU>
+    </DL><HR>
+
+    <A NAME="tagnobr"><H3>NOBR</H3></A>
+    Turns off line breaking. Renders text without line breaks.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;NOBR&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	&lt;NOBR&gt;Here's a line of text I don't want to be broken . . .<BR>
+	there could be an awful lot of text here and it must stay on one line . . .<BR>
+	here's the end of the line.&lt;/NOBR&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	<NOBR>Here's a line of text I don't want to be broken . . .
+	there could be an awful lot of text here and it must stay on one line . . .
+	here's the end of the line.</NOBR>
+    </DL><HR>
+
+    <A NAME="tagol"><H3>OL</H3></A>
+    Draws lines of text as an ordered list. Specifies that the following block consists of
+    individual items, each beginning with an LI tag. The items are numbered.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;OL [START=<EM>n</EM>] [TYPE=<EM>order-type</EM>] &gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>No
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Parameters</STRONG>
+      <DD>
+        <STRONG>START=<EM>n</EM></STRONG><P>
+	<EM>Optional:</EM> Specifies a starting index number for the list.  The default is 1.<P>
+	<STRONG>TYPE=<EM>order-type</EM></STRONG><P>
+	<EM>Optional:</EM> Specifies a style for the ordered list.  The <EM>order-type</EM>
+	can be one of	these values:
+	<UL>
+	<LI><STRONG>A</STRONG> - Use upper-case letters.
+	<LI><STRONG>a</STRONG> - Use lower-case letters.
+	<LI><STRONG>I</STRONG> - Use upper-case Roman numerals.
+	<LI><STRONG>i</STRONG> - Use lower-case Roman numerals.
+	<LI><STRONG>1</STRONG> - Use Arabic numerals.
+	</UL><P>
+	The default is to use Arabic numerals.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	&lt;OL&gt;<BR>
+	&lt;LI&gt;Pick up the TV remote control.<BR>
+	&lt;LI&gt;Push the POWER button to turn on the TV.<BR>
+	&lt;LI&gt;Change to channel 3.<BR>
+	&lt;LI&gt;Switch to the VCR remote control.<BR>
+	&lt;LI&gt;Push the POWER button to turn on the VCR.<BR>
+	&lt;LI&gt;Push the TV/VCR button to switch to the VCR input.<BR>
+	&lt;LI&gt;Change to desired channel on the VCR.<BR>
+	&lt;LI&gt;Insert a blank tape into the VCR.<BR>
+	&lt;LI&gt;Press RECORD.<BR>
+	&lt;/OL&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	<OL>
+	<LI>Pick up the TV remote control.
+	<LI>Push the POWER button to turn on the TV.
+	<LI>Change to channel 3.
+	<LI>Switch to the VCR remote control.
+	<LI>Push the POWER button to turn on the VCR.
+	<LI>Push the TV/VCR button to switch to the VCR input.
+	<LI>Change to desired channel on the VCR.
+	<LI>Insert a blank tape into the VCR.
+	<LI>Press RECORD.
+	</OL>
+    </DL><HR>
+		
+    <A NAME="tagp"><H3>P</H3></A>
+    Inserts a paragraph break and denotes a paragraph.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;P [ALIGN=LEFT|CENTER|RIGHT] &gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>No
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Optional
+      <DT><STRONG>Parameters</STRONG>
+      <DD><STRONG>ALIGN=LEFT|CENTER|RIGHT</STRONG><P>
+	Sets the alignment of the paragraph. The align-type can be LEFT, CENTER, or RIGHT.
+	Default is left alignment.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	There will be a paragraph break&lt;P&gt;between these two lines.<BR>
+	&lt;P ALIGN=RIGHT&gt;Here's a paragraph that will be flush-right.&lt;/P&gt;<BR>
+	And back to normal again.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	There will be a paragraph break<P>between these two lines.
+	<P ALIGN=RIGHT>Here's a paragraph that will be flush-right.</P>
+	And back to normal again.
+    </DL><HR>
+
+    <A NAME="tagq"><H3>Q</H3></A>
+    Sets apart a short quotation in text.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;Q&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>No
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	&lt;Q&gt;Software is like sex; it's better when it's free.&lt;/Q&gt; - Linus Torvalds
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	<Q>Software is like sex; it's better when it's free.</Q> - Linus Torvalds
+    </DL><HR>
+
+    <A NAME="tags"><H3>S</H3></A>
+    Renders text in strikethrough type.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;S&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	We have a lot of &lt;S&gt;crazy people&lt;/S&gt; unique individuals in the Playground.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	We have a lot of <S>crazy people</S> unique individuals in the Playground.
+    </DL><HR>
+
+    <A NAME="tagsamp"><H3>SAMP</H3></A>
+    Specifies sample text.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;SAMP&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	&lt;SAMP&gt;If one-third of a hive of bees flies to a rose bush, one-fifth flies to a daisy,<BR>
+	three times the difference of those two numbers flies to an apple tree, and one bee hovers<BR>
+	attracted by both a jasmine and a tulip, how many bees are there in all?&lt;/SAMP&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	<SAMP>If one-third of a hive of bees flies to a rose bush, one-fifth flies to a daisy,
+	three times the difference of those two numbers flies to an apple tree, and one bee hovers
+	attracted by both a jasmine and a tulip, how many bees are there in all?</SAMP>
+    </DL><HR>
+
+    <A NAME="tagsmall"><H3>SMALL</H3></A>
+    Renders text in smaller type.
+    <DL><DT><STRONG>Syntax</STRONG>
+    <DD>
+      <TT><STRONG>&lt;SMALL&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>No
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	Some of the text on this line will be &lt;SMALL&gt;rendered in small&lt;/SMALL&gt; type.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	Some of the text on this line will be <SMALL>rendered in small</SMALL> type.
+    </DL><HR>
+
+    <A NAME="tagstrike"><H3>STRIKE</H3></A>
+    Renders text in strikethrough type.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;STRIKE&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	We have a lot of &lt;STRIKE&gt;crazy people&lt;/STRIKE&gt; unique individuals in the Playground.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	We have a lot of <STRIKE>crazy people</STRIKE> unique individuals in the Playground.
+    </DL><HR>
+
+    <A NAME="tagstrong"><H3>STRONG</H3></A>
+    Specifies that the text is strongly emphasized.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;STRONG&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.  Usually, it is rendered as bold face.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	A thing can have as much value from &lt;STRONG&gt;where&lt;/STRONG&gt; it is as from<BR>
+	&lt;STRONG&gt;what&lt;/STRONG&gt; it is.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	A thing can have as much value from <STRONG>where</STRONG> it is as from
+	<STRONG>what</STRONG> it is.
+    </DL><HR>
+
+    <A NAME="tagsub"><H3>SUB</H3></A>
+    Displays the text in a smaller font, and with its baseline lower than that of the surrounding text.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;SUB&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	Fibonacci numbers are computed as follows:&lt;BLOCKQUOTE&gt;<BR>
+	&lt;EM&gt;F&lt;SUB&gt;0&lt;/SUB&gt;&lt;/EM&gt; = 0&lt;BR&gt;<BR>
+	&lt;EM&gt;F&lt;SUB&gt;1&lt;/SUB&gt;&lt;/EM&gt; = 1&lt;BR&gt;<BR>
+	&lt;EM&gt;F&lt;SUB&gt;n&lt;/SUB&gt;&lt;/EM&gt; =<BR>
+	&lt;EM&gt;F&lt;SUB&gt;n-2&lt;/SUB&gt;&lt;/EM&gt; + &lt;EM&gt;F&lt;SUB&gt;n-1&lt;/SUB&gt;&lt;/EM&gt;<BR>
+	for all integer &lt;EM&gt;n&lt;/EM&gt;>1&lt;/BLOCKQUOTE&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	Fibonacci numbers are computed as follows:<BLOCKQUOTE>
+	<EM>F<SUB>0</SUB></EM> = 0<BR>
+	<EM>F<SUB>1</SUB></EM> = 1<BR>
+	<EM>F<SUB>n</SUB></EM> =
+	<EM>F<SUB>n-2</SUB></EM> + <EM>F<SUB>n-1</SUB></EM>
+	for all integer <EM>n</EM>>1</BLOCKQUOTE>
+    </DL><HR>
+
+    <A NAME="tagsup"><H3>SUP</H3></A>
+    Displays the text in a smaller font, and with its baseline higher than that of the surrounding text.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;SUP&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	Fermat's Last Theorem states that, for any integer &lt;EM&gt;n&lt;/EM&gt; greater than 2,<BR>
+	there is no combination of values &lt;EM&gt;x&lt;/EM&gt;, &lt;EM&gt;y&lt;/EM&gt;,<BR>
+	and &lt;EM&gt;z&lt;/EM&gt; such that &lt;EM&gt;x&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt;<BR>
+	+ &lt;EM&gt;y&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt; = &lt;EM&gt;z&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt;.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+	<DD>
+	Fermat's Last Theorem states that, for any integer <EM>n</EM> greater than 2,
+	there is no combination of values <EM>x</EM>, <EM>y</EM>,
+	and <EM>z</EM> such that <EM>x<SUP>n</SUP></EM>
+	+ <EM>y<SUP>n</SUP></EM> = <EM>z<SUP>n</SUP></EM>.
+    </DL><HR>
+
+    <A NAME="tagtt"><H3>TT</H3></A>
+    Indicates "teletype" or "typewriter text." Renders text in fixed-width type.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;TT&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.  Usually, it is rendered
+	as a fixed-width font.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	&lt;TT&gt;This style of text can be useful for code listings.&lt;/TT&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+	<DD>
+	<TT>This style of text can be useful for code listings.</TT>
+    </DL><HR>
+
+    <A NAME="tagu"><H3>U</H3></A>
+    Displays text as underlined.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;U&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	A thing can have as much value from &lt;U&gt;where&lt;/U&gt; it is as from<BR>
+	&lt;U&gt;what&lt;/U&gt; it is.
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	A thing can have as much value from <U>where</U> it is as from
+	<U>what</U> it is.
+    </DL><HR>
+
+    <A NAME="tagul"><H3>UL</H3></A>
+    Draws lines of text as a bulleted list. Specifies that the following block consists of
+    individual items, each beginning with an LI tag. The items are bulleted.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;UL&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>No
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	Things to get in life:<BR>
+	&lt;UL&gt;<BR>
+	&lt;LI&gt;Good education<BR>
+	&lt;LI&gt;Exact change<BR>
+	&lt;LI&gt;Happiness<BR>
+	&lt;LI&gt;Portable stereo<BR>
+	&lt;LI&gt;Sense of self-worth<BR>
+	&lt;LI&gt;Account on Electric Minds<BR>
+	&lt;/UL&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+	<DD>
+	Things to get in life:
+	<UL>
+	<LI>Good education
+	<LI>Exact change
+	<LI>Happiness
+	<LI>Portable stereo
+	<LI>Sense of self-worth
+	<LI>Account on Electric Minds
+	</UL>
+    </DL><HR>
+
+    <A NAME="tagvar"><H3>VAR</H3></A>
+    Indicates placeholder text for a variable.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;VAR&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Required
+      <DT><STRONG>Notes</STRONG>
+      <DD>This may be rendered differently in different browsers.  Usually, it is rendered as italics.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	Enter the &lt;VAR&gt;filename&lt;/VAR&gt; in the appropriate field in the dialog box.
+      </TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	Enter the <VAR>filename</VAR> in the appropriate field in the dialog box.
+    </DL><HR>
+
+    <A NAME="tagwbr"><H3>WBR</H3></A>
+    Inserts a soft line break in a block of text formatted using the NOBR tag.
+    <DL>
+      <DT><STRONG>Syntax</STRONG>
+      <DD><TT><STRONG>&lt;NOBR&gt;</STRONG></TT>
+      <DT><STRONG>Allowed in Topic Names</STRONG>
+      <DD>Yes
+      <DT><STRONG>Closing Tag</STRONG>
+      <DD>Optional
+      <DT><STRONG>Notes</STRONG>
+      <DD>If it is not placed inside a pair of NOBR tags, this tag has no effect.
+      <DT><STRONG>Example</STRONG>
+      <DD><TT>
+	&lt;NOBR&gt;This text will not break anywhere unless I tell it to.  The text will<BR>
+	just keep on going until it runs off the edge of the screen.<BR>
+	&lt;WBR&gt;But I just told it to break here.&lt;/NOBR&gt;
+	</TT>
+      <DT><STRONG>Example Output</STRONG>
+      <DD>
+	<NOBR>This text will not break anywhere unless I tell it to.  The text will
+	just keep on going until it runs off the edge of the screen.
+	<WBR>But I just told it to break here.</NOBR>
+    </DL><HR>
+
+    <A NAME="colors"><H3>Colors</H3></A>
+    When color values are called for in any HTML tag, they may be specified either by name or
+    by color value.  The following named colors are supported:
+    <TABLE>
+      <TR VALIGN=MIDDLE>
+        <TD ALIGN=RIGHT>
+	  Black<IMG SRC="images/ref-c0.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+        </TD>
+        <TD ALIGN=RIGHT>
+          Maroon<IMG SRC="images/ref-c4.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+        </TD>
+        <TD ALIGN=RIGHT>
+          Gray<IMG SRC="images/ref-c8.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+        </TD>
+        <TD ALIGN=RIGHT>
+          Red<IMG SRC="images/ref-cc.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+        </TD>
+      </TR>
+      <TR VALIGN=MIDDLE>
+        <TD ALIGN=RIGHT>
+          Navy<IMG SRC="images/ref-c1.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+        </TD>
+        <TD ALIGN=RIGHT>
+			Purple<IMG SRC="images/ref-c5.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+        </TD>
+		<TD ALIGN=RIGHT>
+			Blue<IMG SRC="images/ref-c9.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			Fuchsia<IMG SRC="images/ref-cd.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+	</TR>
+	<TR VALIGN=MIDDLE>
+		<TD ALIGN=RIGHT>
+			Green<IMG SRC="images/ref-c2.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			Olive<IMG SRC="images/ref-c6.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			Lime<IMG SRC="images/ref-ca.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			Yellow<IMG SRC="images/ref-ce.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+	</TR>
+	<TR VALIGN=MIDDLE>
+		<TD ALIGN=RIGHT>
+			Teal<IMG SRC="images/ref-c3.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			Silver<IMG SRC="images/ref-c7.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			Aqua<IMG SRC="images/ref-cb.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+		<TD ALIGN=RIGHT>
+			White<IMG SRC="images/ref-cf.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
+		</TD>
+	</TR>
+</TABLE>
+Colors may also be specified as a color value in the form "#RRGGBB", where <VAR>RR</VAR>,
+<VAR>GG</VAR>, and <VAR>BB</VAR> represent color intensity values for red, green, and blue,
+respectively, as hexadecimal values from 00 to FF (decimal 0 to 255).  For example, the color
+"red" in the table above may also be represented as "#FF0000".  In this color example, red
+is set to its highest possible value (hex FF, decimal 255), while green and blue are set to 0.
+<P>Although red-green-blue color values theoretically allow for many thousands of colors,
+the actual number of colors available depends on the color capabilities of the devices the
+document will be viewed on. Many personal computers can display only 16 colors due to the
+type of video display adapter they use.
+<HR>
+
+<A NAME="chars"><H3>Special Characters</H3></A>
+In HTML, certain special characters may be written as &amp;<VAR>name</VAR>;, where
+<VAR>name</VAR> is a symbolic name.  The most important of these are &amp;lt; (the less-than
+sign, or &lt;), &amp;gt; (the greater-than sign, or &gt;), and &amp;amp; (the ampersand
+itself, or &amp;).  These allow you to use characters normally used by HTML to indicate
+formatting commands.<P>
+In addition, special characters may be written as &amp;#<VAR>nnn</VAR>;, where <VAR>nnn</VAR>
+is a decimal character code in the document's character set (usually the ISO Latin-1 character
+set).<P>
+Here follows a listing of additional special characters in HTML.  (<STRONG>NOTE:</STRONG>
+Your browser may not display all of these properly.)
+<TABLE BORDER=1>
+	<TR>
+		<TD>&amp;nbsp; = nonbreaking space</TD>
+		<TD>&amp;iexcl; = inverted exclamation mark (&iexcl;)</TD>
+		<TD>&amp;cent; = cent sign (&cent;)</TD>
+		<TD>&amp;pound; = pound sterling sign (&pound;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;curren; = general currency sign (&curren;)</TD>
+		<TD>&amp;yen; = yen sign (&yen;)</TD>
+		<TD>&amp;brvbar; = broken vertical bar (&brvbar;)</TD>
+		<TD>&amp;sect; = section sign (&sect;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;uml; = umlaut (dieresis) (&uml;)</TD>
+		<TD>&amp;copy; = copyright sign (&copy;)</TD>
+		<TD>&amp;ordf; = feminine ordinal (&ordf;)</TD>
+		<TD>&amp;laquo; = left angle quotes (&laquo;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;not; = not sign (&not;)</TD>
+		<TD>&amp;shy; = soft hyphen (&shy;)</TD>
+		<TD>&amp;reg; = registered sign (&reg;)</TD>
+		<TD>&amp;macr; = macron (&macr;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;deg; = degree sign (&deg;)</TD>
+		<TD>&amp;plusmn; = plus-or-minus sign (&plusmn;)</TD>
+		<TD>&amp;sup2; = superscript 2 (&sup2;)</TD>
+		<TD>&amp;sup3; = superscript 3 (&sup3;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;acute; = acute accent (&acute;)</TD>
+		<TD>&amp;micro; = micro sign (&micro;)</TD>
+		<TD>&amp;para; = paragraph sign (&para;)</TD>
+		<TD>&amp;middot; = middle dot (&middot;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;cedil; = cedilla (&cedil;)</TD>
+		<TD>&amp;sup1; = superscript 1 (&sup1;)</TD>
+		<TD>&amp;ordm; = masculine ordinal (&ordm;)</TD>
+		<TD>&amp;raquo; = right angle quotes (&raquo;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;frac14; = fraction 1/4 (&frac14;)</TD>
+		<TD>&amp;frac12; = fraction 1/2 (&frac12;)</TD>
+		<TD>&amp;frac34; = fraction 3/4 (&frac34;)</TD>
+		<TD>&amp;iquest; = inverted question mark (&iquest;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Agrave; = A grave accent (&Agrave;)</TD>
+		<TD>&amp;Aacute; = A acute accent (&Aacute;)</TD>
+		<TD>&amp;Acirc; = A circumflex (&Acirc;)</TD>
+		<TD>&amp;Atilde; = A tilde (&Atilde;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Auml; = A umlaut (&Auml;)</TD>
+		<TD>&amp;Aring; = A ring (&Aring;)</TD>
+		<TD>&amp;AElig; = AE ligature (&AElig;)</TD>
+		<TD>&amp;Ccedil; = C cedilla (&Ccedil;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Egrave; = E grave accent (&Egrave;)</TD>
+		<TD>&amp;Eacute; = E acute accent (&Eacute;)</TD>
+		<TD>&amp;Ecirc; = E circumflex (&Ecirc;)</TD>
+		<TD>&amp;Euml; = E umlaut (&Euml;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Igrave; = I grave accent (&Igrave;)</TD>
+		<TD>&amp;Iacute; = I acute accent (&Iacute;)</TD>
+		<TD>&amp;Icirc; = I circumflex (&Icirc;)</TD>
+		<TD>&amp;Iuml; = I umlaut (&Iuml;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;ETH; = Icelandic capital Eth (&ETH;)</TD>
+		<TD>&amp;Ntilde; = N tilde (&Ntilde;)</TD>
+		<TD>&amp;Ograve; = O grave accent (&Ograve;)</TD>
+		<TD>&amp;Oacute; = O acute accent (&Oacute;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Ocirc; = O circumflex (&Ocirc;)</TD>
+		<TD>&amp;Otilde; = O tilde (&Otilde;)</TD>
+		<TD>&amp;Ouml; = O umlaut (&Ouml;)</TD>
+		<TD>&amp;times; = multiply sign (&times;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Oslash; = O slash (&Oslash;)</TD>
+		<TD>&amp;Ugrave; = U grave accent (&Ugrave;)</TD>
+		<TD>&amp;Uacute; = U acute accent (&Uacute;)</TD>
+		<TD>&amp;Ucirc; = U circumflex (&Ucirc;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;Uuml; = U umlaut (&Uuml;)</TD>
+		<TD>&amp;Yacute; = Y acute accent (&Yacute;)</TD>
+		<TD>&amp;THORN; = Icelandic capital Thorn (&THORN;)</TD>
+		<TD>&amp;szlig; = German sharp s (&szlig;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;agrave; = a grave accent (&agrave;)</TD>
+		<TD>&amp;aacute; = a acute accent (&aacute;)</TD>
+		<TD>&amp;acirc; = a circumflex (&acirc;)</TD>
+		<TD>&amp;atilde; = a tilde (&atilde;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;auml; = a umlaut (&auml;)</TD>
+		<TD>&amp;aring; = a ring (&aring;)</TD>
+		<TD>&amp;aelig; = ae ligature (&aelig;)</TD>
+		<TD>&amp;ccedil; = c cedilla (&ccedil;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;egrave; = e grave accent (&egrave;)</TD>
+		<TD>&amp;eacute; = e acute accent (&eacute;)</TD>
+		<TD>&amp;ecirc; = e circumflex (&ecirc;)</TD>
+		<TD>&amp;euml; = e umlaut (&euml;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;igrave; = i grave accent (&igrave;)</TD>
+		<TD>&amp;iacute; = i acute accent (&iacute;)</TD>
+		<TD>&amp;icirc; = i circumflex (&icirc;)</TD>
+		<TD>&amp;iuml; = i umlaut (&iuml;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;eth; = Icelandic small Eth (&eth;)</TD>
+		<TD>&amp;ntilde; = n tilde (&ntilde;)</TD>
+		<TD>&amp;ograve; = o grave accent (&ograve;)</TD>
+		<TD>&amp;oacute; = o acute accent (&oacute;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;ocirc; = o circumflex (&ocirc;)</TD>
+		<TD>&amp;otilde; = o tilde (&otilde;)</TD>
+		<TD>&amp;ouml; = o umlaut (&ouml;)</TD>
+		<TD>&amp;divide; = divide sign (&divide;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;oslash; = o slash (&oslash;)</TD>
+		<TD>&amp;ugrave; = u grave accent (&ugrave;)</TD>
+		<TD>&amp;uacute; = u acute accent (&uacute;)</TD>
+		<TD>&amp;ucirc; = u circumflex (&ucirc;)</TD>
+	</TR>
+	<TR>
+		<TD>&amp;uuml; = u umlaut (&uuml;)</TD>
+		<TD>&amp;yacute; = y acute accent (&yacute;)</TD>
+		<TD>&amp;thorn; = Icelandic small Thorn (&thorn;)</TD>
+		<TD>&amp;yuml; = y umlaut (&yuml;)</TD>
+	</TR>
+</TABLE><HR>
+
+<CENTER><FONT SIZE=-2>Original of this document is copyright &copy; 1997 Durand Communications, All rights
+reserved.  Used in Venice by permission.</FONT></CENTER>
+  </FONT>
+</BODY>
+</HTML>
