@@ -336,7 +336,7 @@
         <a name="tagdd"><h3>DD</h3></a>
         Specifies a definition in a definition list. Indicates that the text is a definition
         of a term, and should therefore be displayed in the right-hand column of a definition list.
-        <dd>
+        <dl>
             <dt><b>Syntax:</b></dt>
             <dd><code><b>&lt;DD&gt;</b></code></dd>
             <dt><b>Allowed in Topic Names</b></dt>
@@ -904,273 +904,287 @@
             </dd>
         </dl><hr/>
 
+        <a name="tagmenu"><h3>MENU</h3></a>
+        Denotes a list of items. Specifies that the following block consists of individual items,
+        each beginning with an LI element.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;MENU&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers, but will usually be rendered
+	        similarly to the UL tag.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Information about Linux:<BR>
+                &lt;MENU&gt;<BR>
+                &lt;LI&gt;&lt;A HREF=&quot;http://www.linux.com&quot;&gt;Linux.com&lt;/A&gt;<BR>
+                &lt;LI&gt;&lt;A HREF=&quot;http://linuxtoday.com&quot;&gt;Linux Today&lt;/A&gt;<BR>
+                &lt;LI&gt;&lt;A HREF=&quot;http://lwn.net&quot;&gt;USA Today&lt;/A&gt;<BR>
+                &lt;LI&gt;&lt;A HREF=&quot;http://www.freshmeat.net&quot;&gt;Freshmeat&lt;/A&gt;<BR>
+                &lt;LI&gt;&lt;A HREF=&quot;http://slashdot.org&quot;&gt;Slashdot&lt;/A&gt;<BR>
+                &lt;/MENU&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Information about Linux:
+                <menu>
+                <li><a href="http://www.linux.com">Linux.com</a></li>
+                <li><a href="http://linuxtoday.com">Linux Today</a></li>
+                <li><a href="http://lwn.net">Linux Weekly News</a></li>
+                <li><a href="http://www.freshmeat.net">Freshmeat</a></li>
+                <li><a href="http://slashdot.org">Slashdot</a></li>
+                </menu>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagnobr"><h3>NOBR</h3></a>
+        Turns off line breaking. Renders text without line breaks.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;NOBR&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;NOBR&gt;Here's a line of text I don't want to be broken . . .<BR>
+                there could be an awful lot of text here and it must stay on one line . . .<BR>
+                here's the end of the line.&lt;/NOBR&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <nobr>Here's a line of text I don't want to be broken . . .
+                there could be an awful lot of text here and it must stay on one line . . .
+                here's the end of the line.</nobr>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagol"><h3>OL</h3></a>
+        Draws lines of text as an ordered list. Specifies that the following block consists of
+        individual items, each beginning with an LI tag. The items are numbered.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;OL [START=<EM>n</EM>] [TYPE=<EM>order-type</EM>] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>START=<i>n</i></b></p>
+                <p><i>Optional:</i> Specifies a starting index number for the list.  The default is 1.</p>
+                <p><b>TYPE=<i>order-type</i></b></p>
+                <p><i>Optional:</i> Specifies a new style for an ordered list.  The <i>order-type</i>
+	            can be one of these values:</p>
+                <ul>
+                    <li><b>A</b> - Use upper-case letters.</li>
+                    <li><b>a</b> - Use lower-case letters.</li>
+                    <li><b>I</b> - Use upper-case Roman numerals.</li>
+                    <li><b>i</b> - Use lower-case Roman numerals.</li>
+                    <li><b>1</b> - Use Arabic numerals.</li>
+                </ul>
+                <p>The default is to use Arabic numerals.</p>
+            </dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;OL&gt;<BR>
+                &lt;LI&gt;Pick up the TV remote control.<BR>
+                &lt;LI&gt;Push the POWER button to turn on the TV.<BR>
+                &lt;LI&gt;Change to channel 3.<BR>
+                &lt;LI&gt;Switch to the VCR remote control.<BR>
+                &lt;LI&gt;Push the POWER button to turn on the VCR.<BR>
+                &lt;LI&gt;Push the TV/VCR button to switch to the VCR input.<BR>
+                &lt;LI&gt;Change to desired channel on the VCR.<BR>
+                &lt;LI&gt;Insert a blank tape into the VCR.<BR>
+                &lt;LI&gt;Press RECORD.<BR>
+                &lt;/OL&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <ol>
+                <li>Pick up the TV remote control.</li>
+                <li>Push the POWER button to turn on the TV.</li>
+                <li>Change to channel 3.</li>
+                <li>Switch to the VCR remote control.</li>
+                <li>Push the POWER button to turn on the VCR.</li>
+                <li>Push the TV/VCR button to switch to the VCR input.</li>
+                <li>Change to desired channel on the VCR.</li>
+                <li>Insert a blank tape into the VCR.</li>
+                <li>Press RECORD.</li>
+                </ol>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagp"><h3>P</h3></a>
+        Inserts a paragraph break and denotes a paragraph.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;P [ALIGN=LEFT|CENTER|RIGHT] &gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Optional</dd>
+            <dt><b>Parameters</b></dt>
+            <dd>
+                <p><b>ALIGN=LEFT|CENTER|RIGHT</b></p>
+                <p>Sets the alignment of the paragraph. The align-type can be LEFT, CENTER, or RIGHT.
+	            Default is left alignment.</p>
+            </dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                There will be a paragraph break&lt;P&gt;between these two lines.<BR>
+                &lt;P ALIGN=RIGHT&gt;Here's a paragraph that will be flush-right.&lt;/P&gt;<BR>
+                And back to normal again.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <p>There will be a paragraph break</p><p>between these two lines.</p>
+                <p align=right>Here's a paragraph that will be flush-right.</p>
+                And back to normal again.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagq"><h3>Q</h3></a>
+        Sets apart a short quotation in text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;Q&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+	            &lt;Q&gt;Software is like sex; it's better when it's free.&lt;/Q&gt; - Linus Torvalds
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	<q>Software is like sex; it's better when it's free.</q> - Linus Torvalds
+            </dd>
+        </dl><hr/>
+
+        <a name="tags"><h3>S</h3></a>
+        Renders text in strikethrough type.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;S&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	We have a lot of &lt;S&gt;crazy people&lt;/S&gt; unique individuals in the Playground.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	We have a lot of <s>crazy people</s> unique individuals in the Playground.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagsamp"><h3>SAMP</h3></a>
+        Specifies sample text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;SAMP&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;SAMP&gt;If one-third of a hive of bees flies to a rose bush, one-fifth flies to a daisy,<BR>
+                three times the difference of those two numbers flies to an apple tree, and one bee hovers<BR>
+                attracted by both a jasmine and a tulip, how many bees are there in all?&lt;/SAMP&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <samp>If one-third of a hive of bees flies to a rose bush, one-fifth flies to a daisy,
+                three times the difference of those two numbers flies to an apple tree, and one bee hovers
+                attracted by both a jasmine and a tulip, how many bees are there in all?</samp>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagsmall"><h3>SMALL</h3></a>
+        Renders text in smaller type.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;SMALL&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Some of the text on this line will be &lt;SMALL&gt;rendered in small&lt;/SMALL&gt; type.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	Some of the text on this line will be <small>rendered in small</small> type.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagstrike"><h3>STRIKE</h3></a>
+        Renders text in strikethrough type.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;S&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	We have a lot of &lt;STRIKE&gt;crazy people&lt;/STRIKE&gt; unique individuals in the Playground.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	We have a lot of <strike>crazy people</strike> unique individuals in the Playground.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagstrong"><h3>STRONG</h3></a>
+        Specifies that the text is strongly emphasized.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;STRONG&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, it is rendered as bold face.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                A thing can have as much value from &lt;STRONG&gt;where&lt;/STRONG&gt; it is as from<BR>
+                &lt;STRONG&gt;what&lt;/STRONG&gt; it is.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                A thing can have as much value from <strong>where</strong> it is as from
+                <strong>what</strong> it is.
+            </dd>
+        </dl><hr/>
+
+
     </body>
 </html>
 -------------------------------------------------------------------------------------------
 <HTML>
 <BODY>
-    <A NAME="tagmenu"><H3>MENU</H3></A>
-    Denotes a list of items. Specifies that the following block consists of individual items,
-    each beginning with an LI element.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;MENU&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>No
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers, but will usually be rendered
-	similarly to the UL tag.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	Information about Linux:<BR>
-	&lt;MENU&gt;<BR>
-	&lt;LI&gt;&lt;A HREF=&quot;http://www.linux.com&quot;&gt;Linux.com&lt;/A&gt;<BR>
-	&lt;LI&gt;&lt;A HREF=&quot;http://linuxtoday.com&quot;&gt;Linux Today&lt;/A&gt;<BR>
-	&lt;LI&gt;&lt;A HREF=&quot;http://lwn.net&quot;&gt;USA Today&lt;/A&gt;<BR>
-	&lt;LI&gt;&lt;A HREF=&quot;http://www.freshmeat.net&quot;&gt;Freshmeat&lt;/A&gt;<BR>
-	&lt;LI&gt;&lt;A HREF=&quot;http://slashdot.org&quot;&gt;Slashdot&lt;/A&gt;<BR>
-	&lt;/MENU&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	Information about Linux:
-	<MENU>
-	<LI><A HREF="http://www.linux.com">Linux.com</A>
-	<LI><A HREF="http://linuxtoday.com">Linux Today</A>
-	<LI><A HREF="http://lwn.net">Linux Weekly News</A>
-	<LI><A HREF="http://www.freshmeat.net">Freshmeat</A>
-	<LI><A HREF="http://slashdot.org">Slashdot</A>
-	</MENU>
-    </DL><HR>
-
-    <A NAME="tagnobr"><H3>NOBR</H3></A>
-    Turns off line breaking. Renders text without line breaks.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;NOBR&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	&lt;NOBR&gt;Here's a line of text I don't want to be broken . . .<BR>
-	there could be an awful lot of text here and it must stay on one line . . .<BR>
-	here's the end of the line.&lt;/NOBR&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	<NOBR>Here's a line of text I don't want to be broken . . .
-	there could be an awful lot of text here and it must stay on one line . . .
-	here's the end of the line.</NOBR>
-    </DL><HR>
-
-    <A NAME="tagol"><H3>OL</H3></A>
-    Draws lines of text as an ordered list. Specifies that the following block consists of
-    individual items, each beginning with an LI tag. The items are numbered.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;OL [START=<EM>n</EM>] [TYPE=<EM>order-type</EM>] &gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>No
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Parameters</STRONG>
-      <DD>
-        <STRONG>START=<EM>n</EM></STRONG><P>
-	<EM>Optional:</EM> Specifies a starting index number for the list.  The default is 1.<P>
-	<STRONG>TYPE=<EM>order-type</EM></STRONG><P>
-	<EM>Optional:</EM> Specifies a style for the ordered list.  The <EM>order-type</EM>
-	can be one of	these values:
-	<UL>
-	<LI><STRONG>A</STRONG> - Use upper-case letters.
-	<LI><STRONG>a</STRONG> - Use lower-case letters.
-	<LI><STRONG>I</STRONG> - Use upper-case Roman numerals.
-	<LI><STRONG>i</STRONG> - Use lower-case Roman numerals.
-	<LI><STRONG>1</STRONG> - Use Arabic numerals.
-	</UL><P>
-	The default is to use Arabic numerals.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	&lt;OL&gt;<BR>
-	&lt;LI&gt;Pick up the TV remote control.<BR>
-	&lt;LI&gt;Push the POWER button to turn on the TV.<BR>
-	&lt;LI&gt;Change to channel 3.<BR>
-	&lt;LI&gt;Switch to the VCR remote control.<BR>
-	&lt;LI&gt;Push the POWER button to turn on the VCR.<BR>
-	&lt;LI&gt;Push the TV/VCR button to switch to the VCR input.<BR>
-	&lt;LI&gt;Change to desired channel on the VCR.<BR>
-	&lt;LI&gt;Insert a blank tape into the VCR.<BR>
-	&lt;LI&gt;Press RECORD.<BR>
-	&lt;/OL&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	<OL>
-	<LI>Pick up the TV remote control.
-	<LI>Push the POWER button to turn on the TV.
-	<LI>Change to channel 3.
-	<LI>Switch to the VCR remote control.
-	<LI>Push the POWER button to turn on the VCR.
-	<LI>Push the TV/VCR button to switch to the VCR input.
-	<LI>Change to desired channel on the VCR.
-	<LI>Insert a blank tape into the VCR.
-	<LI>Press RECORD.
-	</OL>
-    </DL><HR>
-		
-    <A NAME="tagp"><H3>P</H3></A>
-    Inserts a paragraph break and denotes a paragraph.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;P [ALIGN=LEFT|CENTER|RIGHT] &gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>No
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Optional
-      <DT><STRONG>Parameters</STRONG>
-      <DD><STRONG>ALIGN=LEFT|CENTER|RIGHT</STRONG><P>
-	Sets the alignment of the paragraph. The align-type can be LEFT, CENTER, or RIGHT.
-	Default is left alignment.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	There will be a paragraph break&lt;P&gt;between these two lines.<BR>
-	&lt;P ALIGN=RIGHT&gt;Here's a paragraph that will be flush-right.&lt;/P&gt;<BR>
-	And back to normal again.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	There will be a paragraph break<P>between these two lines.
-	<P ALIGN=RIGHT>Here's a paragraph that will be flush-right.</P>
-	And back to normal again.
-    </DL><HR>
-
-    <A NAME="tagq"><H3>Q</H3></A>
-    Sets apart a short quotation in text.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;Q&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>No
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	&lt;Q&gt;Software is like sex; it's better when it's free.&lt;/Q&gt; - Linus Torvalds
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	<Q>Software is like sex; it's better when it's free.</Q> - Linus Torvalds
-    </DL><HR>
-
-    <A NAME="tags"><H3>S</H3></A>
-    Renders text in strikethrough type.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;S&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	We have a lot of &lt;S&gt;crazy people&lt;/S&gt; unique individuals in the Playground.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	We have a lot of <S>crazy people</S> unique individuals in the Playground.
-    </DL><HR>
-
-    <A NAME="tagsamp"><H3>SAMP</H3></A>
-    Specifies sample text.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;SAMP&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	&lt;SAMP&gt;If one-third of a hive of bees flies to a rose bush, one-fifth flies to a daisy,<BR>
-	three times the difference of those two numbers flies to an apple tree, and one bee hovers<BR>
-	attracted by both a jasmine and a tulip, how many bees are there in all?&lt;/SAMP&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	<SAMP>If one-third of a hive of bees flies to a rose bush, one-fifth flies to a daisy,
-	three times the difference of those two numbers flies to an apple tree, and one bee hovers
-	attracted by both a jasmine and a tulip, how many bees are there in all?</SAMP>
-    </DL><HR>
-
-    <A NAME="tagsmall"><H3>SMALL</H3></A>
-    Renders text in smaller type.
-    <DL><DT><STRONG>Syntax</STRONG>
-    <DD>
-      <TT><STRONG>&lt;SMALL&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>No
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	Some of the text on this line will be &lt;SMALL&gt;rendered in small&lt;/SMALL&gt; type.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	Some of the text on this line will be <SMALL>rendered in small</SMALL> type.
-    </DL><HR>
-
-    <A NAME="tagstrike"><H3>STRIKE</H3></A>
-    Renders text in strikethrough type.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;STRIKE&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	We have a lot of &lt;STRIKE&gt;crazy people&lt;/STRIKE&gt; unique individuals in the Playground.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	We have a lot of <STRIKE>crazy people</STRIKE> unique individuals in the Playground.
-    </DL><HR>
-
-    <A NAME="tagstrong"><H3>STRONG</H3></A>
-    Specifies that the text is strongly emphasized.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;STRONG&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.  Usually, it is rendered as bold face.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	A thing can have as much value from &lt;STRONG&gt;where&lt;/STRONG&gt; it is as from<BR>
-	&lt;STRONG&gt;what&lt;/STRONG&gt; it is.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	A thing can have as much value from <STRONG>where</STRONG> it is as from
-	<STRONG>what</STRONG> it is.
-    </DL><HR>
-
     <A NAME="tagsub"><H3>SUB</H3></A>
     Displays the text in a smaller font, and with its baseline lower than that of the surrounding text.
     <DL>
