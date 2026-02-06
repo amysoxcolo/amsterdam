@@ -1179,188 +1179,195 @@
             </dd>
         </dl><hr/>
 
+        <a name="tagsub"><h3>SUB</h3></a>
+        Displays the text in a smaller font, and with its baseline lower than that of the surrounding text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;SUB&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Fibonacci numbers are computed as follows:&lt;BLOCKQUOTE&gt;<BR>
+                &lt;EM&gt;F&lt;SUB&gt;0&lt;/SUB&gt;&lt;/EM&gt; = 0&lt;BR&gt;<BR>
+                &lt;EM&gt;F&lt;SUB&gt;1&lt;/SUB&gt;&lt;/EM&gt; = 1&lt;BR&gt;<BR>
+                &lt;EM&gt;F&lt;SUB&gt;n&lt;/SUB&gt;&lt;/EM&gt; =<BR>
+                &lt;EM&gt;F&lt;SUB&gt;n-2&lt;/SUB&gt;&lt;/EM&gt; + &lt;EM&gt;F&lt;SUB&gt;n-1&lt;/SUB&gt;&lt;/EM&gt;<BR>
+                for all integer &lt;EM&gt;n&lt;/EM&gt;>1&lt;/BLOCKQUOTE&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Fibonacci numbers are computed as follows:<BLOCKQUOTE>
+                <EM>F<SUB>0</SUB></EM> = 0<BR>
+                <EM>F<SUB>1</SUB></EM> = 1<BR>
+                <EM>F<SUB>n</SUB></EM> =
+                <EM>F<SUB>n-2</SUB></EM> + <EM>F<SUB>n-1</SUB></EM>
+                for all integer <EM>n</EM>>1</BLOCKQUOTE>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagsup"><h3>SUP</h3></a>
+        Displays the text in a smaller font, and with its baseline higher than that of the surrounding text.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;SUP&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Fermat's Last Theorem states that, for any integer &lt;EM&gt;n&lt;/EM&gt; greater than 2,<BR>
+                there is no combination of values &lt;EM&gt;x&lt;/EM&gt;, &lt;EM&gt;y&lt;/EM&gt;,<BR>
+                and &lt;EM&gt;z&lt;/EM&gt; such that &lt;EM&gt;x&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt;<BR>
+                + &lt;EM&gt;y&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt; = &lt;EM&gt;z&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt;.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Fermat's Last Theorem states that, for any integer <EM>n</EM> greater than 2,
+                there is no combination of values <EM>x</EM>, <EM>y</EM>,
+                and <EM>z</EM> such that <EM>x<SUP>n</SUP></EM>
+                + <EM>y<SUP>n</SUP></EM> = <EM>z<SUP>n</SUP></EM>.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagtt"><h3>TT</h3></a>
+        Indicates "teletype" or "typewriter text." Renders text in fixed-width type.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;TT&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, it is rendered
+	        as a fixed-width font.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	&lt;TT&gt;This style of text can be useful for code listings.&lt;/TT&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	<TT>This style of text can be useful for code listings.</TT>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagu"><h3>U</h3></a>
+        Displays text as underlined.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;U&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                A thing can have as much value from &lt;U&gt;where&lt;/U&gt; it is as from<BR>
+                &lt;U&gt;what&lt;/U&gt; it is.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                A thing can have as much value from <U>where</U> it is as from
+                <U>what</U> it is.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagul"><h3>UL</h3></a>
+        Draws lines of text as a bulleted list. Specifies that the following block consists of
+        individual items, each beginning with an LI tag. The items are bulleted.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;UL&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>No</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                Things to get in life:<BR>
+                &lt;UL&gt;<BR>
+                &lt;LI&gt;Good education<BR>
+                &lt;LI&gt;Exact change<BR>
+                &lt;LI&gt;Happiness<BR>
+                &lt;LI&gt;Portable stereo<BR>
+                &lt;LI&gt;Sense of self-worth<BR>
+                &lt;LI&gt;Account on Electric Minds<BR>
+                &lt;/UL&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                Things to get in life:
+                <ul>
+                <li>Good education</li>
+                <li>Exact change</li>
+                <li>Happiness</li>
+                <li>Portable stereo</li>
+                <li>Sense of self-worth</li>
+                <li>Account on Electric Minds</li>
+                </ul>
+            </dd>
+        </dl><hr/>
+
+        <a name="tagvar"><h3>VAR</h3></a>
+        Indicates placeholder text for a variable.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;VAR&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Required</dd>
+            <dt><b>Notes</b></dt>
+            <dd>This may be rendered differently in different browsers.  Usually, it is rendered
+	        as italics.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+            	Enter the &lt;VAR&gt;filename&lt;/VAR&gt; in the appropriate field in the dialog box.
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+            	Enter the <VAR>filename</VAR> in the appropriate field in the dialog box.
+            </dd>
+        </dl><hr/>
+
+        <a name="tagwbr"><h3>WBR</h3></a>
+        Inserts a soft line break in a block of text formatted using the NOBR tag.
+        <dl>
+            <dt><b>Syntax:</b></dt>
+            <dd><code><b>&lt;WBR&gt;</b></code></dd>
+            <dt><b>Allowed in Topic Names</b></dt>
+            <dd>Yes</dd>
+            <dt><b>Closing Tag</b></dt>
+            <dd>Optional</dd>
+            <dt><b>Notes</b></dt>
+            <dd>If it is not placed inside a pair of NOBR tags, this tag has no effect.</dd>
+            <dt><b>Example</b></dt>
+            <dd><code>
+                &lt;NOBR&gt;This text will not break anywhere unless I tell it to.  The text will<BR>
+                just keep on going until it runs off the edge of the screen.<BR>
+                &lt;WBR&gt;But I just told it to break here.&lt;/NOBR&gt;
+            </code></dd>
+            <dt><b>Example Output</b></dt>
+            <dd>
+                <NOBR>This text will not break anywhere unless I tell it to.  The text will
+                just keep on going until it runs off the edge of the screen.
+                <WBR>But I just told it to break here.</NOBR>
+            </dd>
+        </dl><hr/>
 
     </body>
 </html>
 -------------------------------------------------------------------------------------------
 <HTML>
 <BODY>
-    <A NAME="tagsub"><H3>SUB</H3></A>
-    Displays the text in a smaller font, and with its baseline lower than that of the surrounding text.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;SUB&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	Fibonacci numbers are computed as follows:&lt;BLOCKQUOTE&gt;<BR>
-	&lt;EM&gt;F&lt;SUB&gt;0&lt;/SUB&gt;&lt;/EM&gt; = 0&lt;BR&gt;<BR>
-	&lt;EM&gt;F&lt;SUB&gt;1&lt;/SUB&gt;&lt;/EM&gt; = 1&lt;BR&gt;<BR>
-	&lt;EM&gt;F&lt;SUB&gt;n&lt;/SUB&gt;&lt;/EM&gt; =<BR>
-	&lt;EM&gt;F&lt;SUB&gt;n-2&lt;/SUB&gt;&lt;/EM&gt; + &lt;EM&gt;F&lt;SUB&gt;n-1&lt;/SUB&gt;&lt;/EM&gt;<BR>
-	for all integer &lt;EM&gt;n&lt;/EM&gt;>1&lt;/BLOCKQUOTE&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	Fibonacci numbers are computed as follows:<BLOCKQUOTE>
-	<EM>F<SUB>0</SUB></EM> = 0<BR>
-	<EM>F<SUB>1</SUB></EM> = 1<BR>
-	<EM>F<SUB>n</SUB></EM> =
-	<EM>F<SUB>n-2</SUB></EM> + <EM>F<SUB>n-1</SUB></EM>
-	for all integer <EM>n</EM>>1</BLOCKQUOTE>
-    </DL><HR>
-
-    <A NAME="tagsup"><H3>SUP</H3></A>
-    Displays the text in a smaller font, and with its baseline higher than that of the surrounding text.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;SUP&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	Fermat's Last Theorem states that, for any integer &lt;EM&gt;n&lt;/EM&gt; greater than 2,<BR>
-	there is no combination of values &lt;EM&gt;x&lt;/EM&gt;, &lt;EM&gt;y&lt;/EM&gt;,<BR>
-	and &lt;EM&gt;z&lt;/EM&gt; such that &lt;EM&gt;x&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt;<BR>
-	+ &lt;EM&gt;y&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt; = &lt;EM&gt;z&lt;SUP&gt;2&lt;/SUP&gt;&lt;/EM&gt;.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-	<DD>
-	Fermat's Last Theorem states that, for any integer <EM>n</EM> greater than 2,
-	there is no combination of values <EM>x</EM>, <EM>y</EM>,
-	and <EM>z</EM> such that <EM>x<SUP>n</SUP></EM>
-	+ <EM>y<SUP>n</SUP></EM> = <EM>z<SUP>n</SUP></EM>.
-    </DL><HR>
-
-    <A NAME="tagtt"><H3>TT</H3></A>
-    Indicates "teletype" or "typewriter text." Renders text in fixed-width type.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;TT&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.  Usually, it is rendered
-	as a fixed-width font.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	&lt;TT&gt;This style of text can be useful for code listings.&lt;/TT&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-	<DD>
-	<TT>This style of text can be useful for code listings.</TT>
-    </DL><HR>
-
-    <A NAME="tagu"><H3>U</H3></A>
-    Displays text as underlined.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;U&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	A thing can have as much value from &lt;U&gt;where&lt;/U&gt; it is as from<BR>
-	&lt;U&gt;what&lt;/U&gt; it is.
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	A thing can have as much value from <U>where</U> it is as from
-	<U>what</U> it is.
-    </DL><HR>
-
-    <A NAME="tagul"><H3>UL</H3></A>
-    Draws lines of text as a bulleted list. Specifies that the following block consists of
-    individual items, each beginning with an LI tag. The items are bulleted.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;UL&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>No
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	Things to get in life:<BR>
-	&lt;UL&gt;<BR>
-	&lt;LI&gt;Good education<BR>
-	&lt;LI&gt;Exact change<BR>
-	&lt;LI&gt;Happiness<BR>
-	&lt;LI&gt;Portable stereo<BR>
-	&lt;LI&gt;Sense of self-worth<BR>
-	&lt;LI&gt;Account on Electric Minds<BR>
-	&lt;/UL&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-	<DD>
-	Things to get in life:
-	<UL>
-	<LI>Good education
-	<LI>Exact change
-	<LI>Happiness
-	<LI>Portable stereo
-	<LI>Sense of self-worth
-	<LI>Account on Electric Minds
-	</UL>
-    </DL><HR>
-
-    <A NAME="tagvar"><H3>VAR</H3></A>
-    Indicates placeholder text for a variable.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;VAR&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Required
-      <DT><STRONG>Notes</STRONG>
-      <DD>This may be rendered differently in different browsers.  Usually, it is rendered as italics.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	Enter the &lt;VAR&gt;filename&lt;/VAR&gt; in the appropriate field in the dialog box.
-      </TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	Enter the <VAR>filename</VAR> in the appropriate field in the dialog box.
-    </DL><HR>
-
-    <A NAME="tagwbr"><H3>WBR</H3></A>
-    Inserts a soft line break in a block of text formatted using the NOBR tag.
-    <DL>
-      <DT><STRONG>Syntax</STRONG>
-      <DD><TT><STRONG>&lt;NOBR&gt;</STRONG></TT>
-      <DT><STRONG>Allowed in Topic Names</STRONG>
-      <DD>Yes
-      <DT><STRONG>Closing Tag</STRONG>
-      <DD>Optional
-      <DT><STRONG>Notes</STRONG>
-      <DD>If it is not placed inside a pair of NOBR tags, this tag has no effect.
-      <DT><STRONG>Example</STRONG>
-      <DD><TT>
-	&lt;NOBR&gt;This text will not break anywhere unless I tell it to.  The text will<BR>
-	just keep on going until it runs off the edge of the screen.<BR>
-	&lt;WBR&gt;But I just told it to break here.&lt;/NOBR&gt;
-	</TT>
-      <DT><STRONG>Example Output</STRONG>
-      <DD>
-	<NOBR>This text will not break anywhere unless I tell it to.  The text will
-	just keep on going until it runs off the edge of the screen.
-	<WBR>But I just told it to break here.</NOBR>
-    </DL><HR>
-
     <A NAME="colors"><H3>Colors</H3></A>
     When color values are called for in any HTML tag, they may be specified either by name or
     by color value.  The following named colors are supported:
