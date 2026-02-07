@@ -200,7 +200,8 @@
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <label for="pb" class="text-black text-sm font-medium">Message:</label>
-                            <a href="/TODO" target="_blank" class="text-blue-700 hover:text-blue-900 text-sm">HTML Guide</a>
+                            <a href="#" onclick="window.open('/static/html-reference.html', 'htmlref', 'popup=true,width=800,height=800'); return false;"
+                                class="text-blue-700 hover:text-blue-900 text-sm">HTML Guide</a>
                         </div>
                         <textarea id="pb" name="pb" wrap="soft" rows="7" cols="51" placeholder="Enter your post..."
                                     class="w-full px-3 py-2 border border-gray-300 rounded font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>

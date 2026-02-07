@@ -69,7 +69,7 @@
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <label for="pb" class="text-black text-sm font-medium">Message:</label>
-                            <a href="/TODO/html-reference" target="_blank"
+                            <a href="#" onclick="window.open('/static/html-reference.html', 'htmlref', 'popup=true,width=800,height=800'); return false;"
                                 class="text-blue-700 hover:text-blue-900 text-sm">HTML Guide</a>
                         </div>
                         <textarea id="pb" name="pb" wrap="soft" rows="7" cols="51"
