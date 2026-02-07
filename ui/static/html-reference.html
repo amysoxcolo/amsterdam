@@ -1363,243 +1363,207 @@
             </dd>
         </dl><hr/>
 
+        <a name="colors"><h3>Colors</h3></a>
+        <p>When color values are called for in any HTML tag, they may be specified either by name or
+        by color value.  The following named colors are supported:</p>
+        <table>
+            <tr>
+                <td>Black<IMG SRC="htmlref/ref-c0.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Maroon<IMG SRC="htmlref/ref-c4.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Gray<IMG SRC="htmlref/ref-c8.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Red<IMG SRC="htmlref/ref-cc.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+            </tr>
+            <tr>
+                <td>Navy<IMG SRC="htmlref/ref-c1.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Purple<IMG SRC="htmlref/ref-c5.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Blue<IMG SRC="htmlref/ref-c9.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Fuchsia<IMG SRC="htmlref/ref-cd.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+            </tr>
+            <tr>
+                <td>Green<IMG SRC="htmlref/ref-c2.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Olive<IMG SRC="htmlref/ref-c6.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Lime<IMG SRC="htmlref/ref-ca.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Yellow<IMG SRC="htmlref/ref-ce.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+            </tr>
+            <tr>
+                <td>Teal<IMG SRC="htmlref/ref-c3.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Silver<IMG SRC="htmlref/ref-c7.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>Aqua<IMG SRC="htmlref/ref-cb.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+                <td>White<IMG SRC="htmlref/ref-cf.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32></td>
+            </tr>
+        </table>
+        <p>Colors may also be specified as a color value in the form "#RRGGBB", where <VAR>RR</VAR>,
+        <VAR>GG</VAR>, and <VAR>BB</VAR> represent color intensity values for red, green, and blue,
+        respectively, as hexadecimal values from 00 to FF (decimal 0 to 255).  For example, the color
+        "red" in the table above may also be represented as "#FF0000".  In this color example, red
+        is set to its highest possible value (hex FF, decimal 255), while green and blue are set to 0.</p>
+        <p>Although red-green-blue color values theoretically allow for many thousands of colors,
+        the actual number of colors available depends on the color capabilities of the devices the
+        document will be viewed on. Many personal computers can display only 16 colors due to the
+        type of video display adapter they use.</p><hr/>
+
+        <a name="chars"><h3>Special Characters</h3></a>
+        <p>In HTML, certain special characters may be written as &amp;<VAR>name</VAR>;, where
+        <VAR>name</VAR> is a symbolic name.  The most important of these are &amp;lt; (the less-than
+        sign, or &lt;), &amp;gt; (the greater-than sign, or &gt;), and &amp;amp; (the ampersand
+        itself, or &amp;).  These allow you to use characters normally used by HTML to indicate
+        formatting commands.</p>
+        <p>In addition, special characters may be written as &amp;#<VAR>nnn</VAR>;, where <VAR>nnn</VAR>
+        is a decimal character code in the document's character set (usually the ISO Latin-1 character
+        set).</p>
+        <p>Here follows a listing of additional special characters in HTML.  (<STRONG>NOTE:</STRONG>
+        Your browser may not display all of these properly.)</p>
+
+        <TABLE BORDER=1>
+            <TR>
+                <TD>&amp;nbsp; = nonbreaking space</TD>
+                <TD>&amp;iexcl; = inverted exclamation mark (&iexcl;)</TD>
+                <TD>&amp;cent; = cent sign (&cent;)</TD>
+                <TD>&amp;pound; = pound sterling sign (&pound;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;curren; = general currency sign (&curren;)</TD>
+                <TD>&amp;yen; = yen sign (&yen;)</TD>
+                <TD>&amp;brvbar; = broken vertical bar (&brvbar;)</TD>
+                <TD>&amp;sect; = section sign (&sect;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;uml; = umlaut (dieresis) (&uml;)</TD>
+                <TD>&amp;copy; = copyright sign (&copy;)</TD>
+                <TD>&amp;ordf; = feminine ordinal (&ordf;)</TD>
+                <TD>&amp;laquo; = left angle quotes (&laquo;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;not; = not sign (&not;)</TD>
+                <TD>&amp;shy; = soft hyphen (&shy;)</TD>
+                <TD>&amp;reg; = registered sign (&reg;)</TD>
+                <TD>&amp;macr; = macron (&macr;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;deg; = degree sign (&deg;)</TD>
+                <TD>&amp;plusmn; = plus-or-minus sign (&plusmn;)</TD>
+                <TD>&amp;sup2; = superscript 2 (&sup2;)</TD>
+                <TD>&amp;sup3; = superscript 3 (&sup3;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;acute; = acute accent (&acute;)</TD>
+                <TD>&amp;micro; = micro sign (&micro;)</TD>
+                <TD>&amp;para; = paragraph sign (&para;)</TD>
+                <TD>&amp;middot; = middle dot (&middot;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;cedil; = cedilla (&cedil;)</TD>
+                <TD>&amp;sup1; = superscript 1 (&sup1;)</TD>
+                <TD>&amp;ordm; = masculine ordinal (&ordm;)</TD>
+                <TD>&amp;raquo; = right angle quotes (&raquo;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;frac14; = fraction 1/4 (&frac14;)</TD>
+                <TD>&amp;frac12; = fraction 1/2 (&frac12;)</TD>
+                <TD>&amp;frac34; = fraction 3/4 (&frac34;)</TD>
+                <TD>&amp;iquest; = inverted question mark (&iquest;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Agrave; = A grave accent (&Agrave;)</TD>
+                <TD>&amp;Aacute; = A acute accent (&Aacute;)</TD>
+                <TD>&amp;Acirc; = A circumflex (&Acirc;)</TD>
+                <TD>&amp;Atilde; = A tilde (&Atilde;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Auml; = A umlaut (&Auml;)</TD>
+                <TD>&amp;Aring; = A ring (&Aring;)</TD>
+                <TD>&amp;AElig; = AE ligature (&AElig;)</TD>
+                <TD>&amp;Ccedil; = C cedilla (&Ccedil;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Egrave; = E grave accent (&Egrave;)</TD>
+                <TD>&amp;Eacute; = E acute accent (&Eacute;)</TD>
+                <TD>&amp;Ecirc; = E circumflex (&Ecirc;)</TD>
+                <TD>&amp;Euml; = E umlaut (&Euml;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Igrave; = I grave accent (&Igrave;)</TD>
+                <TD>&amp;Iacute; = I acute accent (&Iacute;)</TD>
+                <TD>&amp;Icirc; = I circumflex (&Icirc;)</TD>
+                <TD>&amp;Iuml; = I umlaut (&Iuml;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;ETH; = Icelandic capital Eth (&ETH;)</TD>
+                <TD>&amp;Ntilde; = N tilde (&Ntilde;)</TD>
+                <TD>&amp;Ograve; = O grave accent (&Ograve;)</TD>
+                <TD>&amp;Oacute; = O acute accent (&Oacute;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Ocirc; = O circumflex (&Ocirc;)</TD>
+                <TD>&amp;Otilde; = O tilde (&Otilde;)</TD>
+                <TD>&amp;Ouml; = O umlaut (&Ouml;)</TD>
+                <TD>&amp;times; = multiply sign (&times;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Oslash; = O slash (&Oslash;)</TD>
+                <TD>&amp;Ugrave; = U grave accent (&Ugrave;)</TD>
+                <TD>&amp;Uacute; = U acute accent (&Uacute;)</TD>
+                <TD>&amp;Ucirc; = U circumflex (&Ucirc;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;Uuml; = U umlaut (&Uuml;)</TD>
+                <TD>&amp;Yacute; = Y acute accent (&Yacute;)</TD>
+                <TD>&amp;THORN; = Icelandic capital Thorn (&THORN;)</TD>
+                <TD>&amp;szlig; = German sharp s (&szlig;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;agrave; = a grave accent (&agrave;)</TD>
+                <TD>&amp;aacute; = a acute accent (&aacute;)</TD>
+                <TD>&amp;acirc; = a circumflex (&acirc;)</TD>
+                <TD>&amp;atilde; = a tilde (&atilde;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;auml; = a umlaut (&auml;)</TD>
+                <TD>&amp;aring; = a ring (&aring;)</TD>
+                <TD>&amp;aelig; = ae ligature (&aelig;)</TD>
+                <TD>&amp;ccedil; = c cedilla (&ccedil;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;egrave; = e grave accent (&egrave;)</TD>
+                <TD>&amp;eacute; = e acute accent (&eacute;)</TD>
+                <TD>&amp;ecirc; = e circumflex (&ecirc;)</TD>
+                <TD>&amp;euml; = e umlaut (&euml;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;igrave; = i grave accent (&igrave;)</TD>
+                <TD>&amp;iacute; = i acute accent (&iacute;)</TD>
+                <TD>&amp;icirc; = i circumflex (&icirc;)</TD>
+                <TD>&amp;iuml; = i umlaut (&iuml;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;eth; = Icelandic small Eth (&eth;)</TD>
+                <TD>&amp;ntilde; = n tilde (&ntilde;)</TD>
+                <TD>&amp;ograve; = o grave accent (&ograve;)</TD>
+                <TD>&amp;oacute; = o acute accent (&oacute;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;ocirc; = o circumflex (&ocirc;)</TD>
+                <TD>&amp;otilde; = o tilde (&otilde;)</TD>
+                <TD>&amp;ouml; = o umlaut (&ouml;)</TD>
+                <TD>&amp;divide; = divide sign (&divide;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;oslash; = o slash (&oslash;)</TD>
+                <TD>&amp;ugrave; = u grave accent (&ugrave;)</TD>
+                <TD>&amp;uacute; = u acute accent (&uacute;)</TD>
+                <TD>&amp;ucirc; = u circumflex (&ucirc;)</TD>
+            </TR>
+            <TR>
+                <TD>&amp;uuml; = u umlaut (&uuml;)</TD>
+                <TD>&amp;yacute; = y acute accent (&yacute;)</TD>
+                <TD>&amp;thorn; = Icelandic small Thorn (&thorn;)</TD>
+                <TD>&amp;yuml; = y umlaut (&yuml;)</TD>
+            </TR>
+        </TABLE>        
+        <hr/>
+
+        <i>Original of this document is copyright &copy; 1997 Durand Communications, All rights
+        reserved.  Used in Venice, and Amsterdam, by permission.</i>
+
     </body>
 </html>
--------------------------------------------------------------------------------------------
-<HTML>
-<BODY>
-    <A NAME="colors"><H3>Colors</H3></A>
-    When color values are called for in any HTML tag, they may be specified either by name or
-    by color value.  The following named colors are supported:
-    <TABLE>
-      <TR VALIGN=MIDDLE>
-        <TD ALIGN=RIGHT>
-	  Black<IMG SRC="images/ref-c0.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-        </TD>
-        <TD ALIGN=RIGHT>
-          Maroon<IMG SRC="images/ref-c4.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-        </TD>
-        <TD ALIGN=RIGHT>
-          Gray<IMG SRC="images/ref-c8.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-        </TD>
-        <TD ALIGN=RIGHT>
-          Red<IMG SRC="images/ref-cc.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-        </TD>
-      </TR>
-      <TR VALIGN=MIDDLE>
-        <TD ALIGN=RIGHT>
-          Navy<IMG SRC="images/ref-c1.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-        </TD>
-        <TD ALIGN=RIGHT>
-			Purple<IMG SRC="images/ref-c5.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-        </TD>
-		<TD ALIGN=RIGHT>
-			Blue<IMG SRC="images/ref-c9.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			Fuchsia<IMG SRC="images/ref-cd.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-	</TR>
-	<TR VALIGN=MIDDLE>
-		<TD ALIGN=RIGHT>
-			Green<IMG SRC="images/ref-c2.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			Olive<IMG SRC="images/ref-c6.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			Lime<IMG SRC="images/ref-ca.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			Yellow<IMG SRC="images/ref-ce.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-	</TR>
-	<TR VALIGN=MIDDLE>
-		<TD ALIGN=RIGHT>
-			Teal<IMG SRC="images/ref-c3.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			Silver<IMG SRC="images/ref-c7.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			Aqua<IMG SRC="images/ref-cb.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-		<TD ALIGN=RIGHT>
-			White<IMG SRC="images/ref-cf.gif" ALT="" ALIGN=MIDDLE HSPACE=5 VSPACE=2 WIDTH=32 HEIGHT=32>
-		</TD>
-	</TR>
-</TABLE>
-Colors may also be specified as a color value in the form "#RRGGBB", where <VAR>RR</VAR>,
-<VAR>GG</VAR>, and <VAR>BB</VAR> represent color intensity values for red, green, and blue,
-respectively, as hexadecimal values from 00 to FF (decimal 0 to 255).  For example, the color
-"red" in the table above may also be represented as "#FF0000".  In this color example, red
-is set to its highest possible value (hex FF, decimal 255), while green and blue are set to 0.
-<P>Although red-green-blue color values theoretically allow for many thousands of colors,
-the actual number of colors available depends on the color capabilities of the devices the
-document will be viewed on. Many personal computers can display only 16 colors due to the
-type of video display adapter they use.
-<HR>
-
-<A NAME="chars"><H3>Special Characters</H3></A>
-In HTML, certain special characters may be written as &amp;<VAR>name</VAR>;, where
-<VAR>name</VAR> is a symbolic name.  The most important of these are &amp;lt; (the less-than
-sign, or &lt;), &amp;gt; (the greater-than sign, or &gt;), and &amp;amp; (the ampersand
-itself, or &amp;).  These allow you to use characters normally used by HTML to indicate
-formatting commands.<P>
-In addition, special characters may be written as &amp;#<VAR>nnn</VAR>;, where <VAR>nnn</VAR>
-is a decimal character code in the document's character set (usually the ISO Latin-1 character
-set).<P>
-Here follows a listing of additional special characters in HTML.  (<STRONG>NOTE:</STRONG>
-Your browser may not display all of these properly.)
-<TABLE BORDER=1>
-	<TR>
-		<TD>&amp;nbsp; = nonbreaking space</TD>
-		<TD>&amp;iexcl; = inverted exclamation mark (&iexcl;)</TD>
-		<TD>&amp;cent; = cent sign (&cent;)</TD>
-		<TD>&amp;pound; = pound sterling sign (&pound;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;curren; = general currency sign (&curren;)</TD>
-		<TD>&amp;yen; = yen sign (&yen;)</TD>
-		<TD>&amp;brvbar; = broken vertical bar (&brvbar;)</TD>
-		<TD>&amp;sect; = section sign (&sect;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;uml; = umlaut (dieresis) (&uml;)</TD>
-		<TD>&amp;copy; = copyright sign (&copy;)</TD>
-		<TD>&amp;ordf; = feminine ordinal (&ordf;)</TD>
-		<TD>&amp;laquo; = left angle quotes (&laquo;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;not; = not sign (&not;)</TD>
-		<TD>&amp;shy; = soft hyphen (&shy;)</TD>
-		<TD>&amp;reg; = registered sign (&reg;)</TD>
-		<TD>&amp;macr; = macron (&macr;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;deg; = degree sign (&deg;)</TD>
-		<TD>&amp;plusmn; = plus-or-minus sign (&plusmn;)</TD>
-		<TD>&amp;sup2; = superscript 2 (&sup2;)</TD>
-		<TD>&amp;sup3; = superscript 3 (&sup3;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;acute; = acute accent (&acute;)</TD>
-		<TD>&amp;micro; = micro sign (&micro;)</TD>
-		<TD>&amp;para; = paragraph sign (&para;)</TD>
-		<TD>&amp;middot; = middle dot (&middot;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;cedil; = cedilla (&cedil;)</TD>
-		<TD>&amp;sup1; = superscript 1 (&sup1;)</TD>
-		<TD>&amp;ordm; = masculine ordinal (&ordm;)</TD>
-		<TD>&amp;raquo; = right angle quotes (&raquo;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;frac14; = fraction 1/4 (&frac14;)</TD>
-		<TD>&amp;frac12; = fraction 1/2 (&frac12;)</TD>
-		<TD>&amp;frac34; = fraction 3/4 (&frac34;)</TD>
-		<TD>&amp;iquest; = inverted question mark (&iquest;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Agrave; = A grave accent (&Agrave;)</TD>
-		<TD>&amp;Aacute; = A acute accent (&Aacute;)</TD>
-		<TD>&amp;Acirc; = A circumflex (&Acirc;)</TD>
-		<TD>&amp;Atilde; = A tilde (&Atilde;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Auml; = A umlaut (&Auml;)</TD>
-		<TD>&amp;Aring; = A ring (&Aring;)</TD>
-		<TD>&amp;AElig; = AE ligature (&AElig;)</TD>
-		<TD>&amp;Ccedil; = C cedilla (&Ccedil;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Egrave; = E grave accent (&Egrave;)</TD>
-		<TD>&amp;Eacute; = E acute accent (&Eacute;)</TD>
-		<TD>&amp;Ecirc; = E circumflex (&Ecirc;)</TD>
-		<TD>&amp;Euml; = E umlaut (&Euml;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Igrave; = I grave accent (&Igrave;)</TD>
-		<TD>&amp;Iacute; = I acute accent (&Iacute;)</TD>
-		<TD>&amp;Icirc; = I circumflex (&Icirc;)</TD>
-		<TD>&amp;Iuml; = I umlaut (&Iuml;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;ETH; = Icelandic capital Eth (&ETH;)</TD>
-		<TD>&amp;Ntilde; = N tilde (&Ntilde;)</TD>
-		<TD>&amp;Ograve; = O grave accent (&Ograve;)</TD>
-		<TD>&amp;Oacute; = O acute accent (&Oacute;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Ocirc; = O circumflex (&Ocirc;)</TD>
-		<TD>&amp;Otilde; = O tilde (&Otilde;)</TD>
-		<TD>&amp;Ouml; = O umlaut (&Ouml;)</TD>
-		<TD>&amp;times; = multiply sign (&times;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Oslash; = O slash (&Oslash;)</TD>
-		<TD>&amp;Ugrave; = U grave accent (&Ugrave;)</TD>
-		<TD>&amp;Uacute; = U acute accent (&Uacute;)</TD>
-		<TD>&amp;Ucirc; = U circumflex (&Ucirc;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;Uuml; = U umlaut (&Uuml;)</TD>
-		<TD>&amp;Yacute; = Y acute accent (&Yacute;)</TD>
-		<TD>&amp;THORN; = Icelandic capital Thorn (&THORN;)</TD>
-		<TD>&amp;szlig; = German sharp s (&szlig;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;agrave; = a grave accent (&agrave;)</TD>
-		<TD>&amp;aacute; = a acute accent (&aacute;)</TD>
-		<TD>&amp;acirc; = a circumflex (&acirc;)</TD>
-		<TD>&amp;atilde; = a tilde (&atilde;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;auml; = a umlaut (&auml;)</TD>
-		<TD>&amp;aring; = a ring (&aring;)</TD>
-		<TD>&amp;aelig; = ae ligature (&aelig;)</TD>
-		<TD>&amp;ccedil; = c cedilla (&ccedil;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;egrave; = e grave accent (&egrave;)</TD>
-		<TD>&amp;eacute; = e acute accent (&eacute;)</TD>
-		<TD>&amp;ecirc; = e circumflex (&ecirc;)</TD>
-		<TD>&amp;euml; = e umlaut (&euml;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;igrave; = i grave accent (&igrave;)</TD>
-		<TD>&amp;iacute; = i acute accent (&iacute;)</TD>
-		<TD>&amp;icirc; = i circumflex (&icirc;)</TD>
-		<TD>&amp;iuml; = i umlaut (&iuml;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;eth; = Icelandic small Eth (&eth;)</TD>
-		<TD>&amp;ntilde; = n tilde (&ntilde;)</TD>
-		<TD>&amp;ograve; = o grave accent (&ograve;)</TD>
-		<TD>&amp;oacute; = o acute accent (&oacute;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;ocirc; = o circumflex (&ocirc;)</TD>
-		<TD>&amp;otilde; = o tilde (&otilde;)</TD>
-		<TD>&amp;ouml; = o umlaut (&ouml;)</TD>
-		<TD>&amp;divide; = divide sign (&divide;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;oslash; = o slash (&oslash;)</TD>
-		<TD>&amp;ugrave; = u grave accent (&ugrave;)</TD>
-		<TD>&amp;uacute; = u acute accent (&uacute;)</TD>
-		<TD>&amp;ucirc; = u circumflex (&ucirc;)</TD>
-	</TR>
-	<TR>
-		<TD>&amp;uuml; = u umlaut (&uuml;)</TD>
-		<TD>&amp;yacute; = y acute accent (&yacute;)</TD>
-		<TD>&amp;thorn; = Icelandic small Thorn (&thorn;)</TD>
-		<TD>&amp;yuml; = y umlaut (&yuml;)</TD>
-	</TR>
-</TABLE><HR>
-
-<CENTER><FONT SIZE=-2>Original of this document is copyright &copy; 1997 Durand Communications, All rights
-reserved.  Used in Venice by permission.</FONT></CENTER>
-  </FONT>
-</BODY>
-</HTML>
