@@ -35,7 +35,7 @@ _(italicized items can be deferred)_
 - _Help link atop page headers_
 - _Policy page_
 - Member List: Export
-- HTML reference for post boxes
+- ~~HTML reference for post boxes~~
 - ~~Posts view:~~
   - ~~Find~~
   - ~~Manage:~~
