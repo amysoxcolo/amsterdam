@@ -443,6 +443,8 @@ func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, erro
 	}
 	if len(dbdata) > 1 {
 		return nil, fmt.Errorf("AmGetUserByName(\"%s\"): too many responses(%d)", name, len(dbdata))
+	} else if len(dbdata) == 0 {
+		return nil, errors.New("user not found")
 	}
 	getUserMutex.Lock()
 	rc, ok := userCache.Get(dbdata[0].Uid)
