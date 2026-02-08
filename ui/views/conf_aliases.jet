@@ -1,0 +1,48 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Managing Conference Aliases:</h1>
+            <span class="text-blue-800 text-2xl">{{ confName }}</span>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backLink }}">Return to Manage Conference Menu</a>
+    </div>
+
+    <div class="max-w-3xl">
+        <h2 class="text-blue-800 text-3xl font-bold mb-2">Current Aliases:</h2>
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-1 mb-6">
+            {{ range _, a := aliases }}
+                <div class="flex items-start gap-1">
+                    <span class="text-sm pt-0.5">🟣</span>
+                    <span class="text-black">{{ a }}</span>
+                    {{ if len(aliases) > 1 }}
+                        <a href="TODO" class="hover:scale-125 inline-block transition-transform" title="Remove">🗙</a>
+                    {{ end }}
+                </div>
+            {{ end }}
+        </div>
+
+        <h2 class="text-blue-800 text-3xl font-bold mb-2">Add New Alias:</h2>
+        <form method="POST" action="TODO">
+            <div class="flex justify-between items-center mb-2">
+                <input type="text" id="na" name="na" size="32" maxlength="64" value="" placeholder="New alias..."
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <button type="submit" name="add" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Add</button>
+            </div>
+        </form>
+
+    </div>
+</div>

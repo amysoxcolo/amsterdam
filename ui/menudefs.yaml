@@ -94,7 +94,7 @@ menudefs:
       - text: "Change Conference Information"
         link: "/comm/[CID]/conf/[CONFID]/edit"
       - text: "Manage Conference Aliases"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/aliases"
+        link: "/comm/[CID]/conf/[CONFID]/aliases"
       - text: "Manage Conference Members"
         link: "/TODO/comm/[CID]/conf/[CONFID]/members"
       - text: "Customize Conference Appearance"

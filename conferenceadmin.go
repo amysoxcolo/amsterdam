@@ -123,6 +123,35 @@ func EditConference(ctxt ui.AmContext) (string, any, error) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
 }
 
+/* ConferenceAliasForm displays the form for managing conference aliases.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ConferenceAliasForm(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	aliases, err := conf.Aliases(ctxt.Ctx())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	ctxt.VarMap().Set("aliases", aliases)
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
+	return "framed_template", "conf_aliases.jet", nil
+}
+
 /* CreateConferenceForm displays the dialog for creating a new conference.
  * Parameters:
  *     ctxt - The AmContext for the request.
