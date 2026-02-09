@@ -11,6 +11,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -140,15 +141,75 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any, error) {
 		return ui.ErrorPage(ctxt, ENOPERM)
 	}
 
+	ctxt.VarMap().Set("newAlias", "")
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/aliases", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
+
+	if ctxt.HasParameter("del") {
+		err := conf.RemoveAlias(ctxt.Ctx(), ctxt.Parameter("del"), ctxt.CurrentUser(), ctxt.RemoteIP())
+		if err != nil {
+			ctxt.VarMap().Set("errorMessage", err.Error())
+		}
+	}
+
 	aliases, err := conf.Aliases(ctxt.Ctx())
 	if err != nil {
 		return ui.ErrorPage(ctxt, err)
 	}
 
 	ctxt.VarMap().Set("aliases", aliases)
+	return "framed_template", "conf_aliases.jet", nil
+}
+
+/* ConferenceAliasAdd adds a new alias to the current conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ConferenceAliasAdd(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
 	ctxt.VarMap().Set("confName", conf.Name)
 	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/aliases", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
+
+	newAlias := ctxt.FormField("na")
+	ctxt.VarMap().Set("newAlias", newAlias)
+
+	var err error = nil
+	if ctxt.FormFieldIsSet("add") {
+		if database.AmIsValidAmsterdamID(newAlias) {
+			err = conf.AddAlias(ctxt.Ctx(), newAlias, ctxt.CurrentUser(), ctxt.RemoteIP())
+		} else {
+			err = fmt.Errorf("value '%s' is not a valid Amsterdam id", newAlias)
+		}
+	} else {
+		err = errors.New("invalid button press")
+	}
+
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+	}
+
+	aliases, err := conf.Aliases(ctxt.Ctx())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	ctxt.VarMap().Set("newAlias", "")
+	ctxt.VarMap().Set("aliases", aliases)
 	return "framed_template", "conf_aliases.jet", nil
 }
 

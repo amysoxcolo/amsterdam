@@ -141,6 +141,63 @@ func (c *Conference) AliasesQ(ctx context.Context) []string {
 	return rc
 }
 
+// AddAlias adds an alias to the conference.
+func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, ipaddr string) error {
+	row := amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
+	tmp := ""
+	err := row.Scan(&tmp)
+	if err != sql.ErrNoRows {
+		if err == nil {
+			return fmt.Errorf("the alias '%s' is already in use by another conference", alias)
+		}
+		return err
+	}
+	_, err = amdb.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", c.ConfId, alias)
+	if err != nil {
+		return err
+	}
+
+	ar := AmNewAudit(AuditConferenceAlias, u.Uid, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("add=%s", alias))
+	AmStoreAudit(ar)
+	return nil
+}
+
+func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, ipaddr string) error {
+	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM confalias WHERE confid = ?", c.ConfId)
+	aliasCount := 0
+	err := row.Scan(&aliasCount)
+	if err != nil {
+		return err
+	}
+
+	if aliasCount == 1 {
+		row = amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
+		tmp := ""
+		err = row.Scan(&tmp)
+		if err == nil {
+			return errors.New("the conference must have at least one alias")
+		} else if err != sql.ErrNoRows {
+			return err
+		}
+	}
+
+	rs, err := amdb.ExecContext(ctx, "DELETE FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
+	if err != nil {
+		return err
+	}
+	rowCount, err := rs.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowCount != 1 {
+		return errors.New("alias not found")
+	}
+
+	ar := AmNewAudit(AuditConferenceAlias, u.Uid, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("remove=%s", alias))
+	AmStoreAudit(ar)
+	return nil
+}
+
 // Hosts returns the list of users that host this conference.
 func (c *Conference) Hosts(ctx context.Context) ([]*User, error) {
 	rs, err := amdb.QueryContext(ctx, "SELECT uid FROM confmember WHERE confid = ? AND granted_lvl = ?",

@@ -63,9 +63,9 @@ _(italicized items can be deferred)_
     - ~~Fixseen~~
     - ~~Send invite~~
     - ~~Change information~~
-    - Manage aliases
-      - Remove alias
-      - Add alias
+    - ~~Manage aliases~~
+      - ~~Remove alias~~
+      - ~~Add alias~~
     - Manage members
     - Custom appearance
     - Activity reports

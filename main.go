@@ -115,6 +115,7 @@ func setupEcho() *echo.Echo {
 	confGroup.GET("/edit", ui.AmWrap(EditConferenceForm))
 	confGroup.POST("/edit", ui.AmWrap(EditConference))
 	confGroup.GET("/aliases", ui.AmWrap(ConferenceAliasForm))
+	confGroup.POST("/aliases", ui.AmWrap(ConferenceAliasAdd))
 	confGroup.GET("/hotlist", ui.AmWrap(AddToHotlist))
 	confGroup.GET("/invite", ui.AmWrap(InviteToConference))
 	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)

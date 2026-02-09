@@ -16,6 +16,20 @@
         <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
     </div>
 
+    {{ if isset(errorMessage) }}
+        <!-- Error Message Banner -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-red-500 text-xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(errorMessage) }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+
     <!-- Backlink -->
     <div class="mb-4">
         <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backLink }}">Return to Manage Conference Menu</a>
@@ -29,16 +43,16 @@
                     <span class="text-sm pt-0.5">🟣</span>
                     <span class="text-black">{{ a }}</span>
                     {{ if len(aliases) > 1 }}
-                        <a href="TODO" class="hover:scale-125 inline-block transition-transform" title="Remove">🗙</a>
+                        <a href="{{ selfLink }}?del={{ a }}" class="hover:scale-125 inline-block transition-transform" title="Remove">🗙</a>
                     {{ end }}
                 </div>
             {{ end }}
         </div>
 
         <h2 class="text-blue-800 text-3xl font-bold mb-2">Add New Alias:</h2>
-        <form method="POST" action="TODO">
+        <form method="POST" action="{{ selfLink }}">
             <div class="flex justify-between items-center mb-2">
-                <input type="text" id="na" name="na" size="32" maxlength="64" value="" placeholder="New alias..."
+                <input type="text" id="na" name="na" size="32" maxlength="64" value="{{ newAlias }}" placeholder="New alias..."
                     class="flex-1 px-3 py-2 border border-gray-300 rounded font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <button type="submit" name="add" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Add</button>
             </div>
