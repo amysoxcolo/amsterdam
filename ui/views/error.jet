@@ -6,17 +6,32 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
-<div class="flex">
-    <div class="flex-1 p-4">
-        <div class="mb-8">
-            <h1 class="text-blue-800 text-4xl font-bold mb-2">Amsterdam Internal Server Error</h1>
-            <hr class="border-2 border-gray-400 w-4/5 mb-4">
-            <p class="text-black text-sm mb-4">
-                The Amsterdam server encountered an error: {{ CapitalizeString(error) }}.
-            </p>
-            <p class="text-black text-sm mb-4">
-                <a href="/">Click here to return to the home page.</a>
-            </p>
+<div class="p-4">
+    <!-- Error Dialog -->
+    <div class="max-w-2xl w-full">
+        <div class="bg-white border-2 border-red-600 rounded-lg shadow-2xl overflow-hidden">
+            <!-- Dialog Header -->
+            <div class="bg-red-600 px-6 py-4">
+                <h1 class="text-white text-2xl font-bold text-center flex items-center justify-center gap-3">
+                    <span class="text-3xl">🛑</span>Amsterdam Error<span class="text-3xl">🛑</span>
+                </h1>
+            </div>
+
+            <!-- Dialog Body -->
+            <div class="px-8 py-8">
+                <div class="text-center mb-8">
+                    <p class="text-gray-800 text-lg leading-relaxed">{{ CapitalizeString(error) }}</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4 justify-center">
+                    <a href="/"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <span class="text-xl">↩️</span>
+                        Return to Home Page
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
