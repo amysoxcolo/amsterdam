@@ -14,6 +14,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,6 +46,7 @@ type Conference struct {
 	flags       *util.OptionSet
 }
 
+// ConferenceSettings represents a user's settings within the conference.
 type ConferenceSettings struct {
 	ConfId       int32      `db:"confid"`        // conference ID
 	Uid          int32      `db:"uid"`           // user ID
@@ -51,6 +54,13 @@ type ConferenceSettings struct {
 	LastRead     *time.Time `db:"last_read"`     // last read time
 	LastPost     *time.Time `db:"last_post"`     // last post time
 	newflag      bool
+}
+
+// ConferenceMember represents the membership entries in a conference.
+type ConferenceMember struct {
+	ConfId int32  `db:"confid"`      // conference ID
+	Uid    int32  `db:"uid"`         // user ID
+	Level  uint16 `db:"granted_lvl"` // level granted within the conference
 }
 
 // ConferenceProperties represents a property entry for a conference.
@@ -162,6 +172,7 @@ func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, ipaddr
 	return nil
 }
 
+// RemoveAlias removes an alias from the conference.
 func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, ipaddr string) error {
 	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM confalias WHERE confid = ?", c.ConfId)
 	aliasCount := 0
@@ -200,22 +211,28 @@ func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, ipa
 
 // Hosts returns the list of users that host this conference.
 func (c *Conference) Hosts(ctx context.Context) ([]*User, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT uid FROM confmember WHERE confid = ? AND granted_lvl = ?",
-		c.ConfId, AmRole("Conference.Host").Level())
+	var uids []int32
+	err := amdb.SelectContext(ctx, &uids, "SELECT uid FROM confmember WHERE confid = ? AND granted_lvl = ?", c.ConfId, AmRole("Conference.Host").Level())
 	if err != nil {
 		return nil, err
 	}
-	rc := make([]*User, 0, 5)
-	for rs.Next() {
-		var uid int32
-		if err = rs.Scan(&uid); err == nil {
-			u, err := AmGetUser(ctx, uid)
-			if err == nil {
-				rc = append(rc, u)
-			}
+	rc := make([]*User, 0, len(uids))
+	for _, uid := range uids {
+		u, err := AmGetUser(ctx, uid)
+		if err == nil {
+			rc = append(rc, u)
 		}
 	}
+	slices.SortFunc(rc, func(a, b *User) int {
+		return strings.Compare(strings.ToLower(a.Username), strings.ToLower(b.Username))
+	})
 	return rc, nil
+}
+
+// Hosts returns the list of users that host this conference, quietly.
+func (c *Conference) HostsQ(ctx context.Context) []*User {
+	rc, _ := c.Hosts(ctx)
+	return rc
 }
 
 // InCommunity returns true if the specified conference is in the community.
@@ -274,10 +291,11 @@ func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
 	return rc, nil
 }
 
-// Hosts returns the list of users that host this conference, quietly.
-func (c *Conference) HostsQ(ctx context.Context) []*User {
-	rc, _ := c.Hosts(ctx)
-	return rc
+// Members returns all the members of this conference, with their granted user levels.
+func (c *Conference) Members(ctx context.Context) ([]ConferenceMember, error) {
+	var rc []ConferenceMember
+	err := amdb.SelectContext(ctx, &rc, "SELECT * FROM confmember WHERE confid = ?", c.ConfId)
+	return rc, err
 }
 
 // Membership returns a membership flag and granted level for the user in this conference.
@@ -292,6 +310,31 @@ func (c *Conference) Membership(ctx context.Context, u *User) (bool, uint16, err
 		return false, 0, nil
 	}
 	return false, 0, err
+}
+
+// SetMembership sets the membership level for the given user in this conference.
+func (c *Conference) SetMembership(ctx context.Context, u *User, level uint16, by *User, ipaddr string) error {
+	if level == 0 {
+		_, err := amdb.ExecContext(ctx, "DELETE FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+		return err
+	}
+	row := amdb.QueryRowContext(ctx, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	var oldLevel uint16
+	err := row.Scan(&oldLevel)
+	switch err {
+	case nil:
+		if oldLevel == level {
+			return nil
+		}
+		_, err = amdb.ExecContext(ctx, "UPDATE confmember SET granted_lvl = ? WHERE confid = ? AND uid = ?", level, c.ConfId, u.Uid)
+	case sql.ErrNoRows:
+		_, err = amdb.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", c.ConfId, u.Uid, level)
+	}
+	if err != nil {
+		ar := AmNewAudit(AuditConferenceMembership, by.Uid, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level))
+		AmStoreAudit(ar)
+	}
+	return err
 }
 
 /* TestPermission is shorthand that tests if a user has a permission with respect to the conference.

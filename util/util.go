@@ -139,3 +139,19 @@ func WordRunLengthAfterPrefix(s string, nrunes int) (int, bool) {
 	}
 	return WordRunLength(s[ofs:])
 }
+
+/* Map applies a transformation function on all elements of an array of one type, turning it into an
+ * array of another type.
+ * Parameters:
+ *     in - The input array to be transformed.
+ *     fn - The function to be executed on each element.
+ * Returns:
+ *     The array of new elements.
+ */
+func Map[A, B any](in []A, fn func(A) B) []B {
+	rc := make([]B, len(in))
+	for i, v := range in {
+		rc[i] = fn(v)
+	}
+	return rc
+}

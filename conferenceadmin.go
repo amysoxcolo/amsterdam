@@ -14,6 +14,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -211,6 +213,153 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("newAlias", "")
 	ctxt.VarMap().Set("aliases", aliases)
 	return "framed_template", "conf_aliases.jet", nil
+}
+
+// CMData is the result data passed to the conference members page.
+type CMData struct {
+	User  *database.User
+	Level uint16
+}
+
+// fieldMap maps field names to search field indexes.
+var fieldMap = map[string]int{
+	"name":  database.SearchUserFieldName,
+	"descr": database.SearchUserFieldDescription,
+	"first": database.SearchUserFieldFirstName,
+	"last":  database.SearchUserFieldLastName,
+}
+
+// operMap maps operator names to search operator indices.
+var operMap = map[string]int{
+	"st": database.SearchUserOperPrefix,
+	"in": database.SearchUserOperSubstring,
+	"re": database.SearchUserOperRegex,
+}
+
+/* ConferenceMembers shows the conference members and allows their access levels to be adjusted.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		ctxt.SetRC(http.StatusForbidden)
+		return ui.ErrorPage(ctxt, ENOPERM)
+	}
+
+	// Set the first batch of page variables.
+	ctxt.VarMap().Set("commName", comm.Name)
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/members", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("roleList", database.AmRoleList("Conference.UserLevels"))
+	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Membership in Conference: %s", conf.Name))
+
+	// Get the search parameter values and adjust them.
+	mode := ctxt.Parameter("mode")
+	field := ctxt.Parameter("field")
+	oper := ctxt.Parameter("oper")
+	term := ctxt.Parameter("term")
+	offsetStr := ctxt.Parameter("ofs")
+	if mode == "" {
+		mode = "conf"
+	}
+	if field == "" {
+		field = "name"
+	}
+	if oper == "" {
+		oper = "st"
+	}
+	offset := 0
+	if offsetStr != "" {
+		var err error
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil {
+			offset = 0
+		}
+	}
+	maxPage := ctxt.Globals().MaxSearchPage
+
+	// Adjust the offset based on the page buttons.
+	if ctxt.HasParameter("prev") {
+		offset = max(0, offset-int(maxPage))
+	} else if ctxt.HasParameter("next") {
+		offset += int(maxPage)
+	}
+
+	// Write the search parameters back to the page variables.
+	ctxt.VarMap().Set("mode", mode)
+	ctxt.VarMap().Set("field", field)
+	ctxt.VarMap().Set("oper", oper)
+	ctxt.VarMap().Set("term", term)
+	ctxt.VarMap().Set("offset", offset)
+	ctxt.VarMap().Set("max", maxPage)
+
+	if ctxt.HasParameter("update") {
+		// TODO: update the levels
+	}
+
+	// Get the member list for the conference.
+	members, err := conf.Members(ctxt.Ctx())
+	if err != nil {
+		return ui.ErrorPage(ctxt, err)
+	}
+
+	// Generate the result list.
+	total := 0
+	var mr []CMData
+	switch mode {
+	case "conf":
+		total = len(members)
+		if offset > 0 {
+			members = members[offset:]
+		}
+		if len(members) > int(maxPage) {
+			members = members[:maxPage]
+		}
+		mr = make([]CMData, len(members))
+		for i := range members {
+			mr[i].User, _ = database.AmGetUser(ctxt.Ctx(), members[i].Uid)
+			mr[i].Level = members[i].Level
+		}
+	case "comm":
+		ulist, t, err := database.AmSearchCommunityMembers(ctxt.Ctx(), comm, fieldMap[field], operMap[oper], term, offset, int(maxPage))
+		if err != nil {
+			return ui.ErrorPage(ctxt, err)
+		}
+		total = t
+		mr = make([]CMData, len(ulist))
+		for i := range ulist {
+			mr[i].User = ulist[i]
+			mr[i].Level = 0
+			for j := range members {
+				if members[j].Uid == ulist[i].Uid {
+					mr[i].Level = members[j].Level
+					break
+				}
+			}
+		}
+	}
+
+	// Set the last few variables and return.
+	ctxt.VarMap().Set("resultList", mr)
+	ctxt.VarMap().Set("total", total)
+	ctxt.VarMap().Set("validUids", strings.Join(util.Map(mr, func(cd CMData) string {
+		return fmt.Sprintf("%d", cd.User.Uid)
+	}), ","))
+	if offset > 0 {
+		ctxt.VarMap().Set("showPrev", true)
+	}
+	if (offset + len(mr)) < total {
+		ctxt.VarMap().Set("showNext", true)
+	}
+	return "framed_template", "conf_members.jet", nil
 }
 
 /* CreateConferenceForm displays the dialog for creating a new conference.

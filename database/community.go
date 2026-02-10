@@ -1056,3 +1056,93 @@ func AmSearchCommunities(ctx context.Context, field int, oper int, term string, 
 	}
 	return rc, total, nil
 }
+
+/* AmSearchCommunityMembers searches for members of a community matching certain criteria.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     c - The community within which to search.
+ *     field - A value indicating which field to search:
+ *         SearchUserFieldName - The user name.
+ *         SearchUserFieldDescription - The user description.
+ *         SearchUserFieldFirstName - The user's first name.
+ *         SearchUserFieldLastName - The user's last name.
+ *     oper - The operation to perform on the search field:
+ *         SearchUserOperPrefix - The specified field has the string "term" as a prefix.
+ *         SearchUserOperSubstring - The specified field contains the string "term".
+ *         SearchUserOperRegex - The specified field matches the regular expression in "term".
+ *     term - The search term, as specified above.
+ *     offset - Number of users to skip at beginning of list.
+ *     max - Maximum number of users to return.
+ * Returns:
+ *     Array of User pointers representing the return elements.
+ *     The total number of users matching this query (could be greater than max)
+ *	   Standard Go error status.
+ */
+func AmSearchCommunityMembers(ctx context.Context, c *Community, field int, oper int, term string, offset int, max int) ([]*User, int, error) {
+	var queryPortion strings.Builder
+	switch field {
+	case SearchUserFieldName:
+		queryPortion.WriteString("u.username ")
+	case SearchUserFieldDescription:
+		queryPortion.WriteString("u.description ")
+	case SearchUserFieldFirstName:
+		queryPortion.WriteString("c.given_name ")
+	case SearchUserFieldLastName:
+		queryPortion.WriteString("c.family_name ")
+	default:
+		return nil, -1, errors.New("invalid field selector")
+	}
+	switch oper {
+	case SearchUserOperPrefix:
+		queryPortion.WriteString("LIKE '")
+		queryPortion.WriteString(util.SqlEscape(term, true))
+		queryPortion.WriteString("%'")
+	case SearchUserOperSubstring:
+		queryPortion.WriteString("LIKE '%")
+		queryPortion.WriteString(util.SqlEscape(term, true))
+		queryPortion.WriteString("%'")
+	case SearchUserOperRegex:
+		queryPortion.WriteString("REGEXP '")
+		queryPortion.WriteString(util.SqlEscape(term, false))
+		queryPortion.WriteString("'")
+	default:
+		return nil, -1, errors.New("invalid operator selector")
+	}
+	q := queryPortion.String()
+	row := amdb.QueryRowContext(ctx, `SELECT COUNT(*) FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
+		AND m.commid = ? AND u.is_anon = 0 AND `+q, c.Id)
+	var total int
+	err := row.Scan(&total)
+	if err != nil {
+		return nil, -1, err
+	}
+	if total == 0 {
+		return make([]*User, 0), 0, nil
+	}
+	var rs *sql.Rows
+	if offset > 0 {
+		rs, err = amdb.QueryContext(ctx, `SELECT u.uid FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
+			AND m.commid = ? AND u.is_anon = 0 AND `+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
+	} else {
+		rs, err = amdb.QueryContext(ctx, `SELECT u.uid FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
+			AND m.commid = ? AND u.is_anon = 0 AND `+q+" ORDER BY u.username LIMIT ?", c.Id, max)
+	}
+	if err != nil {
+		return nil, total, err
+	}
+	rc := make([]*User, 0, min(max, 10000))
+	for rs.Next() {
+		var uid int32
+		if err = rs.Scan(&uid); err == nil {
+			var u *User
+			u, err = AmGetUser(ctx, uid)
+			if err == nil {
+				rc = append(rc, u)
+			}
+		}
+		if err != nil {
+			log.Errorf("AmSearchCommunityMembers scan error: %v", err)
+		}
+	}
+	return rc, total, nil
+}

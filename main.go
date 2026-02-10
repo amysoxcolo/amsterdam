@@ -81,9 +81,9 @@ func setupEcho() *echo.Echo {
 
 	// community group
 	commGroup := e.Group("/comm/:cid", ui.SetCommunity)
-	fn1 := ui.AmWrap(ShowCommunity)
-	commGroup.GET("", fn1)
-	commGroup.GET("/profile", fn1)
+	fn = ui.AmWrap(ShowCommunity)
+	commGroup.GET("", fn)
+	commGroup.GET("/profile", fn)
 	commGroup.GET("/join", ui.AmWrap(JoinCommunity))
 	commGroup.POST("/join", ui.AmWrap(JoinCommunityWithKey))
 	commGroup.GET("/unjoin", ui.AmWrap(UnjoinCommunity))
@@ -116,6 +116,9 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/edit", ui.AmWrap(EditConference))
 	confGroup.GET("/aliases", ui.AmWrap(ConferenceAliasForm))
 	confGroup.POST("/aliases", ui.AmWrap(ConferenceAliasAdd))
+	fn = ui.AmWrap(ConferenceMembers)
+	confGroup.GET("/members", fn)
+	confGroup.POST("/members", fn)
 	confGroup.GET("/hotlist", ui.AmWrap(AddToHotlist))
 	confGroup.GET("/invite", ui.AmWrap(InviteToConference))
 	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)
