@@ -261,9 +261,8 @@ func (d *Dialog) Field(name string) *DialogItem {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
+func (d *Dialog) Render(ctxt AmContext) (string, any) {
 	required := false
 	for i, fld := range d.Fields {
 		if fld.Required {
@@ -323,7 +322,7 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
 	if strings.Contains(d.Options, "suppresslogin") {
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
 	}
-	return "framed_template", "dialog.jet", nil
+	return "framed", "dialog.jet"
 }
 
 /* RenderError sets up the rendering parameters to send this dialog to the output with an error message.
@@ -333,9 +332,8 @@ func (d *Dialog) Render(ctxt AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any, error) {
+func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any) {
 	ctxt.VarMap().Set("amsterdam_errorMessage", errormessage)
 	return d.Render(ctxt)
 }
@@ -347,9 +345,8 @@ func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any, 
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func (d *Dialog) RenderInfo(ctxt AmContext, infoMessage string) (string, any, error) {
+func (d *Dialog) RenderInfo(ctxt AmContext, infoMessage string) (string, any) {
 	ctxt.VarMap().Set("amsterdam_infoMessage", infoMessage)
 	return d.Render(ctxt)
 }

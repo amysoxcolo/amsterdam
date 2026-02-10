@@ -13,7 +13,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -29,20 +28,18 @@ import (
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func EditConferenceForm(ctxt ui.AmContext) (string, any, error) {
+func EditConferenceForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	dlg, err := ui.AmLoadDialog("edit_conference")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	dlg.SetCommunity(comm)
 	dlg.SetConference(conf, ctxt.GetScratch("currentAlias").(string))
@@ -51,7 +48,7 @@ func EditConferenceForm(ctxt ui.AmContext) (string, any, error) {
 	if comm.TestPermission("Community.Create", ctxt.EffectiveLevel()) {
 		f, err := conf.HiddenInList(ctxt.Ctx(), comm)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		dlg.Field("hide").SetChecked(f)
 	} else {
@@ -66,7 +63,7 @@ func EditConferenceForm(ctxt ui.AmContext) (string, any, error) {
 	dlg.Field("delete_lvl").SetLevel(conf.DeleteLevel)
 	flags, err := conf.Flags(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	dlg.Field("pic_in_post").SetChecked(flags.Get(database.ConferenceFlagPicturesInPosts))
 	return dlg.Render(ctxt)
@@ -78,24 +75,22 @@ func EditConferenceForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func EditConference(ctxt ui.AmContext) (string, any, error) {
+func EditConference(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	dlg, err := ui.AmLoadDialog("edit_conference")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	button := dlg.WhichButton(ctxt)
 	if button == "cancel" {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 	} else if button != "update" {
 		dlg.SetCommunity(comm)
 		dlg.SetConference(conf, ctxt.GetScratch("currentAlias").(string))
@@ -123,7 +118,7 @@ func EditConference(ctxt ui.AmContext) (string, any, error) {
 		return dlg.RenderError(ctxt, err.Error())
 	}
 
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
 /* ConferenceAliasForm displays the form for managing conference aliases.
@@ -132,15 +127,13 @@ func EditConference(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ConferenceAliasForm(ctxt ui.AmContext) (string, any, error) {
+func ConferenceAliasForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	ctxt.VarMap().Set("newAlias", "")
@@ -158,11 +151,11 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any, error) {
 
 	aliases, err := conf.Aliases(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	ctxt.VarMap().Set("aliases", aliases)
-	return "framed_template", "conf_aliases.jet", nil
+	return "framed", "conf_aliases.jet"
 }
 
 /* ConferenceAliasAdd adds a new alias to the current conference.
@@ -171,15 +164,13 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ConferenceAliasAdd(ctxt ui.AmContext) (string, any, error) {
+func ConferenceAliasAdd(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	ctxt.VarMap().Set("confName", conf.Name)
@@ -207,12 +198,12 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any, error) {
 
 	aliases, err := conf.Aliases(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	ctxt.VarMap().Set("newAlias", "")
 	ctxt.VarMap().Set("aliases", aliases)
-	return "framed_template", "conf_aliases.jet", nil
+	return "framed", "conf_aliases.jet"
 }
 
 // CMData is the result data passed to the conference members page.
@@ -242,15 +233,13 @@ var operMap = map[string]int{
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
+func ConferenceMembers(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	// Set the first batch of page variables.
@@ -324,7 +313,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 					}
 				}
 				if err != nil {
-					return ui.ErrorPage(ctxt, err)
+					return "error", err
 				}
 			}
 		}
@@ -334,7 +323,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	// Get the member list for the conference.
 	members, err := conf.Members(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Generate the result list.
@@ -357,7 +346,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	case "comm":
 		ulist, t, err := database.AmSearchCommunityMembers(ctxt.Ctx(), comm, fieldMap[field], operMap[oper], term, offset, int(maxPage))
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		total = t
 		mr = make([]CMData, len(ulist))
@@ -385,7 +374,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	if (offset + len(mr)) < total {
 		ctxt.VarMap().Set("showNext", true)
 	}
-	return "framed_template", "conf_members.jet", nil
+	return "framed", "conf_members.jet"
 }
 
 /* CreateConferenceForm displays the dialog for creating a new conference.
@@ -394,18 +383,16 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func CreateConferenceForm(ctxt ui.AmContext) (string, any, error) {
+func CreateConferenceForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	if !comm.TestPermission("Community.Create", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	dlg, err := ui.AmLoadDialog("create_conference")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	dlg.SetCommunity(comm)
 	return dlg.Render(ctxt)
@@ -417,22 +404,20 @@ func CreateConferenceForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func CreateConference(ctxt ui.AmContext) (string, any, error) {
+func CreateConference(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	if !comm.TestPermission("Community.Create", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	dlg, err := ui.AmLoadDialog("create_conference")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	button := dlg.WhichButton(ctxt)
 	if button == "cancel" {
-		return "redirect", fmt.Sprintf("/comm/%s/conf", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/conf", comm.Alias)
 	} else if button != "create" {
 		dlg.SetCommunity(comm)
 		return dlg.RenderError(ctxt, "invalid button pressed")
@@ -446,5 +431,5 @@ func CreateConference(ctxt ui.AmContext) (string, any, error) {
 		return dlg.RenderError(ctxt, err.Error())
 	}
 	log.Infof("Created conference '%s'", conf.Name)
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias)
 }

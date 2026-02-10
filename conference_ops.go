@@ -23,8 +23,12 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
+
+// EPOSTREF is the internal error for post references.
+var EPOSTREF error = errors.New("internal error getting post reference")
 
 // slurpFile reads the contrents of a multipart.File into memory.
 func slurpFile(file *multipart.FileHeader) ([]byte, error) {
@@ -42,14 +46,13 @@ func slurpFile(file *multipart.FileHeader) ([]byte, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
+func AttachmentUpload(ctxt ui.AmContext) (string, any) {
 	target := ctxt.FormField("tgt")
 	postidStr := ctxt.FormField("post")
 	postId, err := strconv.ParseInt(postidStr, 10, 64)
 	if err != nil {
-		return ui.ErrorPage(ctxt, fmt.Errorf("internal error converting postID: %v", err))
+		return "error", fmt.Sprintf("internal error converting postID: %v", err)
 	}
 	if ctxt.FormFieldIsSet("upload") {
 		file, err := ctxt.FormFile("thefile")
@@ -62,7 +65,7 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
 				if err == nil {
 					err = post.SetAttachment(ctxt.Ctx(), ctxt.CurrentUser(), file.Filename, file.Header.Get("Content-Type"), int32(file.Size), data, ctxt.RemoteIP())
 					if err == nil {
-						return "redirect", target, nil
+						return "redirect", target
 					}
 				}
 			}
@@ -72,9 +75,9 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("post", postId)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
 		ctxt.VarMap().Set("errorMessage", err.Error())
-		return "framed_template", "attachment_upload.jet", nil
+		return "framed", "attachment_upload.jet"
 	}
-	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
+	return "error", "invalid button clicked on form"
 }
 
 /* AttachmentSend sends the data of an attachment to the browser.
@@ -83,30 +86,29 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func AttachmentSend(ctxt ui.AmContext) (string, any, error) {
+func AttachmentSend(ctxt ui.AmContext) (string, any) {
 	postIdStr := ctxt.URLParam("post")
 	postId, err := strconv.ParseInt(postIdStr, 10, 64)
 	if err != nil {
-		return ui.ErrorPage(ctxt, fmt.Errorf("internal error converting postID: %v", err))
+		return "error", fmt.Sprintf("internal error converting postID: %v", err)
 	}
 
 	hdr, err := database.AmGetPost(ctxt.Ctx(), postId)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Retrieve attachment info and data.
 	info, err := hdr.AttachmentInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if info == nil {
-		return ui.ErrorPage(ctxt, errors.New("attachment not found"))
+		return "error", echo.NewHTTPError(http.StatusNotFound, "attachment not found")
 	}
 	data, err := hdr.AttachmentData(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Record a "hit" on this attachment in the background.
@@ -119,7 +121,7 @@ func AttachmentSend(ctxt ui.AmContext) (string, any, error) {
 	if !strings.HasPrefix(info.MIMEType, "image/") {
 		ctxt.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", info.Filename))
 	}
-	return "bytes", data, nil
+	return "bytes", data
 }
 
 /* ConfManage displays the "manage conference" page.
@@ -128,9 +130,8 @@ func AttachmentSend(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ConfManage(ctxt ui.AmContext) (string, any, error) {
+func ConfManage(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
@@ -140,7 +141,7 @@ func ConfManage(ctxt ui.AmContext) (string, any, error) {
 
 	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("pseud", pseud)
 
@@ -149,7 +150,7 @@ func ConfManage(ctxt ui.AmContext) (string, any, error) {
 	} else {
 		member, _, _, err := comm.Membership(ctxt.Ctx(), ctxt.CurrentUser())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		ctxt.VarMap().Set("canInvite", member)
 	}
@@ -160,7 +161,7 @@ func ConfManage(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Conference: "+conf.Name)
-	return "framed_template", "manage_conf.jet", nil
+	return "framed", "manage_conf.jet"
 }
 
 /* SetPseud sets the user's default pseud for the conference.
@@ -169,17 +170,16 @@ func ConfManage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func SetPseud(ctxt ui.AmContext) (string, any, error) {
+func SetPseud(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	pseud := ctxt.FormField("pseud")
 	err := conf.SetDefaultPseud(ctxt.Ctx(), ctxt.CurrentUser(), pseud)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
 /* ConfFixseen marks all messages in a conference as read.
@@ -188,16 +188,15 @@ func SetPseud(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ConfFixseen(ctxt ui.AmContext) (string, any, error) {
+func ConfFixseen(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	err := conf.Fixseen(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
 /* AddToHotlist adds the current community and conference to the user's hotlist..
@@ -206,16 +205,15 @@ func ConfFixseen(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func AddToHotlist(ctxt ui.AmContext) (string, any, error) {
+func AddToHotlist(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	err := database.AmAppendToHotlist(ctxt.Ctx(), ctxt.CurrentUser(), comm.Id, conf.ConfId)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
 /* HideTopic hides or shows the current topic for the current user.
@@ -224,19 +222,18 @@ func AddToHotlist(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func HideTopic(ctxt ui.AmContext) (string, any, error) {
+func HideTopic(ctxt ui.AmContext) (string, any) {
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	hidden, err := topic.IsHidden(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	err = topic.SetHidden(ctxt.Ctx(), ctxt.CurrentUser(), !hidden)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }
 
 /* FreezeTopic freezes or unfreezes the current topic.
@@ -245,21 +242,19 @@ func HideTopic(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FreezeTopic(ctxt ui.AmContext) (string, any, error) {
+func FreezeTopic(ctxt ui.AmContext) (string, any) {
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	if !conf.TestPermission("Conference.Hide", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	err := topic.SetFrozen(ctxt.Ctx(), !topic.Frozen, ctxt.CurrentUser(), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }
 
 /* ArchiveTopic archives or unarchives the current topic.
@@ -268,21 +263,19 @@ func FreezeTopic(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ArchiveTopic(ctxt ui.AmContext) (string, any, error) {
+func ArchiveTopic(ctxt ui.AmContext) (string, any) {
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	if !conf.TestPermission("Conference.Hide", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	err := topic.SetArchived(ctxt.Ctx(), !topic.Archived, ctxt.CurrentUser(), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }
 
 /* StickTopic sticks or unsticks the current topic.
@@ -291,21 +284,19 @@ func ArchiveTopic(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func StickTopic(ctxt ui.AmContext) (string, any, error) {
+func StickTopic(ctxt ui.AmContext) (string, any) {
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	if !conf.TestPermission("Conference.Hide", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	err := topic.SetSticky(ctxt.Ctx(), !topic.Sticky, ctxt.CurrentUser(), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }
 
 /* DeleteTopic deletes the current topic.
@@ -314,32 +305,29 @@ func StickTopic(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func DeleteTopic(ctxt ui.AmContext) (string, any, error) {
+func DeleteTopic(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	if !conf.TestPermission("Conference.Nuke", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	// Load the message box, and, if we have a valid "yes," then perform the delete
 	mbox, err := ui.AmLoadMessageBox("deleteTopic")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if mbox.Validate(ctxt, "yes") {
 		err := topic.Delete(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP(), ampool)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias")), nil
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"))
 	}
 
 	// Set up to display the message box.
@@ -356,35 +344,32 @@ func DeleteTopic(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func HideMessage(ctxt ui.AmContext) (string, any, error) {
+func HideMessage(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if len(hdrs) != 1 {
-		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+		return "error", EPOSTREF
 	}
 	if (hdrs[0].CreatorUid != ctxt.CurrentUserId()) && !conf.TestPermission("Conference.Hide", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	err = hdrs[0].SetHidden(ctxt.Ctx(), ctxt.CurrentUser(), !(hdrs[0].Hidden), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
 }
 
 /* ScribbleMessage scribbles a topic message.
@@ -393,35 +378,32 @@ func HideMessage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ScribbleMessage(ctxt ui.AmContext) (string, any, error) {
+func ScribbleMessage(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if len(hdrs) != 1 {
-		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+		return "error", EPOSTREF
 	}
 	if (hdrs[0].CreatorUid != ctxt.CurrentUserId()) && !conf.TestPermission("Conference.Nuke", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	err = hdrs[0].Scribble(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
 }
 
 /* NukeMessage nukes (deletes entirely) a topic message.
@@ -430,53 +412,50 @@ func ScribbleMessage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func NukeMessage(ctxt ui.AmContext) (string, any, error) {
+func NukeMessage(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if len(hdrs) != 1 {
-		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+		return "error", EPOSTREF
 	}
 	if !conf.TestPermission("Conference.Nuke", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	// Load the message box, and, if we have a valid "yes," then perform the nuke!
 	mbox, err := ui.AmLoadMessageBox("nuke")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if mbox.Validate(ctxt, "yes") {
 		// do the nuking!
 		err := hdrs[0].Nuke(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 	}
 
 	// Set up to display the message box.
 	link, err := hdrs[0].Link(ctxt.Ctx(), "community")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	creator, err := hdrs[0].Creator(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	mbox.SetMessage(fmt.Sprintf(`You are about to nuke message <span class="font-mono font-bold text-red-600">&lt;%s&gt;</span>, 
                         		originally composed by <span class="font-bold text-red-600">&lt;%s&gt;</span>!`, link, creator.Username))
@@ -491,40 +470,37 @@ func NukeMessage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
+func MoveMessageForm(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if len(hdrs) != 1 {
-		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+		return "error", EPOSTREF
 	}
 	if !conf.TestPermission("Conference.Nuke", myLevel) || !conf.TestPermission("Conference.Post", myLevel) || topic.TopMessage == 0 {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 
 	creator, err := hdrs[0].Creator(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("creator", creator)
 
 	topiclist, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), database.TopicViewAll, database.TopicSortName, true)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	for i := range topiclist {
 		if topiclist[i].TopicID == topic.TopicId {
@@ -540,7 +516,7 @@ func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("formLink", formLink)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Move Message")
 
-	return "framed_template", "move_message.jet", nil
+	return "framed", "move_message.jet"
 }
 
 /* PublishMessage publishes a message to the front page.
@@ -549,30 +525,28 @@ func MoveMessageForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func PublishMessage(ctxt ui.AmContext) (string, any, error) {
+func PublishMessage(ctxt ui.AmContext) (string, any) {
 	if !ctxt.TestPermission("Global.PublishFP") {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if len(hdrs) != 1 {
-		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+		return "error", EPOSTREF
 	}
 
 	if err = hdrs[0].Publish(ctxt.Ctx(), comm, ctxt.CurrentUser(), ctxt.RemoteIP()); err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
 }
 
 /* MoveMessage moves a message to a different topic.
@@ -581,12 +555,10 @@ func PublishMessage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func MoveMessage(ctxt ui.AmContext) (string, any, error) {
+func MoveMessage(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
@@ -594,34 +566,33 @@ func MoveMessage(ctxt ui.AmContext) (string, any, error) {
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	} else if len(hdrs) != 1 {
-		return ui.ErrorPage(ctxt, errors.New("internal error getting post reference"))
+		return "error", EPOSTREF
 	}
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num), nil
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
 	}
 	if !conf.TestPermission("Conference.Nuke", myLevel) || !conf.TestPermission("Conference.Post", myLevel) || topic.TopMessage == 0 {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	targetId, err := ctxt.FormFieldInt("target")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	target, err := database.AmGetTopic(ctxt.Ctx(), int32(targetId))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Move the topic!
 	err = hdrs[0].MoveTo(ctxt.Ctx(), target, ctxt.CurrentUser(), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Now, we need to send this post to whoever subscribed to the NEW topic. But it's tricky because we don't have
@@ -646,7 +617,7 @@ func MoveMessage(ctxt ui.AmContext) (string, any, error) {
 		})
 	}
 
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }
 
 /* TopicManage displays the "manage topic" page.
@@ -655,9 +626,8 @@ func MoveMessage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func TopicManage(ctxt ui.AmContext) (string, any, error) {
+func TopicManage(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
@@ -668,26 +638,26 @@ func TopicManage(ctxt ui.AmContext) (string, any, error) {
 	// Get the invitation flag.
 	member, _, _, err := comm.Membership(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("canInvite", member)
 
 	// Get the E-mail subscription status.
 	sub, err := topic.IsSubscribed(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("subscribed", sub)
 
 	// Get the filtered users list.
 	bozos, err := topic.GetBozos(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("bozos", bozos)
 
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Topic: "+topic.Name)
-	return "framed_template", "manage_topic.jet", nil
+	return "framed", "manage_topic.jet"
 }
 
 /* TopicSetSubscribe toggles the "subscription" flag on the current topic for the current user.
@@ -696,24 +666,22 @@ func TopicManage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func TopicSetSubscribe(ctxt ui.AmContext) (string, any, error) {
+func TopicSetSubscribe(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	flag, err := topic.IsSubscribed(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	err = topic.SetSubscribed(ctxt.Ctx(), ctxt.CurrentUser(), !flag)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }
 
 /* TopicRemoveBozo removes filtering from a specified user in the topic.
@@ -722,18 +690,17 @@ func TopicSetSubscribe(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func TopicRemoveBozo(ctxt ui.AmContext) (string, any, error) {
+func TopicRemoveBozo(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	bozoUid, err := strconv.Atoi(ctxt.URLParam("uid"))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	err = topic.SetBozo(ctxt.Ctx(), ctxt.CurrentUser(), int32(bozoUid), false)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number), nil
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 }

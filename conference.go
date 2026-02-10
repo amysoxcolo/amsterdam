@@ -12,7 +12,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -24,6 +23,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,7 +35,7 @@ import (
  *     Data as a parameter for the command string.
  *     Standard Go error status.
  */
-func Conferences(ctxt ui.AmContext) (string, any, error) {
+func Conferences(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	ctxt.VarMap().Set("commName", comm.Name)
 	ctxt.VarMap().Set("commAlias", comm.Alias)
@@ -43,7 +43,7 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 	clist, err := database.AmGetCommunityConferences(ctxt.Ctx(), comm.Id,
 		comm.TestPermission("Community.ShowHiddenObjects", ctxt.EffectiveLevel()))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("conferences", clist)
 	if len(clist) > 0 {
@@ -51,7 +51,7 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 		for i, conf := range clist {
 			msgCount, err := conf.UnreadMessages(ctxt.Ctx(), ctxt.CurrentUser())
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			newflag[i] = msgCount > 0
 		}
@@ -59,7 +59,7 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
 	}
 	ctxt.VarMap().Set("canCreate", comm.TestPermission("Community.Create", ctxt.EffectiveLevel()))
 	ctxt.VarMap().Set("canManage", comm.TestPermission("Community.Create", ctxt.EffectiveLevel()))
-	return "framed_template", "conflist.jet", err
+	return "framed", "conflist.jet"
 }
 
 /* Topics displays the list of topics in a conference.
@@ -68,19 +68,17 @@ func Conferences(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func Topics(ctxt ui.AmContext) (string, any, error) {
+func Topics(ctxt ui.AmContext) (string, any) {
 	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Read", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to read this conference"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to read this conference")
 	}
 
 	// Get view and sort parameters from query, session, or defaults. Store to session.
@@ -109,14 +107,14 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 
 	topics, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), view, sort, false)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	var hotlistTest bool = false
 	if !ctxt.CurrentUser().IsAnon {
 		hotlistTest, err = database.AmIsInHotlist(ctxt.Ctx(), ctxt.CurrentUser(), comm.Id, conf.ConfId)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 	}
 
@@ -152,7 +150,7 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("topics", topics)
 	ctxt.VarMap().Set("formattedDate", fdate)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Topics in "+conf.Name)
-	return "framed_template", "topiclist.jet", nil
+	return "framed", "topiclist.jet"
 }
 
 /* NewTopicForm displays the form for creating a new topic.
@@ -161,27 +159,25 @@ func Topics(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
+func NewTopicForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Create", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create topics in this conference"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to create topics in this conference")
 	}
 	ctxt.VarMap().Set("conferenceName", conf.Name)
 	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("topicName", "")
 	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("pseud", pseud)
 	ctxt.VarMap().Set("pb", "")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Topic")
-	return "framed_template", "new_topic.jet", nil
+	return "framed", "new_topic.jet"
 }
 
 /* NewTopic creates a new topic and posts the initial message.
@@ -190,26 +186,24 @@ func NewTopicForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func NewTopic(ctxt ui.AmContext) (string, any, error) {
+func NewTopic(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Create", myLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create topics in this conference"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to create topics in this conference")
 	}
 
 	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", urlStem, nil
+		return "redirect", urlStem
 	}
 	if ctxt.FormFieldIsSet("preview") {
 		// start by escaping the title
 		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		checker.Append(ctxt.FormField("title"))
 		checker.Finish()
@@ -234,7 +228,7 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		// run the preview
 		checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "preview")
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
 		checker.Append(postdata)
@@ -250,13 +244,13 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("conferenceName", conf.Name)
 		ctxt.VarMap().Set("urlStem", urlStem)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Preview New Topic")
-		return "framed_template", "new_topic.jet", nil
+		return "framed", "new_topic.jet"
 	}
 	if ctxt.FormFieldIsSet("post1") {
 		// start by checking the title and pseud
 		checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-pseud")
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		checker.Append(ctxt.FormField("title"))
 		checker.Finish()
@@ -269,7 +263,7 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		// now check the post data itself
 		checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-body")
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
 		checker.Append(ctxt.FormField("pb"))
@@ -280,26 +274,26 @@ func NewTopic(ctxt ui.AmContext) (string, any, error) {
 		// Add the topic!
 		topic, err := database.AmNewTopic(ctxt.Ctx(), conf, ctxt.CurrentUser(), topicName, zeroPostPseud, zeroPost, int32(lines), ctxt.RemoteIP())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 
 		if !ctxt.FormFieldIsSet("attach") {
-			return "redirect", urlStem, nil // no attachment - just redisplay topic list
+			return "redirect", urlStem // no attachment - just redisplay topic list
 		}
 
 		post, err := topic.GetPost(ctxt.Ctx(), 0) // get the initial post in the new topic
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 
 		// go upload the attachment
 		ctxt.VarMap().Set("target", urlStem)
 		ctxt.VarMap().Set("post", post.PostId)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
-		return "framed_template", "attachment_upload.jet", nil
+		return "framed_template", "attachment_upload.jet"
 	}
 
-	return ui.ErrorPage(ctxt, errors.New("invalid button clicked on form"))
+	return "error", "invalid button clicked on form"
 }
 
 /* breakRange breaks up a post range into two elements.
@@ -434,9 +428,8 @@ func templateBozo(args jet.Arguments) reflect.Value {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ReadPosts(ctxt ui.AmContext) (string, any, error) {
+func ReadPosts(ctxt ui.AmContext) (string, any) {
 	// Extract the traverser first, so we can unclear it in background tasks.
 	var traverser ui.TopicTraverser = nil
 	if ctxt.IsSession("topic.traverser") {
@@ -466,7 +459,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// Get user prefs.
 	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	// Locate community, conference, and topic.
 	comm := ctxt.CurrentCommunity()
@@ -478,21 +471,18 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// Determine the range of posts to display.  The "pin" is the post number after which we display the horizontal line separating old and new posts.
 	lastRead, err := topic.GetLastRead(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, fmt.Errorf("posts not found in topic %d - %v", topic.Number, err))
+		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("posts not found in topic %d - %v", topic.Number, err))
 	}
 	postRange := make([]int32, 2)
 	var pin int32 = -1
 	resetLastRead := false
 	if ctxt.HasParameter("r") {
 		if err := breakRange(topic, postRange, ctxt.Parameter("r"), ","); err != nil {
-			ctxt.SetRC(http.StatusNotFound)
-			return ui.ErrorPage(ctxt, err)
+			return "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 		}
 	} else if ctxt.HasParameter("rgo") {
 		if err := breakRange(topic, postRange, ctxt.Parameter("rgo"), "-"); err != nil {
-			ctxt.SetRC(http.StatusNotFound)
-			return ui.ErrorPage(ctxt, err)
+			return "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 		}
 	} else {
 		postRange[0] = lastRead + 1
@@ -515,7 +505,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// Load the actual posts.
 	posts, err := database.AmGetPostRange(ctxt.Ctx(), topic, postRange[0], postRange[1])
 	if err != nil {
-		return ui.ErrorPage(ctxt, fmt.Errorf("internal error getting posts <%d:%d-%d> - %v", topic.Number, postRange[0], postRange[1], err))
+		return "error", fmt.Sprintf("internal error getting posts <%d:%d-%d> - %v", topic.Number, postRange[0], postRange[1], err)
 	}
 
 	// Determine other required data.
@@ -547,7 +537,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 	// Set the user's pseud.
 	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	ctxt.VarMap().Set("pseud", pseud)
 
@@ -572,7 +562,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 		if nbozo >= 0 {
 			err = topic.SetBozo(ctxt.Ctx(), ctxt.CurrentUser(), posts[0].CreatorUid, nbozo != 0)
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 		}
 		isMyPost := (posts[0].CreatorUid == ctxt.CurrentUserId()) && !ctxt.CurrentUser().IsAnon
@@ -632,7 +622,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
 			topic.SetLastRead(ctx, user, topic.TopMessage)
 		})
 	}
-	return "framed_template", "posts.jet", nil
+	return "framed", "posts.jet"
 }
 
 /* PostInTopic adds a new post to a topic.
@@ -641,9 +631,8 @@ func ReadPosts(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func PostInTopic(ctxt ui.AmContext) (string, any, error) {
+func PostInTopic(ctxt ui.AmContext) (string, any) {
 	// Locate community, conference, and topic.
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
@@ -653,28 +642,25 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 
 	urlStem := fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", urlStem, nil
+		return "redirect", urlStem
 	}
 
 	if !conf.TestPermission("Conference.Post", level) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you do not have permission to post in this conference"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "you do not have permission to post in this conference")
 	}
 
 	if topic.Frozen && !conf.TestPermission("Conference.Hide", level) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("this topic is frozen, and you do not have permission to post to it"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "this topic is frozen, and you do not have permission to post to it")
 	}
 
 	if topic.Archived && !conf.TestPermission("Conference.Hide", level) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("this topic is archived, and you do not have permission to post to it"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "this topic is archived, and you do not have permission to post to it")
 	}
 
 	// Set the escaped version of the text into the varmap, because it'll be needed if we do anything other than redirect.
 	checker, err := htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "escaper")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	checker.Append(ctxt.FormField("pseud"))
 	checker.Finish()
@@ -700,7 +686,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		// Preview the post.
 		checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "preview")
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), topic.Number))
 		checker.Append(postdata)
@@ -713,7 +699,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("maxPost", ctxt.FormField("xp"))
 		ctxt.VarMap().Set("urlStem", urlStem)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Previewing Message")
-		return "framed_template", "preview_post.jet", nil
+		return "framed", "preview_post.jet"
 	}
 	// Figure out which URL to return to once this post is made.
 	var returnURL string
@@ -724,20 +710,20 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	} else if ctxt.FormFieldIsSet("posttopics") {
 		returnURL = fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	} else {
-		return ui.ErrorPage(ctxt, errors.New("unknown post button"))
+		return "error", "unknown post button"
 	}
 
 	// Check for slippage.
 	maxPost, err := ctxt.FormFieldInt("xp")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if int32(maxPost) < topic.TopMessage {
 		// Slippage detected! Display the slipped posts and another post box.
 		// Start by getting the slipped posts.
 		posts, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(maxPost), topic.TopMessage)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 
 		plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
@@ -757,12 +743,12 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("topicName", topic.Name)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Slippage or Double-Click Detected")
 
-		return "framed_template", "slippage.jet", nil
+		return "framed", "slippage.jet"
 	}
 	// if we get here, we are posting - start by checking the title and pseud
 	checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-pseud")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	checker.Append(ctxt.FormField("pseud"))
 	checker.Finish()
@@ -771,7 +757,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	// now check the post data itself
 	checker, err = htmlcheck.AmNewHTMLChecker(ctxt.Ctx(), "post-body")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), topic.Number))
 	checker.Append(ctxt.FormField("pb"))
@@ -782,7 +768,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	// Add the post!
 	hdr, err := database.AmNewPost(ctxt.Ctx(), conf, topic, ctxt.CurrentUser(), postPseud, postText, int32(lines), ctxt.RemoteIP())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Check who's subscribed to this topic.
@@ -800,12 +786,12 @@ func PostInTopic(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	if !ctxt.FormFieldIsSet("attach") {
-		return "redirect", returnURL, nil // no attachment - just bounce directly to the destination
+		return "redirect", returnURL // no attachment - just bounce directly to the destination
 	}
 
 	// go upload the attachment
 	ctxt.VarMap().Set("target", returnURL)
 	ctxt.VarMap().Set("post", hdr.PostId)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
-	return "framed_template", "attachment_upload.jet", nil
+	return "framed", "attachment_upload.jet"
 }

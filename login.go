@@ -11,7 +11,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"time"
 
@@ -28,9 +27,8 @@ import (
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func LoginForm(ctxt ui.AmContext) (string, any, error) {
+func LoginForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -39,7 +37,7 @@ func LoginForm(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is a no-op.
 	if !ctxt.CurrentUser().IsAnon {
-		return "redirect", target, nil
+		return "redirect", target
 	}
 
 	dlg, err := ui.AmLoadDialog("login")
@@ -47,7 +45,7 @@ func LoginForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("tgt").Value = target
 		return dlg.Render(ctxt)
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* Login handles logging in to Amsterdam.
@@ -56,9 +54,8 @@ func LoginForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func Login(ctxt ui.AmContext) (string, any, error) {
+func Login(ctxt ui.AmContext) (string, any) {
 	dlg, err := ui.AmLoadDialog("login")
 	if err == nil {
 		dlg.LoadFromForm(ctxt)
@@ -68,12 +65,12 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 		}
 		// If user is already logged in, this is a no-op.
 		if !ctxt.CurrentUser().IsAnon {
-			return "redirect", target, nil
+			return "redirect", target
 		}
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
-			return "redirect", target, nil
+			return "redirect", target
 		}
 		username := dlg.Field("user").Value // since the dialog won't check this for us
 		if len(username) == 0 {
@@ -125,14 +122,14 @@ func Login(ctxt ui.AmContext) (string, any, error) {
 				}
 			}
 			if user.VerifyEMail {
-				return "redirect", target, nil
+				return "redirect", target
 			} else {
-				return "redirect", "/verify?tgt=" + url.QueryEscape(target), nil
+				return "redirect", "/verify?tgt=" + url.QueryEscape(target)
 			}
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to login function.")
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* Logout handles logging out from Amsterdam.
@@ -141,9 +138,8 @@ func Login(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func Logout(ctxt ui.AmContext) (string, any, error) {
+func Logout(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -154,7 +150,7 @@ func Logout(ctxt ui.AmContext) (string, any, error) {
 		ctxt.ClearLoginCookie()
 		ctxt.ClearSession()
 	}
-	return "redirect", target, nil
+	return "redirect", target
 }
 
 /* VerifyEmailForm renders the E-mail address verification form.
@@ -163,9 +159,8 @@ func Logout(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
+func VerifyEmailForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -175,12 +170,12 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
 	if user.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you must log in before you can verify your account's E-mail address"))
+		return "error", "you must log in before you can verify your account's E-mail address"
 	}
 
 	// If user is already verified, this is a no-op.
 	if user.VerifyEMail {
-		return "redirect", target, nil
+		return "redirect", target
 	}
 
 	dlg, err := ui.AmLoadDialog("verify_email")
@@ -188,7 +183,7 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("tgt").Value = target
 		return dlg.Render(ctxt)
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 // sendEmailConfirmationEmail sends the "E-mail confirmation number" E-mail message.
@@ -212,13 +207,12 @@ func sendEmailConfirmationEmail(user *database.User, ci *database.ContactInfo, r
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
+func VerifyEMail(ctxt ui.AmContext) (string, any) {
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
 	if user.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you must log in before you can verify your account's E-mail address"))
+		return "error", "you must log in before you can verify your account's E-mail address"
 	}
 
 	dlg, err := ui.AmLoadDialog("verify_email")
@@ -231,12 +225,12 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 
 		// If user is already verified, this is a no-op.
 		if user.VerifyEMail {
-			return "redirect", target, nil
+			return "redirect", target
 		}
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
-			return "redirect", target, nil
+			return "redirect", target
 		}
 		if action == "sendagain" {
 			var ci *database.ContactInfo
@@ -259,14 +253,14 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
 				cn, _ := dlg.Field("num").ValueInt()
 				err = user.ConfirmEMailAddress(ctxt.Ctx(), int32(cn), ctxt.RemoteIP())
 				if err == nil {
-					return "redirect", target, nil
+					return "redirect", target
 				}
 			}
 			return dlg.RenderError(ctxt, err.Error())
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to verify function.")
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* NewAccountUserAgreement renders the Amsterdam user agreement for new accounts.
@@ -275,9 +269,8 @@ func VerifyEMail(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
+func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -286,14 +279,14 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you cannot create a new account while logged in on an existing one. You must log out first"))
+		return "error", "you cannot create a new account while logged in on an existing one. You must log out first"
 	}
 
 	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("target", target)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "New Account User Agreement")
 	ctxt.VarMap().Set("amsterdam_suppressLogin", true)
-	return "framed_template", "agreement.jet", nil
+	return "framed", "agreement.jet"
 }
 
 /* NewAccountUserAgreement renders the Amsterdam account creation form.
@@ -302,9 +295,8 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
+func NewAccountForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -313,7 +305,7 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("you cannot create a new account while logged in on an existing one. You must log out first"))
+		return "error", "you cannot create a new account while logged in on an existing one. You must log out first"
 	}
 
 	dlg, err := ui.AmLoadDialog("newaccount")
@@ -322,7 +314,7 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("country").Value = "XX"
 		return dlg.Render(ctxt)
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* NewAccount handles creating a new Amsterdam account.
@@ -331,12 +323,11 @@ func NewAccountForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func NewAccount(ctxt ui.AmContext) (string, any, error) {
+func NewAccount(ctxt ui.AmContext) (string, any) {
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return ui.ErrorPage(ctxt, fmt.Errorf("you cannot create a new account while logged in on an existing one. You must log out first"))
+		return "error", "you cannot create a new account while logged in on an existing one. You must log out first"
 	}
 
 	dlg, err := ui.AmLoadDialog("newaccount")
@@ -349,7 +340,7 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
-			return "redirect", target, nil
+			return "redirect", target
 		}
 		if action == "create" {
 			err = dlg.Validate()
@@ -394,7 +385,7 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 						if err == nil {
 							// user is now logged in! redirect to E-mail verification
 							ctxt.ReplaceUser(user)
-							return "redirect", "/verify?tgt=" + url.QueryEscape(target), nil
+							return "redirect", "/verify?tgt=" + url.QueryEscape(target)
 						}
 					}
 				}
@@ -403,7 +394,7 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to new account.")
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* PasswordRecovery handles a click on a "password recovery" link to fix the user's password.
@@ -412,9 +403,8 @@ func NewAccount(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
+func PasswordRecovery(ctxt ui.AmContext) (string, any) {
 	var emailaddy string
 	uid, err := ctxt.URLParamInt("uid")
 	if err == nil {
@@ -422,13 +412,13 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
 		if err == nil {
 			pchange := database.AmGetPasswordChangeRequest(int32(uid))
 			if pchange == nil {
-				return ui.ErrorPage(ctxt, errors.New("password change request not found"))
+				return "error", "password change request not found"
 			}
 			if auth != int(pchange.Authentication) {
-				return ui.ErrorPage(ctxt, errors.New("invalid password change request"))
+				return "error", "invalid password change request"
 			}
 			if time.Now().Compare(pchange.Expires) > 0 {
-				return ui.ErrorPage(ctxt, errors.New("password change request has expired"))
+				return "error", "password change request has expired"
 			}
 			emailaddy = pchange.Email
 		}
@@ -449,9 +439,9 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any, error) {
 				msg.Send()
 				ctxt.SetLeftMenu("top")
 				ctxt.VarMap().Set("amsterdam_pageTitle", "Your Password Has Been Changed")
-				return "framed_template", "password_changed.jet", nil
+				return "framed_template", "password_changed.jet"
 			}
 		}
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }

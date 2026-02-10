@@ -91,9 +91,8 @@ func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPage(ctxt ui.AmContext) (string, any, error) {
+func FindPage(ctxt ui.AmContext) (string, any) {
 	mode := ""
 	p := ctxt.Parameter("mode")
 	if p != "" {
@@ -128,7 +127,7 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("term", "")
 		err := loadCategoryInformation(ctxt, ofs)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 	case "USR":
 		ctxt.VarMap().Set("field", "name")
@@ -146,7 +145,7 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
 
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Find")
 	ctxt.SetLeftMenu("top")
-	return "framed_template", "find.jet", nil
+	return "framed", "find.jet"
 }
 
 /* Find performs the "find" operation.
@@ -155,9 +154,8 @@ func FindPage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func Find(ctxt ui.AmContext) (string, any, error) {
+func Find(ctxt ui.AmContext) (string, any) {
 	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
 		ctxt.VarMap().Set("catIsPresent", true)
 	}
@@ -193,7 +191,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			iField = database.SearchCommFieldSynopsis
 		default:
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-			return "framed_template", "find.jet", nil
+			return "framed", "find.jet"
 		}
 		switch oper {
 		case "st":
@@ -204,7 +202,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			iOper = database.SearchCommOperRegex
 		default:
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-			return "framed_template", "find.jet", nil
+			return "framed", "find.jet"
 		}
 		var clist []*database.Community
 		clist, total, err = database.AmSearchCommunities(ctxt.Ctx(), iField, iOper, term, ofs*listMax, listMax,
@@ -230,7 +228,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			iField = database.SearchUserFieldLastName
 		default:
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-			return "framed_template", "find.jet", nil
+			return "framed", "find.jet"
 		}
 		switch oper {
 		case "st":
@@ -241,7 +239,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			iOper = database.SearchUserOperRegex
 		default:
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-			return "framed_template", "find.jet", nil
+			return "framed", "find.jet"
 		}
 		var ulist []*database.User
 		ulist, total, err = database.AmSearchUsers(ctxt.Ctx(), iField, iOper, term, ofs*listMax, listMax)
@@ -265,7 +263,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			iOper = database.SearchCatOperRegex
 		default:
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-			return "framed_template", "find.jet", nil
+			return "framed", "find.jet"
 		}
 		var catlist []*database.Category
 		catlist, total, err = database.AmSearchCategories(ctxt.Ctx(), iOper, term, ofs*listMax, listMax,
@@ -288,7 +286,7 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 	}
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
-		return "framed_template", "find.jet", nil
+		return "framed", "find.jet"
 	}
 	if numResults == 0 {
 		ctxt.VarMap().Set("resultHeader", "Search Results: (None)")
@@ -302,11 +300,11 @@ func Find(ctxt ui.AmContext) (string, any, error) {
 			ctxt.VarMap().Set("resultShowNext", true)
 		}
 	}
-	return "framed_template", "find.jet", nil
+	return "framed", "find.jet"
 }
 
 // commonFindGetBackend is the common "back end" function for Find Posts in Community/Conference/Topic.
-func commonFindGetBackend(ctxt ui.AmContext) (string, any, error) {
+func commonFindGetBackend(ctxt ui.AmContext) (string, any) {
 	ofs := 0
 	p := ctxt.Parameter("ofs")
 	if p != "" {
@@ -318,7 +316,7 @@ func commonFindGetBackend(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("ofs", ofs)
 	ctxt.VarMap().Set("term", "")
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Find Posts")
-	return "framed_template", "find_posts.jet", nil
+	return "framed", "find_posts.jet"
 }
 
 /* FindPostsPageCommunity renders the page for finding posts in a community.
@@ -327,9 +325,8 @@ func commonFindGetBackend(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPostsPageCommunity(ctxt ui.AmContext) (string, any, error) {
+func FindPostsPageCommunity(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	ctxt.VarMap().Set("scope", "community")
 	ctxt.VarMap().Set("entityName", comm.Name)
@@ -344,9 +341,8 @@ func FindPostsPageCommunity(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPostsPageConference(ctxt ui.AmContext) (string, any, error) {
+func FindPostsPageConference(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	ctxt.VarMap().Set("scope", "conference")
@@ -362,9 +358,8 @@ func FindPostsPageConference(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPostsPageTopic(ctxt ui.AmContext) (string, any, error) {
+func FindPostsPageTopic(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	ctxt.VarMap().Set("scope", "topic")
@@ -375,7 +370,7 @@ func FindPostsPageTopic(ctxt ui.AmContext) (string, any, error) {
 }
 
 // commonFindPostBackend is the common "back end" function for Find Posts in Community/Conference/Topic.
-func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *database.Conference, topic *database.Topic) (string, any, error) {
+func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *database.Conference, topic *database.Topic) (string, any) {
 	term := ctxt.FormField("term")
 	ctxt.VarMap().Set("term", term)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Find Posts")
@@ -396,7 +391,7 @@ func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *da
 		ctxt.VarMap().Set("resultList", postlist)
 	} else {
 		ctxt.VarMap().Set("errorMessage", err.Error())
-		return "framed_template", "find_posts.jet", nil
+		return "framed", "find_posts.jet"
 	}
 	if numResults == 0 {
 		ctxt.VarMap().Set("resultHeader", "Search Results: (None)")
@@ -410,7 +405,7 @@ func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *da
 			ctxt.VarMap().Set("resultShowNext", true)
 		}
 	}
-	return "framed_template", "find_posts.jet", nil
+	return "framed", "find_posts.jet"
 }
 
 /* FindPostsCommunity finds posts in a community.
@@ -419,9 +414,8 @@ func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *da
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPostsCommunity(ctxt ui.AmContext) (string, any, error) {
+func FindPostsCommunity(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	ctxt.VarMap().Set("scope", "community")
 	ctxt.VarMap().Set("entityName", comm.Name)
@@ -436,9 +430,8 @@ func FindPostsCommunity(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPostsConference(ctxt ui.AmContext) (string, any, error) {
+func FindPostsConference(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	ctxt.VarMap().Set("scope", "conference")
@@ -454,9 +447,8 @@ func FindPostsConference(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func FindPostsTopic(ctxt ui.AmContext) (string, any, error) {
+func FindPostsTopic(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)

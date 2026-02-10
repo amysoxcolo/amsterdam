@@ -10,7 +10,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -28,28 +27,27 @@ import (
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
+func ShowCommunity(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	prefs, err := me.Prefs(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	comm := ctxt.CurrentCommunity() // set by middleware
 	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	host, err := comm.Host(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	var cats []*database.Category
 	if !ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
 		cats, err = database.AmGetCategoryHierarchy(ctxt.Ctx(), comm.CategoryId)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 	}
 	var pvtAddr bool
@@ -128,7 +126,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
 	}
 
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Community Profile: "+comm.Name)
-	return "framed_template", "comprofile.jet", nil
+	return "framed", "comprofile.jet"
 }
 
 /* JoinCommunity joins a public community, or starts the process of joining a private one.
@@ -137,24 +135,23 @@ func ShowCommunity(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
+func JoinCommunity(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, _, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if mbr {
 		// already member, this is a no-op
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if comm.TestPermission("Community.Join", me.BaseLevel) {
 		if comm.JoinKey != nil && *comm.JoinKey != "" {
 			dlg, err := ui.AmLoadDialog("join")
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			dlg.SetCommunity(comm)
 			dlg.Field("cc").Value = comm.Alias
@@ -163,12 +160,12 @@ func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
 		// if get here, this is a public community, and we can join
 		err = comm.SetMembership(ctxt.Ctx(), me, database.AmDefaultRole("Community.NewUser").Level(), false, me.Uid, ctxt.RemoteIP())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 	} else {
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to join this community"))
+		return "error", "you are not permitted to join this community"
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 }
 
 /* JoinCommunityWithKey joins a private community with a properly specified join key.
@@ -177,29 +174,28 @@ func JoinCommunity(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
+func JoinCommunityWithKey(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, _, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if mbr {
 		// already member, this is a no-op
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if comm.TestPermission("Community.Join", me.BaseLevel) {
 		dlg, err := ui.AmLoadDialog("join")
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		dlg.SetCommunity(comm)
 		dlg.LoadFromForm(ctxt)
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" {
-			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 		}
 		if action == "join_now" {
 			key := dlg.Field("key").Value
@@ -214,11 +210,11 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
 			if err != nil {
 				return dlg.RenderError(ctxt, fmt.Sprintf("Error joining: %v", err))
 			}
-			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 		}
 		return dlg.RenderError(ctxt, "Unknown button pressed on join form.")
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 }
 
 /* UnjoinCommunity starts the process of unjoining a community.
@@ -227,26 +223,25 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
+func UnjoinCommunity(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, lock, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if !mbr {
 		// not a member, just redirect to profile
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if lock {
 		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to unjoin this community"))
+		return "error", "you are not permitted to unjoin this community"
 	}
 	ctxt.VarMap().Set("comm", comm)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Unjoin Community")
-	return "framed_template", "unjoin.jet", nil
+	return "framed", "unjoin.jet"
 }
 
 /* UnjoinCommunityConfirm finishes the process of unjoining a community.
@@ -255,35 +250,34 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
+func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
 	mbr, lock, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if !mbr {
 		// not a member, just redirect to profile
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if lock {
 		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to unjoin this community"))
+		return "error", "you are not permitted to unjoin this community"
 	}
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if ctxt.FormFieldIsSet("unjoin") {
 		err = comm.SetMembership(ctxt.Ctx(), me, 0, false, me.Uid, ctxt.RemoteIP())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		ctxt.ClearCommunityContext()
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
-	return ui.ErrorPage(ctxt, errors.New("unknown button pressed to confirm unjoin"))
+	return "error", "unknown button pressed to confirm unjoin"
 }
 
 /* MemberList lists the members of the community.
@@ -292,9 +286,8 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func MemberList(ctxt ui.AmContext) (string, any, error) {
+func MemberList(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	ofs := 0
 	p := ctxt.Parameter("ofs")
@@ -316,7 +309,7 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
 	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
 	results, total, err := comm.ListMembers(ctxt.Ctx(), database.ListMembersFieldNone, database.ListMembersOperNone, "", ofs*listMax, listMax, showHidden)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if total == 0 {
 		ctxt.VarMap().Set("headerLine", "Community Members: (None)")
@@ -333,7 +326,7 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
 			ctxt.VarMap().Set("resultShowNext", true)
 		}
 	}
-	return "framed_template", "memberlist.jet", nil
+	return "framed", "memberlist.jet"
 }
 
 /* MemberSearch searches for members of the community.
@@ -342,9 +335,8 @@ func MemberList(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func MemberSearch(ctxt ui.AmContext) (string, any, error) {
+func MemberSearch(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	ofs, _ := ctxt.FormFieldInt("ofs")
 	field := ctxt.FormField("field")
@@ -371,7 +363,7 @@ func MemberSearch(ctxt ui.AmContext) (string, any, error) {
 		iField = database.ListMembersFieldLastName
 	default:
 		ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-		return "framed_template", "memberlist.jet", nil
+		return "framed", "memberlist.jet"
 	}
 	switch oper {
 	case "st":
@@ -382,12 +374,12 @@ func MemberSearch(ctxt ui.AmContext) (string, any, error) {
 		iOper = database.ListMembersOperRegex
 	default:
 		ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
-		return "framed_template", "memberlist.jet", nil
+		return "framed", "memberlist.jet"
 	}
 	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
 	results, total, err := comm.ListMembers(ctxt.Ctx(), iField, iOper, term, ofs*listMax, listMax, showHidden)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if total == 0 {
 		ctxt.VarMap().Set("headerLine", "Search Results: (None)")
@@ -404,5 +396,5 @@ func MemberSearch(ctxt ui.AmContext) (string, any, error) {
 			ctxt.VarMap().Set("resultShowNext", true)
 		}
 	}
-	return "framed_template", "memberlist.jet", nil
+	return "framed", "memberlist.jet"
 }

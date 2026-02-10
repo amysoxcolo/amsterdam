@@ -37,6 +37,44 @@ import (
  */
 func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
 	var err error
+
+	if command == "error" {
+		httprc := amctxt.RC()
+		message := ""
+		if data == nil {
+			message = fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
+		} else if he, ok := data.(*echo.HTTPError); ok {
+			httprc = he.Code
+			m1 := he.Message
+			e1 := he.Unwrap()
+			if m1 == nil || m1 == "" {
+				if e1 == nil {
+					message = fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
+				} else {
+					message = e1.Error()
+				}
+			} else {
+				if e1 == nil {
+					message = fmt.Sprintf("%v", m1)
+				} else {
+					message = fmt.Sprintf("%v (%v)", m1, e1)
+				}
+			}
+		} else if er, ok := data.(error); ok {
+			message = er.Error()
+		} else {
+			message = fmt.Sprintf("%v", data)
+		}
+		if httprc < 400 {
+			httprc = http.StatusInternalServerError
+		}
+		amctxt.VarMap().Set("amsterdam_pageTitle", "Internal Server Error")
+		amctxt.VarMap().Set("error", message)
+		amctxt.SetRC(httprc)
+		command = "framed"
+		data = "error.jet"
+	}
+
 	switch command {
 	case "bytes":
 		err = ctxt.Blob(amctxt.RC(), amctxt.OutputType(), data.([]byte))
@@ -46,7 +84,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		err = ctxt.String(amctxt.RC(), data.(string))
 	case "template":
 		err = ctxt.Render(amctxt.RC(), data.(string), amctxt)
-	case "framed_template":
+	case "framed", "framed_template":
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
 		menus := make([]*MenuDefinition, 2)
 		switch amctxt.LeftMenu() {
@@ -59,16 +97,16 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 			}
 			menus[0] = md
 		default:
-			return fmt.Errorf("unknown left menu context: %s", amctxt.LeftMenu())
+			return fmt.Errorf("AmSendPageData(): unknown left menu context: %s", amctxt.LeftMenu())
 		}
 		menus[1] = AmMenu("fixed")
 		amctxt.VarMap().Set("amsterdam_leftMenus", menus)
 		err = ctxt.Render(amctxt.RC(), "frame.jet", amctxt)
 	default:
-		err = fmt.Errorf("unknown rendering type: %s", command)
+		err = fmt.Errorf("AmSendPageData(): unknown rendering type: %s", command)
 	}
 	if err != nil {
-		log.Errorf("sendPageData() barfed with %v", err)
+		log.Errorf("AmSendPageData() barfed with %v", err)
 	}
 	return err
 }
@@ -94,6 +132,8 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
 // expireTime is the expiration time sent in the dynamic headers.
 var expireTime string = lctime.Strftime("%c", time.Unix(1, 0))
 
+type PageFunc func(AmContext) (string, any)
+
 /* AmWrap wraps the Amsterdam handler function in a wrapper that implements the spec for
  * Echo handler functions.
  * Parameters:
@@ -101,33 +141,25 @@ var expireTime string = lctime.Strftime("%c", time.Unix(1, 0))
  * Returns:
  *     The wrapped function.
  */
-func AmWrap(myfunc func(AmContext) (string, any, error)) echo.HandlerFunc {
-	return func(ctxt echo.Context) error {
-		amctxt := AmContextFromEchoContext(ctxt)
+func AmWrap(myfunc PageFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctxt := AmContextFromEchoContext(c)
 
 		// Add the dynamic headers.
-		ctxt.Response().Header().Set("Pragma", "No-cache")
-		ctxt.Response().Header().Set("Cache-Control", "no-cache")
-		ctxt.Response().Header().Set("Expires", expireTime)
+		c.Response().Header().Set("Pragma", "No-cache")
+		c.Response().Header().Set("Cache-Control", "no-cache")
+		c.Response().Header().Set("Expires", expireTime)
 
 		// Exec the wrapped function.
-		what, rc, err := myfunc(amctxt)
-		if err == nil {
-			if err = amctxt.SaveSession(); err != nil {
-				ctxt.Logger().Errorf("Session save error: %v", err)
-				return err
-			}
-			err = AmSendPageData(ctxt, amctxt, what, rc)
-			if err != nil {
-				ctxt.Logger().Errorf("Rendering error: %v", err)
-			}
-		} else {
-			ctxt.Logger().Errorf("Page function error: %v", err)
-			_, rc, _ = ErrorPage(amctxt, err)
-			amctxt.SetRC(http.StatusInternalServerError)
-			newerr := AmSendPageData(ctxt, amctxt, "framed_template", rc)
-			err = newerr
+		command, arg := myfunc(ctxt)
+		if err := ctxt.SaveSession(); err != nil {
+			c.Logger().Errorf("Session save error: %v", err)
+			return err
 		}
-		return err
+		if err := AmSendPageData(c, ctxt, command, arg); err != nil {
+			c.Logger().Errorf("Rendering error: %v", err)
+			return err
+		}
+		return nil
 	}
 }

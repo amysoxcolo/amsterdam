@@ -103,7 +103,7 @@ func (mb *MessageBox) SetLink(id, link string) {
 }
 
 // Render sets up to render the message box.
-func (mb *MessageBox) Render(ctxt AmContext) (string, any, error) {
+func (mb *MessageBox) Render(ctxt AmContext) (string, any) {
 	blinks := mb.buttonLinks
 	if mb.def.useConfirm {
 		nonce := util.GenerateRandomAuthString()
@@ -133,7 +133,7 @@ func (mb *MessageBox) Render(ctxt AmContext) (string, any, error) {
 	ctxt.VarMap().Set("warningLines", mb.def.WarningLines)
 	ctxt.VarMap().Set("buttons", mb.def.Buttons)
 	ctxt.VarMap().Set("buttonLinks", blinks)
-	return "framed_template", "messagebox.jet", nil
+	return "framed_template", "messagebox.jet"
 }
 
 // Validate validates that the correct button was clicked by verifying the confirmation parameter.

@@ -21,6 +21,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,13 +31,11 @@ import (
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func CommunityAdminMenu(ctxt ui.AmContext) (string, any, error) {
+func CommunityAdminMenu(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.ShowAdmin", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+		return "error", ENOACCESS
 	}
 	menu := ui.AmMenu("communityadmin")
 	defs := make(map[string]bool)
@@ -46,7 +45,7 @@ func CommunityAdminMenu(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("menu", menu.FilterCommunity(comm))
 	ctxt.VarMap().Set("defs", defs)
 	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title+" - "+comm.Name)
-	return "framed_template", "menu.jet", nil
+	return "framed", "menu.jet"
 }
 
 // setupCommunityProfileDialog sets up fields in the Community Profile dialog.
@@ -79,22 +78,20 @@ func communityLogoURL(ci *database.ContactInfo) string {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
+func CommunityProfileForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+		return "error", ENOACCESS
 	}
 	var ci *database.ContactInfo
 	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	flags, err := comm.Flags(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	dlg, err := ui.AmLoadDialog("commprofile")
 	if err == nil {
@@ -136,7 +133,7 @@ func CommunityProfileForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("pic_in_post").SetChecked(flags.Get(database.CommunityFlagPicturesInPosts))
 		return dlg.Render(ctxt)
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 // validateJoinKey is an extra validation step for the join key.
@@ -157,13 +154,11 @@ func validateJoinKey(dlg *ui.Dialog) error {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
+func EditCommunityProfile(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+		return "error", ENOACCESS
 	}
 	dlg, err := ui.AmLoadDialog("commprofile")
 	if err == nil {
@@ -172,7 +167,7 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" {
-			return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias), nil
+			return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias)
 		}
 		if action == "update" {
 			err = dlg.Validate()
@@ -191,7 +186,7 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 			var flags *util.OptionSet
 			flags, err = comm.Flags(ctxt.Ctx())
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			nci := ci.Clone()
 			nci.URL = dlg.Field("url").ValPtr()
@@ -237,12 +232,12 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
 				ctxt.ClearCommunityContext()
 				return dlg.RenderError(ctxt, err.Error())
 			} else {
-				return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias), nil
+				return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias)
 			}
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to community profile.")
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* CommunityLogoForm renders the form for changing the community logo.
@@ -251,13 +246,11 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
+func CommunityLogoForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+		return "error", ENOACCESS
 	}
 	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err == nil {
@@ -265,9 +258,9 @@ func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("commAlias", comm.Alias)
 		ctxt.VarMap().Set("logo_url", communityLogoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Community Logo: "+comm.Name)
-		return "framed_template", "logo_upload.jet", nil
+		return "framed", "logo_upload.jet"
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* EditCommunityLogo handles setting the community logo.
@@ -278,18 +271,17 @@ func CommunityLogoForm(ctxt ui.AmContext) (string, any, error) {
  *     Data as a parameter for the command string.
  *     Standard Go error status.
  */
-func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
+func EditCommunityLogo(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity() // set by middleware
 	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to access this page"))
+		return "error", ENOACCESS
 	}
 	ci, err := comm.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+		return "redirect", "/comm/" + comm.Alias + "/admin/profile"
 	}
 	if ctxt.FormFieldIsSet("upload") {
 		file, err := ctxt.FormFile("thepic")
@@ -309,7 +301,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 						err = comm.TouchUpdate(ctxt.Ctx())
 					}
 					if err == nil {
-						return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+						return "redirect", "/comm/" + comm.Alias + "/admin/profile"
 					}
 				}
 			}
@@ -319,19 +311,19 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("commAlias", comm.Alias)
 		ctxt.VarMap().Set("logo_url", communityLogoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Community Logo: "+comm.Name)
-		return "framed_template", "logo_upload.jet", nil
+		return "framed", "logo_upload.jet"
 	}
 	if ctxt.FormFieldIsSet("remove") {
 		purl := ci.PhotoURL
 		happy := false
 		if purl == nil || *purl == "" {
 			// this is a no-op
-			return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+			return "redirect", "/comm/" + comm.Alias + "/admin/profile"
 		}
 		if strings.HasPrefix(*purl, "/img/store/") {
 			id, err := strconv.Atoi((*purl)[11:])
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			defer func() {
 				if happy {
@@ -347,12 +339,12 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
 		ci.PhotoURL = nil
 		_, err := ci.Save(ctxt.Ctx())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		happy = true
-		return "redirect", "/comm/" + comm.Alias + "/admin/profile", nil
+		return "redirect", "/comm/" + comm.Alias + "/admin/profile"
 	}
-	return ui.ErrorPage(ctxt, errors.New("invalid button detected in logo upload"))
+	return "error", "invalid button detected in logo upload"
 }
 
 /* CreateCommunityForm renders the form for creating a new community.
@@ -363,11 +355,10 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any, error) {
  *     Data as a parameter for the command string.
  *     Standard Go error status.
  */
-func CreateCommunityForm(ctxt ui.AmContext) (string, any, error) {
+func CreateCommunityForm(ctxt ui.AmContext) (string, any) {
 	user := ctxt.CurrentUser()
 	if user.BaseLevel < uint16(ctxt.Globals().CommunityCreateLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create a community"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to create a community")
 	}
 	dlg, err := ui.AmLoadDialog("create_comm")
 	if err == nil {
@@ -375,7 +366,7 @@ func CreateCommunityForm(ctxt ui.AmContext) (string, any, error) {
 		dlg.Field("country").Value = "US"
 		return dlg.Render(ctxt)
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* CreateCommunity creates a new community.
@@ -384,20 +375,18 @@ func CreateCommunityForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
+func CreateCommunity(ctxt ui.AmContext) (string, any) {
 	user := ctxt.CurrentUser()
 	if user.BaseLevel < uint16(ctxt.Globals().CommunityCreateLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not permitted to create a community"))
+		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to create a community")
 	}
 	dlg, err := ui.AmLoadDialog("create_comm")
 	if err == nil {
 		dlg.LoadFromForm(ctxt)
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" {
-			return "redirect", "/", nil
+			return "redirect", "/"
 		}
 		if action == "create" {
 			err = dlg.Validate()
@@ -451,9 +440,9 @@ func CreateCommunity(ctxt ui.AmContext) (string, any, error) {
 				return dlg.RenderError(ctxt, err.Error())
 			}
 			// new community is now created! redirect to the new profile
-			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias), nil
+			return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to community creation.")
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }

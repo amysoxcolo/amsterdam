@@ -11,9 +11,6 @@
 package main
 
 import (
-	"errors"
-	"net/http"
-
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
@@ -24,17 +21,15 @@ import (
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func SysAdminMenu(ctxt ui.AmContext) (string, any, error) {
+func SysAdminMenu(ctxt ui.AmContext) (string, any) {
 	u := ctxt.CurrentUser()
 	if !database.AmTestPermission("Global.SysAdminAccess", u.BaseLevel) {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, errors.New("you are not authorized access to this page"))
+		return "error", ENOACCESS
 	}
 	menu := ui.AmMenu("sysadmin")
 	ctxt.VarMap().Set("menu", menu)
 	ctxt.VarMap().Set("defs", make(map[string]bool))
 	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title)
-	return "framed_template", "menu.jet", nil
+	return "framed", "menu.jet"
 }

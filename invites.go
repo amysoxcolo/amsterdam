@@ -12,7 +12,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"net/mail"
 
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -26,12 +25,10 @@ import (
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func InviteToCommunity(ctxt ui.AmContext) (string, any, error) {
+func InviteToCommunity(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	comm := ctxt.CurrentCommunity()
 
@@ -40,7 +37,7 @@ func InviteToCommunity(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("subtitle", comm.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/profile", comm.Alias))
 	ctxt.VarMap().Set("cid", fmt.Sprintf("%d", comm.Id))
-	return "framed_template", "invite.jet", nil
+	return "framed", "invite.jet"
 }
 
 /* InviteToConference displays the conference invitation form.
@@ -49,12 +46,10 @@ func InviteToCommunity(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func InviteToConference(ctxt ui.AmContext) (string, any, error) {
+func InviteToConference(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
@@ -65,7 +60,7 @@ func InviteToConference(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("cid", fmt.Sprintf("%d", comm.Id))
 	ctxt.VarMap().Set("confid", fmt.Sprintf("%d", conf.ConfId))
-	return "framed_template", "invite.jet", nil
+	return "framed", "invite.jet"
 }
 
 /* InviteToTopic displays the topic invitation form.
@@ -74,12 +69,10 @@ func InviteToConference(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func InviteToTopic(ctxt ui.AmContext) (string, any, error) {
+func InviteToTopic(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
-		ctxt.SetRC(http.StatusForbidden)
-		return ui.ErrorPage(ctxt, ENOPERM)
+		return "error", ENOPERM
 	}
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
@@ -92,7 +85,7 @@ func InviteToTopic(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("cid", fmt.Sprintf("%d", comm.Id))
 	ctxt.VarMap().Set("confid", fmt.Sprintf("%d", conf.ConfId))
 	ctxt.VarMap().Set("topicid", fmt.Sprintf("%d", topic.TopicId))
-	return "framed_template", "invite.jet", nil
+	return "framed", "invite.jet"
 }
 
 /* InviteSend is the back end that handles sending invitations.
@@ -101,14 +94,13 @@ func InviteToTopic(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func InviteSend(ctxt ui.AmContext) (string, any, error) {
+func InviteSend(ctxt ui.AmContext) (string, any) {
 	backlink := ctxt.FormField("backlink")
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", backlink, nil
+		return "redirect", backlink
 	} else if !ctxt.FormFieldIsSet("send") {
-		return ui.ErrorPage(ctxt, errors.New("invalid command"))
+		return "error", "invalid command"
 	}
 	var comm *database.Community
 	if ctxt.FormFieldIsSet("cid") {
@@ -117,10 +109,10 @@ func InviteSend(ctxt ui.AmContext) (string, any, error) {
 			comm, err = database.AmGetCommunity(ctxt.Ctx(), int32(id))
 		}
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 	} else {
-		return ui.ErrorPage(ctxt, errors.New("no parameters specified"))
+		return "error", "no parameters specified"
 	}
 	mode := "community"
 	var conf *database.Conference = nil
@@ -138,7 +130,7 @@ func InviteSend(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "errors", err
 		}
 		if ctxt.FormFieldIsSet("topicid") {
 			id, err := ctxt.FormFieldInt("topicid")
@@ -149,7 +141,7 @@ func InviteSend(ctxt ui.AmContext) (string, any, error) {
 				}
 			}
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "errors", err
 			}
 			mode = "topic"
 		} else {
@@ -159,12 +151,12 @@ func InviteSend(ctxt ui.AmContext) (string, any, error) {
 	addr := ctxt.FormField("addr")
 	_, err := mail.ParseAddress(addr)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "errors", err
 	}
 
 	ci, err := database.AmGetContactInfoForUser(ctxt.Ctx(), ctxt.CurrentUserId())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "errors", err
 	}
 
 	mailMessage := email.AmNewEmailMessage(ctxt.CurrentUserId(), ctxt.RemoteIP())
@@ -183,5 +175,5 @@ func InviteSend(ctxt ui.AmContext) (string, any, error) {
 	mailMessage.AddVariable("username", ctxt.CurrentUser().Username)
 	mailMessage.Send()
 
-	return "redirect", backlink, nil
+	return "redirect", backlink
 }

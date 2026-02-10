@@ -23,6 +23,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/biter777/countries"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -40,9 +41,8 @@ func userPhotoURL(ci *database.ContactInfo) string {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
+func EditProfileForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -50,7 +50,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+		return "error", "you are not logged in"
 	}
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
@@ -95,7 +95,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
 			}
 		}
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* EditProfile handles profile editing.
@@ -104,12 +104,11 @@ func EditProfileForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func EditProfile(ctxt ui.AmContext) (string, any, error) {
+func EditProfile(ctxt ui.AmContext) (string, any) {
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+		return "error", "you are not logged in"
 	}
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
@@ -122,7 +121,7 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
-			return "redirect", target, nil
+			return "redirect", target
 		}
 		if action == "update" {
 			err = dlg.Validate()
@@ -192,17 +191,17 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
 					if emailChange {
 						err = sendEmailConfirmationEmail(u, ci, ctxt.RemoteIP())
 						if err == nil {
-							return "redirect", "/verify?tgt=" + url.QueryEscape(target), nil
+							return "redirect", "/verify?tgt=" + url.QueryEscape(target)
 						}
 					} else {
-						return "redirect", target, nil
+						return "redirect", target
 					}
 				}
 			}
 		}
 		return dlg.RenderError(ctxt, "No known button click on POST to profile.")
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* ProfilePhotoForm renders the Amsterdam profile photo upload form.
@@ -211,9 +210,8 @@ func EditProfile(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
+func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
@@ -221,7 +219,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 	}
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+		return "error", "you are not logged in"
 	}
 	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err == nil {
@@ -229,9 +227,9 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
-		return "framed_template", "photo_upload.jet", nil
+		return "framed", "photo_upload.jet"
 	}
-	return ui.ErrorPage(ctxt, err)
+	return "error", err
 }
 
 /* ProfilePhoto handles processing the uploaded user photo.
@@ -240,23 +238,22 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
+func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+		return "error", "you are not logged in"
 	}
 	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	target := ctxt.FormField("tgt")
 	if target == "" {
 		target = "/"
 	}
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+		return "redirect", "/profile?tgt=" + url.QueryEscape(target)
 	}
 	if ctxt.FormFieldIsSet("upload") {
 		file, err := ctxt.FormFile("thepic")
@@ -273,7 +270,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 					ci.PhotoURL = &photourl
 					_, err = ci.Save(ctxt.Ctx())
 					if err == nil {
-						return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+						return "redirect", "/profile?tgt=" + url.QueryEscape(target)
 					}
 				}
 			}
@@ -283,19 +280,19 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
-		return "framed_template", "photo_upload.jet", nil
+		return "framed", "photo_upload.jet"
 	}
 	if ctxt.FormFieldIsSet("remove") {
 		purl := ci.PhotoURL
 		happy := false
 		if purl == nil || *purl == "" {
 			// this is a no-op
-			return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+			return "redirect", "/profile?tgt=" + url.QueryEscape(target)
 		}
 		if strings.HasPrefix(*purl, "/img/store/") {
 			id, err := strconv.Atoi((*purl)[11:])
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			defer func() {
 				if happy {
@@ -311,12 +308,12 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
 		ci.PhotoURL = nil
 		_, err := ci.Save(ctxt.Ctx())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		happy = true
-		return "redirect", "/profile?tgt=" + url.QueryEscape(target), nil
+		return "redirect", "/profile?tgt=" + url.QueryEscape(target)
 	}
-	return ui.ErrorPage(ctxt, errors.New("invalid button detected in photo upload"))
+	return "error", "invalid button detected in photo upload"
 }
 
 /* ShowProfile displays a user's profile.
@@ -325,24 +322,22 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func ShowProfile(ctxt ui.AmContext) (string, any, error) {
+func ShowProfile(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	prefs, err := me.Prefs(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	// Gather the info on the current user.
 	user, err := database.AmGetUserByName(ctxt.Ctx(), ctxt.URLParam("uname"), nil)
 	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, err)
+		return "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
 	}
 	ci, err := user.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	var pvtAddr, pvtPhone, pvtFax, pvtEmail bool
 	if database.AmTestPermission("Global.SeeHiddenContactInfo", me.BaseLevel) {
@@ -433,7 +428,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
 		ctxt.VarMap().Set("mobile", *ci.Mobile)
 	}
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("User Profile - %s", user.Username))
-	return "framed_template", "profile.jet", nil
+	return "framed", "profile.jet"
 }
 
 /* QuickEMail sends quick E-mail to a user.
@@ -442,31 +437,30 @@ func ShowProfile(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func QuickEMail(ctxt ui.AmContext) (string, any, error) {
+func QuickEMail(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	if me.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+		return "error", "you are not logged in"
 	}
 	myCI, err := me.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	toUid, err := ctxt.FormFieldInt("to_uid")
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	user, err := database.AmGetUser(ctxt.Ctx(), int32(toUid))
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	if user.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("cannot send quick E-mail to anonymous user"))
+		return "error", "cannot send quick E-mail to anonymous user"
 	}
 	ci, err := user.ContactInfo(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 	msg := email.AmNewEmailMessage(me.Uid, ctxt.RemoteIP())
 	msg.AddTo(*ci.Email, user.Username)
@@ -474,7 +468,7 @@ func QuickEMail(ctxt ui.AmContext) (string, any, error) {
 	msg.SetSubject(ctxt.FormField("subj"))
 	msg.SetText(ctxt.FormField("pb"))
 	msg.Send()
-	return "redirect", "/user/" + user.Username, nil
+	return "redirect", "/user/" + user.Username
 }
 
 /* Hotlist displays and edits the user's conference hotlist.
@@ -483,16 +477,15 @@ func QuickEMail(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func Hotlist(ctxt ui.AmContext) (string, any, error) {
+func Hotlist(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	if me.IsAnon {
-		return ui.ErrorPage(ctxt, errors.New("you are not logged in"))
+		return "error", "you are not logged in"
 	}
 	hotlist, err := database.AmGetConferenceHotlist(ctxt.Ctx(), me)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	if ctxt.HasParameter("m") {
@@ -501,7 +494,7 @@ func Hotlist(ctxt ui.AmContext) (string, any, error) {
 		if index >= 0 && (index+dir) != index {
 			err := database.AmReorderHotlist(ctxt.Ctx(), me, hotlist[index].Sequence, hotlist[index+dir].Sequence)
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			tmp := hotlist[index].CommId
 			hotlist[index].CommId = hotlist[index+dir].CommId
@@ -515,7 +508,7 @@ func Hotlist(ctxt ui.AmContext) (string, any, error) {
 		if index >= 0 {
 			err := database.AmRemoveEntryFromHotlist(ctxt.Ctx(), me, hotlist[index].Sequence)
 			if err != nil {
-				return ui.ErrorPage(ctxt, err)
+				return "error", err
 			}
 			hotlist = append(hotlist[:index], hotlist[index+1:]...)
 		}
@@ -526,12 +519,12 @@ func Hotlist(ctxt ui.AmContext) (string, any, error) {
 	for i := range hotlist {
 		comm, err := hotlist[i].Community(ctxt.Ctx())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		communities[i] = comm.Name
 		conf, err := hotlist[i].Conference(ctxt.Ctx())
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 		conferences[i] = conf.Name
 	}
@@ -540,5 +533,5 @@ func Hotlist(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("communities", communities)
 	ctxt.VarMap().Set("conferences", conferences)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Your Conference Hotlist")
-	return "framed_template", "hotlist.jet", nil
+	return "framed", "hotlist.jet"
 }

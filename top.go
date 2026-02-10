@@ -17,6 +17,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
+	"github.com/labstack/echo/v4"
 )
 
 // RenderedSideboxItem is an item for display inside a rendered sidebox.
@@ -232,16 +233,15 @@ func templateTopicLink(args jet.Arguments) reflect.Value {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func TopPage(ctxt ui.AmContext) (string, any, error) {
+func TopPage(ctxt ui.AmContext) (string, any) {
 	// Set the page title.
 	ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
 
 	// Retrieve the published posts.
 	hdrs, err := database.AmGetPublishedPosts(ctxt.Ctx())
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	ctxt.VarMap().Set("posts", hdrs)
@@ -254,14 +254,14 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	uid := ctxt.CurrentUserId()
 	sboxes, err := database.AmGetSideboxes(ctxt.Ctx(), uid)
 	if err != nil {
-		return ui.ErrorPage(ctxt, err)
+		return "error", err
 	}
 
 	rc := make([]RenderedSidebox, len(sboxes))
 	for i, sb := range sboxes {
 		err = buildRenderedSidebox(ctxt, uid, &(rc[i]), sb)
 		if err != nil {
-			return ui.ErrorPage(ctxt, err)
+			return "error", err
 		}
 	}
 	ctxt.VarMap().Set("sideboxes", rc)
@@ -269,7 +269,7 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
 	// Final data set.
 	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("amsterdam_genRefresh", true)
-	return "framed_template", "top.jet", nil
+	return "framed", "top.jet"
 }
 
 /* AboutPage renders the "About Amsterdam" page.
@@ -278,12 +278,11 @@ func TopPage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func AboutPage(ctxt ui.AmContext) (string, any, error) {
+func AboutPage(ctxt ui.AmContext) (string, any) {
 	// Set the page title.
 	ctxt.VarMap().Set("amsterdam_pageTitle", "About Amsterdam")
-	return "framed_template", "about.jet", nil
+	return "framed", "about.jet"
 }
 
 /* JumpToShortcut resolves "/go" links by redirecting them to the appropriate page.
@@ -292,22 +291,19 @@ func AboutPage(ctxt ui.AmContext) (string, any, error) {
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
- *     Standard Go error status.
  */
-func JumpToShortcut(ctxt ui.AmContext) (string, any, error) {
+func JumpToShortcut(ctxt ui.AmContext) (string, any) {
 	link, err := database.AmDecodePostLink(ctxt.URLParam("postlink"))
 	if err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, fmt.Errorf("not found: %s (%v)", ctxt.URLParam("postlink"), err))
+		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).SetInternal(err)
 	}
 	scope, target := link.Classify()
 	if scope != "global" {
 		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, fmt.Errorf("not found: %s", ctxt.URLParam("postlink")))
+		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink")))
 	}
 	if err = link.VerifyNames(ctxt.Ctx()); err != nil {
-		ctxt.SetRC(http.StatusNotFound)
-		return ui.ErrorPage(ctxt, fmt.Errorf("not found: %s (%v)", ctxt.URLParam("postlink"), err))
+		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).SetInternal(err)
 	}
 	targetURL := ""
 	switch target {
@@ -320,7 +316,7 @@ func JumpToShortcut(ctxt ui.AmContext) (string, any, error) {
 	case "post", "postrange", "postopenrange":
 		targetURL = fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d,%d", link.Community, link.Conference, link.Topic, link.FirstPost, link.LastPost)
 	default:
-		return ui.ErrorPage(ctxt, fmt.Errorf("invalid target '%s' for link: %s", target, ctxt.URLParam("postlink")))
+		return "error", fmt.Sprintf("invalid target '%s' for link: %s", target, ctxt.URLParam("postlink"))
 	}
-	return "redirect", targetURL, nil
+	return "redirect", targetURL
 }
