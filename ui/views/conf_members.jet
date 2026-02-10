@@ -133,6 +133,9 @@
                 <div class="flex items-start gap-3">
                     <button type="submit" name="update"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">Update</button>
+                    {{ if isset(updated) }}
+                        <span class="text-lg text-green font-bold">✅ Updated!</span>
+                    {{ end }}
                 </div>
             </div>
         </div>

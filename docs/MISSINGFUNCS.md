@@ -66,7 +66,7 @@ _(italicized items can be deferred)_
     - ~~Manage aliases~~
       - ~~Remove alias~~
       - ~~Add alias~~
-    - Manage members
+    - ~~Manage members~~
     - Custom appearance
     - Activity reports
     - E-mail

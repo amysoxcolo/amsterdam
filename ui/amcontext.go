@@ -75,6 +75,7 @@ type AmContext interface {
 	URLParamInt(string) (int, error)
 	URLPath() string
 	VarMap() jet.VarMap
+	Verb() string
 }
 
 /*----------------------------------------------------------------------------
@@ -433,6 +434,15 @@ func (c *amContext) URLPath() string {
 // VarMap provides access to the Jet variable map for setting variable data.
 func (c *amContext) VarMap() jet.VarMap {
 	return c.rendervars
+}
+
+// Verb returns the HTTP method (verb) for this request.
+func (c *amContext) Verb() string {
+	rc := c.echoContext.Request().Method
+	if rc == "" {
+		rc = "GET"
+	}
+	return rc
 }
 
 // defoptions is the default options for the HTTP session.

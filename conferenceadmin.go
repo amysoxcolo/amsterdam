@@ -262,25 +262,19 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Membership in Conference: %s", conf.Name))
 
 	// Get the search parameter values and adjust them.
-	mode := ctxt.Parameter("mode")
-	field := ctxt.Parameter("field")
-	oper := ctxt.Parameter("oper")
-	term := ctxt.Parameter("term")
-	offsetStr := ctxt.Parameter("ofs")
-	if mode == "" {
-		mode = "conf"
-	}
-	if field == "" {
-		field = "name"
-	}
-	if oper == "" {
-		oper = "st"
-	}
+	mode := "conf"
+	field := "name"
+	oper := "st"
+	term := ""
 	offset := 0
-	if offsetStr != "" {
-		var err error
-		offset, err = strconv.Atoi(offsetStr)
-		if err != nil {
+	if ctxt.Verb() == "POST" {
+		mode = ctxt.FormField("mode")
+		field = ctxt.FormField("field")
+		oper = ctxt.FormField("oper")
+		term = ctxt.FormField("term")
+		var e1 error
+		offset, e1 = ctxt.FormFieldInt("ofs")
+		if e1 != nil {
 			offset = 0
 		}
 	}
@@ -302,7 +296,39 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("max", maxPage)
 
 	if ctxt.FormFieldIsSet("update") {
-		// TODO: update the levels
+		// Parse out the list of valid UIDs.
+		uids := util.Map(strings.Split(ctxt.FormField("validUids"), "|"), func(in string) int32 {
+			rc, err := strconv.Atoi(in)
+			if err != nil {
+				return -1
+			}
+			return int32(rc)
+		})
+		for _, uid := range uids {
+			if uid > 0 {
+				// Get old and new access levels from the form.
+				tmp, err := ctxt.FormFieldInt(fmt.Sprintf("old_%d", uid))
+				if err == nil {
+					oldLevel := uint16(tmp)
+					tmp, err = ctxt.FormFieldInt(fmt.Sprintf("new_%d", uid))
+					if err == nil {
+						newLevel := uint16(tmp)
+						if oldLevel != newLevel {
+							// Update the level for this user.
+							var u *database.User
+							u, err = database.AmGetUser(ctxt.Ctx(), uid)
+							if err == nil {
+								err = conf.SetMembership(ctxt.Ctx(), u, newLevel, ctxt.CurrentUser(), ctxt.RemoteIP())
+							}
+						}
+					}
+				}
+				if err != nil {
+					return ui.ErrorPage(ctxt, err)
+				}
+			}
+		}
+		ctxt.VarMap().Set("updated", true)
 	}
 
 	// Get the member list for the conference.
