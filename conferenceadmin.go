@@ -352,7 +352,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("total", total)
 	ctxt.VarMap().Set("validUids", strings.Join(util.Map(mr, func(cd CMData) string {
 		return fmt.Sprintf("%d", cd.User.Uid)
-	}), ","))
+	}), "|"))
 	if offset > 0 {
 		ctxt.VarMap().Set("showPrev", true)
 	}
