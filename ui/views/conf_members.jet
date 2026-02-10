@@ -110,7 +110,7 @@
         <input type="hidden" name="term" value="{{ term }}">
         <input type="hidden" name="ofs" value="{{ offset }}">
         <input type="hidden" name="validUids" value="{{ validUids }}">
-        <div class="max-w-3xl bg-gray-50 p-6 rounded-lg">
+        <div class="max-w-2xl bg-gray-50 p-6 rounded-lg">
             <div class="space-y-4">
                 {{ range _, rx := resultList }}
                     <div class="flex items-start gap-3">

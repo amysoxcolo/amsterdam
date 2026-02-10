@@ -287,9 +287,9 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	maxPage := ctxt.Globals().MaxSearchPage
 
 	// Adjust the offset based on the page buttons.
-	if ctxt.HasParameter("prev") {
+	if ctxt.FormFieldIsSet("prev") {
 		offset = max(0, offset-int(maxPage))
-	} else if ctxt.HasParameter("next") {
+	} else if ctxt.FormFieldIsSet("next") {
 		offset += int(maxPage)
 	}
 
@@ -301,7 +301,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any, error) {
 	ctxt.VarMap().Set("offset", offset)
 	ctxt.VarMap().Set("max", maxPage)
 
-	if ctxt.HasParameter("update") {
+	if ctxt.FormFieldIsSet("update") {
 		// TODO: update the levels
 	}
 
