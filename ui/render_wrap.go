@@ -111,24 +111,6 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 	return err
 }
 
-/* ErrorPage renders the Amsterdam page with a server error message.
- * Parameters:
- *     ctxt - The AmContext for the request.
- *     input_err - The error to be rendered on the page.
- * Returns:
- *     Command string dictating what to be rendered.
- *     Data as a parameter for the command string.
- *     Standard Go error status.
- */
-func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
-	if input_err == nil {
-		log.Error("ErrorPage called with nil input error, WTF?")
-	}
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Internal Server Error")
-	ctxt.VarMap().Set("error", input_err.Error())
-	return "framed", "error.jet", nil
-}
-
 // expireTime is the expiration time sent in the dynamic headers.
 var expireTime string = lctime.Strftime("%c", time.Unix(1, 0))
 
