@@ -100,7 +100,7 @@ func InviteSend(ctxt ui.AmContext) (string, any) {
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", backlink
 	} else if !ctxt.FormFieldIsSet("send") {
-		return "error", "invalid command"
+		return "error", EBUTTON
 	}
 	var comm *database.Community
 	if ctxt.FormFieldIsSet("cid") {
@@ -112,7 +112,7 @@ func InviteSend(ctxt ui.AmContext) (string, any) {
 			return "error", err
 		}
 	} else {
-		return "error", "no parameters specified"
+		return "error", EPARAM
 	}
 	mode := "community"
 	var conf *database.Conference = nil

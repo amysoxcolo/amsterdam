@@ -19,7 +19,14 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/biter777/countries"
+	"github.com/labstack/echo/v4"
 )
+
+// ENOJOIN is an error for not being permitted to join a community.
+var ENOJOIN *echo.HTTPError = echo.NewHTTPError(http.StatusForbidden, "you are not permitted to join this community")
+
+// ENOUNJOIN is an error for not being permitted to unjoin a community.
+var ENOUNJOIN *echo.HTTPError = echo.NewHTTPError(http.StatusForbidden, "you are not permitted to unjoin this community")
 
 /* ShowCommunity renders the community profile display.
  * Parameters:
@@ -163,7 +170,7 @@ func JoinCommunity(ctxt ui.AmContext) (string, any) {
 			return "error", err
 		}
 	} else {
-		return "error", "you are not permitted to join this community"
+		return "error", ENOJOIN
 	}
 	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 }
@@ -236,8 +243,7 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any) {
 		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if lock {
-		ctxt.SetRC(http.StatusForbidden)
-		return "error", "you are not permitted to unjoin this community"
+		return "error", ENOUNJOIN
 	}
 	ctxt.VarMap().Set("comm", comm)
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Unjoin Community")
@@ -263,8 +269,7 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any) {
 		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
 	if lock {
-		ctxt.SetRC(http.StatusForbidden)
-		return "error", "you are not permitted to unjoin this community"
+		return "error", ENOUNJOIN
 	}
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
@@ -277,7 +282,7 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any) {
 		ctxt.ClearCommunityContext()
 		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 	}
-	return "error", "unknown button pressed to confirm unjoin"
+	return "error", EBUTTON
 }
 
 /* MemberList lists the members of the community.

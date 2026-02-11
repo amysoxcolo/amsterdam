@@ -21,6 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ENOACCOUNT is an error thrown if you have to log out before creating a new account.
+var ENOACCOUNT error = errors.New("you cannot create a new account while logged in on an existing one. You must log out first")
+
 /* LoginForm renders the Amsterdam login form.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -170,7 +173,7 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any) {
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
 	if user.IsAnon {
-		return "error", "you must log in before you can verify your account's E-mail address"
+		return "error", ELOGIN
 	}
 
 	// If user is already verified, this is a no-op.
@@ -212,7 +215,7 @@ func VerifyEMail(ctxt ui.AmContext) (string, any) {
 	// If user is not logged in, this is an error.
 	user := ctxt.CurrentUser()
 	if user.IsAnon {
-		return "error", "you must log in before you can verify your account's E-mail address"
+		return "error", ELOGIN
 	}
 
 	dlg, err := ui.AmLoadDialog("verify_email")
@@ -279,7 +282,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return "error", "you cannot create a new account while logged in on an existing one. You must log out first"
+		return "error", ENOACCOUNT
 	}
 
 	ctxt.SetLeftMenu("top")
@@ -305,7 +308,7 @@ func NewAccountForm(ctxt ui.AmContext) (string, any) {
 
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return "error", "you cannot create a new account while logged in on an existing one. You must log out first"
+		return "error", ENOACCOUNT
 	}
 
 	dlg, err := ui.AmLoadDialog("newaccount")
@@ -327,7 +330,7 @@ func NewAccountForm(ctxt ui.AmContext) (string, any) {
 func NewAccount(ctxt ui.AmContext) (string, any) {
 	// If user is already logged in, this is an error.
 	if !ctxt.CurrentUser().IsAnon {
-		return "error", "you cannot create a new account while logged in on an existing one. You must log out first"
+		return "error", ENOACCOUNT
 	}
 
 	dlg, err := ui.AmLoadDialog("newaccount")

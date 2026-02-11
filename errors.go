@@ -10,6 +10,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -17,11 +18,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// EBUTTON is the standard error for an unknown button.
+var EBUTTON error = errors.New("invalid or unknown button pressed")
+
+// ELOGIN is the standard error for not being logged in
+var ELOGIN error = errors.New("you are not logged in")
+
 // ENOPERM is the standard "not permitted" error message.
 var ENOPERM *echo.HTTPError = echo.NewHTTPError(http.StatusForbidden, "you are not permitted to perform this operation")
 
 // ENOACCESS is the standard "no access" error message.
 var ENOACCESS *echo.HTTPError = echo.NewHTTPError(http.StatusForbidden, "you are not permitted to access this page")
+
+// EPARAM is an error for no parameters being specified.
+var EPARAM error = errors.New("no parameters specified")
 
 /* NotImplPage is used for all TODO links, to show that something hasn't yet been implemented.
  * Parameters:

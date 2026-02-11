@@ -293,7 +293,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		return "framed", "attachment_upload.jet"
 	}
 
-	return "error", "invalid button clicked on form"
+	return "error", EBUTTON
 }
 
 /* breakRange breaks up a post range into two elements.
@@ -710,7 +710,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	} else if ctxt.FormFieldIsSet("posttopics") {
 		returnURL = fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	} else {
-		return "error", "unknown post button"
+		return "error", EBUTTON
 	}
 
 	// Check for slippage.

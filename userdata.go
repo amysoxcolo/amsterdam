@@ -50,7 +50,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any) {
 	}
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return "error", "you are not logged in"
+		return "error", ELOGIN
 	}
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
@@ -108,7 +108,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any) {
 func EditProfile(ctxt ui.AmContext) (string, any) {
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return "error", "you are not logged in"
+		return "error", ELOGIN
 	}
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
@@ -219,7 +219,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 	}
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return "error", "you are not logged in"
+		return "error", ELOGIN
 	}
 	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err == nil {
@@ -242,7 +242,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 	u := ctxt.CurrentUser()
 	if u.IsAnon {
-		return "error", "you are not logged in"
+		return "error", ELOGIN
 	}
 	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err != nil {
@@ -313,7 +313,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 		happy = true
 		return "redirect", "/profile?tgt=" + url.QueryEscape(target)
 	}
-	return "error", "invalid button detected in photo upload"
+	return "error", EBUTTON
 }
 
 /* ShowProfile displays a user's profile.
@@ -441,7 +441,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any) {
 func QuickEMail(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	if me.IsAnon {
-		return "error", "you are not logged in"
+		return "error", ELOGIN
 	}
 	myCI, err := me.ContactInfo(ctxt.Ctx())
 	if err != nil {
@@ -481,7 +481,7 @@ func QuickEMail(ctxt ui.AmContext) (string, any) {
 func Hotlist(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	if me.IsAnon {
-		return "error", "you are not logged in"
+		return "error", ELOGIN
 	}
 	hotlist, err := database.AmGetConferenceHotlist(ctxt.Ctx(), me)
 	if err != nil {

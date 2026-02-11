@@ -77,7 +77,7 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		return "framed", "attachment_upload.jet"
 	}
-	return "error", "invalid button clicked on form"
+	return "error", EBUTTON
 }
 
 /* AttachmentSend sends the data of an attachment to the browser.

@@ -344,7 +344,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any) {
 		happy = true
 		return "redirect", "/comm/" + comm.Alias + "/admin/profile"
 	}
-	return "error", "invalid button detected in logo upload"
+	return "error", EBUTTON
 }
 
 /* CreateCommunityForm renders the form for creating a new community.
