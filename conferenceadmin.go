@@ -140,7 +140,7 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("confName", conf.Name)
 	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/aliases", comm.Alias, ctxt.GetScratch("currentAlias")))
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
+	ctxt.SetFrameTitle(fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
 
 	if ctxt.HasParameter("del") {
 		err := conf.RemoveAlias(ctxt.Ctx(), ctxt.Parameter("del"), ctxt.CurrentUser(), ctxt.RemoteIP())
@@ -176,7 +176,7 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("confName", conf.Name)
 	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/aliases", comm.Alias, ctxt.GetScratch("currentAlias")))
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
+	ctxt.SetFrameTitle(fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
 
 	newAlias := ctxt.FormField("na")
 	ctxt.VarMap().Set("newAlias", newAlias)
@@ -248,7 +248,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/members", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("roleList", database.AmRoleList("Conference.UserLevels"))
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("Membership in Conference: %s", conf.Name))
+	ctxt.SetFrameTitle(fmt.Sprintf("Membership in Conference: %s", conf.Name))
 
 	// Get the search parameter values and adjust them.
 	mode := "conf"

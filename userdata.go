@@ -225,8 +225,8 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 	if err == nil {
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+		ctxt.SetFrameTitle("Upload User Photo")
 		return "framed", "photo_upload.jet"
 	}
 	return "error", err
@@ -278,8 +278,8 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload User Photo")
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+		ctxt.SetFrameTitle("Upload User Photo")
 		return "framed", "photo_upload.jet"
 	}
 	if ctxt.FormFieldIsSet("remove") {
@@ -427,7 +427,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any) {
 	if !pvtPhone && ci.Mobile != nil {
 		ctxt.VarMap().Set("mobile", *ci.Mobile)
 	}
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("User Profile - %s", user.Username))
+	ctxt.SetFrameTitle(fmt.Sprintf("User Profile - %s", user.Username))
 	return "framed", "profile.jet"
 }
 
@@ -532,6 +532,6 @@ func Hotlist(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("hotlist", hotlist)
 	ctxt.VarMap().Set("communities", communities)
 	ctxt.VarMap().Set("conferences", conferences)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Your Conference Hotlist")
+	ctxt.SetFrameTitle("Your Conference Hotlist")
 	return "framed", "hotlist.jet"
 }

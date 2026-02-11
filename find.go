@@ -143,7 +143,7 @@ func FindPage(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("term", "")
 	}
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Find")
+	ctxt.SetFrameTitle("Find")
 	ctxt.SetLeftMenu("top")
 	return "framed", "find.jet"
 }
@@ -167,7 +167,7 @@ func Find(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("oper", oper)
 	term := ctxt.FormField("term")
 	ctxt.VarMap().Set("term", term)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Find")
+	ctxt.SetFrameTitle("Find")
 	ctxt.SetLeftMenu("top")
 	ofs, _ := ctxt.FormFieldInt("ofs")
 	if ctxt.FormFieldIsSet("search") {
@@ -315,7 +315,7 @@ func commonFindGetBackend(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("ofs", ofs)
 	ctxt.VarMap().Set("term", "")
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Find Posts")
+	ctxt.SetFrameTitle("Find Posts")
 	return "framed", "find_posts.jet"
 }
 
@@ -373,7 +373,7 @@ func FindPostsPageTopic(ctxt ui.AmContext) (string, any) {
 func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *database.Conference, topic *database.Topic) (string, any) {
 	term := ctxt.FormField("term")
 	ctxt.VarMap().Set("term", term)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Find Posts")
+	ctxt.SetFrameTitle("Find Posts")
 	ofs, _ := ctxt.FormFieldInt("ofs")
 	if ctxt.FormFieldIsSet("search") {
 		ofs = 0

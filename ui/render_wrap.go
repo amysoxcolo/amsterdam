@@ -68,12 +68,12 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		if httprc < 400 {
 			httprc = http.StatusInternalServerError
 		}
-		amctxt.VarMap().Set("amsterdam_pageTitle", "Internal Server Error")
+		amctxt.SetFrameTitle("Internal Server Error")
 		amctxt.VarMap().Set("error", message)
 		command = "framed"
 		data = "error.jet"
 	case "ipban":
-		amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
+		amctxt.SetFrameTitle("IP Address Banned")
 		amctxt.VarMap().Set("message", data)
 		httprc = http.StatusForbidden
 		command = "framed"
@@ -92,6 +92,10 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 	case "template":
 		err = ctxt.Render(httprc, data.(string), amctxt)
 	case "framed":
+		if amctxt.FrameTitle() == "" {
+			ctxt.Logger().Errorf("*** NO FRAME TITLE set for path %s", amctxt.URLPath())
+			amctxt.SetFrameTitle("<<< NO FRAME TITLE >>>")
+		}
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
 		menus := make([]*MenuDefinition, 2)
 		switch amctxt.LeftMenu() {

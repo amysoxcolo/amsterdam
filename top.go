@@ -236,7 +236,7 @@ func templateTopicLink(args jet.Arguments) reflect.Value {
  */
 func TopPage(ctxt ui.AmContext) (string, any) {
 	// Set the page title.
-	ctxt.VarMap().Set("amsterdam_pageTitle", "My Front Page")
+	ctxt.SetFrameTitle("My Front Page")
 
 	// Retrieve the published posts.
 	hdrs, err := database.AmGetPublishedPosts(ctxt.Ctx())
@@ -281,7 +281,7 @@ func TopPage(ctxt ui.AmContext) (string, any) {
  */
 func AboutPage(ctxt ui.AmContext) (string, any) {
 	// Set the page title.
-	ctxt.VarMap().Set("amsterdam_pageTitle", "About Amsterdam")
+	ctxt.SetFrameTitle("About Amsterdam")
 	return "framed", "about.jet"
 }
 

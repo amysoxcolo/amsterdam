@@ -132,7 +132,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("homePage", *ci.URL)
 	}
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Community Profile: "+comm.Name)
+	ctxt.SetFrameTitle("Community Profile: " + comm.Name)
 	return "framed", "comprofile.jet"
 }
 
@@ -246,7 +246,7 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any) {
 		return "error", ENOUNJOIN
 	}
 	ctxt.VarMap().Set("comm", comm)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Unjoin Community")
+	ctxt.SetFrameTitle("Unjoin Community")
 	return "framed", "unjoin.jet"
 }
 
@@ -310,7 +310,7 @@ func MemberList(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("oper", "st")
 	ctxt.VarMap().Set("term", "")
 	ctxt.VarMap().Set("ofs", ofs)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "List Members")
+	ctxt.SetFrameTitle("List Members")
 	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
 	results, total, err := comm.ListMembers(ctxt.Ctx(), database.ListMembersFieldNone, database.ListMembersOperNone, "", ofs*listMax, listMax, showHidden)
 	if err != nil {
@@ -355,7 +355,7 @@ func MemberSearch(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("oper", oper)
 	ctxt.VarMap().Set("term", term)
 	ctxt.VarMap().Set("ofs", ofs)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Search for Members")
+	ctxt.SetFrameTitle("Search for Members")
 	var iField, iOper int
 	switch field {
 	case "name":

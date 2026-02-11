@@ -30,6 +30,6 @@ func SysAdminMenu(ctxt ui.AmContext) (string, any) {
 	menu := ui.AmMenu("sysadmin")
 	ctxt.VarMap().Set("menu", menu)
 	ctxt.VarMap().Set("defs", make(map[string]bool))
-	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title)
+	ctxt.SetFrameTitle(menu.Title)
 	return "framed", "menu.jet"
 }

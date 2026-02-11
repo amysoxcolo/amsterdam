@@ -46,6 +46,7 @@ type AmContext interface {
 	FormFieldInt(string) (int, error)
 	FormFieldIsSet(string) bool
 	FormFile(string) (*multipart.FileHeader, error)
+	FrameTitle() string
 	Globals() *database.Globals
 	GlobalFlags() *util.OptionSet
 	HasParameter(string) bool
@@ -59,6 +60,7 @@ type AmContext interface {
 	ReplaceUser(*database.User)
 	SaveSession() error
 	SetCommunityContext(string) error
+	SetFrameTitle(string)
 	SetHeader(string, string)
 	SetLeftMenu(string)
 	SetLoginCookie(string)
@@ -85,6 +87,7 @@ type AmContext interface {
 type amContext struct {
 	echoContext    echo.Context
 	rendervars     jet.VarMap
+	frameTitle     string
 	outputType     string
 	session        AmSession
 	globals        *database.Globals
@@ -219,6 +222,11 @@ func (c *amContext) FormFile(name string) (*multipart.FileHeader, error) {
 	return c.echoContext.FormFile(name)
 }
 
+// FrameTitle returns the frame title.
+func (c *amContext) FrameTitle() string {
+	return c.frameTitle
+}
+
 // Globals returns a reference to the database globals.
 func (c *amContext) Globals() *database.Globals {
 	return c.globals
@@ -343,6 +351,11 @@ func (c *amContext) SetCommunityContext(param string) error {
 	return nil
 }
 
+// SetFrameTitle sets the frame title for the output.
+func (c *amContext) SetFrameTitle(s string) {
+	c.frameTitle = s
+}
+
 // SetHeader sets a header on the output.
 func (c *amContext) SetHeader(key, value string) {
 	c.echoContext.Response().Header().Set(key, value)
@@ -457,6 +470,7 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 	if rc == nil {
 		rc = &amContext{
 			rendervars: make(jet.VarMap),
+			frameTitle: "",
 			outputType: "",
 		}
 	}
@@ -531,6 +545,7 @@ func contextRecycler(incoming chan *amContext, done chan bool) {
 	for c := range incoming {
 		c.echoContext = nil
 		c.rendervars = make(jet.VarMap)
+		c.frameTitle = ""
 		c.outputType = ""
 		c.session = nil
 		c.globals = nil

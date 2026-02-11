@@ -32,7 +32,7 @@ func InviteToCommunity(ctxt ui.AmContext) (string, any) {
 	}
 	comm := ctxt.CurrentCommunity()
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Send Invitation")
+	ctxt.SetFrameTitle("Send Invitation")
 	ctxt.VarMap().Set("title", "Send Community Invitation")
 	ctxt.VarMap().Set("subtitle", comm.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/profile", comm.Alias))
@@ -54,7 +54,7 @@ func InviteToConference(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Send Invitation")
+	ctxt.SetFrameTitle("Send Invitation")
 	ctxt.VarMap().Set("title", "Send Conference Invitation")
 	ctxt.VarMap().Set("subtitle", conf.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
@@ -78,7 +78,7 @@ func InviteToTopic(ctxt ui.AmContext) (string, any) {
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Send Invitation")
+	ctxt.SetFrameTitle("Send Invitation")
 	ctxt.VarMap().Set("title", "Send Topic Invitation")
 	ctxt.VarMap().Set("subtitle", topic.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))

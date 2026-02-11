@@ -124,7 +124,7 @@ func (mb *MessageBox) Render(ctxt AmContext) (string, any) {
 		}
 		ctxt.SetSession("mbconfirm."+mb.def.Id, nonce)
 	}
-	ctxt.VarMap().Set("amsterdam_pageTitle", mb.def.Title)
+	ctxt.SetFrameTitle(mb.def.Title)
 	ctxt.VarMap().Set("tone", mb.def.Tone)
 	ctxt.VarMap().Set("destructive", mb.def.Destructive)
 	ctxt.VarMap().Set("message", mb.message)

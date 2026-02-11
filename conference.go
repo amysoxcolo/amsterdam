@@ -39,7 +39,7 @@ func Conferences(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	ctxt.VarMap().Set("commName", comm.Name)
 	ctxt.VarMap().Set("commAlias", comm.Alias)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Conference Listing: "+comm.Name)
+	ctxt.SetFrameTitle("Conference Listing: " + comm.Name)
 	clist, err := database.AmGetCommunityConferences(ctxt.Ctx(), comm.Id,
 		comm.TestPermission("Community.ShowHiddenObjects", ctxt.EffectiveLevel()))
 	if err != nil {
@@ -149,7 +149,7 @@ func Topics(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("sort", sort)
 	ctxt.VarMap().Set("topics", topics)
 	ctxt.VarMap().Set("formattedDate", fdate)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Topics in "+conf.Name)
+	ctxt.SetFrameTitle("Topics in " + conf.Name)
 	return "framed", "topiclist.jet"
 }
 
@@ -176,7 +176,7 @@ func NewTopicForm(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("pseud", pseud)
 	ctxt.VarMap().Set("pb", "")
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Create New Topic")
+	ctxt.SetFrameTitle("Create New Topic")
 	return "framed", "new_topic.jet"
 }
 
@@ -243,7 +243,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		}
 		ctxt.VarMap().Set("conferenceName", conf.Name)
 		ctxt.VarMap().Set("urlStem", urlStem)
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Preview New Topic")
+		ctxt.SetFrameTitle("Preview New Topic")
 		return "framed", "new_topic.jet"
 	}
 	if ctxt.FormFieldIsSet("post1") {
@@ -289,7 +289,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		// go upload the attachment
 		ctxt.VarMap().Set("target", urlStem)
 		ctxt.VarMap().Set("post", post.PostId)
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
+		ctxt.SetFrameTitle("Upload Attachment")
 		return "framed", "attachment_upload.jet"
 	}
 
@@ -525,7 +525,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	}
 	summaryLine := fmt.Sprintf("%d Total; %d New; Last: %s", topic.TopMessage+1, topic.TopMessage-lastRead, prefs.Localizer().Strftime("%b %e, %Y %r", topic.LastUpdate))
 	ctxt.VarMap().Set("summaryLine", flags.String()+summaryLine)
-	ctxt.VarMap().Set("amsterdam_pageTitle", fmt.Sprintf("%s: %s%s", topic.Name, flags.String(), summaryLine))
+	ctxt.SetFrameTitle(fmt.Sprintf("%s: %s%s", topic.Name, flags.String(), summaryLine))
 	plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
 	ctxt.VarMap().Set("post_confRef", plc.AsString())
 	plc.Community = comm.Alias
@@ -698,7 +698,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 
 		ctxt.VarMap().Set("maxPost", ctxt.FormField("xp"))
 		ctxt.VarMap().Set("urlStem", urlStem)
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Previewing Message")
+		ctxt.SetFrameTitle("Previewing Message")
 		return "framed", "preview_post.jet"
 	}
 	// Figure out which URL to return to once this post is made.
@@ -741,7 +741,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("post_max", topic.TopMessage)
 		ctxt.VarMap().Set("posts", posts)
 		ctxt.VarMap().Set("topicName", topic.Name)
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Slippage or Double-Click Detected")
+		ctxt.SetFrameTitle("Slippage or Double-Click Detected")
 
 		return "framed", "slippage.jet"
 	}
@@ -792,6 +792,6 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	// go upload the attachment
 	ctxt.VarMap().Set("target", returnURL)
 	ctxt.VarMap().Set("post", hdr.PostId)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
+	ctxt.SetFrameTitle("Upload Attachment")
 	return "framed", "attachment_upload.jet"
 }

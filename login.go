@@ -287,8 +287,8 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 
 	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("target", target)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "New Account User Agreement")
 	ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+	ctxt.SetFrameTitle("New Account User Agreement")
 	return "framed", "agreement.jet"
 }
 
@@ -441,7 +441,7 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any) {
 				msg.AddVariable("password", newpass)
 				msg.Send()
 				ctxt.SetLeftMenu("top")
-				ctxt.VarMap().Set("amsterdam_pageTitle", "Your Password Has Been Changed")
+				ctxt.SetFrameTitle("Your Password Has Been Changed")
 				return "framed", "password_changed.jet"
 			}
 		}

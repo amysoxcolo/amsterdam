@@ -14,7 +14,7 @@
             <div class="bg-{{ tone }}-600 px-6 py-4">
                 <h1 class="text-white text-2xl font-bold text-center flex items-center justify-center gap-3">
                     {{ if destructive }}<span class="text-3xl">⚠️</span>{{ end }}
-                    {{ amsterdam_pageTitle }}
+                    {{ .FrameTitle() | raw }}
                     {{ if destructive }}<span class="text-3xl">⚠️</span>{{ end }}
                 </h1>
             </div>

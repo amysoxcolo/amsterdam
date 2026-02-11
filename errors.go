@@ -43,7 +43,7 @@ var EPARAM error = errors.New("no parameters specified")
  */
 func NotImplPage(ctxt ui.AmContext) (string, any) {
 	ctxt.SetLeftMenu("top")
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Function Not Implemented")
+	ctxt.SetFrameTitle("Function Not Implemented")
 	ctxt.VarMap().Set("path", ctxt.URLPath())
 	return "framed", "notimpl.jet"
 }

@@ -318,7 +318,7 @@ func (d *Dialog) Render(ctxt AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("amsterdam_required", required)
 	ctxt.VarMap().Set("amsterdam_dialog", d)
-	ctxt.VarMap().Set("amsterdam_pageTitle", d.Title)
+	ctxt.SetFrameTitle(d.Title)
 	if strings.Contains(d.Options, "suppresslogin") {
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
 	}

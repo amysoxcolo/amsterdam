@@ -44,7 +44,7 @@ func CommunityAdminMenu(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("menu", menu.FilterCommunity(comm))
 	ctxt.VarMap().Set("defs", defs)
-	ctxt.VarMap().Set("amsterdam_pageTitle", menu.Title+" - "+comm.Name)
+	ctxt.SetFrameTitle(menu.Title + " - " + comm.Name)
 	return "framed", "menu.jet"
 }
 
@@ -257,7 +257,7 @@ func CommunityLogoForm(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("commName", comm.Name)
 		ctxt.VarMap().Set("commAlias", comm.Alias)
 		ctxt.VarMap().Set("logo_url", communityLogoURL(ci))
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Community Logo: "+comm.Name)
+		ctxt.SetFrameTitle("Upload Community Logo: " + comm.Name)
 		return "framed", "logo_upload.jet"
 	}
 	return "error", err
@@ -310,7 +310,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("commName", comm.Name)
 		ctxt.VarMap().Set("commAlias", comm.Alias)
 		ctxt.VarMap().Set("logo_url", communityLogoURL(ci))
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Community Logo: "+comm.Name)
+		ctxt.SetFrameTitle("Upload Community Logo: " + comm.Name)
 		return "framed", "logo_upload.jet"
 	}
 	if ctxt.FormFieldIsSet("remove") {

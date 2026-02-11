@@ -73,8 +73,8 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any) {
 
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("post", postId)
-		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
 		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.SetFrameTitle("Upload Attachment")
 		return "framed", "attachment_upload.jet"
 	}
 	return "error", EBUTTON
@@ -160,7 +160,7 @@ func ConfManage(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("menu", menu)
 	}
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Conference: "+conf.Name)
+	ctxt.SetFrameTitle("Manage Conference: " + conf.Name)
 	return "framed", "manage_conf.jet"
 }
 
@@ -514,7 +514,7 @@ func MoveMessageForm(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("topMessage", topic.TopMessage)
 	formLink := fmt.Sprintf("/comm/%s/conf/%s/op/%d/move/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
 	ctxt.VarMap().Set("formLink", formLink)
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Move Message")
+	ctxt.SetFrameTitle("Move Message")
 
 	return "framed", "move_message.jet"
 }
@@ -656,7 +656,7 @@ func TopicManage(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("bozos", bozos)
 
-	ctxt.VarMap().Set("amsterdam_pageTitle", "Manage Topic: "+topic.Name)
+	ctxt.SetFrameTitle("Manage Topic: " + topic.Name)
 	return "framed", "manage_topic.jet"
 }
 
