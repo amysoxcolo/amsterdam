@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -59,6 +60,7 @@ type AmContext interface {
 	IsMember() bool
 	IsMemberLocked() bool
 	LeftMenu() string
+	Locator() string
 	OutputType() string
 	Parameter(string) string
 	QueryParamInt(string, int) int
@@ -239,11 +241,14 @@ func (c *amContext) FormFile(name string) (*multipart.FileHeader, error) {
 	return c.echoContext.FormFile(name)
 }
 
+// emptyMap is the return from FrameMetadata if the specified selector is not present.
+var emptyMap map[string]string = make(map[string]string)
+
 // FrameMetadata returns the frame metadata for a specified type.
 func (c *amContext) FrameMetadata(selector int) map[string]string {
 	rmap, ok := c.frameMeta[selector]
 	if !ok {
-		rmap = make(map[string]string)
+		rmap = emptyMap
 	}
 	return rmap
 }
@@ -294,6 +299,18 @@ func (c *amContext) LeftMenu() string {
 	} else {
 		return "top"
 	}
+}
+
+// Locator returns the current URL path minus the scheme and host, so it's a site-relative locator.
+func (c *amContext) Locator() string {
+	tmp := url.URL{
+		Path:        c.echoContext.Request().URL.Path,
+		RawPath:     c.echoContext.Request().URL.RawPath,
+		RawQuery:    c.echoContext.Request().URL.RawQuery,
+		Fragment:    c.echoContext.Request().URL.Fragment,
+		RawFragment: c.echoContext.Request().URL.RawFragment,
+	}
+	return tmp.String()
 }
 
 // OutputType returns the MIME output type set for the current operation.

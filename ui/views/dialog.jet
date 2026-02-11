@@ -9,7 +9,7 @@
 <!-- BEGIN DIALOG {{ __dialog.Name }} -->
 <div class="p-4">
     <div class="mb-6">
-        <div class=" flex items-baseline gap-2">
+        <div class="flex items-baseline gap-2">
             <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ __dialog.Title }}</h1>
             {{ if __dialog.Subtitle != "" }}
                 <span class="text-blue-800 text-2xl font-bold ml-2">{{ __dialog.Subtitle }}</span>

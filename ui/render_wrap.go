@@ -70,6 +70,9 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		}
 		amctxt.SetFrameTitle("Internal Server Error")
 		amctxt.VarMap().Set("error", message)
+		if tmp := amctxt.GetSession("lastKnownGood"); tmp != nil {
+			amctxt.VarMap().Set("recovery", tmp)
+		}
 		command = "framed"
 		data = "error.jet"
 	case "ipban":
@@ -148,6 +151,9 @@ func AmWrap(myfunc PageFunc) echo.HandlerFunc {
 
 		// Exec the wrapped function.
 		command, arg := myfunc(ctxt)
+		if command != "error" && command != "ipban" {
+			ctxt.SetSession("lastKnownGood", ctxt.Locator())
+		}
 		if err := ctxt.SaveSession(); err != nil {
 			c.Logger().Errorf("Session save error: %v", err)
 			return err

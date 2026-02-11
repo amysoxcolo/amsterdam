@@ -25,11 +25,19 @@
 
                 <!-- Action Buttons -->
                 <div class="flex gap-4 justify-center">
-                    <a href="/"
-                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
-                        <span class="text-xl">↩️</span>
-                        Return to Home Page
-                    </a>
+                    {{ if isset(recovery) }}
+                        <a href="{{ recovery }}"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+                            <span class="text-xl">↩️</span>
+                            Go Back
+                        </a>
+                    {{ else }}
+                        <a href="/"
+                            class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+                            <span class="text-xl">↩️</span>
+                            Return to Home Page
+                        </a>
+                    {{ end }}
                 </div>
             </div>
         </div>
