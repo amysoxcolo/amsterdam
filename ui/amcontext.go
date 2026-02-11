@@ -31,8 +31,13 @@ import (
  *----------------------------------------------------------------------------
  */
 
+const (
+	FrameMetaHttpEquiv = 0 // <meta http-equiv="...">
+)
+
 // AmContext is the interface for Amsterdam's wrapper context that exposes the required functionality.
 type AmContext interface {
+	AddFrameMetadata(int, string, string)
 	AddHeader(string, string)
 	ClearCommunityContext()
 	ClearLoginCookie()
@@ -47,6 +52,7 @@ type AmContext interface {
 	FormFieldIsSet(string) bool
 	FormFile(string) (*multipart.FileHeader, error)
 	FrameTitle() string
+	FrameMetadata(int) map[string]string
 	Globals() *database.Globals
 	GlobalFlags() *util.OptionSet
 	HasParameter(string) bool
@@ -88,6 +94,7 @@ type amContext struct {
 	echoContext    echo.Context
 	rendervars     jet.VarMap
 	frameTitle     string
+	frameMeta      map[int]map[string]string
 	outputType     string
 	session        AmSession
 	globals        *database.Globals
@@ -97,6 +104,16 @@ type amContext struct {
 	community      *database.Community
 	isMember       bool
 	isMemberLocked bool
+}
+
+// AddFrameMetadata adds frame metadata of specified types.
+func (c *amContext) AddFrameMetadata(selector int, name string, value string) {
+	mv, ok := c.frameMeta[selector]
+	if !ok {
+		mv = make(map[string]string)
+		c.frameMeta[selector] = mv
+	}
+	mv[name] = value
 }
 
 // AddHeader adds a header to the response.
@@ -220,6 +237,15 @@ func (c *amContext) FormFieldIsSet(name string) bool {
 // FormFile returns a "file" parameter from a multipart upload form.
 func (c *amContext) FormFile(name string) (*multipart.FileHeader, error) {
 	return c.echoContext.FormFile(name)
+}
+
+// FrameMetadata returns the frame metadata for a specified type.
+func (c *amContext) FrameMetadata(selector int) map[string]string {
+	rmap, ok := c.frameMeta[selector]
+	if !ok {
+		rmap = make(map[string]string)
+	}
+	return rmap
 }
 
 // FrameTitle returns the frame title.
@@ -471,6 +497,7 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 		rc = &amContext{
 			rendervars: make(jet.VarMap),
 			frameTitle: "",
+			frameMeta:  make(map[int]map[string]string),
 			outputType: "",
 		}
 	}
@@ -546,6 +573,7 @@ func contextRecycler(incoming chan *amContext, done chan bool) {
 		c.echoContext = nil
 		c.rendervars = make(jet.VarMap)
 		c.frameTitle = ""
+		c.frameMeta = make(map[int]map[string]string)
 		c.outputType = ""
 		c.session = nil
 		c.globals = nil

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"reflect"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
@@ -268,7 +269,9 @@ func TopPage(ctxt ui.AmContext) (string, any) {
 
 	// Final data set.
 	ctxt.SetLeftMenu("top")
-	ctxt.VarMap().Set("amsterdam_genRefresh", true)
+	if config.GlobalConfig.Site.TopRefresh > 0 {
+		ctxt.AddFrameMetadata(ui.FrameMetaHttpEquiv, "refresh", fmt.Sprintf("%d", config.GlobalConfig.Site.TopRefresh))
+	}
 	return "framed", "top.jet"
 }
 
