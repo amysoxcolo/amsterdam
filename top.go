@@ -299,7 +299,6 @@ func JumpToShortcut(ctxt ui.AmContext) (string, any) {
 	}
 	scope, target := link.Classify()
 	if scope != "global" {
-		ctxt.SetRC(http.StatusNotFound)
 		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink")))
 	}
 	if err = link.VerifyNames(ctxt.Ctx()); err != nil {

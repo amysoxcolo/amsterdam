@@ -36,9 +36,9 @@ import (
  *     Standard Go error status.
  */
 func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
-	var err error
-
-	if command == "error" {
+	// Preprocess certain commands into different ones.
+	switch command {
+	case "error":
 		httprc := amctxt.RC()
 		message := ""
 		if data == nil {
@@ -73,8 +73,16 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		amctxt.SetRC(httprc)
 		command = "framed"
 		data = "error.jet"
+	case "ipban":
+		amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
+		amctxt.VarMap().Set("message", data)
+		amctxt.SetRC(http.StatusForbidden)
+		command = "framed"
+		data = "ipban.jet"
 	}
 
+	// Process commands.
+	var err error
 	switch command {
 	case "bytes":
 		err = ctxt.Blob(amctxt.RC(), amctxt.OutputType(), data.([]byte))
