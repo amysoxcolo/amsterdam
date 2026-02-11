@@ -439,7 +439,7 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any) {
 				msg.Send()
 				ctxt.SetLeftMenu("top")
 				ctxt.VarMap().Set("amsterdam_pageTitle", "Your Password Has Been Changed")
-				return "framed_template", "password_changed.jet"
+				return "framed", "password_changed.jet"
 			}
 		}
 	}

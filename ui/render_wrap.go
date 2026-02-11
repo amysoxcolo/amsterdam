@@ -29,7 +29,7 @@ import (
  *         "redirect" - Treat "data" as a URL to be redirected to and send a 302 Redirect.
  *         "string" - Output "data" as a string.
  *         "template" - Treat "data" as a template name, and output that template.
- *         "framed_template" - Treat "data" as an inner template name, and output that template rendered
+ *         "framed" - Treat "data" as an inner template name, and output that template rendered
  *		       within the outer "frame.jet" template.
  *     data - The data to be output, as determined by the command.
  * Returns:
@@ -84,7 +84,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		err = ctxt.String(amctxt.RC(), data.(string))
 	case "template":
 		err = ctxt.Render(amctxt.RC(), data.(string), amctxt)
-	case "framed", "framed_template":
+	case "framed":
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
 		menus := make([]*MenuDefinition, 2)
 		switch amctxt.LeftMenu() {
@@ -126,7 +126,7 @@ func ErrorPage(ctxt AmContext, input_err error) (string, any, error) {
 	}
 	ctxt.VarMap().Set("amsterdam_pageTitle", "Internal Server Error")
 	ctxt.VarMap().Set("error", input_err.Error())
-	return "framed_template", "error.jet", nil
+	return "framed", "error.jet", nil
 }
 
 // expireTime is the expiration time sent in the dynamic headers.

@@ -42,7 +42,7 @@ func IPBanTest(next echo.HandlerFunc) echo.HandlerFunc {
 			amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
 			amctxt.VarMap().Set("message", banmsg)
 			amctxt.SetRC(http.StatusForbidden)
-			return AmSendPageData(c, amctxt, "framed_template", "ipban.jet")
+			return AmSendPageData(c, amctxt, "framed", "ipban.jet")
 		}
 		return next(c)
 	}

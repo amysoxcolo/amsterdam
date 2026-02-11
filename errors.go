@@ -59,7 +59,7 @@ func AmErrorHandler(err error, c echo.Context) {
 	amctxt.VarMap().Set("error", err.Error())
 	// TODO: come up with a way to shift templates and titles for different error codes
 	amctxt.VarMap().Set("amsterdam_pageTitle", "Amsterdam Internal Server Error")
-	cerr := ui.AmSendPageData(c, amctxt, "framed_template", "error.jet")
+	cerr := ui.AmSendPageData(c, amctxt, "framed", "error.jet")
 	if cerr != nil {
 		log.Errorf("Error rendering error %d (%v): %v", errCode, err, cerr)
 	}

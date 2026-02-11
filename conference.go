@@ -290,7 +290,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("target", urlStem)
 		ctxt.VarMap().Set("post", post.PostId)
 		ctxt.VarMap().Set("amsterdam_pageTitle", "Upload Attachment")
-		return "framed_template", "attachment_upload.jet"
+		return "framed", "attachment_upload.jet"
 	}
 
 	return "error", "invalid button clicked on form"

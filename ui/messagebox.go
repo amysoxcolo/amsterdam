@@ -133,7 +133,7 @@ func (mb *MessageBox) Render(ctxt AmContext) (string, any) {
 	ctxt.VarMap().Set("warningLines", mb.def.WarningLines)
 	ctxt.VarMap().Set("buttons", mb.def.Buttons)
 	ctxt.VarMap().Set("buttonLinks", blinks)
-	return "framed_template", "messagebox.jet"
+	return "framed", "messagebox.jet"
 }
 
 // Validate validates that the correct button was clicked by verifying the confirmation parameter.
