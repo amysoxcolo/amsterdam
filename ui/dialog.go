@@ -316,8 +316,8 @@ func (d *Dialog) Render(ctxt AmContext) (string, any) {
 	if d.MenuSelector != "" && d.MenuSelector != "nochange" {
 		ctxt.SetLeftMenu(d.MenuSelector)
 	}
-	ctxt.VarMap().Set("amsterdam_required", required)
-	ctxt.VarMap().Set("amsterdam_dialog", d)
+	ctxt.VarMap().Set("__required", required)
+	ctxt.VarMap().Set("__dialog", d)
 	ctxt.SetFrameTitle(d.Title)
 	if strings.Contains(d.Options, "suppresslogin") {
 		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
@@ -334,7 +334,7 @@ func (d *Dialog) Render(ctxt AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any) {
-	ctxt.VarMap().Set("amsterdam_errorMessage", errormessage)
+	ctxt.VarMap().Set("__errorMessage", errormessage)
 	return d.Render(ctxt)
 }
 
@@ -347,7 +347,7 @@ func (d *Dialog) RenderError(ctxt AmContext, errormessage string) (string, any) 
  *     Data as a parameter for the command string.
  */
 func (d *Dialog) RenderInfo(ctxt AmContext, infoMessage string) (string, any) {
-	ctxt.VarMap().Set("amsterdam_infoMessage", infoMessage)
+	ctxt.VarMap().Set("__infoMessage", infoMessage)
 	return d.Render(ctxt)
 }
 

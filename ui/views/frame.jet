@@ -84,7 +84,7 @@
     <div class="flex">
         <!-- LEFT SIDEBAR -->
         <div class="w-48 bg-blue-400 p-2">
-            {{ range i, m := amsterdam_leftMenus }}
+            {{ range i, m := __leftMenus }}
                 {{ if i > 0 }}
                     <div class="mb-2 mt-2">&nbsp;</div>
                 {{ end }}
@@ -99,7 +99,7 @@
 
         <!-- MAIN CONTENT -->
         <div class="flex-1 bg-white">
-            {{ include amsterdam_innerPage }}
+            {{ include __innerPage }}
         </div>
     </div>
 

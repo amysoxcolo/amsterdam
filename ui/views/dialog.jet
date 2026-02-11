@@ -6,32 +6,32 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
-<!-- BEGIN DIALOG {{ amsterdam_dialog.Name }} -->
+<!-- BEGIN DIALOG {{ __dialog.Name }} -->
 <div class="p-4">
     <div class="mb-6">
         <div class=" flex items-baseline gap-2">
-            <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ amsterdam_dialog.Title }}</h1>
-            {{ if amsterdam_dialog.Subtitle != "" }}
-                <span class="text-blue-800 text-2xl font-bold ml-2">{{ amsterdam_dialog.Subtitle }}</span>
+            <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ __dialog.Title }}</h1>
+            {{ if __dialog.Subtitle != "" }}
+                <span class="text-blue-800 text-2xl font-bold ml-2">{{ __dialog.Subtitle }}</span>
             {{ end }}
         </div>
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>
-    <form name="{{ amsterdam_dialog.FormName }}" method="POST" action="{{ amsterdam_dialog.Action }}" class="max-w-2xl">
-    {{ range amsterdam_dialog.Fields }}
+    <form name="{{ __dialog.FormName }}" method="POST" action="{{ __dialog.Action }}" class="max-w-2xl">
+    {{ range __dialog.Fields }}
         {{ if .Type == "hidden" }}
             <input type="hidden" name="{{ .Name }}" value="{{ .Value }}" />
         {{ end }}
     {{ end }}
 
-    {{ if amsterdam_dialog.Instructions != "" }}
-        <p class="text-black text-sm mb-6">{{ amsterdam_dialog.Instructions | raw }}</p>
+    {{ if __dialog.Instructions != "" }}
+        <p class="text-black text-sm mb-6">{{ __dialog.Instructions | raw }}</p>
     {{ end }}
-    {{ if amsterdam_required }}
+    {{ if __required }}
         <p class="text-black text-sm mb-6">Required fields are marked with a <span class="text-red-600">*</span>.</p>
     {{ end }}
 
-    {{ if isset(amsterdam_errorMessage) }}
+    {{ if isset(__errorMessage) }}
         <!-- Error Message Banner -->
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
             <div class="flex items-center">
@@ -39,12 +39,12 @@
                     <span class="text-red-500 text-xl">⚠️</span>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(amsterdam_errorMessage) }}.</p>
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(__errorMessage) }}.</p>
                 </div>
             </div>
         </div>
     {{ end }}
-    {{ if isset(amsterdam_infoMessage) }}
+    {{ if isset(__infoMessage) }}
         <!-- Info Message Banner -->
         <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-6" id="info-banner">
             <div class="flex items-center">
@@ -52,7 +52,7 @@
                     <span class="text-blue-500 text-xl">ℹ️</span>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm font-medium" id="info-message">{{ amsterdam_infoMessage }}.</p>
+                    <p class="text-sm font-medium" id="info-message">{{ __infoMessage }}.</p>
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
 
         <div class="bg-gray-50 p-6 rounded-lg">
             <div class="space-y-4">
-                {{ range amsterdam_dialog.Fields }}
+                {{ range __dialog.Fields }}
                     {{ if .Type == "text" || .Type == "ams_id" || .Type == "email" }}
                         <div class="flex items-center">
                             <label for="{{ .Name }}" 
@@ -261,7 +261,7 @@
                 {{ end }}
             </div>
             <div class="flex justify-center gap-4 mt-6">
-                {{ range amsterdam_dialog.Fields }}
+                {{ range __dialog.Fields }}
                     {{ if .Type == "button" }}
                         {{ clstmp := "bg-" + .Param + "-600 hover:bg-" + .Param + "-700" }}
                         <button type="submit" name="{{ .Name }}" {{ if .Disabled }}disabled{{ end }}
@@ -272,4 +272,4 @@
         </div>
     </form>
 </div>
-<!-- END DIALOG {{ amsterdam_dialog.Name }} -->
+<!-- END DIALOG {{ __dialog.Name }} -->

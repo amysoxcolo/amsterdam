@@ -96,7 +96,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 			ctxt.Logger().Errorf("*** NO FRAME TITLE set for path %s", amctxt.URLPath())
 			amctxt.SetFrameTitle("<<< NO FRAME TITLE >>>")
 		}
-		amctxt.VarMap().Set("amsterdam_innerPage", data)
+		amctxt.VarMap().Set("__innerPage", data)
 		menus := make([]*MenuDefinition, 2)
 		switch amctxt.LeftMenu() {
 		case "top":
@@ -111,7 +111,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 			return fmt.Errorf("AmSendPageData(): unknown left menu context: %s", amctxt.LeftMenu())
 		}
 		menus[1] = AmMenu("fixed")
-		amctxt.VarMap().Set("amsterdam_leftMenus", menus)
+		amctxt.VarMap().Set("__leftMenus", menus)
 		err = ctxt.Render(httprc, "frame.jet", amctxt)
 	default:
 		err = fmt.Errorf("AmSendPageData(): unknown rendering type: %s", command)
