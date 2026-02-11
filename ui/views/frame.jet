@@ -57,7 +57,7 @@
             <span class="text-white text-base">
                 {{ if .CurrentUser().IsAnon }}
                     You are not logged in
-                    {{ if !isset(amsterdam_suppressLogin) || !amsterdam_suppressLogin }}
+                    {{ if !isset(__suppressLogin) }}
                         <span class="mx-2">-</span>
                         <a href="/login" class="text-yellow-300 hover:text-yellow-400">Log In</a>
                         <span class="mx-2">|</span>
@@ -65,7 +65,7 @@
                     {{ end }}
                 {{ else }}
                     You are logged in as <b>{{ .CurrentUser().Username }}</b>
-                    {{ if !isset(amsterdam_suppressLogin) || !amsterdam_suppressLogin }}
+                    {{ if !isset(__suppressLogin) }}
                         <span class="mx-2">-</span>
                         <a href="/logout" class="text-yellow-300 hover:text-yellow-400">Log Out</a>
                         {{ if !.CurrentUser().VerifyEMail }}

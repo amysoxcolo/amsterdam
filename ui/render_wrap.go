@@ -112,6 +112,9 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		}
 		menus[1] = AmMenu("fixed")
 		amctxt.VarMap().Set("__leftMenus", menus)
+		if tmp := amctxt.GetScratch("frame_suppressLogin"); tmp != nil {
+			amctxt.VarMap().Set("__suppressLogin", true)
+		}
 		err = ctxt.Render(httprc, "frame.jet", amctxt)
 	default:
 		err = fmt.Errorf("AmSendPageData(): unknown rendering type: %s", command)

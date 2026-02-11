@@ -320,7 +320,7 @@ func (d *Dialog) Render(ctxt AmContext) (string, any) {
 	ctxt.VarMap().Set("__dialog", d)
 	ctxt.SetFrameTitle(d.Title)
 	if strings.Contains(d.Options, "suppresslogin") {
-		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+		ctxt.SetScratch("frame_suppressLogin", true)
 	}
 	return "framed", "dialog.jet"
 }

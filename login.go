@@ -287,7 +287,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 
 	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("target", target)
-	ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+	ctxt.SetScratch("frame_suppressLogin", true)
 	ctxt.SetFrameTitle("New Account User Agreement")
 	return "framed", "agreement.jet"
 }

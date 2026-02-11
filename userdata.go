@@ -225,7 +225,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 	if err == nil {
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
-		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+		ctxt.SetScratch("frame_suppressLogin", true)
 		ctxt.SetFrameTitle("Upload User Photo")
 		return "framed", "photo_upload.jet"
 	}
@@ -278,7 +278,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("target", target)
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
-		ctxt.VarMap().Set("amsterdam_suppressLogin", true)
+		ctxt.SetScratch("frame_suppressLogin", true)
 		ctxt.SetFrameTitle("Upload User Photo")
 		return "framed", "photo_upload.jet"
 	}
