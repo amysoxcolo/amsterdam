@@ -52,7 +52,6 @@ type AmContext interface {
 	IsMember() bool
 	IsMemberLocked() bool
 	LeftMenu() string
-	RC() int
 	OutputType() string
 	Parameter(string) string
 	QueryParamInt(string, int) int
@@ -64,7 +63,6 @@ type AmContext interface {
 	SetLeftMenu(string)
 	SetLoginCookie(string)
 	SetOutputType(string)
-	SetRC(int)
 	GetScratch(string) any
 	SetScratch(string, any)
 	GetSession(string) any
@@ -86,7 +84,6 @@ type AmContext interface {
 // amContext is the internal structure that implements AmContext.
 type amContext struct {
 	echoContext    echo.Context
-	httprc         int
 	rendervars     jet.VarMap
 	outputType     string
 	session        AmSession
@@ -265,11 +262,6 @@ func (c *amContext) LeftMenu() string {
 	}
 }
 
-// RC returns the HTTP result code for the current operation.
-func (c *amContext) RC() int {
-	return c.httprc
-}
-
 // OutputType returns the MIME output type set for the current operation.
 func (c *amContext) OutputType() string {
 	return c.outputType
@@ -379,11 +371,6 @@ func (c *amContext) SetOutputType(typ string) {
 	c.outputType = typ
 }
 
-// SetRC sets the HTTP result code for the current operation.
-func (c *amContext) SetRC(rc int) {
-	c.httprc = rc
-}
-
 // GetScratch returns a value in the per-request scratchpad.
 func (c *amContext) GetScratch(name string) any {
 	return c.echoContext.Get("am." + name)
@@ -469,7 +456,6 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 	rc := freeContext.Get()
 	if rc == nil {
 		rc = &amContext{
-			httprc:     http.StatusOK,
 			rendervars: make(jet.VarMap),
 			outputType: "",
 		}
@@ -544,7 +530,6 @@ func AmContextFromEchoContext(ctxt echo.Context) AmContext {
 func contextRecycler(incoming chan *amContext, done chan bool) {
 	for c := range incoming {
 		c.echoContext = nil
-		c.httprc = http.StatusOK
 		c.rendervars = make(jet.VarMap)
 		c.outputType = ""
 		c.session = nil

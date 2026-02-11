@@ -37,9 +37,9 @@ import (
  */
 func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
 	// Preprocess certain commands into different ones.
+	httprc := http.StatusOK
 	switch command {
 	case "error":
-		httprc := amctxt.RC()
 		message := ""
 		if data == nil {
 			message = fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
@@ -70,13 +70,12 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		}
 		amctxt.VarMap().Set("amsterdam_pageTitle", "Internal Server Error")
 		amctxt.VarMap().Set("error", message)
-		amctxt.SetRC(httprc)
 		command = "framed"
 		data = "error.jet"
 	case "ipban":
 		amctxt.VarMap().Set("amsterdam_pageTitle", "IP Address Banned")
 		amctxt.VarMap().Set("message", data)
-		amctxt.SetRC(http.StatusForbidden)
+		httprc = http.StatusForbidden
 		command = "framed"
 		data = "ipban.jet"
 	}
@@ -85,13 +84,13 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 	var err error
 	switch command {
 	case "bytes":
-		err = ctxt.Blob(amctxt.RC(), amctxt.OutputType(), data.([]byte))
+		err = ctxt.Blob(httprc, amctxt.OutputType(), data.([]byte))
 	case "redirect":
 		err = ctxt.Redirect(http.StatusFound, data.(string))
 	case "string":
-		err = ctxt.String(amctxt.RC(), data.(string))
+		err = ctxt.String(httprc, data.(string))
 	case "template":
-		err = ctxt.Render(amctxt.RC(), data.(string), amctxt)
+		err = ctxt.Render(httprc, data.(string), amctxt)
 	case "framed":
 		amctxt.VarMap().Set("amsterdam_innerPage", data)
 		menus := make([]*MenuDefinition, 2)
@@ -109,7 +108,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		}
 		menus[1] = AmMenu("fixed")
 		amctxt.VarMap().Set("amsterdam_leftMenus", menus)
-		err = ctxt.Render(amctxt.RC(), "frame.jet", amctxt)
+		err = ctxt.Render(httprc, "frame.jet", amctxt)
 	default:
 		err = fmt.Errorf("AmSendPageData(): unknown rendering type: %s", command)
 	}
