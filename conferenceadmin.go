@@ -377,6 +377,65 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any) {
 	return "framed", "conf_members.jet"
 }
 
+/* ConfCustomForm displays the form for editing the conference's custom HTML blocks.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConfCustomForm(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		return "error", ENOPERM
+	}
+
+	topBlock, bottomBlock, err := conf.GetCustomBlocks(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/custom", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("topText", topBlock)
+	ctxt.VarMap().Set("bottomText", bottomBlock)
+	ctxt.SetFrameTitle(fmt.Sprintf("Customize Conference: %s", conf.Name))
+	return "framed", "conf_custom.jet"
+}
+
+/* ConfCustom modifies or removes the conference's custom HTML blocks.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConfCustom(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		return "error", ENOPERM
+	}
+
+	var err error
+	if ctxt.FormFieldIsSet("cancel") {
+		err = nil
+	} else if ctxt.FormFieldIsSet("remove") {
+		err = conf.RemoveCustomBlocks(ctxt.Ctx())
+	} else if ctxt.FormFieldIsSet("update") {
+		err = conf.SetCustomBlocks(ctxt.Ctx(), ctxt.FormField("tx"), ctxt.FormField("bx"))
+	} else {
+		return "error", EBUTTON
+	}
+	if err != nil {
+		return "error", err
+	}
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+}
+
 /* CreateConferenceForm displays the dialog for creating a new conference.
  * Parameters:
  *     ctxt - The AmContext for the request.

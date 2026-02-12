@@ -1,0 +1,88 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Customize Conference:</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">{{ confName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Customize Form -->
+    <form method="POST" action="{{ selfLink }}">
+        
+        <div class="max-w-5xl space-y-6">
+            <!-- Top HTML Block -->
+            <div class="bg-gray-50 border border-gray-300 rounded-lg p-6">
+                <label class="block text-gray-800 font-semibold mb-3 flex items-center gap-2">
+                    <span class="text-xl">📄</span>
+                    Custom HTML block to appear at top of Topic List/Posts pages:
+                </label>
+                <textarea name="tx" rows="7" 
+                    class="w-full border border-gray-300 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                    placeholder="Enter custom HTML here...">{{ topText | raw }}</textarea>
+                <p class="mt-2 text-xs text-gray-600">
+                    💡 This content will appear at the top of conference pages, before the topic list.
+                </p>
+            </div>
+
+            <!-- Bottom HTML Block -->
+            <div class="bg-gray-50 border border-gray-300 rounded-lg p-6">
+                <label class="block text-gray-800 font-semibold mb-3 flex items-center gap-2">
+                    <span class="text-xl">📄</span>
+                    Custom HTML block to appear at bottom of Topic List/Posts pages:
+                </label>
+                <textarea name="bx" rows="7" 
+                    class="w-full border border-gray-300 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                    placeholder="Enter custom HTML here...">{{ bottomText | raw }}</textarea>
+                <p class="mt-2 text-xs text-gray-600">
+                    💡 This content will appear at the bottom of conference pages, after the topic list.
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-between items-center pt-4 border-t border-gray-300">
+                <div class="flex gap-3">
+                    <button type="submit" name="update"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span class="text-xl">💾</span>
+                        Update
+                    </button>
+                    <button type="submit" name="cancel"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span class="text-xl">✗</span>
+                        Cancel
+                    </button>
+                </div>
+                <div>
+                    <button type="submit" name="remove"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                        <span class="text-xl">🗑️</span>
+                        Remove
+                    </button>
+                </div>
+            </div>
+
+            <!-- Help Info Box -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <div class="flex items-start">
+                    <span class="text-2xl mr-3">ℹ️</span>
+                    <div class="text-sm text-blue-900">
+                        <p class="font-bold mb-1">About Custom HTML Blocks:</p>
+                        <p>You can add custom HTML to enhance your conference pages. These blocks will be inserted at the specified locations on all topic list
+                        and posts pages within this conference.</p>
+                        <p class="mt-2"><strong>Note:</strong> Use the "Remove" button to clear all custom HTML blocks from this conference.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

@@ -624,6 +624,56 @@ func (c *Conference) Fixseen(ctx context.Context, u *User) error {
 	return nil
 }
 
+// GetCustomBlocks gets the custom HTML blocks for the conference.
+func (c *Conference) GetCustomBlocks(ctx context.Context) (string, string, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT htmltop, htmlbottom FROM confcustom WHERE confid = ?", c.ConfId)
+	var topBlock, bottomBlock string
+	err := row.Scan(&topBlock, &bottomBlock)
+	switch err {
+	case nil:
+		return topBlock, bottomBlock, nil
+	case sql.ErrNoRows:
+		err = nil
+	}
+	return "", "", err
+}
+
+// SetCustomBlocks sets the custom HTML blocks for this conference.
+func (c *Conference) SetCustomBlocks(ctx context.Context, topBlock, bottomBlock string) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM confcustom WHERE confid = ?", c.ConfId)
+	ct := 0
+	err := row.Scan(&ct)
+	if err != nil {
+		return err
+	}
+	if ct == 0 {
+		_, err = tx.ExecContext(ctx, "INSERT INTO confcustom (confid, htmltop, htmlbottom) VALUES (?, ?, ?)", c.ConfId, topBlock, bottomBlock)
+	} else {
+		_, err = tx.ExecContext(ctx, "UPDATE confcustom SET htmltop = ?, htmlbottom = ? WHERE confid = ?", topBlock, bottomBlock, c.ConfId)
+	}
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
+// RemoveCustomBlocks removes the custom HTML blocks from this conference.
+func (c *Conference) RemoveCustomBlocks(ctx context.Context) error {
+	_, err := amdb.ExecContext(ctx, "DELETE FROM confcustom WHERE confid = ?", c.ConfId)
+	return err
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.

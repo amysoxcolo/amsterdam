@@ -98,7 +98,7 @@ menudefs:
       - text: "Manage Conference Members"
         link: "/comm/[CID]/conf/[CONFID]/members"
       - text: "Customize Conference Appearance"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/custom"
+        link: "/comm/[CID]/conf/[CONFID]/custom"
       - text: "Conference Activity Reports"
         link: "/TODO/comm/[CID]/conf/[CONFID]/activity"
       - text: "Conference E-Mail"
