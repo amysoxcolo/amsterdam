@@ -13,6 +13,10 @@
         <hr class="border-2 border-gray-400 w-4/5 mb-6">
     </div>
 
+    {{ if isset(topBlock) }}
+        <div class="mb-6">{{ topBlock | raw }}</div>
+    {{ end }}
+
     <!-- Action Buttons -->
     <div class="max-w-6xl mb-6">
         <div class="flex gap-2 flex-wrap mb-4">
@@ -159,4 +163,9 @@
             </div>
         </div>
     </div>
+
+    {{ if isset(bottomBlock) }}
+        <div class="mb-6">{{ bottomBlock | raw }}</div>
+    {{ end }}
+
 </div>

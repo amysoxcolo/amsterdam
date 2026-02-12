@@ -118,6 +118,17 @@ func Topics(ctxt ui.AmContext) (string, any) {
 		}
 	}
 
+	topBlock, bottomBlock, err := conf.GetCustomBlocks(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+	if topBlock != "" {
+		ctxt.VarMap().Set("topBlock", topBlock)
+	}
+	if bottomBlock != "" {
+		ctxt.VarMap().Set("bottomBlock", bottomBlock)
+	}
+
 	// create the "read new" URL
 	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
 	if !ctxt.CurrentUser().IsAnon {
