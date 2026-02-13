@@ -13,9 +13,6 @@ This Code of Conduct exists to support productive collaboration, respectful tech
 As a general principle, anyone who adheres to this Code of Conduct and provides quality contributions to the project is welcome to participate.
 ("Contributions" may include but are not limited to code, documentation, testing, or fundraising.)
 
-Amsterdam values tools that assist developers, but tools are no substitute for human judgment, accountability, and stewardship. As a human-collaborative
-software project, all participation must remain human-directed and accountable.
-
 ---
 
 ## Expected Behavior
@@ -87,3 +84,6 @@ Maintainer decisions shall be final. Enforcement actions shall not be subject to
 Amsterdam prioritizes the quality of contributions and the health of collaboration over ideology, factionalism, or performative conflict.
 
 Participation in the project implies agreement with these principles.
+
+Amsterdam values tools that assist developers, but tools are no substitute for human judgment, accountability, and stewardship. As a human-collaborative
+software project, all participation must remain human-directed and accountable.
