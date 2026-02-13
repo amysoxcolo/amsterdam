@@ -32,7 +32,10 @@
 
     <!-- Backlink -->
     <div class="mb-4">
-        <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backLink }}">Return to Manage Conference Menu</a>
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="{{ backLink }}">
+            <span>←</span>
+            Return to Manage Conference Menu
+        </a>
     </div>
 
     <div class="max-w-3xl">

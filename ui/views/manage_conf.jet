@@ -16,7 +16,10 @@
 
     <!-- Backlink -->
     <div class="mb-4">
-        <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ urlStem }}">Return to Topic List</a>
+        <a href="{{ urlStem }}" class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit">
+            <span>←</span>
+            Return to Topic List
+        </a>
     </div>
 
     <!-- Pseud setter -->

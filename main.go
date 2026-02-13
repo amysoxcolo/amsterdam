@@ -121,6 +121,7 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/members", fn)
 	confGroup.GET("/custom", ui.AmWrap(ConfCustomForm))
 	confGroup.POST("/custom", ui.AmWrap(ConfCustom))
+	confGroup.GET("/activity", ui.AmWrap(ConfReports))
 	confGroup.GET("/hotlist", ui.AmWrap(AddToHotlist))
 	confGroup.GET("/invite", ui.AmWrap(InviteToConference))
 	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)

@@ -100,7 +100,7 @@ menudefs:
       - text: "Customize Conference Appearance"
         link: "/comm/[CID]/conf/[CONFID]/custom"
       - text: "Conference Activity Reports"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/activity"
+        link: "/comm/[CID]/conf/[CONFID]/activity"
       - text: "Conference E-Mail"
         link: "/TODO/comm/[CID]/conf/[CONFID]/email"
       - text: "Export Messages"

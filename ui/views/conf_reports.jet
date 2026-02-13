@@ -1,0 +1,94 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Conference Reports:</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">{{ confName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Return Link -->
+    <div class="mb-6">
+        <a href="{{ backLink }}" class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit">
+            <span>←</span>
+            Return to Manage Conference Menu
+        </a>
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded max-w-4xl">
+        <div class="flex items-start">
+            <span class="text-2xl mr-3">📊</span>
+            <div class="text-sm text-blue-900">
+                <p class="font-bold mb-1">About Activity Reports:</p>
+                <p>View detailed activity reports for each topic in this conference. The <strong>Posters</strong> report shows who has posted messages,
+                while the <strong>Readers/Lurkers</strong> report shows who has read topics.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="max-w-4xl">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider w-16">#</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Topic Name</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider" colspan="2">Reports</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <!-- Entire Conference Row -->
+                    <tr class="hover:bg-blue-50 bg-blue-100">
+                        <td class="px-4 py-3 text-sm">&nbsp;</td>
+                        <td class="px-4 py-3 text-sm font-bold text-gray-700">(Entire conference)</td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            <a href="{{ selfLink }}?r=post" class="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 font-medium">
+                                <span>👥</span>
+                                Posters
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            <a href="{{ selfLink }}?r=read" class="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 font-medium">
+                                <span>👀</span>
+                                Readers/Lurkers
+                            </a>
+                        </td>
+                    </tr>
+
+                    {{ range _, top := topics }}
+                        <tr class="hover:bg-blue-50">
+                            <td class="px-4 py-3 text-sm text-gray-600">{{ top.Number }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-800">{{ top.Name | raw }}</td>
+                            <td class="px-4 py-3 text-sm text-center">
+                                <a href="{{ selfLink }}?r=post&t={{ top.TopicID }}" 
+                                    class="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900">
+                                    <span>👥</span>
+                                    Posters
+                                </a>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-center">
+                                <a href="{{ selfLink }}?r=read&t={{ top.TopicID }}" 
+                                    class="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900">
+                                    <span>👀</span>
+                                    Readers/Lurkers
+                                </a>
+                            </td>
+                        </tr>
+                    {{ end }}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

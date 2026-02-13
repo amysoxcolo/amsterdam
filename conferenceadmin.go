@@ -436,6 +436,34 @@ func ConfCustom(ctxt ui.AmContext) (string, any) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
+/* ConfReports displays conference activity reports.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConfReports(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/activity", comm.Alias, ctxt.GetScratch("currentAlias")))
+
+	if ctxt.HasParameter("r") {
+		// TODO: generate report here
+		return "error", nil
+	} else {
+		topicList, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), database.TopicViewAll, database.TopicSortNumber, true)
+		if err != nil {
+			return "error", err
+		}
+		ctxt.VarMap().Set("topics", topicList)
+		ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+		ctxt.SetFrameTitle(fmt.Sprintf("Conference Reports: %s", conf.Name))
+		return "framed", "conf_reports.jet"
+	}
+}
+
 /* CreateConferenceForm displays the dialog for creating a new conference.
  * Parameters:
  *     ctxt - The AmContext for the request.
