@@ -674,6 +674,58 @@ func (c *Conference) RemoveCustomBlocks(ctx context.Context) error {
 	return err
 }
 
+// ActivityReport is used to get activity reports from the conference or topic.
+type ActivityReport struct {
+	Uid      int32
+	Username string
+	LastRead *time.Time
+	LastPost *time.Time
+}
+
+// Activity report types.
+const (
+	ActivityReportPosters = 0 // report on all posters
+	ActivityReportReaders = 1 // report on all readers
+)
+
+/* GetActivity returns a list of ActivityReport objects detailing the conference activity.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     reportType - Determines which report to generate:
+ *         ActivityReportPosters - Report on all posters in the conference.
+ *         ActivityReportReaders - Report on all readers in the conference.
+ * Returns:
+ *     List of ActivityReport objects detailing the conference activity.
+ *     Standard Go error status.
+ */
+func (c *Conference) GetActivity(ctx context.Context, reportType int) ([]ActivityReport, error) {
+	var myfield string
+	switch reportType {
+	case ActivityReportPosters:
+		myfield = "s.last_post"
+	case ActivityReportReaders:
+		myfield = "s.last_read"
+	default:
+		return nil, errors.New("invalid report type parameter")
+	}
+	sql := fmt.Sprintf(`SELECT s.uid, u.username, s.last_read, s.last_post FROM confsettings s, users u WHERE u.uid = s.uid 
+		AND s.confid = ? AND u.is_anon = 0 AND ISNULL(%s) = 0 ORDER BY %s DESC`, myfield, myfield)
+	rs, err := amdb.QueryContext(ctx, sql, c.ConfId)
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]ActivityReport, 0)
+	for rs.Next() {
+		var cur ActivityReport
+		err = rs.Scan(&(cur.Uid), &(cur.Username), &(cur.LastRead), &(cur.LastPost))
+		if err != nil {
+			return nil, err
+		}
+		rc = append(rc, cur)
+	}
+	return rc, nil
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.

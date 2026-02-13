@@ -290,6 +290,44 @@ func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
 	return rc, err
 }
 
+/* GetActivity returns a list of ActivityReport objects detailing the topic activity.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     reportType - Determines which report to generate:
+ *         ActivityReportPosters - Report on all posters in the topic.
+ *         ActivityReportReaders - Report on all readers in the topic.
+ * Returns:
+ *     List of ActivityReport objects detailing the topic activity.
+ *     Standard Go error status.
+ */
+func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]ActivityReport, error) {
+	var myfield string
+	switch reportType {
+	case ActivityReportPosters:
+		myfield = "s.last_post"
+	case ActivityReportReaders:
+		myfield = "s.last_read"
+	default:
+		return nil, errors.New("invalid report type parameter")
+	}
+	sql := fmt.Sprintf(`SELECT s.uid, u.username, s.last_read, s.last_post FROM topicsettings s, users u WHERE u.uid = s.uid 
+		AND s.topicid = ? AND u.is_anon = 0 AND ISNULL(%s) = 0 ORDER BY %s DESC`, myfield, myfield)
+	rs, err := amdb.QueryContext(ctx, sql, t.TopicId)
+	if err != nil {
+		return nil, err
+	}
+	rc := make([]ActivityReport, 0)
+	for rs.Next() {
+		var cur ActivityReport
+		err = rs.Scan(&(cur.Uid), &(cur.Username), &(cur.LastRead), &(cur.LastPost))
+		if err != nil {
+			return nil, err
+		}
+		rc = append(rc, cur)
+	}
+	return rc, nil
+}
+
 // backgroundPurgeTopic removes all posts from a topic that's been deleted.
 func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
 	success := false

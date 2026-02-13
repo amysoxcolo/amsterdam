@@ -146,7 +146,19 @@ func userContactInfo(a jet.Arguments) reflect.Value {
 
 // displayDateTime formats a date and time value.
 func displayDateTime(a jet.Arguments) reflect.Value {
-	timeval := a.Get(0).Convert(reflect.TypeFor[time.Time]()).Interface().(time.Time)
+	var timeval time.Time
+	p0 := a.Get(0)
+	if p0.CanConvert(reflect.TypeFor[time.Time]()) {
+		timeval = p0.Convert(reflect.TypeFor[time.Time]()).Interface().(time.Time)
+	} else if p0.CanConvert(reflect.TypeFor[*time.Time]()) {
+		ptr := p0.Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
+		if ptr == nil {
+			return reflect.ValueOf("<<NIL>>")
+		}
+		timeval = *ptr
+	} else {
+		return reflect.ValueOf("<<BOGUS>>")
+	}
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
 	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
 	if err == nil {

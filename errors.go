@@ -21,6 +21,9 @@ import (
 // EBUTTON is the standard error for an unknown button.
 var EBUTTON error = errors.New("invalid or unknown button pressed")
 
+// EINVAL is the standard error for an invalid parameter.
+var EINVAL error = errors.New("invalid parameter to operation")
+
 // ELOGIN is the standard error for not being logged in
 var ELOGIN error = errors.New("you are not logged in")
 

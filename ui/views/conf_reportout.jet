@@ -1,0 +1,102 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            {{ if isset(topic) }}
+                {{ if reportMode == "post" }}
+                    <h1 class="text-blue-800 text-4xl font-bold">Posters in Topic:</h1>
+                {{ else }}
+                    <h1 class="text-blue-800 text-4xl font-bold">Readers in Topic:</h1>
+                {{ end }}
+                <h2 class="text-blue-800 text-2xl font-bold">{{ topic.Name | raw }}</h2>
+            {{ else }}
+                {{ if reportMode == "post" }}
+                    <h1 class="text-blue-800 text-4xl font-bold">Posters in Conference:</h1>
+                {{ else }}
+                    <h1 class="text-blue-800 text-4xl font-bold">Readers in Conference:</h1>
+                {{ end }}
+                <h2 class="text-blue-800 text-2xl font-bold">{{ confName }}</h2>
+            {{ end }}
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Return Link -->
+    <div class="mb-6">
+        <a href="{{ selfLink }}" class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit">
+            <span>←</span>
+            Return to Conference Reports Menu
+        </a>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="max-w-4xl">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">User Name</th>
+                        {{ if reportMode == "post" }}
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Last Posted</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Last Read</th>
+                        {{ else }}
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Last Read</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Last Posted</th>
+                        {{ end }}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {{ if len(report) == 0 }}
+                        <tr class="hover:bg-blue-50 bg-blue-100">
+                            <td class="px-4 py-3 text-gray-700 text-center text-sm" colspan="3">
+                                {{ if isset(topic) }}
+                                    {{ if reportMode == "post" }}
+                                        <i>No posters found in topic "{{ topic.Name | raw }}."</i>
+                                    {{ else }}
+                                        <i>No readers found in topic "{{ topic.Name | raw }}."</i>
+                                    {{ end }}
+                                {{ else }}
+                                    {{ if reportMode == "post" }}
+                                        <i>No posters found in conference "{{ confName }}."</i>
+                                    {{ else }}
+                                        <i>No readers found in conference "{{ confName }}."</i>
+                                    {{ end }}
+                                {{ end }}
+                            </td>
+                        </tr>
+                    {{ else }}
+                        {{ range _, r := report }}
+                            <tr class="hover:bg-blue-50 bg-blue-100">
+                                <td class="px-4 py-3 text-sm">
+                                    <a href="/user/{{ r.Username }}" class="text-blue-700 hover:text-blue-900 font-medium" target="_blank">{{ r.Username }}</a>
+                                </td>
+                                {{ if reportMode == "post" }}
+                                    <td class="px-4 py-3 text-sm text-gray-800">{{ DisplayDateTime(r.LastPost, .) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-800">{{ DisplayDateTime(r.LastRead, .) }}</td>
+                                {{ else }}
+                                    <td class="px-4 py-3 text-sm text-gray-800">{{ DisplayDateTime(r.LastRead, .) }}</td>
+                                    {{ if isset(r.LastPost) }}
+                                        <td class="px-4 py-3 text-sm text-gray-800">{{ DisplayDateTime(r.LastPost, .) }}</td>
+                                    {{ else }}
+                                        <td class="px-4 py-3 text-sm text-gray-800">Never</td>
+                                    {{ end }}
+                                {{ end }}
+                            </tr>
+                        {{ end }}
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+</div>

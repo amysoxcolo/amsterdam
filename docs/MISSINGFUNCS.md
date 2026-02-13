@@ -68,7 +68,7 @@ _(italicized items can be deferred)_
       - ~~Add alias~~
     - ~~Manage members~~
     - ~~Custom appearance~~
-    - Activity reports
+    - ~~Activity reports~~
     - E-mail
     - Export Messages
     - Import Messages

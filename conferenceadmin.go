@@ -446,13 +446,63 @@ func ConfCustom(ctxt ui.AmContext) (string, any) {
 func ConfReports(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Read", myLevel) {
+		return "error", ENOPERM
+	}
+
 	ctxt.VarMap().Set("confName", conf.Name)
 	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/activity", comm.Alias, ctxt.GetScratch("currentAlias")))
 
 	if ctxt.HasParameter("r") {
-		// TODO: generate report here
-		return "error", nil
+		// generate a report
+		reportMode := ctxt.Parameter("r")
+		var reportTypeSel int
+		switch reportMode {
+		case "post":
+			reportTypeSel = database.ActivityReportPosters
+		case "read":
+			reportTypeSel = database.ActivityReportReaders
+		default:
+			return "error", EINVAL
+		}
+		ctxt.VarMap().Set("reportMode", reportMode)
+		if ctxt.HasParameter("t") {
+			topicId := ctxt.QueryParamInt("t", -1)
+			if topicId > 0 {
+				topic, err := database.AmGetTopic(ctxt.Ctx(), int32(topicId))
+				if err != nil {
+					return "error", err
+				}
+				ctxt.VarMap().Set("topic", topic)
+				report, err := topic.GetActivity(ctxt.Ctx(), reportTypeSel)
+				if err != nil {
+					return "error", err
+				}
+				ctxt.VarMap().Set("report", report)
+				if reportTypeSel == database.ActivityReportPosters {
+					ctxt.SetFrameTitle("Users Posting in Topic " + topic.Name)
+				} else {
+					ctxt.SetFrameTitle("Users Reading Topic " + topic.Name)
+				}
+			} else {
+				return "error", "Invalid topic ID specified"
+			}
+		} else {
+			report, err := conf.GetActivity(ctxt.Ctx(), reportTypeSel)
+			if err != nil {
+				return "error", err
+			}
+			ctxt.VarMap().Set("report", report)
+			if reportTypeSel == database.ActivityReportPosters {
+				ctxt.SetFrameTitle("Users Posting in Conference " + conf.Name)
+			} else {
+				ctxt.SetFrameTitle("Users Reading Conference " + conf.Name)
+			}
+		}
+		return "framed", "conf_reportout.jet"
 	} else {
+		// generate the listing
 		topicList, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), database.TopicViewAll, database.TopicSortNumber, true)
 		if err != nil {
 			return "error", err
