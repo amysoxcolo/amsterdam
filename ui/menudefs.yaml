@@ -102,7 +102,7 @@ menudefs:
       - text: "Conference Activity Reports"
         link: "/comm/[CID]/conf/[CONFID]/activity"
       - text: "Conference E-Mail"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/email"
+        link: "/comm/[CID]/conf/[CONFID]/email"
       - text: "Export Messages"
         link: "/TODO/comm/[CID]/conf/[CONFID]/export"
       - text: "Import Messages"

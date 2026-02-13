@@ -514,6 +514,27 @@ func ConfReports(ctxt ui.AmContext) (string, any) {
 	}
 }
 
+func ConferenceEmailForm(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.EMailParticipants", myLevel) {
+		return "error", ENOPERM
+	}
+
+	topics, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), database.TopicViewAll, database.TopicSortName, true)
+	if err != nil {
+		return "error", err
+	}
+	ctxt.VarMap().Set("topics", topics)
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/email", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("porl", 0).Set("top", 0).Set("xday", false)
+	ctxt.VarMap().Set("day", 7).Set("subj", "").Set("pb", "")
+	ctxt.SetFrameTitle(fmt.Sprintf("Conference E-Mail: %s", conf.Name))
+	return "framed", "conf_email.jet"
+}
+
 /* CreateConferenceForm displays the dialog for creating a new conference.
  * Parameters:
  *     ctxt - The AmContext for the request.
