@@ -13,6 +13,9 @@ This Code of Conduct exists to support productive collaboration, respectful tech
 As a general principle, anyone who adheres to this Code of Conduct and provides quality contributions to the project is welcome to participate.
 ("Contributions" may include but are not limited to code, documentation, testing, or fundraising.)
 
+Amsterdam values tools that assist developers, but tools are no substitute for human judgment, accountability, and stewardship. As a human-collaborative
+software project, all participation must remain human-directed and accountable.
+
 ---
 
 ## Expected Behavior
@@ -32,8 +35,20 @@ Participants in the Amsterdam project are expected to:
 
 Contributions must be the _own work_ of the contributor.  Plagiarism in any form is unacceptable.
 
-AI-generated contributions are acceptable _if and only if_ the contributor is able to explain the contribution and the rationale for using AI
-in a clear and reasonable manner, and the contributor accepts ownership of and responsibility for any such contribution.
+All project contributions must be submitted by _identifiable human participants_ who accept full responibility for their content.
+Automated agents, bots, or autonomous AI systems _may not_ independently submit issues, pull requests, or other contributions.
+
+Contributors may use software tools, including AI-assisted tools, but the submitting contributor _must:_
+- Fully understand the contribution.
+- Be able to explain design and implementation decisions.
+- Accept responsibility for maintenance and correctness.
+
+Project maintainers retain _full discretion_ to accept or reject contributions for any reason consistent with the project's goals,
+quality standards, and maintainability requirements. Submission of a contribution _shall not_ guarantee review, acceptance, or
+ongoing support.
+
+Public pressure campaigns, harassment, or attempts to coerce project decisions through social media or other external channels shall
+be considered violations of this Code of Conduct.
 
 All contributions shall be made available under the [Mozilla Public License, Version 2.0](LICENSE.md). Contributors shall ensure that they
 have the authority to make their contribution under the terms of this license.
