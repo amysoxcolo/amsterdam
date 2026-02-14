@@ -17,7 +17,7 @@ import (
 )
 
 // optionAlphabet is the alphabet from which OptionSets serialize to and from strings.
-const optionAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,-./:;<=>?@[]^_`{|}~"
+const optionAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$&()*+,-./:;<=>?@[]^_`{|}~"
 
 // OptionSet is a bit set that can be persisted as a specially-constructed string.
 type OptionSet struct {
@@ -64,4 +64,12 @@ func OptionSetFromString(s string) *OptionSet {
 		bs = bs.Set(uint(strings.IndexRune(optionAlphabet, ch)))
 	}
 	return &OptionSet{bits: bs}
+}
+
+// OptionCharFromIndex converts an integer into the matching character from the option alphabet.
+func OptionCharFromIndex(ndx uint) string {
+	if ndx > uint(len(optionAlphabet)) {
+		return ""
+	}
+	return optionAlphabet[ndx : ndx+1]
 }

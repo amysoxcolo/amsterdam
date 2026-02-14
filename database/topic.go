@@ -328,6 +328,60 @@ func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]ActivityRepo
 	return rc, nil
 }
 
+/* GetActiveUserEMailAddrs gets the E-mail addresses of each user that's active in the topic, omitting those that have opted out of mass E-mails.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     userSelect - Selects which type of users to return:
+ *         ActiveUserReaders - Select users that have actively read.
+ *         ActiveUserPosters - Select users that have actively posted.
+ *     dayLimit - If less than 0, it is ignored. If equal to 0, this function is a no-op. Otherwise, specifies a limit on the number of days
+ *                between the user's activity and now.
+ * Returns:
+ *     List of E-mail addresses matchin the criteria, in arbitrary order.
+ *     Standard Go error status.
+ */
+func (t *Topic) GetActiveUserEMailAddrs(ctx context.Context, userSelect, dayLimit int) ([]string, error) {
+	if dayLimit == 0 {
+		return make([]string, 0), nil
+	}
+	var myfield string
+	switch userSelect {
+	case ActiveUserReaders:
+		myfield = "s.last_read"
+	case ActiveUserPosters:
+		myfield = "s.last_post"
+	default:
+		return nil, errors.New("invalid user selection parameter")
+	}
+	sql := fmt.Sprintf(`SELECT c.email, %s FROM contacts c, users u, topicsettings s, propuser p WHERE c.contactid = u.contactid AND u.uid = s.uid
+		AND s.topicid = ? AND u.is_anon = 0 AND u.uid = p.uid AND p.ndx = %d AND p.data NOT LIKE '%%%s%%' AND ISNULL(%s) = 0 ORDER BY %s DESC`, myfield, UserPropFlags,
+		util.OptionCharFromIndex(UserFlagMassMailOptOut), myfield, myfield)
+	rs, err := amdb.QueryContext(ctx, sql, t.TopicId)
+	if err != nil {
+		return nil, err
+	}
+	var stopPoint *time.Time = nil
+	if dayLimit > 0 {
+		mynow := time.Now().UTC()
+		y, m, d := mynow.AddDate(0, 0, -dayLimit).Date()
+		stopPointActual := time.Date(y, m, d, 0, 0, 0, 0, mynow.Location())
+		stopPoint = &stopPointActual
+	}
+	rc := make([]string, 0)
+	for rs.Next() {
+		var addy string
+		var point time.Time
+		if err = rs.Scan(&addy, &point); err != nil {
+			return nil, err
+		}
+		if stopPoint != nil && point.Before(*stopPoint) {
+			break
+		}
+		rc = append(rc, addy)
+	}
+	return rc, nil
+}
+
 // backgroundPurgeTopic removes all posts from a topic that's been deleted.
 func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
 	success := false

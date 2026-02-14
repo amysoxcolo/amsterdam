@@ -1,0 +1,17 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+{{ text }}
+
+You are receiving this message because you are a reader of the
+"{{ topicName }}" topic in the "{{ confName }}" conference in the
+Amsterdam community "{{ commName }}". The sender is a host of the
+"{{ confName }}" conference.  To stop receiving mass E-mailed notices from
+all Amsterdam community and conference hosts, visit Amsterdam, click
+on the "Profile" link, check the box labeled "Don't send me mass E-mail from
+community/conference hosts," and click Update to save this preference.

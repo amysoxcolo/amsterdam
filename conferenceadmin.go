@@ -11,12 +11,15 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	log "github.com/sirupsen/logrus"
@@ -514,6 +517,13 @@ func ConfReports(ctxt ui.AmContext) (string, any) {
 	}
 }
 
+/* ConferenceEmailForm displays the dialog for E-mailing participants in a conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
 func ConferenceEmailForm(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
@@ -533,6 +543,115 @@ func ConferenceEmailForm(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("day", 7).Set("subj", "").Set("pb", "")
 	ctxt.SetFrameTitle(fmt.Sprintf("Conference E-Mail: %s", conf.Name))
 	return "framed", "conf_email.jet"
+}
+
+/* ConferenceEmail sends E-mail to participants in a conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConferenceEmail(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.EMailParticipants", myLevel) {
+		return "error", ENOPERM
+	}
+
+	// Handle button presses.
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	} else if !ctxt.FormFieldIsSet("send") {
+		return "error", EBUTTON
+	}
+
+	// extract user selector
+	porl := ctxt.FormField("porl")
+	var userSelect int
+	switch porl {
+	case "0":
+		userSelect = database.ActiveUserPosters
+	case "1":
+		userSelect = database.ActiveUserReaders
+	default:
+		return "error", EINVAL
+	}
+
+	// extract number of days
+	days := -1
+	if ctxt.FormFieldIsSet("xday") {
+		var err error
+		days, err = ctxt.FormFieldInt("day")
+		if err != nil {
+			return "error", err
+		} else if days <= 0 {
+			return "error", "Invalid number of days specified"
+		}
+	}
+
+	// extract list of recipients and other needed data
+	var recipients []string
+	templateName := ""
+	topicName := ""
+	top, err := ctxt.FormFieldInt("top")
+	if err != nil {
+		return "error", err
+	}
+	if top == 0 {
+		recipients, err = conf.GetActiveUserEMailAddrs(ctxt.Ctx(), userSelect, days)
+		if userSelect == database.ActiveUserPosters {
+			templateName = "conf_mass_poster.jet"
+		} else {
+			templateName = "conf_mass_reader.jet"
+		}
+	} else {
+		var topic *database.Topic
+		if topic, err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(top)); err == nil {
+			recipients, err = topic.GetActiveUserEMailAddrs(ctxt.Ctx(), userSelect, days)
+			topicName = topic.Name
+		}
+		if userSelect == database.ActiveUserPosters {
+			templateName = "topic_mass_poster.jet"
+		} else {
+			templateName = "topic_mass_reader.jet"
+		}
+	}
+	if err != nil {
+		return "error", err
+	}
+
+	// Kick off a background task to send all the E-mail messages.
+	subj := ctxt.FormField("subj")
+	pb := ctxt.FormField("pb")
+	confName := conf.Name
+	commName := comm.Name
+	myUID := ctxt.CurrentUserId()
+	myIP := ctxt.RemoteIP()
+	log.Infof("ConferenceEmail: About to send mass E-mail to %d recipients", len(recipients))
+	ampool.Submit(func(ctx context.Context) {
+		start := time.Now()
+		for _, addr := range recipients {
+			err := ctx.Err()
+			if err != nil {
+				break
+			}
+			msg := email.AmNewEmailMessage(myUID, myIP)
+			msg.AddTo(addr, "")
+			msg.SetSubject(subj)
+			msg.SetTemplate(templateName)
+			msg.AddVariable("text", pb)
+			msg.AddVariable("topicName", topicName)
+			msg.AddVariable("confName", confName)
+			msg.AddVariable("commName", commName)
+			msg.Send()
+		}
+		elapsed := time.Since(start)
+		log.Infof("ConferenceEmail delivery completed in %s", elapsed)
+	})
+
+	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
 /* CreateConferenceForm displays the dialog for creating a new conference.

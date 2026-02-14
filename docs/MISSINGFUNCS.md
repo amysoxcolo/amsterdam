@@ -69,7 +69,7 @@ _(italicized items can be deferred)_
     - ~~Manage members~~
     - ~~Custom appearance~~
     - ~~Activity reports~~
-    - E-mail
+    - ~~E-mail~~
     - Export Messages
     - Import Messages
     - Delete Conference
