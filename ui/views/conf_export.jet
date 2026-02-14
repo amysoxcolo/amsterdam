@@ -1,0 +1,101 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Export Messages</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">Conference: {{ confName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded max-w-4xl">
+        <div class="flex items-start">
+            <span class="text-2xl mr-3">📦</span>
+            <div class="text-sm text-blue-900">
+                <p class="font-bold mb-1">About Message Export:</p>
+                <p>Select the topics you want to export. Messages from selected topics will be exported in VCIF/XML format. Use the buttons below to quickly select or deselect all topics.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Form -->
+    <form method="POST" action="{{ selfLink }}">
+        <div class="max-w-4xl">
+            <!-- Selection Controls -->
+            <div class="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <span class="text-xl">☑️</span>
+                        Select Topics to Export
+                    </h3>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="selectAll()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition-colors text-sm flex items-center gap-1">
+                            <span>✓</span>
+                            Select All
+                        </button>
+                        <button type="button" onclick="deselectAll()"
+                                class="bg-gray-600 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded transition-colors text-sm flex items-center gap-1">
+                            <span>✗</span>
+                            Deselect All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Topics List -->
+                <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+                    <div class="max-h-96 overflow-y-auto">
+                        <table class="w-full">
+                            <tbody class="divide-y divide-gray-200">
+                                {{ range _, t := topics }}
+                                    <tr class="hover:bg-blue-50">
+                                        <td class="px-4 py-2 w-12 text-center">
+                                            <input type="checkbox" name="tselect" value="{{ t.Number }}" checked 
+                                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                        </td>
+                                        <td class="px-2 py-2 w-12 text-right text-gray-600 text-sm">{{ t.Number }}.</td>
+                                        <td class="px-4 py-2 text-sm text-gray-800">{{ t.Name | raw }}</td>
+                                    </tr>
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-center gap-4 pt-4 border-t border-gray-300">
+                <button type="submit" name="export"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                    <span class="text-xl">📥</span>
+                    Export
+                </button>
+                <button type="submit" name="cancel"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                    <span class="text-xl">✗</span>
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('input[name="tselect"]');
+        checkboxes.forEach(checkbox => checkbox.checked = true);
+    }
+    
+    function deselectAll() {
+        const checkboxes = document.querySelectorAll('input[name="tselect"]');
+        checkboxes.forEach(checkbox => checkbox.checked = false);
+    }
+</script>

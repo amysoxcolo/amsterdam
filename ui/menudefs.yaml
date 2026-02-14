@@ -104,7 +104,7 @@ menudefs:
       - text: "Conference E-Mail"
         link: "/comm/[CID]/conf/[CONFID]/email"
       - text: "Export Messages"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/export"
+        link: "/comm/[CID]/conf/[CONFID]/export"
       - text: "Import Messages"
         link: "/TODO/comm/[CID]/conf/[CONFID]/import"
       - text: "Delete Conference"

@@ -654,6 +654,33 @@ func ConferenceEmail(ctxt ui.AmContext) (string, any) {
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
 }
 
+/* ConferenceExportForm displays the form for exporting data from a conference.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConferenceExportForm(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		return "error", ENOPERM
+	}
+
+	topics, err := database.AmListTopics(ctxt.Ctx(), conf.ConfId, ctxt.CurrentUserId(), database.TopicViewAll, database.TopicSortNumber, true)
+	if err != nil {
+		return "error", err
+	}
+
+	ctxt.VarMap().Set("topics", topics)
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/export", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.SetFrameTitle(fmt.Sprintf("Export Messages: %s", conf.Name))
+	return "framed", "conf_export.jet"
+}
+
 /* CreateConferenceForm displays the dialog for creating a new conference.
  * Parameters:
  *     ctxt - The AmContext for the request.
