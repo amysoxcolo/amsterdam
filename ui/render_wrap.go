@@ -12,6 +12,7 @@ package ui
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -88,8 +89,12 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 	switch command {
 	case "bytes":
 		err = ctxt.Blob(httprc, amctxt.OutputType(), data.([]byte))
+	case "stream":
+		err = ctxt.Stream(httprc, amctxt.OutputType(), data.(io.Reader))
 	case "redirect":
 		err = ctxt.Redirect(http.StatusFound, data.(string))
+	case "nocontent":
+		err = ctxt.NoContent(http.StatusNoContent)
 	case "string":
 		err = ctxt.String(httprc, data.(string))
 	case "template":

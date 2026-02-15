@@ -14,12 +14,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
+	"git.erbosoft.com/amy/amsterdam/exports"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	log "github.com/sirupsen/logrus"
@@ -679,6 +681,70 @@ func ConferenceExportForm(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/export", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.SetFrameTitle(fmt.Sprintf("Export Messages: %s", conf.Name))
 	return "framed", "conf_export.jet"
+}
+
+/* ConferenceExport exports data from a conference to a downloaded VCIF file.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConferenceExport(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		return "error", ENOPERM
+	}
+
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	} else if !ctxt.FormFieldIsSet("export") {
+		return "error", EBUTTON
+	}
+
+	// Get the topic numbers selected.
+	topicNumStrs, err := ctxt.FormFieldValues("tselect")
+	if err != nil {
+		return "error", err
+	}
+	if len(topicNumStrs) == 0 {
+		return "nocontent", nil // this is a no-op
+	}
+
+	// Convert into a list of topics.
+	topics := make([]*database.Topic, len(topicNumStrs))
+	for i, tn := range topicNumStrs {
+		tnum, err := strconv.ParseInt(tn, 10, 16)
+		if err == nil {
+			topics[i], err = database.AmGetTopicByNumber(ctxt.Ctx(), conf, int16(tnum))
+		}
+		if err != nil {
+			return "error", err
+		}
+	}
+
+	// The tricky bit! We use a dedicated goroutine to generate the streamed output and send it to the inlet end of a pipe.
+	filename := time.Now().Format("exported-data-20060102.xml")
+	r, w := io.Pipe()
+	go func() {
+		start := time.Now()
+		err := exports.VCIFStreamTopicFile(context.Background(), w, topics)
+		if err != nil {
+			log.Errorf("ConferenceExport task failed with %v", err)
+			s := fmt.Sprintf("<!-- ***PROCESSING ERROR*** %v -->\r\n", err)
+			w.Write([]byte(s))
+		}
+		w.Close()
+		dur := time.Since(start)
+		log.Infof("ConferenceExport task completed in %v", dur)
+	}()
+
+	// Now we connect the outlet end of the pipe to the output to the browser.
+	ctxt.SetOutputType("text/xml")
+	ctxt.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	return "stream", r
 }
 
 /* CreateConferenceForm displays the dialog for creating a new conference.

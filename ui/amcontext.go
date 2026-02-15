@@ -12,6 +12,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -51,6 +52,7 @@ type AmContext interface {
 	FormField(string) string
 	FormFieldInt(string) (int, error)
 	FormFieldIsSet(string) bool
+	FormFieldValues(string) ([]string, error)
 	FormFile(string) (*multipart.FileHeader, error)
 	FrameTitle() string
 	FrameMetadata(int) map[string]string
@@ -234,6 +236,18 @@ func (c *amContext) FormFieldIsSet(name string) bool {
 		_ = req.FormValue(name) // force form to be loaded
 	}
 	return req.Form.Has(name)
+}
+
+// FormFieldValues returns all values for a specified parameter name.
+func (c *amContext) FormFieldValues(name string) ([]string, error) {
+	vals, err := c.echoContext.FormParams()
+	if err != nil {
+		return make([]string, 0), err
+	}
+	if rc, ok := vals[name]; ok {
+		return rc, nil
+	}
+	return make([]string, 0), errors.New("parameter not found")
 }
 
 // FormFile returns a "file" parameter from a multipart upload form.

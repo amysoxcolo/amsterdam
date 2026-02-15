@@ -80,7 +80,7 @@ func (p *PostHeader) IsPublished(ctx context.Context) (bool, error) {
  * Parameters:
  *     ctx - Standard Go context value.
  * Returns:
- *     Pointer to structure with post attachment info.
+ *     Pointer to structure with post attachment info, or nil if there is no attachment.
  *     Standard Go error status.
  */
 func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error) {
