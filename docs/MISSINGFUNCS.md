@@ -70,7 +70,7 @@ _(italicized items can be deferred)_
     - ~~Custom appearance~~
     - ~~Activity reports~~
     - ~~E-mail~~
-    - Export Messages
+    - ~~Export Messages~~
     - Import Messages
     - Delete Conference
   - ~~Add to Hotlist/Remove from Hotlist~~

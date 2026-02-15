@@ -93,7 +93,9 @@ func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHead
 
 	// Fill in the post text.
 	target.Text, err = post.Text(ctx)
-	if err != nil {
+	if err == database.ErrNoPostData {
+		target.Text = ""
+	} else if err != nil {
 		return err
 	}
 
@@ -113,24 +115,25 @@ func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHead
 	}
 
 	// Fill in the attachment data.
-	ainfo, err := post.AttachmentInfo(ctx)
-	if err != nil {
-		return err
-	}
-	if ainfo != nil {
-		newAttachment := VCIFPostAttachment{
-			Length:   int(ainfo.Length),
-			MIMEType: ainfo.MIMEType,
-			Filename: ainfo.Filename,
-		}
-		data, err := post.AttachmentData(ctx)
+	target.Attachment = nil
+	if !post.IsScribbled() {
+		ainfo, err := post.AttachmentInfo(ctx)
 		if err != nil {
 			return err
 		}
-		newAttachment.Base64Data = base64.StdEncoding.EncodeToString(data)
-		target.Attachment = &newAttachment
-	} else {
-		target.Attachment = nil
+		if ainfo != nil {
+			newAttachment := VCIFPostAttachment{
+				Length:   int(ainfo.Length),
+				MIMEType: ainfo.MIMEType,
+				Filename: ainfo.Filename,
+			}
+			data, err := post.AttachmentData(ctx)
+			if err != nil {
+				return err
+			}
+			newAttachment.Base64Data = base64.StdEncoding.EncodeToString(data)
+			target.Attachment = &newAttachment
+		}
 	}
 
 	// Fill in the rest of the data that can't fail.

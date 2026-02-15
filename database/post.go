@@ -16,6 +16,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -127,12 +128,23 @@ func (p *PostHeader) AttachmentData(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	outdata := make([]byte, 0, datalen)
+	outdata := make([]byte, datalen)
 	n, err := r.Read(outdata)
 	r.Close()
+	if err == io.EOF && n == int(datalen) {
+		err = nil // we got everything, this isn't an error
+	}
 	if err != nil || n < int(datalen) {
 		if err == nil {
-			err = errors.New("unable to read entire attachment")
+			if config.CommandLine.BuggyAttachments {
+				log.Warnf("PostHeader.AttachmentData: bugged attachment on post #%d (expected %d bytes, got %d), truncating for retrieval", p.PostId, datalen, n)
+				outdata = outdata[:n]
+			} else {
+				log.Errorf("PostHeader.AttachmentData: unable to read entire attachment to post #%d (expected %d bytes, got %d)", p.PostId, datalen, n)
+				err = errors.New("unable to read entire attachment")
+			}
+		} else {
+			log.Errorf("PostHeader.AttachmentData: error (%v) reading attachment to post #%d (expected %d bytes, got %d)", err, p.PostId, datalen, n)
 		}
 		return nil, err
 	}

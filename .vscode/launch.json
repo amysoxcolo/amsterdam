@@ -17,7 +17,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-C", "${workspaceFolder}/test.yaml"]
+            "args": ["-C", "${workspaceFolder}/test.yaml", "--buggy-attachments"]
         },
     ]
 }
