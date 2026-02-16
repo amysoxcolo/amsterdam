@@ -10,6 +10,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -19,197 +20,142 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 )
 
-// RenderedSideboxItem is an item for display inside a rendered sidebox.
-type RenderedSideboxItem struct {
-	Text  string
-	Text2 string
-	Link  *string
-	Flags map[string]bool
-}
-
-// LinkX dereferences the Link pointer safely.
-func (item *RenderedSideboxItem) LinkX() string {
-	if item.Link == nil {
-		return ""
-	}
-	return *item.Link
-}
-
-// RenderedSidebox is the data for a single rendered sidebox.
-type RenderedSidebox struct {
-	TemplateName string
-	Title        string
-	Subtext      *string
-	Items        []RenderedSideboxItem
-	Flags        map[string]bool
-}
-
-/* buildCommunitiesSidebox creates the data for the "My/Featured Communities" sidebox.
- * Parameters:
- *     uid - UID of the user rendering the page.
- *     out - The RenderedSidebox to be built.
- *     in - The sidebox data from the database.
- * Returns:
- *     Standard Go error status.
+/*----------------------------------------------------------------------------
+ * Sidebox rendering
+ *----------------------------------------------------------------------------
  */
-func buildCommunitiesSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	user, err := database.AmGetUser(ctxt.Ctx(), uid)
-	if err == nil {
-		var g *database.Globals
-		g, err = database.AmGlobals(ctxt.Ctx())
-		if err == nil {
-			if user.IsAnon {
-				out.Title = "Featured Communities"
-			} else {
-				out.Title = "Your Communities"
-			}
-			var l []*database.Community
-			l, err = database.AmGetCommunitiesForUser(ctxt.Ctx(), uid)
-			if err == nil {
-				out.Items = make([]RenderedSideboxItem, len(l))
-				for i, c := range l {
-					out.Items[i].Text = c.Name
-					lk := fmt.Sprintf("/comm/%s/profile", c.Alias)
-					out.Items[i].Link = &lk
-					out.Items[i].Flags = make(map[string]bool)
-					var level uint16
-					level, err = database.AmGetCommunityAccessLevel(ctxt.Ctx(), uid, c.Id)
-					if err == nil && database.AmTestPermission("Community.ShowAdmin", level) {
-						out.Items[i].Flags["admin"] = true
-					}
-				}
-				out.Flags = make(map[string]bool)
-				if user.IsAnon {
-					out.Flags["canManage"] = false
-					out.Flags["canCreate"] = false
-				} else {
-					out.Flags["canManage"] = true
-					out.Flags["canCreate"] = user.BaseLevel >= uint16(g.CommunityCreateLevel)
-				}
-				out.TemplateName = "sb_ftrcomm.jet"
-			}
+
+// SideboxRendering is a wrapper interface used to handle rendering a sidebox's variables.
+type SideboxRendering interface {
+	SetVar(string, any)
+}
+
+// SideboxRenderFunc "renders" a sidebox by outputing variables through an adapter.
+type SideboxRenderFunc func(context.Context, *database.User, *DisplaySidebox, *string, SideboxRendering) error
+
+// DisplaySidebox is the structure used to display a sidebox.
+type DisplaySidebox struct {
+	Title        string            // title to display
+	TitleAnon    string            // title to display if user is anon
+	TemplateName string            // name of template to render
+	Renderer     SideboxRenderFunc // rendering function
+}
+
+// renderSBCommunities renders the Communities sidebox.
+func renderSBCommunities(ctx context.Context, u *database.User, sb *DisplaySidebox, param *string, rx SideboxRendering) error {
+	g, err := database.AmGlobals(ctx)
+	if err != nil {
+		return err
+	}
+	l, err := database.AmGetCommunitiesForUser(ctx, u.Uid)
+	if err != nil {
+		return err
+	}
+	rx.SetVar("communities", l)
+	isAdmin := make([]bool, len(l))
+	for i, c := range l {
+		isAdmin[i] = false
+		level, err := database.AmGetCommunityAccessLevel(ctx, u.Uid, c.Id)
+		if err == nil && database.AmTestPermission("Community.ShowAdmin", level) {
+			isAdmin[i] = true
 		}
 	}
-	_ = in
-	return err
-}
-
-/* buildFeaturedConferences creates the data for the "Featured Conferences" sidebox.
- * Parameters:
- *     ctxt - AmContext for the operation.
- *     uid - UID of the user rendering the page.
- *     out - The RenderedSidebox to be built.
- *     in - The sidebox data from the database.
- * Returns:
- *     Standard Go error status.
- */
-func buildFeaturedConferences(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	user, err := database.AmGetUser(ctxt.Ctx(), uid)
-	if err == nil {
-		if user.IsAnon {
-			out.Title = "Featured Conferences"
-		} else {
-			out.Title = "Your Conference Hotlist"
-		}
-		var hl []database.ConferenceHotlist
-		hl, err := database.AmGetConferenceHotlist(ctxt.Ctx(), user)
-		if err == nil {
-			out.Items = make([]RenderedSideboxItem, len(hl))
-			for i, h := range hl {
-				comm, err := h.Community(ctxt.Ctx())
-				if err != nil {
-					break
-				}
-				conf, err := h.Conference(ctxt.Ctx())
-				if err != nil {
-					break
-				}
-				alias, err := conf.Aliases(ctxt.Ctx())
-				if err != nil {
-					break
-				}
-				out.Items[i].Text = conf.Name
-				out.Items[i].Text2 = comm.Name
-				lk := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias[0])
-				out.Items[i].Link = &lk
-				out.Items[i].Flags = make(map[string]bool)
-				out.Items[i].Flags["new"] = false
-				if !user.IsAnon {
-					nnew, err := conf.UnreadMessages(ctxt.Ctx(), user)
-					if err == nil {
-						out.Items[i].Flags["new"] = (nnew > 0)
-					}
-				}
-			}
-			out.Flags = make(map[string]bool)
-			out.Flags["canManage"] = !(user.IsAnon)
-			out.TemplateName = "sb_ftrconf.jet"
-		}
-	}
-	_ = in
-	return err
-}
-
-/* buildUsersOnline creates the data for the "Users Online" sidebox.
- * Parameters:
- *     uid - UID of the user rendering the page.
- *     out - The RenderedSidebox to be built.
- *     in - The sidebox data from the database.
- * Returns:
- *     Standard Go error status.
- */
-func buildUsersOnline(uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	out.Title = "Users Online"
-	out.TemplateName = "sb_online.jet"
-	anons, users, maxUsers := ui.AmSessions()
-	cap := len(users) + 1
-	if anons > 0 {
-		cap++
-	}
-	out.Items = make([]RenderedSideboxItem, cap)
-	out.Items[0].Text = fmt.Sprintf("%d total (max %d)", len(users)+anons, maxUsers)
-	out.Items[0].Flags = make(map[string]bool)
-	out.Items[0].Flags["nobullet"] = true
-	out.Items[0].Flags["bold"] = true
-	b := 1
-	if anons > 0 {
-		out.Items[1].Text = fmt.Sprintf("Not logged in (%d)", anons)
-		out.Items[1].Flags = make(map[string]bool)
-		b++
-	}
-	for i, n := range users {
-		out.Items[b+i].Text = n
-		lk := fmt.Sprintf("/user/%s", n)
-		out.Items[b+i].Link = &lk
-		out.Items[b+i].Flags = make(map[string]bool)
-		out.Items[b+i].Flags["bold"] = true
-	}
-	_ = uid
-	_ = in
+	rx.SetVar("isAdmin", isAdmin)
+	rx.SetVar("canManage", !(u.IsAnon))
+	rx.SetVar("canCreate", !(u.IsAnon) && u.BaseLevel >= uint16(g.CommunityCreateLevel))
 	return nil
 }
 
-/* buildRenderedSidebox creates a RenderedSidebox for the data in the database.
- * Parameters:
- *     uid - UID of the user rendering the page.
- *     out - The RenderedSidebox to be built.
- *     in - The sidebox data from the database.
- * Returns:
- *     Standard Go error status.
- */
-func buildRenderedSidebox(ctxt ui.AmContext, uid int32, out *RenderedSidebox, in *database.Sidebox) error {
-	switch in.Boxid {
-	case 1:
-		return buildCommunitiesSidebox(ctxt, uid, out, in)
-	case 2:
-		return buildFeaturedConferences(ctxt, uid, out, in)
-	case 3:
-		return buildUsersOnline(uid, out, in)
-	default:
-		return fmt.Errorf("unknown sidebox boxid: %d", in.Boxid)
+// renderSBConferences renders the Conferences sidebox.
+func renderSBConferences(ctx context.Context, u *database.User, sb *DisplaySidebox, param *string, rx SideboxRendering) error {
+	hl, err := database.AmGetConferenceHotlist(ctx, u)
+	if err != nil {
+		return err
 	}
+	comm := make([]*database.Community, len(hl))
+	conf := make([]*database.Conference, len(hl))
+	alias := make([]string, len(hl))
+	newFlag := make([]bool, len(hl))
+	for i, h := range hl {
+		if comm[i], err = h.Community(ctx); err != nil {
+			return err
+		}
+		if conf[i], err = h.Conference(ctx); err != nil {
+			return err
+		}
+		var a []string
+		if a, err = conf[i].Aliases(ctx); err != nil {
+			return err
+		}
+		alias[i] = a[0]
+		newFlag[i] = false
+		if !u.IsAnon {
+			nnew, err := conf[i].UnreadMessages(ctx, u)
+			if err == nil {
+				newFlag[i] = (nnew > 0)
+			}
+		}
+	}
+	rx.SetVar("comm", comm)
+	rx.SetVar("conf", conf)
+	rx.SetVar("alias", alias)
+	rx.SetVar("newFlag", newFlag)
+	rx.SetVar("canManage", !(u.IsAnon))
+	return nil
+}
+
+// renderSBOnlineUsers renders the Online Users sidebox.
+func renderSBOnlineUsers(ctx context.Context, u *database.User, sb *DisplaySidebox, param *string, rx SideboxRendering) error {
+	anons, users, maxUsers := ui.AmSessions()
+	rx.SetVar("total", len(users)+anons)
+	rx.SetVar("maxUsers", maxUsers)
+	rx.SetVar("anons", anons)
+	rx.SetVar("users", users)
+	return nil
+}
+
+// sideboxRegistry contains a registry of all known sideboxes.
+var sideboxRegistry map[int32]*DisplaySidebox
+
+// init sets up the sidebox registry.
+func init() {
+	sideboxRegistry = make(map[int32]*DisplaySidebox)
+	sb1 := DisplaySidebox{
+		Title:        "Your Communities",
+		TitleAnon:    "Featured Communities",
+		TemplateName: "sb_comm.jet",
+		Renderer:     renderSBCommunities,
+	}
+	sideboxRegistry[database.SideboxIDCommunities] = &sb1
+	sb2 := DisplaySidebox{
+		Title:        "Your Conference Hotlist",
+		TitleAnon:    "Featured Conferences",
+		TemplateName: "sb_conf.jet",
+		Renderer:     renderSBConferences,
+	}
+	sideboxRegistry[database.SideboxIDConferences] = &sb2
+	sb3 := DisplaySidebox{
+		Title:        "Users Online",
+		TitleAnon:    "Users Online",
+		TemplateName: "sb_online.jet",
+		Renderer:     renderSBOnlineUsers,
+	}
+	sideboxRegistry[database.SideboxIDOnlineUsers] = &sb3
+	log.Infof("sidebox registry has %d entries", len(sideboxRegistry))
+}
+
+// sbRender is a context used for controlling adding variables for sideboxes.
+type sbRender struct {
+	ctxt ui.AmContext // the UI context
+	id   int32        // ID of sidebox being rendered
+}
+
+// SetVar sets a sidebox rendering value into the context.
+func (rx *sbRender) SetVar(name string, value any) {
+	rx.ctxt.VarMap().Set(fmt.Sprintf("sb%d_%s", rx.id, name), value)
 }
 
 // templateGetTopic returns the pointer to the topic.
@@ -252,20 +198,26 @@ func TopPage(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().SetFunc("post_topicLink", templateTopicLink)
 
 	// Retrieve the sideboxes and create the data to be presented.
-	uid := ctxt.CurrentUserId()
-	sboxes, err := database.AmGetSideboxes(ctxt.Ctx(), uid)
+	sboxes, err := database.AmGetSideboxes(ctxt.Ctx(), ctxt.CurrentUserId())
 	if err != nil {
 		return "error", err
 	}
-
-	rc := make([]RenderedSidebox, len(sboxes))
-	for i, sb := range sboxes {
-		err = buildRenderedSidebox(ctxt, uid, &(rc[i]), sb)
-		if err != nil {
-			return "error", err
+	disp := make([]*DisplaySidebox, 0, len(sboxes))
+	rx := sbRender{ctxt: ctxt, id: 0}
+	for _, sb := range sboxes {
+		dsb, ok := sideboxRegistry[sb.Boxid]
+		if ok {
+			rx.id = sb.Boxid
+			err := dsb.Renderer(ctxt.Ctx(), ctxt.CurrentUser(), dsb, sb.Param, &rx)
+			if err != nil {
+				return "error", err
+			}
+			disp = append(disp, dsb)
+		} else {
+			log.Errorf("TopPage: unknown sidebox ID %d", sb.Boxid)
 		}
 	}
-	ctxt.VarMap().Set("sideboxes", rc)
+	ctxt.VarMap().Set("sideboxes", disp)
 
 	// Final data set.
 	ctxt.SetLeftMenu("top")

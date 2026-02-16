@@ -6,36 +6,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
-<!-- Users Online -->
-{{ sb := .GetScratch("__sidebox") }}
-<div class="mb-4">
-    <div class="bg-blue-600 px-2 py-1 rounded-t">
-        <h3 class="text-white font-bold text-base">{{ sb.Title }}:</h3>
+<!-- Online users sidebox (BOXID = 3) -->
+<div class="space-y-1">
+    <div class="flex items-center">
+        <span class="font-bold text-sm">{{ sb3_total }} total (max {{ sb3_maxUsers }})</span>
     </div>
-    <div class="bg-blue-400 px-2 py-2 rounded-b">
-        <div class="space-y-1">
-            {{ if len(sb.Items) > 0 }}
-                {{ range sb.Items }}
-                    <div class="flex items-center">
-                        {{ if ! .Flags["nobullet"] }}<span class="mr-2">🟣</span>{{ end }}
-                        {{ if .LinkX() == "" }}
-                            {{ if .Flags["bold"] }}
-                                <span class="font-bold text-sm">{{ .Text }}</span>
-                            {{ else }}
-                                <span class="text-sm">{{ .Text }}</span>
-                            {{ end }}
-                        {{ else }}
-                            {{ if .Flags["bold"] }}
-                                <a href="{{ .LinkX() }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ .Text }}</a>
-                            {{ else }}
-                                <a href="{{ .LinkX() }}" class="text-blue-700 hover:text-blue-900 text-sm">{{ .Text }}</a>
-                            {{ end }}
-                        {{ end }}
-                    </div>
-                {{ end }}
-            {{ else }}
-                <div class="text-small">You are not a member of any communities.</div>
-            {{ end }}
+    {{ if sb3_anons > 0 }}
+        <div class="flex items-center">
+            <span class="mr-2">🟣</span>
+            <span class="text-sm">Not logged in ({{ sb3_anons }})</span>
         </div>
-    </div>
+    {{ end }}
+    {{ range _, u := sb3_users }}
+        <div class="flex items-center">
+            <span class="mr-2">🟣</span>
+            <a href="/user/{{ u }}" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ u }}</a>
+        </div>
+    {{ end }}
 </div>

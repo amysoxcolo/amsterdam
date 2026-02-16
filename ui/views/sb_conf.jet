@@ -1,0 +1,32 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<!-- Conferences sidebox (BOXID = 2) -->
+<div class="space-y-2">
+    {{ if len(sb2_comm) > 0 }}
+        {{ range i, c := sb2_comm }}
+            <div class="flex items-center">
+                <span class="mr-2">🟣</span>
+                <div class="text-sm">
+                    <a href="/comm/{{ c.Alias }}/conf/{{ sb2_alias[i] }}" class="text-blue-700 hover:text-blue-900 font-bold">{{ sb2_conf[i].Name }}</a>
+                    <span class="text-black"> ({{ c.Name }})</span>
+                </div>
+                {{ if sb2_newFlag[i] }}<span class="ml-1" title="There are new messages in this conference">🔔</span>{{ end }}
+            </div>
+        {{ end }}
+    {{ else }}
+        <div class="text-small">No conferences in hotlist.</div>
+    {{ end }}
+</div>
+{{ if sb2_canManage }}
+    <div class="mt-3 text-center">
+        <span class="text-black text-xs font-bold">
+            [ <a href="/hotlist" class="text-blue-700 hover:text-blue-900">Manage</a> ]
+        </span>
+    </div>
+{{ end }}

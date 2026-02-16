@@ -22,6 +22,13 @@ type Sidebox struct {
 	Param    *string `db:"param"`
 }
 
+// Known sidebox IDs.
+const (
+	SideboxIDCommunities = int32(1)
+	SideboxIDConferences = int32(2)
+	SideboxIDOnlineUsers = int32(3)
+)
+
 // copySideboxes copies sideboxes from one user to another.
 func copySideboxes(ctx context.Context, tx *sqlx.Tx, toUid int32, fromUid int32) error {
 	sbox := make([]Sidebox, 0, 3)

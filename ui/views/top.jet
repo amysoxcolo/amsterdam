@@ -53,11 +53,16 @@
 
     <!-- RIGHT SIDEBAR -->
     <div class="w-80 p-4">
-        {{ range i, s := sideboxes }}
-            {{ .SetScratch("__sidebox", s) }}
-            {{ include s.TemplateName }}
+        {{ range _, s := sideboxes }}
+            <div class="mb-4">
+                <div class="bg-blue-600 px-2 py-1 rounded-t">
+                    <h3 class="text-white font-bold text-base">{{ if .CurrentUser().IsAnon }}{{ s.TitleAnon }}{{ else }}{{ s.Title }}{{ end }}:</h3>
+                </div>
+                <div class="bg-blue-400 px-2 py-2 rounded-b">
+                    {{ include s.TemplateName }}
+                </div>
+            </div>
         {{ end }}
-
         {{ if !.CurrentUser().IsAnon }}
             <div class="text-center">
                 <a href="/TODO/config-sideboxes"

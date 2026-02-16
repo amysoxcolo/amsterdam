@@ -1,0 +1,37 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+ <!-- Communities sidebox (BOXID = 1) -->
+<div class="space-y-2">
+    {{ if len(sb1_communities) > 0 }}
+        {{ range i, c := sb1_communities }}
+            <div class="flex items-center">
+                <span class="mr-2">🟣</span>
+                <a href="/comm/{{ c.Alias }}/profile" class="text-blue-700 hover:text-blue-900 font-bold text-sm">{{ c.Name }}</a>
+                {{ if sb1_isAdmin[i] }}<span class="ml-1" title="You are a host of this community">👑</span>{{ end }}
+            </div>
+        {{ end }}
+    {{ else }}
+        <div class="text-small">You are not a member of any communities.</div>
+    {{ end }}
+</div>
+{{ if sb1_canManage || sb1_canCreate }}
+    <div class="mt-3 text-center">
+        <span class="text-black text-xs font-bold">
+            [
+            {{ if sb1_canManage }}
+                <a href="/manage_comm" class="text-blue-700 hover:text-blue-900">Manage</a>
+                {{ if sb1_canCreate }}|{{ end }}
+            {{ end }}
+            {{ if sb1_canCreate }}
+            <a href="/create_comm" class="text-blue-700 hover:text-blue-900">Create New</a>
+            {{ end }}
+            ]
+        </span>
+    </div>
+{{ end }}
