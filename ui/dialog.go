@@ -13,6 +13,7 @@ package ui
 import (
 	"embed"
 	"fmt"
+	"math"
 	"net/mail"
 	"strconv"
 	"strings"
@@ -66,6 +67,11 @@ type VRange struct {
 	High int
 }
 
+// IsEmpty tells us if a value range is empty.
+func (vr *VRange) IsEmpty() bool {
+	return vr.Low == -1 && vr.High == -1
+}
+
 //go:embed dialogs/*
 var dialogs embed.FS
 
@@ -91,6 +97,16 @@ func AmLoadDialog(name string) (*Dialog, error) {
 				}
 				if fld.Type == "date" && fld.Param == "" {
 					d.Fields[i].Param = "year:-100"
+				}
+				if fld.Type == "integer" && fld.Size == 0 {
+					vr := fld.ValueRange()
+					if !vr.IsEmpty() {
+						// compute the number of digits in each end of the range and take the maximum as the size
+						dlow := int(math.Floor(math.Log10(float64(vr.Low)))) + 1
+						dhigh := int(math.Floor(math.Log10(float64(vr.High)))) + 1
+						d.Fields[i].Size = max(dlow, dhigh)
+						d.Fields[i].MaxLength = d.Fields[i].Size
+					}
 				}
 				if fld.Type == "dropdown" && len(fld.Choices) == 0 {
 					return nil, fmt.Errorf("dropdown field %s in dialog %s has no choices", fld.Name, name)
