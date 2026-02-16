@@ -224,30 +224,77 @@ func JoinCommunityWithKey(ctxt ui.AmContext) (string, any) {
 	return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
 }
 
-/* UnjoinCommunity starts the process of unjoining a community.
+/* ManageCommunities displays the current list of communities with unjoin buttons.
  * Parameters:
  *     ctxt - The AmContext for the request.
  * Returns:
  *     Command string dictating what to be rendered.
  *     Data as a parameter for the command string.
  */
-func UnjoinCommunity(ctxt ui.AmContext) (string, any) {
-	me := ctxt.CurrentUser()
-	comm := ctxt.CurrentCommunity() // set by middleware
-	mbr, lock, _, err := comm.Membership(ctxt.Ctx(), me)
+func ManageCommunities(ctxt ui.AmContext) (string, any) {
+	if ctxt.CurrentUser().IsAnon {
+		return "redirect", "/"
+	}
+
+	comms, err := database.AmGetCommunitiesForUser(ctxt.Ctx(), ctxt.CurrentUserId())
 	if err != nil {
 		return "error", err
 	}
-	if !mbr {
-		// not a member, just redirect to profile
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
+
+	canUnjoin := make([]bool, len(comms))
+	for i, c := range comms {
+		_, lock, _, err := c.Membership(ctxt.Ctx(), ctxt.CurrentUser())
+		if err != nil {
+			return "error", err
+		}
+		canUnjoin[i] = !lock
 	}
-	if lock {
-		return "error", ENOUNJOIN
+
+	ctxt.VarMap().Set("communities", comms)
+	ctxt.VarMap().Set("canUnjoin", canUnjoin)
+	ctxt.SetFrameTitle("Your Communities")
+	ctxt.SetLeftMenu("top")
+	return "framed", "comlist.jet"
+}
+
+/* UnjoinCommunity starts the process of unjoining a community. This is a meta-function which sets the return URL
+ * based on its parameter.
+ * Parameters:
+ *     uctx - Use context for the function:
+ *	       prof - Return URL is to the community profile page.
+ *         manage - Return URL is to the "manage communities" page.
+ * Returns:
+ *     Page function for unjoining a community.
+ */
+func UnjoinCommunity(uctx string) ui.AmPageFunc {
+	var returnTemplate string
+	switch uctx {
+	case "prof":
+		returnTemplate = "/comm/[A]/profile"
+	case "manage":
+		returnTemplate = "/manage_comm"
+	default:
+		panic(fmt.Sprintf("config error! uctx = %s", uctx))
 	}
-	ctxt.VarMap().Set("comm", comm)
-	ctxt.SetFrameTitle("Unjoin Community")
-	return "framed", "unjoin.jet"
+	return func(ctxt ui.AmContext) (string, any) {
+		comm := ctxt.CurrentCommunity()
+		returnURL := strings.ReplaceAll(returnTemplate, "[A]", comm.Alias)
+		mbr, lock, _, err := comm.Membership(ctxt.Ctx(), ctxt.CurrentUser())
+		if err != nil {
+			return "error", err
+		}
+		if !mbr {
+			// not a member, just redirect to profile
+			return "redirect", returnURL
+		}
+		if lock {
+			return "error", ENOUNJOIN
+		}
+		ctxt.VarMap().Set("comm", comm)
+		ctxt.VarMap().Set("returnURL", returnURL)
+		ctxt.SetFrameTitle("Unjoin Community")
+		return "framed", "unjoin.jet"
+	}
 }
 
 /* UnjoinCommunityConfirm finishes the process of unjoining a community.
@@ -260,19 +307,23 @@ func UnjoinCommunity(ctxt ui.AmContext) (string, any) {
 func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any) {
 	me := ctxt.CurrentUser()
 	comm := ctxt.CurrentCommunity() // set by middleware
+	returnURL := ctxt.FormField("returnURL")
+	if returnURL == "" {
+		returnURL = fmt.Sprintf("/comm/%s/profile", comm.Alias)
+	}
 	mbr, lock, _, err := comm.Membership(ctxt.Ctx(), me)
 	if err != nil {
 		return "error", err
 	}
 	if !mbr {
 		// not a member, just redirect to profile
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
+		return "redirect", returnURL
 	}
 	if lock {
 		return "error", ENOUNJOIN
 	}
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
+		return "redirect", returnURL
 	}
 	if ctxt.FormFieldIsSet("unjoin") {
 		err = comm.SetMembership(ctxt.Ctx(), me, 0, false, me.Uid, ctxt.RemoteIP())
@@ -280,7 +331,7 @@ func UnjoinCommunityConfirm(ctxt ui.AmContext) (string, any) {
 			return "error", err
 		}
 		ctxt.ClearCommunityContext()
-		return "redirect", fmt.Sprintf("/comm/%s/profile", comm.Alias)
+		return "redirect", returnURL
 	}
 	return "error", EBUTTON
 }

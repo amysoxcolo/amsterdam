@@ -1,0 +1,43 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold">Your Communities</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="/">
+            <span>←</span>
+            Return to Front Page
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-1 mb-6">
+        {{ range i, c := communities }}
+            <div class="flex items-start gap-1">
+                <span class="text-sm pt-0.5">🟣</span>
+                <a href="/comm/{{ c.Alias }}/profile" class="text-blue-700 hover:text-blue-900">{{ c.Name }}</a>
+                {{ if canUnjoin[i] }}
+                    <a href="/comm/{{ c.Alias }}/unj" class="hover:scale-125 inline-block transition-transform" title="Unjoin">🗙</a>
+                {{ end }}
+            </div>
+        {{ end }}
+    </div>
+
+    <!-- Information Note -->
+    <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+        <p class="text-sm text-gray-700">
+            <strong>Note:</strong> Click on the 🗙 symbol to unjoin a community. You will lose access to that
+            community's resources and discussions.
+        </p>
+    </div>
+</div>

@@ -199,10 +199,6 @@ func (c *Community) Membership(ctx context.Context, u *User) (bool, bool, uint16
 		m := mbr.(*memberCacheData)
 		return m.isMember, m.locked, m.level, nil
 	}
-	if AmTestPermission("Community.NoJoinRequired", u.BaseLevel) {
-		// "no join required" - they are effectively a member, but don't cache that
-		return true, false, u.BaseLevel, nil
-	}
 	row := amdb.QueryRowContext(ctx, "SELECT locked, granted_lvl FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
 	var locked bool
 	var level uint16
@@ -212,6 +208,10 @@ func (c *Community) Membership(ctx context.Context, u *User) (bool, bool, uint16
 		return true, locked, level, nil
 	}
 	if err == sql.ErrNoRows {
+		if AmTestPermission("Community.NoJoinRequired", u.BaseLevel) {
+			// "no join required" - they are effectively a member, but don't cache that
+			return true, false, u.BaseLevel, nil
+		}
 		err = nil
 		memberCache.Add(key, &memberCacheData{isMember: false, locked: false, level: uint16(0)})
 	}

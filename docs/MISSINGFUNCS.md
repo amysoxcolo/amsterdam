@@ -51,7 +51,7 @@ _(italicized items can be deferred)_
   - ~~Post Filter User~~
   - ~~Post Move~~
   - ~~Post Publish~~
-- Manage Communities on communities sidebox
+- ~~Manage Communities on communities sidebox~~
 - ~~Conference Hotlist sidebox~~
 - ~~"New" flag on Conference Hotlist sidebox~~
 - ~~Manage on Conference Hotlist sidebox~~

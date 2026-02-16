@@ -31,7 +31,7 @@
                 <span class="text-black text-xs font-bold">
                     [
                     {{ if sb.Flags["canManage"] }}
-                        <a href="/TODO/manage_comms" class="text-blue-700 hover:text-blue-900">Manage</a>
+                        <a href="/manage_comm" class="text-blue-700 hover:text-blue-900">Manage</a>
                         {{ if sb.Flags["canCreate"] }}|{{ end }}
                     {{ end }}
                     {{ if sb.Flags["canCreate"] }}

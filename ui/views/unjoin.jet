@@ -42,6 +42,7 @@
                 <!-- Action Buttons -->
                 <div class="flex gap-4 justify-center">
                     <form method="POST" action="/comm/{{ comm.Alias }}/unjoin">
+                        <input type="hidden" name="returnURL" value="{{ returnURL }}">
                         <button type="submit" name="cancel"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">✗ Cancel</button>
                         <button type="submit" name="unjoin"

@@ -136,7 +136,8 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 // expireTime is the expiration time sent in the dynamic headers.
 var expireTime string = lctime.Strftime("%c", time.Unix(1, 0))
 
-type PageFunc func(AmContext) (string, any)
+// AmPageFunc is the definition for an Amsterdam "page function" that handles most of the work and defers to the wrapper for rendering.
+type AmPageFunc func(AmContext) (string, any)
 
 /* AmWrap wraps the Amsterdam handler function in a wrapper that implements the spec for
  * Echo handler functions.
@@ -145,7 +146,7 @@ type PageFunc func(AmContext) (string, any)
  * Returns:
  *     The wrapped function.
  */
-func AmWrap(myfunc PageFunc) echo.HandlerFunc {
+func AmWrap(myfunc AmPageFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 
