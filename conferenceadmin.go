@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/exports"
@@ -730,7 +731,7 @@ func ConferenceExport(ctxt ui.AmContext) (string, any) {
 	r, w := io.Pipe()
 	go func() {
 		start := time.Now()
-		err := exports.VCIFStreamTopicFile(context.Background(), w, topics)
+		err := exports.VCIFStreamTopicFile(context.Background(), w, topics, config.CommandLine.BuggyAttachments)
 		if err != nil {
 			log.Errorf("ConferenceExport task failed with %v", err)
 			s := fmt.Sprintf("<!-- ***PROCESSING ERROR*** %v -->\r\n", err)

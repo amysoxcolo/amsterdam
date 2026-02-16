@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -106,7 +107,7 @@ func AttachmentSend(ctxt ui.AmContext) (string, any) {
 	} else if info == nil {
 		return "error", echo.NewHTTPError(http.StatusNotFound, "attachment not found")
 	}
-	data, err := hdr.AttachmentData(ctxt.Ctx())
+	data, err := hdr.AttachmentData(ctxt.Ctx(), config.CommandLine.BuggyAttachments)
 	if err != nil {
 		return "error", err
 	}

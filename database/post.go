@@ -103,11 +103,12 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
 /* AttachmentData returns attachment data for a post.
  * Parameters:
  *     ctx - Standard Go context value.
+ *     bugWorkaround - Work around certain bugs in extracting compressed data, if true.
  * Returns:
  *     Attachment data as a byte array.
  *     Standard Go error status.
  */
-func (p *PostHeader) AttachmentData(ctx context.Context) ([]byte, error) {
+func (p *PostHeader) AttachmentData(ctx context.Context, bugWorkaround bool) ([]byte, error) {
 	if p.ScribbleDate != nil && p.ScribbleUid != nil {
 		return nil, errors.New("no attachment data for scribbled post")
 	}
@@ -136,7 +137,7 @@ func (p *PostHeader) AttachmentData(ctx context.Context) ([]byte, error) {
 	}
 	if err != nil || n < int(datalen) {
 		if err == nil {
-			if config.CommandLine.BuggyAttachments {
+			if bugWorkaround {
 				log.Warnf("PostHeader.AttachmentData: bugged attachment on post #%d (expected %d bytes, got %d), truncating for retrieval", p.PostId, datalen, n)
 				outdata = outdata[:n]
 			} else {

@@ -80,10 +80,11 @@ type VCIFPostAttachment struct {
  *     ctx - Standard Go context value.
  *     target - Pointer to the target VCIF post structure.
  *     post - The post to fill the target from.
+ *     bugWorkaround - Work around bug in extracting compressed attachment data.
  * Returns:
  *     Standard Go error status.
  */
-func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHeader) error {
+func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHeader, bugWorkaround bool) error {
 	// Fill in the posting user.
 	user, err := post.Creator(ctx)
 	if err != nil {
@@ -127,7 +128,7 @@ func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHead
 				MIMEType: ainfo.MIMEType,
 				Filename: ainfo.Filename,
 			}
-			data, err := post.AttachmentData(ctx)
+			data, err := post.AttachmentData(ctx, bugWorkaround)
 			if err != nil {
 				return err
 			}
@@ -160,10 +161,11 @@ func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHead
  *     ctx - Standard Go context value.
  *     target - Pointer to the target VCIF topic value.
  *     topic - The topic to fill the target from.
+ *     bugWorkaround - Work around bug in extracting compressed attachment data.
  * Returns:
  *     Standard Go error status.
  */
-func VCIFFromTopic(ctx context.Context, target *VCIFTopic, topic *database.Topic) error {
+func VCIFFromTopic(ctx context.Context, target *VCIFTopic, topic *database.Topic, bugWorkaround bool) error {
 	// Get all posts in the topic.
 	posts, err := database.AmGetPostRange(ctx, topic, 0, topic.TopMessage)
 	if err != nil {
@@ -173,7 +175,7 @@ func VCIFFromTopic(ctx context.Context, target *VCIFTopic, topic *database.Topic
 	// Build the posts array.
 	myPostArray := make([]VCIFPost, len(posts))
 	for i, p := range posts {
-		err = VCIFFromPost(ctx, &(myPostArray[i]), p)
+		err = VCIFFromPost(ctx, &(myPostArray[i]), p, bugWorkaround)
 		if err != nil {
 			return fmt.Errorf("error converting post %d: %v", p.Num, err)
 		}
@@ -193,10 +195,11 @@ func VCIFFromTopic(ctx context.Context, target *VCIFTopic, topic *database.Topic
  *     ctx - Standard Go context value.
  *     w - Writer to receive the XML data.
  *     topics - Array of topics to be written.
+ *     bugWorkaround - Work around bug in extracting compressed attachment data.
  * Returns:
  *     Standard Go error status.
  */
-func VCIFStreamTopicFile(ctx context.Context, w io.Writer, topics []*database.Topic) error {
+func VCIFStreamTopicFile(ctx context.Context, w io.Writer, topics []*database.Topic, bugWorkaround bool) error {
 	// Write the header of the file.
 	var b strings.Builder
 	b.WriteString(xml.Header)
@@ -213,7 +216,7 @@ func VCIFStreamTopicFile(ctx context.Context, w io.Writer, topics []*database.To
 	// Encode each topic in turn and write it to the writer.
 	for _, t := range topics {
 		var encodedTopic VCIFTopic
-		err = VCIFFromTopic(ctx, &encodedTopic, t)
+		err = VCIFFromTopic(ctx, &encodedTopic, t, bugWorkaround)
 		if err != nil {
 			return fmt.Errorf("error converting topic %d: %v", t.Number, err)
 		}
