@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -72,6 +73,8 @@ func setupEcho() *echo.Echo {
 	e.GET("/user/:uname", ui.AmWrap(ShowProfile))
 	e.POST("/quick_email", ui.AmWrap(QuickEMail))
 	e.GET("/hotlist", ui.AmWrap(Hotlist))
+	e.GET("/sideboxes", ui.AmWrap(ManageSideboxes))
+	e.POST("/sideboxes", ui.AmWrap(AddSidebox))
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
@@ -175,8 +178,8 @@ func main() {
 	closer = ui.SetupAmContext()
 	defer closer()
 
-	// Set up to trap SIGINT and shut down gracefully
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	// Set up to trap SIGINT/SIGTERM and shut down gracefully
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	// Set up ampool.

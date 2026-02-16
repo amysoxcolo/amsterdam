@@ -12,8 +12,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"reflect"
+	"slices"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -38,6 +41,7 @@ type SideboxRenderFunc func(context.Context, *database.User, *DisplaySidebox, *s
 
 // DisplaySidebox is the structure used to display a sidebox.
 type DisplaySidebox struct {
+	BoxId        int32             // box ID
 	Title        string            // title to display
 	TitleAnon    string            // title to display if user is anon
 	TemplateName string            // name of template to render
@@ -124,6 +128,7 @@ var sideboxRegistry map[int32]*DisplaySidebox
 func init() {
 	sideboxRegistry = make(map[int32]*DisplaySidebox)
 	sb1 := DisplaySidebox{
+		BoxId:        database.SideboxIDCommunities,
 		Title:        "Your Communities",
 		TitleAnon:    "Featured Communities",
 		TemplateName: "sb_comm.jet",
@@ -131,6 +136,7 @@ func init() {
 	}
 	sideboxRegistry[database.SideboxIDCommunities] = &sb1
 	sb2 := DisplaySidebox{
+		BoxId:        database.SideboxIDConferences,
 		Title:        "Your Conference Hotlist",
 		TitleAnon:    "Featured Conferences",
 		TemplateName: "sb_conf.jet",
@@ -138,6 +144,7 @@ func init() {
 	}
 	sideboxRegistry[database.SideboxIDConferences] = &sb2
 	sb3 := DisplaySidebox{
+		BoxId:        database.SideboxIDOnlineUsers,
 		Title:        "Users Online",
 		TitleAnon:    "Users Online",
 		TemplateName: "sb_online.jet",
@@ -205,8 +212,7 @@ func TopPage(ctxt ui.AmContext) (string, any) {
 	disp := make([]*DisplaySidebox, 0, len(sboxes))
 	rx := sbRender{ctxt: ctxt, id: 0}
 	for _, sb := range sboxes {
-		dsb, ok := sideboxRegistry[sb.Boxid]
-		if ok {
+		if dsb, ok := sideboxRegistry[sb.Boxid]; ok {
 			rx.id = sb.Boxid
 			err := dsb.Renderer(ctxt.Ctx(), ctxt.CurrentUser(), dsb, sb.Param, &rx)
 			if err != nil {
@@ -273,4 +279,102 @@ func JumpToShortcut(ctxt ui.AmContext) (string, any) {
 		return "error", fmt.Sprintf("invalid target '%s' for link: %s", target, ctxt.URLParam("postlink"))
 	}
 	return "redirect", targetURL
+}
+
+/* ManageSideboxes displays the "sidebox management" page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ManageSideboxes(ctxt ui.AmContext) (string, any) {
+	if ctxt.CurrentUser().IsAnon {
+		return "error", ELOGIN
+	}
+
+	// Retrieve the sideboxes from the database.
+	sboxes, err := database.AmGetSideboxes(ctxt.Ctx(), ctxt.CurrentUserId())
+	if err != nil {
+		return "error", err
+	}
+
+	if ctxt.HasParameter("m") {
+		index := ctxt.QueryParamInt("m", -1)
+		if index == -1 {
+			return "error", EINVAL
+		}
+		delta := ctxt.QueryParamInt("n", 0)
+		if delta == 0 {
+			return "error", EINVAL
+		}
+		err = database.AmReorderSideboxes(ctxt.Ctx(), ctxt.CurrentUserId(), sboxes[index].Sequence, sboxes[index+delta].Sequence)
+		if err != nil {
+			return "error", err
+		}
+		tmp := sboxes[index]
+		sboxes[index] = sboxes[index+delta]
+		sboxes[index+delta] = tmp
+	} else if ctxt.HasParameter("d") {
+		index := ctxt.QueryParamInt("d", -1)
+		if index == -1 {
+			return "error", EINVAL
+		}
+		err = database.AmRemoveSidebox(ctxt.Ctx(), ctxt.CurrentUserId(), sboxes[index].Boxid)
+		if err != nil {
+			return "error", err
+		}
+		sboxes = append(sboxes[:index], sboxes[index+1:]...)
+	}
+
+	// Create the display list.
+	avail := maps.Clone(sideboxRegistry)
+	disp := make([]*DisplaySidebox, 0, len(sboxes))
+	for _, sb := range sboxes {
+		if dsb, ok := avail[sb.Boxid]; ok {
+			disp = append(disp, dsb)
+			delete(avail, sb.Boxid)
+		} else {
+			log.Errorf("TopPage: unknown sidebox ID %d", sb.Boxid)
+		}
+	}
+	ctxt.VarMap().Set("sideboxes", disp)
+
+	// Create the list of available sideboxes to add.
+	addList := make([]*DisplaySidebox, 0, len(avail))
+	for _, v := range avail {
+		addList = append(addList, v)
+	}
+	if len(addList) > 0 {
+		slices.SortFunc(addList, func(a, b *DisplaySidebox) int {
+			return strings.Compare(strings.ToLower(a.Title), strings.ToLower(b.Title))
+		})
+	}
+	ctxt.VarMap().Set("addList", addList)
+
+	ctxt.SetFrameTitle("Your Front Page Configuration")
+	return "framed", "sideboxes.jet"
+}
+
+/* AddSidebox performs the "add sidebox" operation.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func AddSidebox(ctxt ui.AmContext) (string, any) {
+	if ctxt.CurrentUser().IsAnon {
+		return "error", ELOGIN
+	}
+
+	newId, err := ctxt.FormFieldInt("sbid")
+	if err != nil {
+		return "error", err
+	}
+	err = database.AmAppendSidebox(ctxt.Ctx(), ctxt.CurrentUserId(), int32(newId), nil)
+	if err != nil {
+		return "error", err
+	}
+	return "redirect", "/sideboxes"
 }

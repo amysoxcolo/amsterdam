@@ -55,7 +55,7 @@ _(italicized items can be deferred)_
 - ~~Conference Hotlist sidebox~~
 - ~~"New" flag on Conference Hotlist sidebox~~
 - ~~Manage on Conference Hotlist sidebox~~
-- Sidebox configuration
+- ~~Sidebox configuration~~
 - Topics view:
   - ~~Find~~
   - Manage:

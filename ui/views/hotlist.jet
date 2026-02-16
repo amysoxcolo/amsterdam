@@ -13,6 +13,14 @@
         <hr class="border-2 border-gray-400 w-4/5 mb-6">
     </div>
 
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="/">
+            <span>←</span>
+            Return to Front Page
+        </a>
+    </div>
+
     <!-- Hotlist Table -->
     <div class="max-w-4xl mb-8">
         <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">

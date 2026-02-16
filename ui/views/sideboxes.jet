@@ -1,0 +1,100 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">Your Front Page Configuration</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="/">
+            <span>←</span>
+            Return to Front Page
+        </a>
+    </div>
+
+    <!-- Sidebox Table -->
+    <div class="max-w-4xl mb-8">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            {{ if len(sideboxes) > 0 }}
+                <table class="w-full">
+                    <tbody class="divide-y divide-gray-200">
+                        {{ range i, sb := sideboxes }}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    {{ if i < (len(sideboxes) - 1) }}
+                                        <a href="/sideboxes?m={{ i }}&n=1" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                            title="Move Down">⬇️</a>
+                                    {{ else }}
+                                        <span class="text-2xl text-gray-300">&nbsp;</span>
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    {{ if i > 0 }}
+                                        <a href="/sideboxes?m={{ i }}&n=-1" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                            title="Move Up">⬆️</a>
+                                    {{ else }}
+                                        <span class="text-2xl text-gray-300">&nbsp;</span>
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    <a href="/sideboxes?d={{ i }}" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                        title="Remove">❌</a>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <div class="font-bold text-black">{{ sb.Title }}</div>
+                                </td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            {{ else }}
+                <span class="text-gray-800"><i>No sideboxes currently configured.</i></span>
+            {{ end }}
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="max-w-4xl mb-6">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h2 class="text-blue-800 font-bold text-lg mb-3">How to update your front page configuration:</h2>
+            <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⬇️</span>
+                    <span class="text-gray-700">Click this symbol to move the specified sidebox down on the front page.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⬆️</span>
+                    <span class="text-gray-700">Click this symbol to move the specified sidebox up on the front page.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">❌</span>
+                    <span class="text-gray-700">Click this symbol to remove the specified sidebox from the front page.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ if len(addList) > 0 }}
+        <form method="POST" action="/sideboxes">
+            <div class="justify-between mb-6">
+                <label for="sbid" class="w-64 text-right pr-4 text-black text-sm">Add sidebox:</label>
+                <select id="sbid" name="sbid" class="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    {{ range _, sb := addList }}
+                        <option value="{{ sb.BoxId }}">{{ sb.Title }}</option>
+                    {{ end }}
+                </select>
+                <button type="submit" name="add" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Add</button>
+            </div>
+        </form>
+    {{ end }}
+
+</div>
