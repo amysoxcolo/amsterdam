@@ -44,7 +44,7 @@ menudefs:
         disabled: true
         permission: "Global.SysAdminAccess"
       - text: "User Account Management"
-        link: "/TODO/sysadmin/find_user"
+        link: "/sysadmin/users"
         permission: "Global.SysAdminAccess"
       - text: "System Audit Logs"
         link: "/TODO/sysadmin/audit"

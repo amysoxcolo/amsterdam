@@ -17,6 +17,21 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
+// SearchUserFieldMap maps field names to search field indexes.
+var SearchUserFieldMap = map[string]int{
+	"name":  database.SearchUserFieldName,
+	"descr": database.SearchUserFieldDescription,
+	"first": database.SearchUserFieldFirstName,
+	"last":  database.SearchUserFieldLastName,
+}
+
+// SearchUserOperMap maps operator names to search operator indices.
+var SearchUserOperMap = map[string]int{
+	"st": database.SearchUserOperPrefix,
+	"in": database.SearchUserOperSubstring,
+	"re": database.SearchUserOperRegex,
+}
+
 // loadCategoryInformation loads the current category information to the context.
 func loadCategoryInformation(ctxt ui.AmContext, offset int) error {
 	if ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
@@ -217,27 +232,12 @@ func Find(ctxt ui.AmContext) (string, any) {
 		}
 	case "USR":
 		var iField, iOper int
-		switch field {
-		case "name":
-			iField = database.SearchUserFieldName
-		case "descr":
-			iField = database.SearchUserFieldDescription
-		case "first":
-			iField = database.SearchUserFieldFirstName
-		case "last":
-			iField = database.SearchUserFieldLastName
-		default:
+		var ok bool
+		if iField, ok = SearchUserFieldMap[field]; !ok {
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
 			return "framed", "find.jet"
 		}
-		switch oper {
-		case "st":
-			iOper = database.SearchUserOperPrefix
-		case "in":
-			iOper = database.SearchUserOperSubstring
-		case "re":
-			iOper = database.SearchUserOperRegex
-		default:
+		if iOper, ok = SearchUserOperMap[oper]; !ok {
 			ctxt.VarMap().Set("errorMessage", "invalid parameter to find")
 			return "framed", "find.jet"
 		}

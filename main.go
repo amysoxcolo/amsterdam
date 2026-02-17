@@ -30,6 +30,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var GetAndPost = []string{http.MethodGet, http.MethodPost}
+
 // setupEcho creates, configures, and returns a new Echo instance.
 func setupEcho() *echo.Echo {
 	e := echo.New()
@@ -46,9 +48,7 @@ func setupEcho() *echo.Echo {
 	e.Use(LogrusMiddleware, ui.SessionStoreInjector, ui.ContextCreator)
 	e.Use(ui.IPBanTest, ui.CookieLoginTest)
 
-	fn := ui.AmWrap(NotImplPage)
-	e.GET("/TODO/*", fn)
-	e.POST("/TODO/*", fn)
+	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage))
 	e.GET("/img/*", ui.AmServeImage)
 	e.GET("/static/*", ui.AmStaticFileHandler())
 	e.GET("/go/:postlink", ui.AmWrap(JumpToShortcut))
@@ -78,6 +78,7 @@ func setupEcho() *echo.Echo {
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 	e.GET("/sysadmin/globals", ui.AmWrap(GlobalPropertiesForm))
 	e.POST("/sysadmin/globals", ui.AmWrap(GlobalPropertiesSet))
+	e.Match(GetAndPost, "/sysadmin/users", ui.AmWrap(UserManagementSearch))
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
 	e.GET("/manage_comm", ui.AmWrap(ManageCommunities))
@@ -87,7 +88,7 @@ func setupEcho() *echo.Echo {
 
 	// community group
 	commGroup := e.Group("/comm/:cid", ui.SetCommunity)
-	fn = ui.AmWrap(ShowCommunity)
+	fn := ui.AmWrap(ShowCommunity)
 	commGroup.GET("", fn)
 	commGroup.GET("/profile", fn)
 	commGroup.GET("/join", ui.AmWrap(JoinCommunity))
@@ -123,9 +124,7 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/edit", ui.AmWrap(EditConference))
 	confGroup.GET("/aliases", ui.AmWrap(ConferenceAliasForm))
 	confGroup.POST("/aliases", ui.AmWrap(ConferenceAliasAdd))
-	fn = ui.AmWrap(ConferenceMembers)
-	confGroup.GET("/members", fn)
-	confGroup.POST("/members", fn)
+	confGroup.Match(GetAndPost, "/members", ui.AmWrap(ConferenceMembers))
 	confGroup.GET("/custom", ui.AmWrap(ConfCustomForm))
 	confGroup.POST("/custom", ui.AmWrap(ConfCustom))
 	confGroup.GET("/activity", ui.AmWrap(ConfReports))

@@ -218,21 +218,6 @@ type CMData struct {
 	Level uint16
 }
 
-// fieldMap maps field names to search field indexes.
-var fieldMap = map[string]int{
-	"name":  database.SearchUserFieldName,
-	"descr": database.SearchUserFieldDescription,
-	"first": database.SearchUserFieldFirstName,
-	"last":  database.SearchUserFieldLastName,
-}
-
-// operMap maps operator names to search operator indices.
-var operMap = map[string]int{
-	"st": database.SearchUserOperPrefix,
-	"in": database.SearchUserOperSubstring,
-	"re": database.SearchUserOperRegex,
-}
-
 /* ConferenceMembers shows the conference members and allows their access levels to be adjusted.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -350,7 +335,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any) {
 			mr[i].Level = members[i].Level
 		}
 	case "comm":
-		ulist, t, err := database.AmSearchCommunityMembers(ctxt.Ctx(), comm, fieldMap[field], operMap[oper], term, offset, int(maxPage))
+		ulist, t, err := database.AmSearchCommunityMembers(ctxt.Ctx(), comm, SearchUserFieldMap[field], SearchUserOperMap[oper], term, offset, int(maxPage))
 		if err != nil {
 			return "error", err
 		}

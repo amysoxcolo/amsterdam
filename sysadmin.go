@@ -11,6 +11,9 @@
 package main
 
 import (
+	"fmt"
+	"strconv"
+
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
@@ -137,4 +140,68 @@ func GlobalPropertiesSet(ctxt ui.AmContext) (string, any) {
 		return "error", err
 	}
 	return "redirect", "/sysadmin"
+}
+
+/* UserManagementSearch displays the user management page and performs searches.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func UserManagementSearch(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+
+	field := "name"
+	oper := "st"
+	term := ""
+	ofs := 0
+	doSearch := false
+	listMax := int(ctxt.Globals().MaxSearchPage)
+	if ctxt.Verb() == "POST" {
+		field = ctxt.FormField("field")
+		oper = ctxt.FormField("oper")
+		term = ctxt.FormField("term")
+		ofsStr := ctxt.FormField("ofs")
+		if n, err := strconv.Atoi(ofsStr); err == nil {
+			ofs = n
+		}
+		if ctxt.FormFieldIsSet("prev") {
+			ofs = max(0, ofs-listMax)
+		} else if ctxt.FormFieldIsSet("next") {
+			ofs += listMax
+		}
+		doSearch = true
+	}
+	ctxt.VarMap().Set("field", field)
+	ctxt.VarMap().Set("oper", oper)
+	ctxt.VarMap().Set("term", term)
+	ctxt.VarMap().Set("ofs", ofs)
+	if doSearch {
+		ulist, total, err := database.AmSearchUsers(ctxt.Ctx(), SearchUserFieldMap[field], SearchUserOperMap[oper], term, ofs, listMax)
+		if err == nil {
+			resultLine := ""
+			if len(ulist) == 0 {
+				resultLine = "None found"
+			} else {
+				resultLine = fmt.Sprintf("Displaying %d-%d of %d", ofs+1, ofs+len(ulist), total)
+			}
+			ctxt.VarMap().Set("resultHeader", resultLine)
+			if len(ulist) > 0 {
+				ctxt.VarMap().Set("resultList", ulist)
+				if ofs > 0 {
+					ctxt.VarMap().Set("resultShowPrev", true)
+				}
+				if (ofs + listMax) < total {
+					ctxt.VarMap().Set("resultShowNext", true)
+				}
+			}
+		} else {
+			ctxt.VarMap().Set("errorMessage", err.Error())
+		}
+	}
+	ctxt.SetFrameTitle("User Account Management")
+	return "framed", "admin_users.jet"
 }
