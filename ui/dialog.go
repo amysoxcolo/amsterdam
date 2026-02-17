@@ -241,6 +241,13 @@ func (fld *DialogItem) IsEmpty() bool {
 	return len(fld.Value) == 0
 }
 
+// SetTargetUser alters a dialog's content to reflect a target user.
+func (d *Dialog) SetTargetUser(u *database.User) {
+	d.Title = strings.ReplaceAll(d.Title, "[USERNAME]", u.Username)
+	d.Subtitle = strings.ReplaceAll(d.Subtitle, "[USERNAME]", u.Username)
+	d.Action = strings.ReplaceAll(d.Action, "[USERNAME]", u.Username)
+}
+
 // SetCommunity alters a dialog's content to reflect the community.
 func (d *Dialog) SetCommunity(comm *database.Community) {
 	d.Title = strings.ReplaceAll(d.Title, "[CNAME]", comm.Name)
