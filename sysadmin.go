@@ -61,3 +61,80 @@ func GlobalPropertiesForm(ctxt ui.AmContext) (string, any) {
 	dlg.Field("pic_in_post").SetChecked(ctxt.GlobalFlags().Get(database.GlobalFlagPicturesInPosts))
 	return dlg.Render(ctxt)
 }
+
+/* GlobalPropertiesSet resets the global properties.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func GlobalPropertiesSet(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+
+	dlg, err := ui.AmLoadDialog("globalprops")
+	if err != nil {
+		return "error", err
+	}
+	dlg.LoadFromForm(ctxt)
+	b := dlg.WhichButton(ctxt)
+	if b == "cancel" {
+		return "redirect", "/sysadmin"
+	} else if b != "update" {
+		return dlg.RenderError(ctxt, EBUTTON.Error())
+	}
+
+	gl, err := database.AmGlobals(ctxt.Ctx())
+	if err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl = gl.Clone()
+	var n int
+	if n, err = dlg.Field("search_items").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.MaxSearchPage = int32(n)
+	if n, err = dlg.Field("fp_posts").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.FrontPagePosts = int32(n)
+	if n, err = dlg.Field("audit_recs").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.NumAuditPage = int32(n)
+	gl.CommunityCreateLevel = int32(dlg.Field("create_lvl").GetLevel())
+	if n, err = dlg.Field("comm_mbrs").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.MaxCommunityMemberPage = int32(n)
+	if n, err = dlg.Field("posts_page").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.PostsPerPage = int32(n)
+	if n, err = dlg.Field("old_posts").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.OldPostsAtTop = int32(n)
+	if n, err = dlg.Field("conf_mbrs").ValueInt(); err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	gl.MaxConferenceMemberPage = int32(n)
+
+	flags, err := gl.Flags(ctxt.Ctx())
+	if err != nil {
+		return dlg.RenderError(ctxt, err.Error())
+	}
+	flags.Set(database.GlobalFlagNoCategories, dlg.Field("no_cats").IsChecked())
+	flags.Set(database.GlobalFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
+
+	err = database.AmReplaceGlobals(ctxt.Ctx(), gl)
+	if err == nil {
+		err = gl.SaveFlags(ctxt.Ctx(), flags)
+	}
+	if err != nil {
+		return "error", err
+	}
+	return "redirect", "/sysadmin"
+}

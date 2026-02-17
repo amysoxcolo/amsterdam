@@ -61,6 +61,22 @@ var globalProps map[int32]string = make(map[int32]string)
 // globalPropMutex controls access to globalProps.
 var globalPropMutex sync.Mutex
 
+// Clone clones the entire global state.
+func (g *Globals) Clone() *Globals {
+	rc := Globals{
+		PostsPerPage:            g.PostsPerPage,
+		OldPostsAtTop:           g.OldPostsAtTop,
+		MaxSearchPage:           g.MaxSearchPage,
+		MaxCommunityMemberPage:  g.MaxCommunityMemberPage,
+		MaxConferenceMemberPage: g.MaxConferenceMemberPage,
+		FrontPagePosts:          g.FrontPagePosts,
+		NumAuditPage:            g.NumAuditPage,
+		CommunityCreateLevel:    g.CommunityCreateLevel,
+		flags:                   nil,
+	}
+	return &rc
+}
+
 // Flags returns the global flags.
 func (g *Globals) Flags(ctx context.Context) (*util.OptionSet, error) {
 	g.Mutex.Lock()
@@ -103,6 +119,21 @@ func AmGlobals(ctx context.Context) (*Globals, error) {
 		theGlobals = &(dbdata[0])
 	}
 	return theGlobals, nil
+}
+
+// AmReplaceGlobals writes the globals to the database and replaces the instance.
+func AmReplaceGlobals(ctx context.Context, ng *Globals) error {
+	globalsMutex.Lock()
+	defer globalsMutex.Unlock()
+	_, err := amdb.NamedExecContext(ctx, `UPDATE globals SET posts_per_page = :posts_per_page, old_posts_at_top = :old_posts_at_top, max_search_page = :max_search_page,
+		max_comm_mbr_page = :max_comm_mbr_page, max_conf_mbr_page = :max_conf_mbr_page, fp_posts = :fp_posts, num_audit_page = :num_audit_page,
+		comm_create_lvl = :comm_create_lvl`, ng)
+	if err != nil {
+		return err
+	}
+	ng.flags = nil
+	theGlobals = ng
+	return nil
 }
 
 /* AmGetGlobalProperty returns the value of a global property.

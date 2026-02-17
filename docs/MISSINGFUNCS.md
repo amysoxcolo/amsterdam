@@ -13,7 +13,7 @@ _(italicized items can be deferred)_
 - _Documentation (top menu link)_
 - Quote banner rotation
 - Sysadmin Menu:
-  - Edit Global Properties
+  - ~~Edit Global Properties~~
   - View/Edit IP Address Bans
   - View/Edit Banned Users
   - User Account Management

@@ -77,6 +77,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/sideboxes", ui.AmWrap(AddSidebox))
 	e.GET("/sysadmin", ui.AmWrap(SysAdminMenu))
 	e.GET("/sysadmin/globals", ui.AmWrap(GlobalPropertiesForm))
+	e.POST("/sysadmin/globals", ui.AmWrap(GlobalPropertiesSet))
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
 	e.GET("/manage_comm", ui.AmWrap(ManageCommunities))
