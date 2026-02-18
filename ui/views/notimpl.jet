@@ -1,22 +1,46 @@
 {*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *}
-<div class="flex">
-    <div class="flex-1 p-4">
-        <div class="mb-8">
-            <h1 class="text-blue-800 text-4xl font-bold mb-2">Amsterdam: Function Not Implemented</h1>
-            <hr class="border-2 border-gray-400 w-4/5 mb-4">
-            <p class="text-black text-sm mb-4">
-                You've stumbled into a function that's not implemented yet.  The function path is <code>{{ path }}</code>.
-            </p>
-            <p class="text-black text-sm mb-4">
-                <a href="/">Click here</a> to return to the home page.
-            </p>
+ <div class="p-4">
+    <!-- Error Dialog -->
+    <div class="max-w-2xl w-full">
+        <div class="bg-white border-2 border-gray-600 rounded-lg shadow-2xl overflow-hidden">
+            <!-- Dialog Header -->
+            <div class="bg-gray-600 px-6 py-4">
+                <h1 class="text-white text-2xl font-bold text-center flex items-center justify-center gap-3">
+                    <span class="text-3xl">🚧</span>Amsterdam: Function Not Implemented<span class="text-3xl">🚧</span>
+                </h1>
+            </div>
+
+            <!-- Dialog Body -->
+            <div class="px-8 py-8">
+                <div class="text-center mb-8">
+                    <p class="text-gray-800 text-lg leading-relaxed">You've stumbled into a function that's not implemented yet.</p>
+                    <p class="text-gray-800 text-lg leading-relaxed">The function path is <code>{{ path }}</code>.</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4 justify-center">
+                    {{ if isset(recovery) }}
+                        <a href="{{ recovery }}"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+                            <span class="text-xl">↩️</span>
+                            Go Back
+                        </a>
+                    {{ else }}
+                        <a href="/"
+                            class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+                            <span class="text-xl">↩️</span>
+                            Return to Home Page
+                        </a>
+                    {{ end }}
+                </div>
+            </div>
         </div>
     </div>
 </div>
