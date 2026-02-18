@@ -120,7 +120,7 @@ func (ci *ContactInfo) FullName(ps bool) string {
  *     true if the E-mail address on this account has been changed, false if not.
  *     Standard Go error status.
  */
-func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
+func (ci *ContactInfo) Save(ctx context.Context, changer *User, ipaddr string) (bool, error) {
 	ci.Mutex.Lock()
 	defer ci.Mutex.Unlock()
 
@@ -188,6 +188,11 @@ func (ci *ContactInfo) Save(ctx context.Context) (bool, error) {
 	err := row.Scan(&(ci.LastUpdate))
 	if err != nil {
 		return false, err
+	}
+	if ci.OwnerCommId < 0 {
+		if changer.Uid != ci.OwnerUid {
+			AmStoreAudit(AmNewAudit(AuditAdminSetUserContactInfo, changer.Uid, ipaddr, fmt.Sprintf("uid=%d", ci.OwnerUid), fmt.Sprintf("contactid=%d", ci.ContactId)))
+		}
 	}
 	return emailChange, err
 }

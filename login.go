@@ -378,7 +378,7 @@ func NewAccount(ctxt ui.AmContext) (string, any) {
 						ci.PostalCode = dlg.Field("pcode").ValPtr()
 						ci.Country = dlg.Field("country").ValPtr()
 						ci.Email = dlg.Field("email").ValPtr()
-						_, err = ci.Save(ctxt.Ctx())
+						_, err = ci.Save(ctxt.Ctx(), user, ctxt.RemoteIP())
 						if err == nil {
 							err = user.SetContactID(ctxt.Ctx(), ci.ContactId)
 						}
@@ -431,7 +431,7 @@ func PasswordRecovery(ctxt ui.AmContext) (string, any) {
 		user, err := database.AmGetUser(ctxt.Ctx(), int32(uid))
 		if err == nil {
 			newpass := util.GenerateRandomPassword()
-			err = user.ChangePassword(ctxt.Ctx(), newpass, ctxt.RemoteIP())
+			err = user.ChangePassword(ctxt.Ctx(), newpass, user, ctxt.RemoteIP())
 			if err == nil {
 				// send the password change message
 				msg := email.AmNewEmailMessage(user.Uid, ctxt.RemoteIP())

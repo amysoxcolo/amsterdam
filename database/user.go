@@ -55,13 +55,32 @@ func (p *UserPrefs) Clone() *UserPrefs {
 }
 
 // Save saves off the user preferences, replacing the prefs on the user if necessary.
-func (p *UserPrefs) Save(ctx context.Context, u *User) error {
+func (p *UserPrefs) Save(ctx context.Context, u, setter *User, ipaddr string) error {
 	if u != nil && u.Uid != p.Uid {
 		return errors.New("internal mismatch of IDs")
+	}
+	var old *UserPrefs
+	if setter.Uid != u.Uid {
+		var dbdata []UserPrefs
+		err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
+		if err != nil {
+			return err
+		} else if len(dbdata) != 1 {
+			return errors.New("unable to take snapshot")
+		}
+		old = &(dbdata[0])
 	}
 	_, err := amdb.NamedExecContext(ctx, "UPDATE userprefs SET localeid = :localeid, tzid = :tzid WHERE uid = :uid", p)
 	if err == nil && u != nil {
 		u.prefs = p
+		if old != nil {
+			if old.LocaleID != p.LocaleID {
+				AmStoreAudit(AmNewAudit(AuditAdminChangeUserAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", p.Uid), "field=localeid"))
+			}
+			if old.TimeZoneID != p.TimeZoneID {
+				AmStoreAudit(AmNewAudit(AuditAdminChangeUserAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", p.Uid), "field=tzid"))
+			}
+		}
 	}
 	return err
 }
@@ -272,7 +291,7 @@ func (u *User) NewEmailConfirmationNumber(ctx context.Context) error {
 }
 
 // ChangePassword resets a user's password.
-func (u *User) ChangePassword(ctx context.Context, password string, remoteIP string) error {
+func (u *User) ChangePassword(ctx context.Context, password string, changer *User, remoteIP string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -284,7 +303,11 @@ func (u *User) ChangePassword(ctx context.Context, password string, remoteIP str
 	_, err := amdb.ExecContext(ctx, "UPDATE users SET passhash = ? WHERE uid = ?", pval, u.Uid)
 	if err == nil {
 		u.Passhash = pval
-		ar = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
+		if changer.Uid == u.Uid {
+			ar = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
+		} else {
+			ar = AmNewAudit(AuditAdminChangeUserPassword, changer.Uid, remoteIP, fmt.Sprintf("uid=%d", u.Uid))
+		}
 	}
 	return err
 }
@@ -354,14 +377,66 @@ func (u *User) Prefs(ctx context.Context) (*UserPrefs, error) {
  * Returns:
  *     Standard Go error status.
  */
-func (u *User) SetProfileData(ctx context.Context, reminder string, dob *time.Time, descr *string) error {
+func (u *User) SetProfileData(ctx context.Context, reminder string, dob *time.Time, descr *string, setter *User, ipaddr string) error {
+	ara := make([]*AuditRecord, 0, 3)
+	defer func() {
+		for _, ar := range ara {
+			AmStoreAudit(ar)
+		}
+	}()
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
-	_, err := amdb.Exec("UPDATE users SET passreminder = ?, dob = ?, description = ? WHERE uid = ?", reminder, dob, descr, u.Uid)
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET passreminder = ?, dob = ?, description = ? WHERE uid = ?", reminder, dob, descr, u.Uid)
 	if err == nil {
+		if setter.Uid != u.Uid {
+			if u.Description != descr {
+				ara = append(ara, AmNewAudit(AuditAdminChangeUserAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), "field=description"))
+			}
+			if !util.SameDate(u.DOB, dob) {
+				ara = append(ara, AmNewAudit(AuditAdminChangeUserAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), "field=dob"))
+			}
+		}
 		u.PassReminder = reminder
 		u.DOB = dob
 		u.Description = descr
+	}
+	return err
+}
+
+// SetSecurityData sets the "security" variables for this user.
+func (u *User) SetSecurityData(ctx context.Context, baseLevel uint16, lockout, verifyEmail bool, setter *User, ipaddr string) error {
+	ara := make([]*AuditRecord, 0, 3)
+	defer func() {
+		for _, ar := range ara {
+			AmStoreAudit(ar)
+		}
+	}()
+	bofhLevel := AmRole("Global.BOFH").Level()
+	if (u.BaseLevel == bofhLevel || baseLevel == bofhLevel) && u.BaseLevel != baseLevel {
+		return errors.New("cannot change levels to or from global system administrator")
+	}
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET base_lvl = ?, lockout = ?, verify_email = ? WHERE uid = ?", baseLevel, lockout, verifyEmail, u.Uid)
+	if err == nil {
+		if u.BaseLevel != baseLevel {
+			ara = append(ara, AmNewAudit(AuditAdminSetAccountSecurity, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", baseLevel)))
+		}
+		if u.Lockout != lockout {
+			m := ""
+			if lockout {
+				m = "locked"
+			} else {
+				m = "unlocked"
+			}
+			ara = append(ara, AmNewAudit(AuditAdminLockUnlockAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), m))
+		}
+		if u.VerifyEMail != verifyEmail {
+			ara = append(ara, AmNewAudit(AuditAdminChangeUserAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), "field=verify_email"))
+		}
+		u.BaseLevel = baseLevel
+		u.Lockout = lockout
+		u.VerifyEMail = verifyEmail
 	}
 	return err
 }

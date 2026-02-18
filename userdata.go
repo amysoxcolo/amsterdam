@@ -55,7 +55,7 @@ func EditProfileForm(ctxt ui.AmContext) (string, any) {
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
 		dlg.Field("tgt").Value = target
-		ctxt.VarMap().Set("target", target)
+		dlg.Field("photo").Param = "/profile_photo?tgt=" + url.QueryEscape(target)
 		var ci *database.ContactInfo
 		ci, err = u.ContactInfo(ctxt.Ctx())
 		if err == nil {
@@ -117,7 +117,7 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 		if target == "" {
 			target = "/"
 		}
-		ctxt.VarMap().Set("target", target)
+		dlg.Field("photo").Param = "/profile_photo?tgt=" + url.QueryEscape(target)
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
@@ -137,7 +137,7 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 				if err == nil && !(dlg.Field("pass1").IsEmpty() && dlg.Field("pass2").IsEmpty()) {
 					p1 := dlg.Field("pass1").Value
 					if p1 == dlg.Field("pass2").Value {
-						err = u.ChangePassword(ctxt.Ctx(), p1, ctxt.RemoteIP())
+						err = u.ChangePassword(ctxt.Ctx(), p1, u, ctxt.RemoteIP())
 					} else {
 						err = errors.New("passwords do not match")
 					}
@@ -165,14 +165,14 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 					nci.Email = dlg.Field("email").ValPtr()
 					nci.PrivateEmail = dlg.Field("pvt_email").IsChecked()
 					nci.URL = dlg.Field("url").ValPtr()
-					emailChange, err = nci.Save(ctxt.Ctx())
+					emailChange, err = nci.Save(ctxt.Ctx(), u, ctxt.RemoteIP())
 					ci = nci
 				}
 				if err == nil {
 					nprefs := prefs.Clone()
 					nprefs.WriteLocale(dlg.Field("locale").Value)
 					nprefs.TimeZoneID = dlg.Field("tz").Value
-					err = nprefs.Save(ctxt.Ctx(), u)
+					err = nprefs.Save(ctxt.Ctx(), u, u, ctxt.RemoteIP())
 				}
 				if err == nil {
 					var f *util.OptionSet
@@ -185,7 +185,7 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 					}
 				}
 				if err == nil {
-					err = u.SetProfileData(ctxt.Ctx(), dlg.Field("remind").Value, dlg.Field("dob").AsDate(), dlg.Field("descr").ValPtr())
+					err = u.SetProfileData(ctxt.Ctx(), dlg.Field("remind").Value, dlg.Field("dob").AsDate(), dlg.Field("descr").ValPtr(), u, ctxt.RemoteIP())
 				}
 				if err == nil {
 					if emailChange {
@@ -224,6 +224,7 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 	ci, err := u.ContactInfo(ctxt.Ctx())
 	if err == nil {
 		ctxt.VarMap().Set("target", target)
+		ctxt.VarMap().Set("postUrl", "/profile_photo")
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.SetScratch("frame_suppressLogin", true)
 		ctxt.SetFrameTitle("Upload User Photo")
@@ -268,7 +269,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 				if err == nil {
 					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
 					ci.PhotoURL = &photourl
-					_, err = ci.Save(ctxt.Ctx())
+					_, err = ci.Save(ctxt.Ctx(), u, ctxt.RemoteIP())
 					if err == nil {
 						return "redirect", "/profile?tgt=" + url.QueryEscape(target)
 					}
@@ -277,6 +278,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 		}
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("target", target)
+		ctxt.VarMap().Set("postUrl", "/profile_photo")
 		ctxt.VarMap().Set("photo_url", userPhotoURL(ci))
 		ctxt.SetScratch("frame_suppressLogin", true)
 		ctxt.SetFrameTitle("Upload User Photo")
@@ -306,7 +308,7 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 			}()
 		}
 		ci.PhotoURL = nil
-		_, err := ci.Save(ctxt.Ctx())
+		_, err := ci.Save(ctxt.Ctx(), u, ctxt.RemoteIP())
 		if err != nil {
 			return "error", err
 		}

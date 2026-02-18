@@ -180,7 +180,7 @@ fields:
   - type: "userphoto"
     name: "photo"
     caption: "User Photo"
-    param: "/profile_photo"
+    param: "/sysadmin/users/[USERNAME]/photo"
   - type: "header"
     name: "header7"
     caption: "User Preferences"

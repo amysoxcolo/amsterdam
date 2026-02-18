@@ -228,13 +228,12 @@
                     {{ else if .Type == "userphoto" }}
                         <div class="flex items-start">
                             <label class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm pt-2">{{ .Caption }}
-                                {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} (click to change):</label>
+                                {{ if .Subcaption != "" }} {{ .Subcaption }}{{ end }} {{ if !.Disabled }}(click to change){{ end }}:</label>
                             <input type="hidden" name="{{ .Name }}_data" value="{{ .Value }}"/>
                             {{ if .Disabled }}
                                 <img src="{{ .Value }}" class="w-25 h-25">
                             {{ else }}
-                                <a href="/profile_photo?tgt={{ target | url }}"
-                                class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
+                                <a href="{{ .Param }}" class="border-2 border-gray-300 rounded hover:border-blue-500 transition-colors">
                                     <img src="{{ .Value }}" alt="Click to upload photo" class="w-25 h-25">
                                 </a>    
                             {{ end }}                            

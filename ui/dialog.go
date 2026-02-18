@@ -246,6 +246,12 @@ func (d *Dialog) SetTargetUser(u *database.User) {
 	d.Title = strings.ReplaceAll(d.Title, "[USERNAME]", u.Username)
 	d.Subtitle = strings.ReplaceAll(d.Subtitle, "[USERNAME]", u.Username)
 	d.Action = strings.ReplaceAll(d.Action, "[USERNAME]", u.Username)
+	for i, fld := range d.Fields {
+		switch fld.Type {
+		case "userphoto", "communitylogo":
+			d.Fields[i].Param = strings.ReplaceAll(fld.Param, "[USERNAME]", u.Username)
+		}
+	}
 }
 
 // SetCommunity alters a dialog's content to reflect the community.

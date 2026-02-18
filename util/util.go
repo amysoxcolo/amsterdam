@@ -13,6 +13,7 @@ package util
 import (
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -62,6 +63,18 @@ func SqlEscape(s string, wildcards bool) string {
 		}
 	}
 	return sb.String()
+}
+
+// SameDate returns true if the two time values are the same date.
+func SameDate(t1, t2 *time.Time) bool {
+	if t1 == nil {
+		return t2 == nil
+	} else if t2 == nil {
+		return false
+	}
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+	return (y1 == y2) && (m1 == m2) && (d1 == d2)
 }
 
 /* IsNumeric returns true if the string is numeric (all digits).

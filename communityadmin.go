@@ -197,7 +197,7 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any) {
 			nci.Region = dlg.Field("reg").ValPtr()
 			nci.PostalCode = dlg.Field("pcode").ValPtr()
 			nci.Country = dlg.Field("country").ValPtr()
-			_, err = nci.Save(ctxt.Ctx())
+			_, err = nci.Save(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
 			ci = nci
 			if err == nil {
 				var joinkey *string = nil
@@ -296,7 +296,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any) {
 				if err == nil {
 					photourl := fmt.Sprintf("/img/store/%d", img.ImgId)
 					ci.PhotoURL = &photourl
-					_, err = ci.Save(ctxt.Ctx())
+					_, err = ci.Save(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
 					if err == nil {
 						err = comm.TouchUpdate(ctxt.Ctx())
 					}
@@ -337,7 +337,7 @@ func EditCommunityLogo(ctxt ui.AmContext) (string, any) {
 			}()
 		}
 		ci.PhotoURL = nil
-		_, err := ci.Save(ctxt.Ctx())
+		_, err := ci.Save(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
 		if err != nil {
 			return "error", err
 		}
@@ -429,7 +429,7 @@ func CreateCommunity(ctxt ui.AmContext) (string, any) {
 			ci.Region = dlg.Field("reg").ValPtr()
 			ci.PostalCode = dlg.Field("pcode").ValPtr()
 			ci.Country = dlg.Field("country").ValPtr()
-			_, err = ci.Save(ctxt.Ctx())
+			_, err = ci.Save(ctxt.Ctx(), user, ctxt.RemoteIP())
 			if err == nil {
 				err = comm.SetContactID(ctxt.Ctx(), ci.ContactId)
 			}

@@ -9,7 +9,12 @@
 <!-- Page Title -->
 <div class="p-4">
     <div class="mb-6">
-        <h1 class="text-blue-800 text-4xl font-bold mb-2">Upload User Photo</h1>
+        <div class="flex items-baseline gap-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Upload User Photo</h1>
+            {{ if isset(userName) }}
+                <span class="text-blue-800 text-2xl">for User: {{ username }}</span>
+            {{ end }}
+        </div>
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>
 
@@ -28,7 +33,7 @@
     {{ end }}
 
     <!-- Upload Form -->
-    <form method="POST" enctype="multipart/form-data" action="/profile_photo" class="max-w-2xl">
+    <form method="POST" enctype="multipart/form-data" action="{{ postUrl }}" class="max-w-2xl">
         <input type="hidden" name="tgt" value="{{ target }}">
 
         <div class="bg-gray-50 p-6 rounded-lg">
@@ -75,16 +80,18 @@
                 </div>
             </div>
 
-            <!-- Additional Instructions -->
-            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
-                <h3 class="text-sm font-bold text-blue-900 mb-2">Photo Guidelines:</h3>
-                <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                    <li>Your photo will be visible to other users in the community</li>
-                    <li>Photos should be appropriate for a professional community setting</li>
-                    <li>The image will be automatically resized to fit the profile display</li>
-                    <li>You can update or remove your photo at any time</li>
-                </ul>
-            </div>
+            {{ if !isset(username) }}
+                <!-- Additional Instructions -->
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
+                    <h3 class="text-sm font-bold text-blue-900 mb-2">Photo Guidelines:</h3>
+                    <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                        <li>Your photo will be visible to other users in the community</li>
+                        <li>Photos should be appropriate for a professional community setting</li>
+                        <li>The image will be automatically resized to fit the profile display</li>
+                        <li>You can update or remove your photo at any time</li>
+                    </ul>
+                </div>
+            {{ end }}
         </div>
     </form>
 </div>

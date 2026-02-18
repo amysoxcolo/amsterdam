@@ -15,8 +15,7 @@ _(italicized items can be deferred)_
 - Sysadmin Menu:
   - ~~Edit Global Properties~~
   - View/Edit IP Address Bans
-  - View/Edit Banned Users
-  - User Account Management
+  - ~~User Account Management~~
   - System Audit Logs
   - Import User Accounts
 - Conferences list:
