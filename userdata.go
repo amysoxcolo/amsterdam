@@ -52,10 +52,17 @@ func EditProfileForm(ctxt ui.AmContext) (string, any) {
 	if u.IsAnon {
 		return "error", ELOGIN
 	}
+	flags, err := u.Flags(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
 		dlg.Field("tgt").Value = target
 		dlg.Field("photo").Param = "/profile_photo?tgt=" + url.QueryEscape(target)
+		if flags.Get(database.UserFlagDisallowSetPhoto) {
+			dlg.Field("photo").Disabled = true
+		}
 		var ci *database.ContactInfo
 		ci, err = u.ContactInfo(ctxt.Ctx())
 		if err == nil {
@@ -110,6 +117,10 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 	if u.IsAnon {
 		return "error", ELOGIN
 	}
+	flags, err := u.Flags(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
 	dlg, err := ui.AmLoadDialog("profile")
 	if err == nil {
 		dlg.LoadFromForm(ctxt)
@@ -118,6 +129,9 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 			target = "/"
 		}
 		dlg.Field("photo").Param = "/profile_photo?tgt=" + url.QueryEscape(target)
+		if flags.Get(database.UserFlagDisallowSetPhoto) {
+			dlg.Field("photo").Disabled = true
+		}
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
