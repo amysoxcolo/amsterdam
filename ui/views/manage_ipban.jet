@@ -1,0 +1,139 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">Manage IP Address Bans</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Return Link -->
+    <div class="mb-6">
+        <a href="/sysadmin" class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit">
+            <span>←</span>
+            Return to System Administration Menu
+        </a>
+    </div>
+
+    <!-- Warning Box -->
+    <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded max-w-6xl">
+        <div class="flex items-start">
+            <span class="text-2xl mr-3">🚫</span>
+            <div class="text-sm text-red-900">
+                <p class="font-bold mb-1">IP Ban Management:</p>
+                <p>This page allows you to manage IP address bans. Banned IP addresses cannot access the system. Click the status icon to enable or disable a ban.
+                Use the Remove button to permanently delete a ban entry.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- IP Bans Table -->
+    <div class="max-w-6xl mb-6">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-20">Enable</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Address</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Mask</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Expires</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Added By</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Added On</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {{ if len(ipbans) == 0 }}
+                        <tr class="bg-gray-50">
+                            <td class="px-4 py-3 text-sm text-gray-500" colspan="7">
+                                <i>No IP address bans defined.</i>
+                            </td>
+                        </tr>
+                    {{ else }}
+                        {{ range i, ipb := ipbans }}
+                            <tr class="hover:bg-gray-50 {{ if !ipb.Enable }}bg-gray-50{{ end }}">
+                                <td class="px-4 py-3 text-center">
+                                    {{ if ipb.Enable }}
+                                        <a href="/sysadmin/ipban?t={{ ipb.Id }}" class="inline-block text-3xl hover:scale-110 transition-transform" 
+                                            title="Click to disable">
+                                            ✅
+                                        </a>
+                                    {{ else }}
+                                        <a href="/sysadmin/ipban?t={{ ipb.Id }}" class="inline-block text-3xl hover:scale-110 transition-transform" 
+                                            title="Click to enable">
+                                            ⭕
+                                        </a>
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 text-sm font-mono {{ if ipb.Enable }}text-gray-800{{ else }}text-gray-500{{ end }}">
+                                    {{ IPtoString(ipb.AddressLow, ipb.AddressHigh) }}
+                                </td>
+                                <td class="px-4 py-3 text-sm font-mono {{ if ipb.Enable }}text-gray-600{{ else }}text-gray-400{{ end }}">
+                                    {{ IPtoString(ipb.MaskLow, ipb.MaskHigh) }}
+                                </td>
+                                <td class="px-4 py-3 text-sm {{ if ipb.Enable }}text-gray-700{{ else }}text-gray-500{{ end }} whitespace-nowrap">
+                                    {{ if isset(ipb.Expires) }}
+                                        {{ DisplayDateTime(ipb.Expires, .) }}
+                                    {{ else }}
+                                        Never
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 text-sm {{ if ipb.Enable }}text-gray-700{{ else }}text-gray-500{{ end }}">
+                                    {{ usernames[i] }}
+                                </td>
+                                <td class="px-4 py-3 text-sm {{ if ipb.Enable }}text-gray-600{{ else }}text-gray-400{{ end }} whitespace-nowrap">
+                                    {{ DisplayDateTime(ipb.BlockOn, .) }}
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <a href="/sysadmin/ipban?r={{ ipb.Id }}" 
+                                        class="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-medium px-3 py-1 rounded transition-colors text-sm">
+                                        <span>🗑️</span>
+                                        Remove
+                                    </a>
+                                </td>
+                            </tr>
+                        {{ end }}
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Button -->
+    <div class="max-w-6xl">
+        <a href="/sysadmin/ipban/add" 
+            class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg">
+            <span class="text-xl">➕</span>
+            Add IP Ban
+        </a>
+    </div>
+
+    <!-- Legend -->
+    <div class="max-w-6xl mt-8">
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+            <div class="flex items-start">
+                <span class="text-2xl mr-3">ℹ️</span>
+                <div class="text-sm text-blue-900">
+                    <p class="font-bold mb-2">Status Icons:</p>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">✅</span>
+                            <span><strong>Enabled:</strong> Ban is active - this IP address is blocked from accessing the system. Click to disable.</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">⭕</span>
+                            <span><strong>Disabled:</strong> Ban is inactive - this IP address can access the system. Click to enable.</span>
+                        </div>
+                    </div>
+                    <p class="mt-3"><strong>Note:</strong> Disabled bans appear with grayed-out text. The "Remove" button permanently deletes the ban entry from the system.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

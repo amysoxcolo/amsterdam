@@ -14,12 +14,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
+	"github.com/CloudyKit/jet/v6"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -496,4 +498,42 @@ func AdminUserPhoto(ctxt ui.AmContext) (string, any) {
 		return "redirect", fmt.Sprintf("/sysadmin/users/%s", user.Username)
 	}
 	return "error", EBUTTON
+}
+
+// templateIPtoString converts an IP address in terms of "low" and "high" 64-bit values to a string.
+func templateIPtoString(a jet.Arguments) reflect.Value {
+	low := a.Get(0).Convert(reflect.TypeFor[uint64]()).Interface().(uint64)
+	high := a.Get(1).Convert(reflect.TypeFor[uint64]()).Interface().(uint64)
+	return reflect.ValueOf(database.AmIPToString(low, high))
+}
+
+/* IPBanList displays the IP address ban list and allows modification.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func IPBanList(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+
+	ipbans, err := database.AmListIPBans(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+	usernames := make([]string, len(ipbans))
+	for i, ipb := range ipbans {
+		user, err := database.AmGetUser(ctxt.Ctx(), ipb.BlockByUid)
+		if err != nil {
+			return "error", err
+		}
+		usernames[i] = user.Username
+	}
+	ctxt.VarMap().Set("ipbans", ipbans)
+	ctxt.VarMap().Set("usernames", usernames)
+	ctxt.VarMap().SetFunc("IPtoString", templateIPtoString)
+	ctxt.SetFrameTitle("Manage IP Address Bans")
+	return "framed", "manage_ipban.jet"
 }
