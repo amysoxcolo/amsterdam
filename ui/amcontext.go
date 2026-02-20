@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -510,7 +511,7 @@ var defoptions *AmSessionOptions = &AmSessionOptions{
 }
 
 // freeContext is a free list for amContext structures.
-var freeContext util.FreeList[amContext]
+var freeContext sync.Pool
 
 // amContextRecycleBin is the channel we put contexts on to be recycled.
 var amContextRecycleBin chan *amContext
@@ -523,7 +524,7 @@ var amContextRecycleBin chan *amContext
  *     Standard Go error status.
  */
 func newContext(ctxt echo.Context) (*amContext, error) {
-	rc := freeContext.Get()
+	rc := freeContext.Get().(*amContext)
 	if rc == nil {
 		rc = &amContext{
 			rendervars: make(jet.VarMap),

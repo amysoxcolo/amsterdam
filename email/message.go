@@ -12,9 +12,9 @@ package email
 
 import (
 	"fmt"
+	"sync"
 
 	"git.erbosoft.com/amy/amsterdam/config"
-	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
 )
 
@@ -51,7 +51,7 @@ type amMessage struct {
 }
 
 // freeMessages is a free list for amMessage structures.
-var freeMessages util.FreeList[amMessage]
+var freeMessages sync.Pool
 
 // formatAddress outputs an E-mail address with optional name associated with it.
 func formatAddress(addr string, name string) string {
@@ -126,7 +126,7 @@ func (m *amMessage) Send() {
  *     The new Message.
  */
 func AmNewEmailMessage(sender int32, ip string) Message {
-	rc := freeMessages.Get()
+	rc := freeMessages.Get().(*amMessage)
 	if rc == nil {
 		rc = &amMessage{to: make([]string, 0), cc: make([]string, 0), bcc: make([]string, 0),
 			headers: make(map[string]string), vars: make(jet.VarMap)}
