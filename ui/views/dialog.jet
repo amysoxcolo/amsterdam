@@ -61,7 +61,7 @@
         <div class="bg-gray-50 p-6 rounded-lg">
             <div class="space-y-4">
                 {{ range __dialog.Fields }}
-                    {{ if .Type == "text" || .Type == "ams_id" || .Type == "email" }}
+                    {{ if .Type == "text" || .Type == "ams_id" || .Type == "email" || .Type == "ipaddress" }}
                         <div class="flex items-center">
                             <label for="{{ .Name }}" 
                                    class="w-64 text-right pr-4 {{ if .Disabled }}text-gray-400{{ else }}text-black{{ end }} text-sm">

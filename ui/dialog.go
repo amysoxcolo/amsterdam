@@ -14,7 +14,9 @@ import (
 	"embed"
 	"fmt"
 	"math"
+	"net"
 	"net/mail"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -107,6 +109,10 @@ func AmLoadDialog(name string) (*Dialog, error) {
 						d.Fields[i].Size = max(dlow, dhigh)
 						d.Fields[i].MaxLength = d.Fields[i].Size
 					}
+				}
+				if fld.Type == "ipaddress" {
+					d.Fields[i].Size = 15      // max IPv4
+					d.Fields[i].MaxLength = 39 // max IPv6
 				}
 				if fld.Type == "dropdown" && len(fld.Choices) == 0 {
 					return nil, fmt.Errorf("dropdown field %s in dialog %s has no choices", fld.Name, name)
@@ -547,6 +553,35 @@ func validateEmailField(fld *DialogItem) error {
 	return err
 }
 
+/* validateIPAddressField validates an IP address field.
+ * Parameters:
+ *     fld - The field to be validated.
+ * Returns:
+ *     Standard Go error status.
+ */
+func validateIPAddressField(fld *DialogItem) error {
+	err := validateTextField(fld)
+	if err == nil {
+		if strings.Contains(fld.Param, "mask") {
+			// look for a CIDR mask value like "/24"
+			var ok bool
+			ok, err = regexp.Match("^/[0-9]+$", []byte(fld.Value))
+			if err == nil {
+				if ok {
+					return nil // found it!
+				}
+			}
+		}
+		if err == nil {
+			ip := net.ParseIP(fld.Value)
+			if ip == nil {
+				err = fmt.Errorf("value of field \"%s\" is not a valid IP address", fld.Caption)
+			}
+		}
+	}
+	return err
+}
+
 /* validateCountryField validates a country code field.
  * Parameters:
  *     fld - The field to be validated.
@@ -613,6 +648,7 @@ var validators = map[string]validatorFunc{
 	"header":        nilValidator,
 	"hidden":        nilValidator,
 	"integer":       validateIntegerField,
+	"ipaddress":     validateIPAddressField,
 	"localelist":    nilValidator,
 	"password":      validateTextField,
 	"rolelist":      validateRoleListField,

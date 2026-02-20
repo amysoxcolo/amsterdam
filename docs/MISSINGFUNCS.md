@@ -14,7 +14,7 @@ _(italicized items can be deferred)_
 - Quote banner rotation
 - Sysadmin Menu:
   - ~~Edit Global Properties~~
-  - View/Edit IP Address Bans
+  - ~~View/Edit IP Address Bans~~
   - ~~User Account Management~~
   - System Audit Logs
   - Import User Accounts

@@ -37,7 +37,7 @@ menudefs:
         link: "/sysadmin/globals"
         permission: "Global.SysAdminAccess"
       - text: "View/Edit IP Address Bans"
-        link: "/TODO/sysadmin/ip_bans"
+        link: "/sysadmin/ipban"
         permission: "Global.SysAdminAccess"
       - text: "View/Edit Banned Users"
         link: "/TODO/sysadmin/user_bans"

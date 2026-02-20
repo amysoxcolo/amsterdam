@@ -84,6 +84,8 @@ func setupEcho() *echo.Echo {
 	e.GET("/sysadmin/users/:uname/photo", ui.AmWrap(AdminUserPhotoForm))
 	e.POST("/sysadmin/users/:uname/photo", ui.AmWrap(AdminUserPhoto))
 	e.GET("/sysadmin/ipban", ui.AmWrap(IPBanList))
+	e.GET("/sysadmin/ipban/add", ui.AmWrap(AddIPBanForm))
+	e.POST("/sysadmin/ipban/add", ui.AmWrap(AddIPBan))
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
 	e.GET("/manage_comm", ui.AmWrap(ManageCommunities))

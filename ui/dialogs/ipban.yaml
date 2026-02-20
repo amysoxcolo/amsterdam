@@ -1,0 +1,57 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+name: "ipban.add"
+formName: "ipbanform"
+menuSelector: "nochange"
+title: "Add IP Address Ban"
+action: "/sysadmin/ipban/add"
+fields:
+  - type: "ipaddress"
+    name: "address"
+    caption: "IP address"
+    required: true
+  - type: "ipaddress"
+    name: "mask"
+    caption: "IP address mask"
+    required: true
+    param: "mask"
+  - type: "checkbox"
+    name: "echeck"
+    caption: "IP address ban expires"
+  - type: "integer"
+    name: "etime"
+    caption: "Expires in"
+    param: "1-100000"
+  - type: "dropdown"
+    name: "eunit"
+    caption: "Expires in"
+    subcaption: "(units)"
+    required: true
+    choices:
+      - id: "D"
+        text: "days"
+      - id: "W"
+        text: "weeks"
+      - id: "M"
+        text: "months"
+      - id: "Y"
+        text: "years"
+  - type: "text"
+    name: "msg"
+    caption: "Message to display"
+    size: 64
+    maxlength: 255
+  - type: "button"
+    name: "add"
+    caption: "Add"
+    param: "blue"
+  - type: "button"
+    name: "cancel"
+    caption: "Cancel"
+    param: "red"

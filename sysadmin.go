@@ -14,9 +14,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -503,8 +505,9 @@ func AdminUserPhoto(ctxt ui.AmContext) (string, any) {
 // templateIPtoString converts an IP address in terms of "low" and "high" 64-bit values to a string.
 func templateIPtoString(a jet.Arguments) reflect.Value {
 	low := a.Get(0).Convert(reflect.TypeFor[uint64]()).Interface().(uint64)
-	high := a.Get(1).Convert(reflect.TypeFor[uint64]()).Interface().(uint64)
-	return reflect.ValueOf(database.AmIPToString(low, high))
+	high := a.Get(1).Convert(reflect.TypeFor[uint64]()).Uint()
+	v4 := a.Get(2).Convert(reflect.TypeFor[bool]()).Bool()
+	return reflect.ValueOf(database.AmIPToString(low, high, v4))
 }
 
 /* IPBanList displays the IP address ban list and allows modification.
@@ -519,21 +522,164 @@ func IPBanList(ctxt ui.AmContext) (string, any) {
 		return "error", ENOACCESS
 	}
 
+	if ctxt.HasParameter("t") {
+		// toggle enable status
+		id := ctxt.QueryParamInt("t", -1)
+		if id > 0 {
+			ipb, err := database.AmGetIPBan(ctxt.Ctx(), int32(id))
+			if err == nil {
+				err = ipb.SetEnable(ctxt.Ctx(), !(ipb.Enable))
+			}
+			if err != nil {
+				ctxt.VarMap().Set("errorMessage", err.Error())
+			}
+		}
+	} else if ctxt.HasParameter("r") {
+		// delete entry
+		id := ctxt.QueryParamInt("r", -1)
+		if id > 0 {
+			ipb, err := database.AmGetIPBan(ctxt.Ctx(), int32(id))
+			if err == nil {
+				err = ipb.Delete(ctxt.Ctx())
+			}
+			if err != nil {
+				ctxt.VarMap().Set("errorMessage", err.Error())
+			}
+		}
+	}
+
 	ipbans, err := database.AmListIPBans(ctxt.Ctx())
 	if err != nil {
 		return "error", err
 	}
 	usernames := make([]string, len(ipbans))
+	ipv4 := make([]bool, len(ipbans))
 	for i, ipb := range ipbans {
 		user, err := database.AmGetUser(ctxt.Ctx(), ipb.BlockByUid)
 		if err != nil {
 			return "error", err
 		}
 		usernames[i] = user.Username
+		ipv4[i] = ipb.IsV4()
 	}
 	ctxt.VarMap().Set("ipbans", ipbans)
 	ctxt.VarMap().Set("usernames", usernames)
+	ctxt.VarMap().Set("ipv4", ipv4)
 	ctxt.VarMap().SetFunc("IPtoString", templateIPtoString)
 	ctxt.SetFrameTitle("Manage IP Address Bans")
 	return "framed", "manage_ipban.jet"
+}
+
+/* AddIPBanForm displays the form for adding a banned IP address.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func AddIPBanForm(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+	dlg, err := ui.AmLoadDialog("ipban")
+	if err != nil {
+		return "error", err
+	}
+	dlg.Field("mask").Value = "255.255.255.255"
+	dlg.Field("etime").SetInt(1)
+	dlg.Field("eunit").Value = "D"
+	return dlg.Render(ctxt)
+}
+
+/* AddIPBan adds a new banned IP address.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func AddIPBan(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+	dlg, err := ui.AmLoadDialog("ipban")
+	if err != nil {
+		return "error", err
+	}
+	dlg.LoadFromForm(ctxt)
+	btn := dlg.WhichButton(ctxt)
+	if btn == "cancel" {
+		return "redirect", "/sysadmin/ipban"
+	} else if btn != "add" {
+		return "error", EBUTTON
+	}
+	err = dlg.Validate()
+	if err == nil {
+		theAddress := net.ParseIP(dlg.Field("address").Value)
+		isIPv4 := (theAddress.To4() != nil)
+		var theMask net.IP
+		maskStr := dlg.Field("mask").Value
+		if maskStr[0:1] == "/" {
+			maskbits, err := strconv.Atoi(maskStr[1:])
+			if err != nil {
+				return dlg.RenderError(ctxt, fmt.Sprintf("invalid CIDR value: %v", err))
+			}
+			if isIPv4 {
+				if maskbits > (net.IPv4len * 8) {
+					return dlg.RenderError(ctxt, fmt.Sprintf("invalid CIDR value: %v", err))
+				}
+				maskbits += (net.IPv6len - net.IPv4len) * 8
+			} else {
+				if maskbits > (net.IPv6len * 8) {
+					return dlg.RenderError(ctxt, fmt.Sprintf("invalid CIDR value: %v", err))
+				}
+			}
+			tmp := net.CIDRMask(maskbits, net.IPv6len*8)
+			theMask = net.IP(tmp)
+			log.Debugf("computed mask value: %s", theMask.String())
+		} else {
+			theMask = net.ParseIP(maskStr)
+			check := (theMask.To4() != nil)
+			if check != isIPv4 {
+				return dlg.RenderError(ctxt, fmt.Sprintf("inconsistent mask value: %s", maskStr))
+			}
+			a := 0
+			b := 0
+			if isIPv4 {
+				a, b = net.IPMask(theMask.To4()).Size()
+			} else {
+				a, b = net.IPMask(theMask).Size()
+			}
+			if a == 0 && b == 0 {
+				return dlg.RenderError(ctxt, fmt.Sprintf("not a valid mask value: %s", maskStr))
+			}
+			log.Debugf("parsed and vetted mask value: %s", theMask.String())
+		}
+
+		var expires *time.Time = nil
+		if dlg.Field("echeck").IsChecked() {
+			n, err := dlg.Field("etime").ValueInt()
+			if err != nil {
+				return dlg.RenderError(ctxt, fmt.Sprintf("invalid time value: %s", dlg.Field("etime").Value))
+			}
+			v := time.Now()
+			switch dlg.Field("eunit").Value {
+			case "D":
+				v = v.AddDate(0, 0, n)
+			case "W":
+				v = v.AddDate(0, 0, n*7)
+			case "M":
+				v = v.AddDate(0, n, 0)
+			case "Y":
+				v = v.AddDate(n, 0, 0)
+			}
+			v = v.UTC()
+			expires = &v
+		}
+		err = database.AmAddIPBan(ctxt.Ctx(), theAddress, theMask, expires, dlg.Field("msg").Value, ctxt.CurrentUser())
+		if err == nil {
+			return "redirect", "/sysadmin/ipban"
+		}
+	}
+	return dlg.RenderError(ctxt, err.Error())
 }

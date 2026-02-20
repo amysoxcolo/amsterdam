@@ -19,6 +19,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // IPBanEntry represents an IP address banned from the system.
@@ -149,24 +151,72 @@ func setupIPBanSweep() func() {
 }
 
 // nukeIPBanCache completely clears the IP ban cache.
-func nukeIPBanCache() {
+func nukeIPBanCache(bad, good bool) {
 	banMutex.Lock()
 	defer banMutex.Unlock()
-	banSweeperReset <- true // send the reset signal to the sweeper
-	for k := range knownBans {
-		delete(knownBans, k)
+	if bad {
+		banSweeperReset <- true // send the reset signal to the sweeper
+		for k := range knownBans {
+			delete(knownBans, k)
+		}
 	}
-	for k := range knownGood {
-		delete(knownGood, k)
+	if good {
+		for k := range knownGood {
+			delete(knownGood, k)
+		}
 	}
 }
 
-// AmIPToString converts an IP addrsss, in terms of low and high 64-bit values, to a string.
-func AmIPToString(low, high uint64) string {
+// IsV4 returns true if the entry's address is an IPv4 address.
+func (ipb *IPBanEntry) IsV4() bool {
+	ip := AmCombineIP(ipb.AddressLow, ipb.AddressHigh)
+	return ip.To4() != nil
+}
+
+// SetEnable sets the enable flag on an IP ban entry.
+func (ipb *IPBanEntry) SetEnable(ctx context.Context, flag bool) error {
+	if flag == ipb.Enable {
+		return nil
+	}
+	_, err := amdb.ExecContext(ctx, "UPDATE ipban SET enable = ? WHERE id = ?", flag, ipb.Id)
+	if err == nil {
+		nukeIPBanCache(ipb.Enable, !ipb.Enable)
+		ipb.Enable = flag
+	}
+	return err
+}
+
+// Delete deletes an IP ban entry.
+func (ipb *IPBanEntry) Delete(ctx context.Context) error {
+	_, err := amdb.ExecContext(ctx, "DELETE FROM ipban WHERE id = ?", ipb.Id)
+	if err == nil {
+		nukeIPBanCache(true, false) // can only affect "ban" cache entries, not "good" ones
+	}
+	return err
+}
+
+// AmCombineIP converts an IP address, in terms of low and high 64-bit values, to a net.IP value.
+func AmCombineIP(low, high uint64) net.IP {
 	t := big.NewInt(0).Lsh(new(big.Int).SetUint64(high), 64)
 	addr := big.NewInt(0).Or(t, new(big.Int).SetUint64(low))
-	ip := net.IP(addr.FillBytes(make([]byte, 16)))
+	return net.IP(addr.FillBytes(make([]byte, 16)))
+}
+
+// AmIPToString converts an IP address, in terms of low and high 64-bit values, to a string.
+func AmIPToString(low, high uint64, asV4 bool) string {
+	ip := AmCombineIP(low, high)
+	if asV4 {
+		ip = ip[12:16]
+	}
 	return ip.String()
+}
+
+// AmBreakUpIP breaks up the IP address into low and high uint64 values.
+func AmBreakUpIP(addr net.IP) (uint64, uint64) {
+	iv := big.NewInt(0).SetBytes(addr)
+	ivLo := big.NewInt(0).And(iv, low64mask).Uint64()
+	ivHi := big.NewInt(0).Rsh(iv, 64).Uint64()
+	return ivLo, ivHi
 }
 
 /* AmTestIPBan tests an IP address to see if it's on the banned list.
@@ -191,10 +241,7 @@ func AmTestIPBan(ctx context.Context, ipAddress string) (string, error) {
 	if addr == nil {
 		return "", fmt.Errorf("invalid address %s", ipAddress)
 	}
-	iv := big.NewInt(0)
-	iv.SetBytes(addr)
-	ivLo := big.NewInt(0).And(iv, low64mask).Uint64()
-	ivHi := big.NewInt(0).Rsh(iv, 64).Uint64()
+	ivLo, ivHi := AmBreakUpIP(addr)
 	row := amdb.QueryRowContext(ctx, `SELECT message, expire FROM ipban WHERE (address_lo & mask_lo) = (? & mask_lo)
 			AND (address_hi & mask_hi) = (? & mask_hi) AND (expire IS NULL OR expire >= NOW())
 			AND enable <> 0 ORDER BY mask_hi DESC, mask_lo DESC`, ivLo, ivHi)
@@ -235,4 +282,34 @@ func AmGetIPBan(ctx context.Context, id int32) (*IPBanEntry, error) {
 		return nil, errors.New("internal error, too many returns")
 	}
 	return &(dbdata[0]), nil
+}
+
+// AmAddIPBan adds a new IP address ban.
+func AmAddIPBan(ctx context.Context, addr, mask net.IP, expires *time.Time, message string, byUser *User) error {
+	log.Debugf("AmAddIPBan: addr = %s (%v), mask = %s(%v)", addr.String(), addr, mask.String(), mask)
+	if addr.IsUnspecified() {
+		return errors.New("cannot add IP ban with unspecified address")
+	}
+	if mask.IsUnspecified() {
+		return errors.New("cannot add IP ban with unspecified mask")
+	}
+	newEntry := IPBanEntry{
+		Expire:     expires,
+		Message:    message,
+		BlockByUid: byUser.Uid,
+	}
+	newEntry.AddressLow, newEntry.AddressHigh = AmBreakUpIP(addr)
+	if newEntry.AddressLow == 0 && newEntry.AddressHigh == 0 {
+		return errors.New("invalid or incorrectly-parsed address")
+	}
+	newEntry.MaskLow, newEntry.MaskHigh = AmBreakUpIP(mask)
+	if newEntry.MaskLow == 0 && newEntry.MaskHigh == 0 {
+		return errors.New("invalid or incorrectly-parsed mask")
+	}
+	_, err := amdb.NamedExecContext(ctx, `INSERT INTO ipban (address_lo, address_hi, mask_lo, mask_hi, enable, expire, message, block_by, block_on)
+		VALUES (:address_lo, :address_hi, :mask_lo, :mask_hi, 1, :expire, :message, :block_by, NOW())`, &newEntry)
+	if err == nil {
+		nukeIPBanCache(false, true)
+	}
+	return err
 }
