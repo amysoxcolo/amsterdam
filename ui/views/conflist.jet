@@ -23,7 +23,7 @@
                         <span class="text-lg pt-0.5 flex-shrink-0">🟣</span>
                         <div class="flex-1">
                             <div class="mb-2">
-                                <a href="/comm/{{ commAlias }}/conf/{{ c.AliasesQ(.Ctx())[0] }}" 
+                                <a href="/comm/{{ commAlias }}/conf/{{ c.Alias }}" 
                                     class="text-blue-700 hover:text-blue-900 font-bold text-lg">{{ c.Name }}</a>
                                 <span class="text-gray-600 text-sm ml-2">- Latest activity: {{ DisplayActivity(c.LastUpdate, .) }}</span>
                                 {{ if newflag[i] }}
@@ -31,16 +31,15 @@
                                 {{ end }}
                             </div>
                             <div class="text-sm text-gray-700 mb-1">
-                                {{ hl := c.HostsQ(.Ctx()) }}
-                                {{ if len(hl) == 1 }}
+                                {{ if len(c.Hosts) == 1 }}
                                     <span class="font-medium">Host:</span>
                                 {{ else }}
                                     <span class="font-medium">Hosts:</span>
                                 {{ end }}
-                                {{ if len(hl) > 0 }}
-                                    {{ range j, u := hl }}
+                                {{ if len(c.Hosts) > 0 }}
+                                    {{ range j, u := c.Hosts }}
                                         {{ if j > 0 }}, {{ end }}
-                                        <a href="/users/{{ u.Username }}" class="text-blue-700 hover:text-blue-900">{{ u.Username }}</a>
+                                        <a href="/users/{{ u }}" class="text-blue-700 hover:text-blue-900">{{ u }}</a>
                                     {{ end }}
                                 {{ else }}
                                     None 
@@ -60,7 +59,7 @@
                 Find Posts
             </a>
             {{ if canManage }}
-                <a href="TODO"
+                <a href="/comm/{{ commAlias }}/manage_conf"
                     class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded font-medium transition-colors">
                     Manage
                 </a>

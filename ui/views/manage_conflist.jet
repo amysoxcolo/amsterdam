@@ -1,0 +1,125 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Top Title -->
+    <div class="mb-2">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Manage Conference List</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">Community: {{ commName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mt-2 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="{{ returnUrl }}">
+            <span>←</span>
+            Return to Conference List
+        </a>
+    </div>
+
+    <!-- Conference Table -->
+    <div class="max-w-4xl mb-8">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            {{ if len(confs) > 0 }}
+                <table class="w-full">
+                    <thead class="bg-gray-100 border-b-2 border-gray-300">
+                        <tr>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider w-20" colspan="4">&nbsp;</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Conference Name</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Topics</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Posts</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {{ range i, c := confs }}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    {{ if c.Hidden }}
+                                        <a href="{{ baseUrl }}?t={{ c.ConfId }}" class="inline-block text-3xl hover:scale-110 transition-transform" 
+                                            title="Click to display">
+                                            ⚫
+                                        </a>
+                                    {{ else }}
+                                        <a href="{{ baseUrl }}?t={{ c.ConfId }}" class="inline-block text-3xl hover:scale-110 transition-transform" 
+                                            title="Click to hide">
+                                            🟢
+                                        </a>
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    {{ if i < (len(confs) - 1) }}
+                                        <a href="{{ baseUrl }}?m={{ i }}&n=1" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                            title="Move Down">⬇️</a>
+                                    {{ else }}
+                                        <span class="text-2xl text-gray-300">&nbsp;</span>
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    {{ if i > 0 }}
+                                        <a href="{{ baseUrl }}?m={{ i }}&n=-1" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                            title="Move Up">⬆️</a>
+                                    {{ else }}
+                                        <span class="text-2xl text-gray-300">&nbsp;</span>
+                                    {{ end }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center w-12">
+                                    <a href="/TODO" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                        title="Delete Conference">❌</a>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <div class="font-bold text-black">{{ c.Name }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <div class="text-black">{{ ntopics[i] }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <div class="text-black">{{ nposts[i] }}</div>
+                                </td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            {{ else }}
+                <span class="text-gray-800"><i>No conferences in this community.</i></span>
+            {{ end }}
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="max-w-4xl mb-6">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h2 class="text-blue-800 font-bold text-lg mb-3">How to update the community's conference list:</h2>
+            <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🟢</span>
+                    <span class="text-gray-700">This indicates that the conference is displayed in the community's conference list. Click the symbol to hide it.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⚫</span>
+                    <span class="text-gray-700">This indicates that the conference is hidden in the community's conference list. Click the symbol to display it.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⬇️</span>
+                    <span class="text-gray-700">Click this symbol to move the specified conference down in the community's conference list.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">⬆️</span>
+                    <span class="text-gray-700">Click this symbol to move the specified conference up in the community's conference list.</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">❌</span>
+                    <span class="text-gray-700">Click this symbol to delete the specified conference. You will be prompted to confirm this action.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>

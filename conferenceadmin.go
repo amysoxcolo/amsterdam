@@ -789,3 +789,43 @@ func CreateConference(ctxt ui.AmContext) (string, any) {
 	log.Infof("Created conference '%s'", conf.Name)
 	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias)
 }
+
+/* ManageConferenceList displays the list for managing conferences.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ManageConferenceList(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Create", ctxt.EffectiveLevel()) {
+		return "error", ENOPERM
+	}
+
+	clist, err := database.AmListConferences(ctxt.Ctx(), comm.Id, true)
+	if err != nil {
+		return "error", err
+	}
+
+	ntopics := make([]int, len(clist))
+	nposts := make([]int, len(clist))
+	for i, c := range clist {
+		conf, err := c.Conf(ctxt.Ctx())
+		if err != nil {
+			return "error", err
+		}
+		ntopics[i], nposts[i], err = conf.Stats(ctxt.Ctx())
+		if err != nil {
+			return "error", err
+		}
+	}
+	ctxt.VarMap().Set("confs", clist)
+	ctxt.VarMap().Set("ntopics", ntopics)
+	ctxt.VarMap().Set("nposts", nposts)
+	ctxt.VarMap().Set("commName", comm.Name)
+	ctxt.VarMap().Set("baseUrl", fmt.Sprintf("/comm/%s/manage_conf", comm.Alias))
+	ctxt.VarMap().Set("returnUrl", fmt.Sprintf("/comm/%s/conf", comm.Alias))
+	ctxt.SetFrameTitle("Manage Conference List")
+	return "framed", "manage_conflist.jet"
+}

@@ -70,6 +70,23 @@ type ConferenceProperties struct {
 	Data   *string `db:"data"`   // property data
 }
 
+// ConferenceSummary represents summary information about a conference.
+type ConferenceSummary struct {
+	ConfId      int32      // conference ID
+	Name        string     // conference name
+	Alias       string     // an alias for the conference
+	LastUpdate  *time.Time // last update date/time
+	Hosts       []string   // usernames of the hosts
+	Description string     // description string
+	Sequence    int16      // sequence number in the list
+	Hidden      bool       // hidden in list?
+}
+
+// Conf gets the conference from the summary.
+func (cs *ConferenceSummary) Conf(ctx context.Context) (*Conference, error) {
+	return AmGetConference(ctx, cs.ConfId)
+}
+
 // Default spacing between sequence numbers in commtoconf table.
 const COMMTOCONF_SEQ_SPACING = 10
 
@@ -786,6 +803,15 @@ func (c *Conference) GetActiveUserEMailAddrs(ctx context.Context, userSelect, da
 	return rc, nil
 }
 
+// Stats retrieves the number of topics and posts in this conference.
+func (c *Conference) Stats(ctx context.Context) (int, int, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*), SUM(top_message + 1) FROM topics WHERE confid = ?", c.ConfId)
+	ntopic := 0
+	npost := 0
+	err := row.Scan(&ntopic, &npost)
+	return ntopic, npost, err
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.
@@ -864,37 +890,44 @@ func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias str
 	return nil, err
 }
 
-/* AmGetCommunityConferences returns all conferences for a given community.
+/* AmListConferences returns all conferences for a given community.
  * Parameters:
  *     ctx - Standard Go context value.
  *     cid - Community ID to get conferences for.
  *     showHidden - true to show hidden conferences.
  * Returns:
- *     Array containing the COnference pointers, or nil.
+ *     Array containing the ConferenceSummary pointers, or nil.
  *     Stanbard Go error status.
  */
-func AmGetCommunityConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conference, error) {
+func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*ConferenceSummary, error) {
 	q := ""
 	if !showHidden {
 		q = " AND x.hide_list = 0"
 	}
-	rs, err := amdb.QueryContext(ctx, `SELECT x.confid FROM commtoconf x, confs c WHERE x.confid = c.confid
-		AND x.commid = ?`+q+" ORDER BY x.sequence, c.name", cid)
+	rs, err := amdb.QueryContext(ctx, `SELECT x.confid, c.name, c.lastupdate, c.descr, x.sequence, x.hide_list FROM commtoconf x, confs c
+		WHERE x.confid = c.confid AND x.commid = ?`+q+" ORDER BY x.sequence, c.name", cid)
 	if err != nil {
 		return nil, err
 	}
-	rc := make([]*Conference, 0, 6)
+	rc := make([]*ConferenceSummary, 0)
 	for rs.Next() {
-		var confid int32
-		if err = rs.Scan(&confid); err == nil {
-			conf, err := AmGetConference(ctx, confid)
-			if err == nil {
-				rc = append(rc, conf)
-			} else {
-				log.Errorf("AmGetCommunityConferences conference error: %v", err)
-			}
+		var cs ConferenceSummary
+		if err = rs.Scan(&(cs.ConfId), &(cs.Name), &(cs.LastUpdate), &(cs.Description), &(cs.Sequence), &(cs.Hidden)); err == nil {
+			rc = append(rc, &cs)
 		} else {
-			log.Errorf("AmGetCommunityConferences scan error: %v", err)
+			return nil, err
+		}
+	}
+	for i := range rc {
+		row := amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ?", rc[i].ConfId)
+		err = row.Scan(&(rc[i].Alias))
+		if err != nil {
+			return nil, err
+		}
+		err = amdb.SelectContext(ctx, &(rc[i].Hosts), `SELECT u.username FROM confmember m, users u WHERE u.uid = m.uid AND m.confid = ?
+			AND m.granted_lvl = ? ORDER BY u.username`, rc[i].ConfId, AmRole("Conference.Host").Level())
+		if err != nil {
+			return nil, err
 		}
 	}
 	return rc, nil

@@ -40,15 +40,18 @@ func Conferences(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("commName", comm.Name)
 	ctxt.VarMap().Set("commAlias", comm.Alias)
 	ctxt.SetFrameTitle("Conference Listing: " + comm.Name)
-	clist, err := database.AmGetCommunityConferences(ctxt.Ctx(), comm.Id,
-		comm.TestPermission("Community.ShowHiddenObjects", ctxt.EffectiveLevel()))
+	clist, err := database.AmListConferences(ctxt.Ctx(), comm.Id, comm.TestPermission("Community.ShowHiddenObjects", ctxt.EffectiveLevel()))
 	if err != nil {
 		return "error", err
 	}
 	ctxt.VarMap().Set("conferences", clist)
 	if len(clist) > 0 {
 		newflag := make([]bool, len(clist))
-		for i, conf := range clist {
+		for i, c := range clist {
+			conf, err := c.Conf(ctxt.Ctx())
+			if err != nil {
+				return "error", err
+			}
 			msgCount, err := conf.UnreadMessages(ctxt.Ctx(), ctxt.CurrentUser())
 			if err != nil {
 				return "error", err
