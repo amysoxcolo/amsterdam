@@ -1007,6 +1007,32 @@ func AmSetConferenceProperty(ctx context.Context, confid int32, ndx int32, val *
 	return err
 }
 
+// AmReorderConferences reorders two conferences by sequence number.
+func AmReorderConferences(ctx context.Context, cid int32, seq1, seq2 int16) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	_, err := tx.ExecContext(ctx, "UPDATE commtoconf SET sequence = -1 WHERE commid = ? AND sequence = ?", cid, seq1)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "UPDATE commtoconf SET sequence = ? WHERE commid = ? AND sequence = ?", seq1, cid, seq2)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "UPDATE commtoconf SET sequence = ? WHERE commid = ? AND sequence = -1", seq2, cid)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+	return nil
+}
+
 /* AmCreateConference creates a new conference.
  * Parameters:
  *     ctx - Standard Go context value.

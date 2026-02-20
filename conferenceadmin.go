@@ -803,9 +803,45 @@ func ManageConferenceList(ctxt ui.AmContext) (string, any) {
 		return "error", ENOPERM
 	}
 
+	if ctxt.HasParameter("t") {
+		confid := ctxt.QueryParamInt("t", -1)
+		if confid == -1 {
+			return "error", EINVAL
+		}
+		conf, err := database.AmGetConference(ctxt.Ctx(), int32(confid))
+		if err != nil {
+			return "error", err
+		}
+		f, err := conf.HiddenInList(ctxt.Ctx(), comm)
+		if err == nil {
+			err = conf.SetHiddenInList(ctxt.Ctx(), comm, !f)
+		}
+		if err != nil {
+			return "error", err
+		}
+	}
+
 	clist, err := database.AmListConferences(ctxt.Ctx(), comm.Id, true)
 	if err != nil {
 		return "error", err
+	}
+
+	if ctxt.HasParameter("m") {
+		index := ctxt.QueryParamInt("m", -1)
+		if index == -1 {
+			return "error", EINVAL
+		}
+		delta := ctxt.QueryParamInt("n", 0)
+		if delta == 0 {
+			return "error", EINVAL
+		}
+		err = database.AmReorderConferences(ctxt.Ctx(), comm.Id, clist[index].Sequence, clist[index+delta].Sequence)
+		if err != nil {
+			return "error", err
+		}
+		tmp := clist[index]
+		clist[index] = clist[index+delta]
+		clist[index+delta] = tmp
 	}
 
 	ntopics := make([]int, len(clist))
