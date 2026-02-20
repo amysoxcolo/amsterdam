@@ -108,6 +108,18 @@ type AmConfig struct {
 			IPBans         int `yaml:"ipBans"`
 			WorkerTasks    int `yaml:"workerTasks"`
 		} `yaml:"queues"`
+		Caches struct {
+			Communities     int `yaml:"communities"`
+			CommunityProps  int `yaml:"communityProps"`
+			Conferences     int `yaml:"conferences"`
+			ConferenceProps int `yaml:"conferenceProps"`
+			ContactInfo     int `yaml:"contactInfo"`
+			Members         int `yaml:"members"`
+			Menus           int `yaml:"menus"`
+			Services        int `yaml:"services"`
+			Users           int `yaml:"users"`
+			UserProps       int `yaml:"userProps"`
+		} `yaml:"caches"`
 	} `yaml:"tuning"`
 }
 
@@ -228,6 +240,16 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Tuning.Queues.EmailSend = overlayInt(loaded.Tuning.Queues.EmailSend, defaults.Tuning.Queues.EmailSend)
 	dest.Tuning.Queues.IPBans = overlayInt(loaded.Tuning.Queues.IPBans, defaults.Tuning.Queues.IPBans)
 	dest.Tuning.Queues.WorkerTasks = overlayInt(loaded.Tuning.Queues.WorkerTasks, defaults.Tuning.Queues.WorkerTasks)
+	dest.Tuning.Caches.Communities = overlayInt(loaded.Tuning.Caches.Communities, defaults.Tuning.Caches.Communities)
+	dest.Tuning.Caches.CommunityProps = overlayInt(loaded.Tuning.Caches.CommunityProps, defaults.Tuning.Caches.CommunityProps)
+	dest.Tuning.Caches.Conferences = overlayInt(loaded.Tuning.Caches.Conferences, defaults.Tuning.Caches.Conferences)
+	dest.Tuning.Caches.ConferenceProps = overlayInt(loaded.Tuning.Caches.ConferenceProps, defaults.Tuning.Caches.ConferenceProps)
+	dest.Tuning.Caches.ContactInfo = overlayInt(loaded.Tuning.Caches.ContactInfo, defaults.Tuning.Caches.ContactInfo)
+	dest.Tuning.Caches.Members = overlayInt(loaded.Tuning.Caches.Members, defaults.Tuning.Caches.Members)
+	dest.Tuning.Caches.Menus = overlayInt(loaded.Tuning.Caches.Menus, defaults.Tuning.Caches.Menus)
+	dest.Tuning.Caches.Services = overlayInt(loaded.Tuning.Caches.Services, defaults.Tuning.Caches.Services)
+	dest.Tuning.Caches.Users = overlayInt(loaded.Tuning.Caches.Users, defaults.Tuning.Caches.Users)
+	dest.Tuning.Caches.UserProps = overlayInt(loaded.Tuning.Caches.UserProps, defaults.Tuning.Caches.UserProps)
 }
 
 // parseDataSize converts the data size in bytes, kilobytes, megabytes, or gigabytes to a number value.

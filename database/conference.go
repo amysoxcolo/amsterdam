@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
@@ -115,14 +116,14 @@ var conferencePropCache *lru.Cache = nil
 // getConferencePropMutex is a mutex on AmGetConferenceProperty.
 var getConferencePropMutex sync.Mutex
 
-// init initializes the conference cache.
-func init() {
+// setupConferenceCache initializes the conference cache.
+func setupConferenceCache() {
 	var err error
-	conferenceCache, err = lru.New2Q(100)
+	conferenceCache, err = lru.New2Q(config.GlobalConfig.Tuning.Caches.Conferences)
 	if err != nil {
 		panic(err)
 	}
-	conferencePropCache, err = lru.New(100)
+	conferencePropCache, err = lru.New(config.GlobalConfig.Tuning.Caches.ConferenceProps)
 	if err != nil {
 		panic(err)
 	}

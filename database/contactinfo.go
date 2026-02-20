@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -236,10 +237,10 @@ var contactCache *lru.TwoQueueCache = nil
 // getContactMutex is a mutex on AmGetContactInfo.
 var getContactMutex sync.Mutex
 
-// init initializes the contact info cache.
-func init() {
+// setupContactsCache initializes the contact info cache.
+func setupContactsCache() {
 	var err error
-	contactCache, err = lru.New2Q(100)
+	contactCache, err = lru.New2Q(config.GlobalConfig.Tuning.Caches.ContactInfo)
 	if err != nil {
 		panic(err)
 	}

@@ -16,6 +16,7 @@ import (
 	"slices"
 	"sync"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/yaml.v3"
@@ -91,8 +92,7 @@ var servicesCacheMutex sync.Mutex
 
 // init loads the service configuration and builds all the internal indexes.
 func init() {
-	var err error
-	if err = yaml.Unmarshal(initServiceData, &serviceRoot); err != nil {
+	if err := yaml.Unmarshal(initServiceData, &serviceRoot); err != nil {
 		panic(err) // can't happen
 	}
 	serviceRoot.byName = make(map[string]*ServiceDomain)
@@ -118,7 +118,12 @@ func init() {
 	dom.byId["SysAdmin"].vtable = &empty
 	dom.byId["Conference"].vtable = &empty // TODO
 	dom.byId["Members"].vtable = &empty
-	servicesCache, err = lru.New2Q(50)
+}
+
+// setupServicesCache sets up the services cache.
+func setupServicesCache() {
+	var err error
+	servicesCache, err = lru.New2Q(config.GlobalConfig.Tuning.Caches.Services)
 	if err != nil {
 		panic(err)
 	}

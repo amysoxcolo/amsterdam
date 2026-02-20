@@ -61,3 +61,14 @@ tuning:
     emailSend: 16
     ipBans: 32
     workerTasks: 128
+  caches:
+    communities: 50
+    communityProps: 100
+    conferences: 100
+    conferenceProps: 100
+    contactInfo: 100
+    members: 250
+    menus: 100
+    services: 50
+    users: 100
+    userProps: 100

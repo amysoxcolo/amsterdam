@@ -182,6 +182,7 @@ func main() {
 	defer closer()
 	htmlcheck.SetupDicts()
 	ui.SetupTemplates()
+	ui.SetupMenuCache()
 	closer = ui.SetupAmSessionManager()
 	defer closer()
 	closer = ui.SetupAmContext()

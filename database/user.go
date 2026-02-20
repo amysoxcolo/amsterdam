@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
@@ -188,14 +189,14 @@ var getUserPropMutex sync.Mutex
 // anonUid is the UID of the "anonymous" user.
 var anonUid int32 = -1
 
-// init initializes the caches.
-func init() {
+// setupUserCache initializes the caches.
+func setupUserCache() {
 	var err error
-	userCache, err = lru.New2Q(100)
+	userCache, err = lru.New2Q(config.GlobalConfig.Tuning.Caches.Users)
 	if err != nil {
 		panic(err)
 	}
-	userPropCache, err = lru.New(100)
+	userPropCache, err = lru.New(config.GlobalConfig.Tuning.Caches.UserProps)
 	if err != nil {
 		panic(err)
 	}

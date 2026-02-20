@@ -10,30 +10,34 @@
 package database
 
 import (
+	"slices"
+
 	"git.erbosoft.com/amy/amsterdam/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
-// amdb is the reference to the Amsterdam database.  Returns a function to close it down.
+// amdb is the reference to the Amsterdam database.
 var amdb *sqlx.DB
 
 // SetupDb sets up the database and associated items.
 func SetupDb() (func(), error) {
-	var fn1 func() = nil
-	var fn2 func() = nil
+	exitfns := make([]func(), 0, 2)
 	db, err := sqlx.Open(config.GlobalConfig.Database.Driver, config.GlobalConfig.Database.Dsn)
 	if err == nil {
 		amdb = db
-		fn1 = setupAuditWriter()
-		fn2 = setupIPBanSweep()
+		setupUserCache()
+		setupContactsCache()
+		setupCommunityCache()
+		setupServicesCache()
+		setupConferenceCache()
+		exitfns = append(exitfns, setupAuditWriter())
+		exitfns = append(exitfns, setupIPBanSweep())
 	}
 	return func() {
-		if fn2 != nil {
-			fn2()
-		}
-		if fn1 != nil {
-			fn1()
+		slices.Reverse(exitfns)
+		for _, f := range exitfns {
+			f()
 		}
 		amdb.Close()
 	}, err

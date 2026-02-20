@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
@@ -130,18 +131,18 @@ func stuffMembership(cid int32, uid int32, member bool, locked bool, level uint1
 	memberMutex.Unlock()
 }
 
-// init initializes the caches.
-func init() {
+// setupCommunityCache initializes the caches.
+func setupCommunityCache() {
 	var err error
-	communityCache, err = lru.New2Q(50)
+	communityCache, err = lru.New2Q(config.GlobalConfig.Tuning.Caches.Communities)
 	if err != nil {
 		panic(err)
 	}
-	memberCache, err = lru.New(250)
+	memberCache, err = lru.New(config.GlobalConfig.Tuning.Caches.Members)
 	if err != nil {
 		panic(err)
 	}
-	communityPropCache, err = lru.New(100)
+	communityPropCache, err = lru.New(config.GlobalConfig.Tuning.Caches.CommunityProps)
 	if err != nil {
 		panic(err)
 	}

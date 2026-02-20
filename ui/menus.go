@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
@@ -142,11 +143,7 @@ var menuCacheMutex sync.Mutex
 
 // init loads the menu definitions.
 func init() {
-	var err error
-	if menuCache, err = lru.New(100); err != nil {
-		panic(err)
-	}
-	if err = yaml.Unmarshal(initMenuData, &menuDefinitions); err != nil {
+	if err := yaml.Unmarshal(initMenuData, &menuDefinitions); err != nil {
 		panic(err) // can't happen
 	}
 	menuDefinitions.table = make(map[string]*MenuDefinition)
@@ -156,6 +153,14 @@ func init() {
 			menuDefinitions.D[i].Items[j].P = &(menuDefinitions.D[i])
 		}
 		menuDefinitions.D[i].Tag = ""
+	}
+}
+
+// SetupMenuCache sets up the menu cache.
+func SetupMenuCache() {
+	var err error
+	if menuCache, err = lru.New(config.GlobalConfig.Tuning.Caches.Menus); err != nil {
+		panic(err)
 	}
 }
 
