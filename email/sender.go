@@ -220,12 +220,12 @@ func SetupMailSender() func() {
 	emailRenderer.AddGlobal("GlobalConfig", config.GlobalConfig)
 
 	// Start the recycler.
-	messageRecycleBin = make(chan *amMessage, 16)
+	messageRecycleBin = make(chan *amMessage, config.GlobalConfig.Tuning.Queues.EmailRecycle)
 	doneChan1 := make(chan bool)
 	go recycleMessages(messageRecycleBin, doneChan1)
 
 	// Start the sender loop.
-	sendChan = make(chan *amMessage, 16)
+	sendChan = make(chan *amMessage, config.GlobalConfig.Tuning.Queues.EmailSend)
 	doneChan2 := make(chan bool)
 	go senderLoop(sendChan, doneChan2)
 

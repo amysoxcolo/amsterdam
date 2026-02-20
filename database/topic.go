@@ -427,6 +427,18 @@ func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
 	return nil
 }
 
+// eraseTopicRecords erases the high-level records for a topic from the database.
+func eraseTopicRecords(ctx context.Context, tx *sqlx.Tx, topicid int32) error {
+	_, err := tx.ExecContext(ctx, "DELETE FROM topics WHERE topicid = ?", topicid)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM topicsettings WHERE topicid = ?", topicid)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM topicbozo WHERE topicid = ?", topicid)
+		}
+	}
+	return err
+}
+
 // Delete deletes this topic.
 func (t *Topic) Delete(ctx context.Context, u *User, ipaddr string, background *util.WorkerPool) error {
 	var ar *AuditRecord = nil
@@ -446,13 +458,7 @@ func (t *Topic) Delete(ctx context.Context, u *User, ipaddr string, background *
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM topics WHERE topicid = ?", t.TopicId)
-	if err == nil {
-		_, err = tx.ExecContext(ctx, "DELETE FROM topicsettings WHERE topicid = ?", t.TopicId)
-		if err == nil {
-			_, err = tx.ExecContext(ctx, "DELETE FROM topicbozo WHERE topicid = ?", t.TopicId)
-		}
-	}
+	err = eraseTopicRecords(ctx, tx, t.TopicId)
 	if err != nil {
 		return err
 	}

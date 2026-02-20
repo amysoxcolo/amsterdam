@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -150,7 +151,7 @@ func AmStoreAudit(rec *AuditRecord) {
 
 // setupAuditWriter sets up the background audit writer.
 func setupAuditWriter() func() {
-	auditWriteQueue = make(chan *AuditRecord, 16)
+	auditWriteQueue = make(chan *AuditRecord, config.GlobalConfig.Tuning.Queues.AuditWrites)
 	doneChan := make(chan bool)
 	go auditWriter(auditWriteQueue, doneChan)
 	return func() {

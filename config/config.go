@@ -98,6 +98,17 @@ type AmConfig struct {
 			NoCompressTypes []string `yaml:"noCompressTypes"`
 		} `yaml:"uploads"`
 	} `yaml:"posting"`
+	Tuning struct {
+		WorkerTasks int `yaml:"workerTasks"`
+		Queues      struct {
+			AuditWrites    int `yaml:"auditWrites"`
+			ContextRecycle int `yaml:"contextRecycle"`
+			EmailRecycle   int `yaml:"emailRecycle"`
+			EmailSend      int `yaml:"emailSend"`
+			IPBans         int `yaml:"ipBans"`
+			WorkerTasks    int `yaml:"workerTasks"`
+		} `yaml:"queues"`
+	} `yaml:"tuning"`
 }
 
 type AmConfigComputed struct {
@@ -210,6 +221,13 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Posting.ExternalDictionary = overlayString(loaded.Posting.ExternalDictionary, defaults.Posting.ExternalDictionary)
 	dest.Posting.Uploads.MaxSize = overlayString(loaded.Posting.Uploads.MaxSize, defaults.Posting.Uploads.MaxSize)
 	dest.Posting.Uploads.NoCompressTypes = overlayStringArray(loaded.Posting.Uploads.NoCompressTypes, defaults.Posting.Uploads.NoCompressTypes)
+	dest.Tuning.WorkerTasks = overlayInt(loaded.Tuning.WorkerTasks, defaults.Tuning.WorkerTasks)
+	dest.Tuning.Queues.AuditWrites = overlayInt(loaded.Tuning.Queues.AuditWrites, defaults.Tuning.Queues.AuditWrites)
+	dest.Tuning.Queues.ContextRecycle = overlayInt(loaded.Tuning.Queues.ContextRecycle, defaults.Tuning.Queues.ContextRecycle)
+	dest.Tuning.Queues.EmailRecycle = overlayInt(loaded.Tuning.Queues.EmailRecycle, defaults.Tuning.Queues.EmailRecycle)
+	dest.Tuning.Queues.EmailSend = overlayInt(loaded.Tuning.Queues.EmailSend, defaults.Tuning.Queues.EmailSend)
+	dest.Tuning.Queues.IPBans = overlayInt(loaded.Tuning.Queues.IPBans, defaults.Tuning.Queues.IPBans)
+	dest.Tuning.Queues.WorkerTasks = overlayInt(loaded.Tuning.Queues.WorkerTasks, defaults.Tuning.Queues.WorkerTasks)
 }
 
 // parseDataSize converts the data size in bytes, kilobytes, megabytes, or gigabytes to a number value.

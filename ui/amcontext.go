@@ -621,7 +621,7 @@ func contextRecycler(incoming chan *amContext, done chan bool) {
 
 // SetupAmContext starts the recycler for contexts.
 func SetupAmContext() func() {
-	amContextRecycleBin = make(chan *amContext, 16)
+	amContextRecycleBin = make(chan *amContext, config.GlobalConfig.Tuning.Queues.ContextRecycle)
 	done := make(chan bool)
 	go contextRecycler(amContextRecycleBin, done)
 	return func() {

@@ -192,7 +192,7 @@ func main() {
 	defer stop()
 
 	// Set up ampool.
-	ampool = util.AmNewPool(ctx, 4, 128)
+	ampool = util.AmNewPool(ctx, config.GlobalConfig.Tuning.WorkerTasks, config.GlobalConfig.Tuning.Queues.WorkerTasks)
 	go func() {
 		<-ctx.Done()
 		ampool.Shutdown()

@@ -52,3 +52,12 @@ posting:
       - "image/jpg"
       - "image/jpeg"
       - "image/png"
+tuning:
+  workerTasks: 4
+  queues:
+    auditWrites: 16
+    contextRecycle: 16
+    emailRecycle: 16
+    emailSend: 16
+    ipBans: 32
+    workerTasks: 128

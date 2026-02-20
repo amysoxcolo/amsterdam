@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -140,7 +141,7 @@ var banSweeperInput chan *sweepentry
 // setupIPBanSweep sets up the IP ban sweeper routine, and returns a function that tears it down.
 func setupIPBanSweep() func() {
 	banSweeperReset = make(chan bool)
-	banSweeperInput = make(chan *sweepentry, 32)
+	banSweeperInput = make(chan *sweepentry, config.GlobalConfig.Tuning.Queues.IPBans)
 	done := make(chan bool)
 	ended := make(chan bool)
 	go banSweeper(done, ended, banSweeperReset, banSweeperInput)
