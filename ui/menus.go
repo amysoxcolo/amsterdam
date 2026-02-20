@@ -156,8 +156,8 @@ func init() {
 	}
 }
 
-// SetupMenuCache sets up the menu cache.
-func SetupMenuCache() {
+// setupMenuCache sets up the menu cache.
+func setupMenuCache() {
 	var err error
 	if menuCache, err = lru.New(config.GlobalConfig.Tuning.Caches.Menus); err != nil {
 		panic(err)

@@ -30,6 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// GetAndPost is used to have functions that respond to both GET and POST on a URI.
 var GetAndPost = []string{http.MethodGet, http.MethodPost}
 
 // setupEcho creates, configures, and returns a new Echo instance.
@@ -181,11 +182,7 @@ func main() {
 	closer = email.SetupMailSender()
 	defer closer()
 	htmlcheck.SetupDicts()
-	ui.SetupTemplates()
-	ui.SetupMenuCache()
-	closer = ui.SetupAmSessionManager()
-	defer closer()
-	closer = ui.SetupAmContext()
+	closer = ui.SetupUILayer()
 	defer closer()
 
 	// Set up to trap SIGINT/SIGTERM and shut down gracefully

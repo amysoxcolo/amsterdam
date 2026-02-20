@@ -303,8 +303,8 @@ func postRewrite(a jet.Arguments) reflect.Value {
 	return reflect.ValueOf(data)
 }
 
-// SetupTemplates is called to set up the template renderer after the configuration is loaded.
-func SetupTemplates() {
+// setupTemplates is called to set up the template renderer after the configuration is loaded.
+func setupTemplates() {
 	views = jet.NewSet(
 		multi.NewLoader(
 			jet.NewOSFileSystemLoader(config.GlobalConfig.Rendering.TemplateDir),

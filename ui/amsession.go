@@ -373,8 +373,8 @@ func (st *amSessionStore) sweep(tick <-chan time.Time, done chan bool) {
 // sessionStore is the global session store.
 var sessionStore *amSessionStore
 
-// SetupAmSessionManager sets up the session store and its sweeper goroutine.
-func SetupAmSessionManager() func() {
+// setupSessionManager sets up the session store and its sweeper goroutine.
+func setupSessionManager() func() {
 	// get the time for the session to expire
 	d, err := time.ParseDuration(config.GlobalConfig.Site.SessionExpire)
 	if err != nil {
