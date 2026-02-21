@@ -11,12 +11,52 @@ package database
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
+
+// AuditRefRecord stores the reference data for an audit message.
+type AuditRefRecord struct {
+	Code int    `yaml:"code"`
+	Text string `yaml:"text"`
+}
+
+// AuditReference stores the audit reference data.
+type AuditReference struct {
+	Ref   []AuditRefRecord `yaml:"auditReference"`
+	table map[int]*AuditRefRecord
+}
+
+//go:embed auditref.yaml
+var initAuditData []byte
+
+// auditref is the master audit data reference.
+var auditRef AuditReference
+
+// init loads the audit data.
+func init() {
+	if err := yaml.Unmarshal(initAuditData, &auditRef); err != nil {
+		panic(err) // can't happen
+	}
+	auditRef.table = make(map[int]*AuditRefRecord)
+	for i := range auditRef.Ref {
+		auditRef.table[auditRef.Ref[i].Code] = &(auditRef.Ref[i])
+	}
+}
+
+// AmAuditText gets the text of an audit from its code.
+func AmAuditText(code int) string {
+	rec, ok := auditRef.table[code]
+	if ok {
+		return rec.Text
+	}
+	return fmt.Sprintf("[audit code:%d]", code)
+}
 
 // AuditRecord holds an audit record instance.
 type AuditRecord struct {
@@ -32,7 +72,8 @@ type AuditRecord struct {
 	Data4  *string   `db:"data4"`   // fourth data parameter
 }
 
-// These are the audit record types.
+// These are the audit record types.  N.B.: Keep these synchronized with the definitions in database/auditref.yaml
+// at all times!
 const (
 	AuditPublishToFrontPage         = 1
 	AuditLoginOK                    = 101

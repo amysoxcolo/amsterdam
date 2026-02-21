@@ -1,0 +1,100 @@
+#
+# Amsterdam Web Communities System
+# Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# ----------------------------------------------------------------------------
+# N.B.: Keep this synchronized with the constant definitions in
+# database/audit.go at all times!
+auditReference:
+  - code: 1
+    text: "Publish Message to Front Page"
+  - code: 101
+    text: "Login OK"
+  - code: 102
+    text: "Login Failure"
+  - code: 103
+    text: "Account Created"
+  - code: 104
+    text: "Verify Email OK"
+  - code: 105
+    text: "Verify Email Failure"
+  - code: 106
+    text: "Set User Contact Info"
+  - code: 107
+    text: "Resend Email Confirmation"
+  - code: 108
+    text: "Password Change"
+  - code: 109
+    text: "Admin Set User Contact Info"
+  - code: 110
+    text: "Admin Change User Password"
+  - code: 111
+    text: "Admin Change User Account"
+  - code: 112
+    text: "Admin Set Account Security"
+  - code: 113
+    text: "Admin Lock/Unlock Account"
+  - code: 201
+    text: "Create New Community"
+  - code: 202
+    text: "Set Community Membership"
+  - code: 203
+    text: "Set Community Contact Info"
+  - code: 204
+    text: "Set Community Services"
+  - code: 205
+    text: "Set Community Name"
+  - code: 206
+    text: "Set Community Alias"
+  - code: 207
+    text: "Set Community Category"
+  - code: 208
+    text: "Set Community Hiding Information"
+  - code: 209
+    text: "Set Community Members-Only Flag"
+  - code: 210
+    text: "Set Community Join Key"
+  - code: 211
+    text: "Set Community Security Levels"
+  - code: 212
+    text: "Delete Community"
+  - code: 301
+    text: "Create New Conference"
+  - code: 302
+    text: "Set Conference Security Levels"
+  - code: 303
+    text: "Set Conference Name"
+  - code: 304
+    text: "Change Conference Aliases"
+  - code: 305
+    text: "Change Conference Membership"
+  - code: 306
+    text: "Create New Topic"
+  - code: 307
+    text: "Delete Topic"
+  - code: 308
+    text: "Set Topic Frozen"
+  - code: 309
+    text: "Set Topic Archive"
+  - code: 310
+    text: "Post Message"
+  - code: 311
+    text: "Hide Message"
+  - code: 312
+    text: "Scribble Message"
+  - code: 313
+    text: "Nuke Message"
+  - code: 314
+    text: "Upload Message Attachment"
+  - code: 315
+    text: "Delete Conference"
+  - code: 316
+    text: "Move Message"
+  - code: 317
+    text: "Set Topic Sticky"
+  - code: 318
+    text: "Prune Message Attachment"

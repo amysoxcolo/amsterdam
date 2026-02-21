@@ -58,12 +58,6 @@ CREATE TABLE audit (
     INDEX comm_view (commid, on_date)
 );
 
-# A mapping from audit type codes to descriptions.
-CREATE TABLE refaudit (
-    type INT NOT NULL PRIMARY KEY,
-    descr VARCHAR(255)
-);
-
 # The user information table.
 CREATE TABLE users (
     uid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -451,54 +445,6 @@ GRANT INSERT, DELETE, UPDATE, SELECT, LOCK TABLES ON amsterdam.*
 ##############################################################################
 # Constant Data Population
 ##############################################################################
-
-# Types of audit records.  This MUST be kept in sync with the constant definitions in
-# com.silverwrist.venice.security.Audit!!!!
-INSERT INTO refaudit (type, descr) VALUES
-    (1,       'Publish Message to Front Page'),
-    (101,     'Login OK'),
-    (102,     'Login Failure'),
-    (103,     'Account Created'),
-    (104,     'Verify Email OK'),
-    (105,     'Verify Email Failure'),
-    (106,     'Set User Contact Info'),
-    (107,     'Resend Email Confirmation'),
-    (108,     'Password Change'),
-    (109,     'Admin Set User Contact Info'),
-    (110,     'Admin Change User Password'),
-    (111,     'Admin Change User Account'),
-    (112,     'Admin Set Account Security'),
-    (113,     'Admin Lock/Unlock Account'),
-    (201,     'Create New Community'),
-    (202,     'Set Community Membership'),
-    (203,     'Set Community Contact Info'),
-    (204,     'Set Community Services'),
-    (205,     'Set Community Name'),
-    (206,     'Set Community Alias'),
-    (207,     'Set Community Category'),
-    (208,     'Set Community Hiding Information'),
-    (209,     'Set Community Members-Only Flag'),
-    (210,     'Set Community Join Key'),
-    (211,     'Set Community Security Levels'),
-    (212,     'Delete Community'),
-    (301,     'Create New Conference'),
-    (302,     'Set Conference Security Levels'),
-    (303,     'Set Conference Name'),
-    (304,     'Change Conference Aliases'),
-    (305,     'Change Conference Membership'),
-    (306,     'Create New Topic'),
-    (307,     'Delete Topic'),
-    (308,     'Set Topic Frozen'),
-    (309,     'Set Topic Archive'),
-    (310,     'Post Message'),
-    (311,     'Hide Message'),
-    (312,     'Scribble Message'),
-    (313,     'Nuke Message'),
-    (314,     'Upload Message Attachment'),
-    (315,     'Delete Conference'),
-    (316,     'Move Message'),
-    (317,     'Set Topic Sticky'),
-    (9999999, 'DUMMY');
 
 # Populate the Category table.
 # Source: Mozilla Open Directory Project categorization system <http://dmoz.org>;
