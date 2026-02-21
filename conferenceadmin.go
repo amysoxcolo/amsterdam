@@ -865,3 +865,39 @@ func ManageConferenceList(ctxt ui.AmContext) (string, any) {
 	ctxt.SetFrameTitle("Manage Conference List")
 	return "framed", "manage_conflist.jet"
 }
+
+/* ManageDeleteConference handles the deletion of a conference from the management menu.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ManageDeleteConference(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Delete", myLevel) {
+		return "error", ENOPERM
+	}
+
+	// Load the message box, and, if we have a valid "yes," then perform the delete
+	mbox, err := ui.AmLoadMessageBox("deleteConf")
+	if err != nil {
+		return "error", err
+	}
+	if mbox.Validate(ctxt, "yes") {
+		err := conf.Delete(ctxt.Ctx(), comm, ctxt.CurrentUser(), ctxt.RemoteIP(), ampool)
+		if err != nil {
+			return "error", err
+		}
+		return "redirect", fmt.Sprintf("/comm/%s/manage_conf", ctxt.CurrentCommunity().Alias)
+	}
+
+	// Set up to display the message box.
+	mbox.SetMessage(fmt.Sprintf(`You are about to delete the conference <span class="font-bold text-red-600">"%s"</span>
+		from the <span class="font-bold text-red-600">"%s"</span> community!`, conf.Name, comm.Name))
+	mbox.SetLink("no", fmt.Sprintf("/comm/%s/manage_conf", ctxt.CurrentCommunity().Alias))
+	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/manage_conf/del/%s", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias")))
+	return mbox.Render(ctxt)
+}

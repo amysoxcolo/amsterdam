@@ -55,3 +55,29 @@ messagedefs:
         tone: "green"
         icon: "✗"
         text: "No, Cancel"
+  - id: "deleteConf"
+    title: "Delete Conference"
+    tone: "red"
+    destructive: true
+    message: "You are about to delete a conference!"
+    warningIcon: "💣"
+    warningLines:
+      - text: "Warning: This action cannot be undone!"
+        bold: true
+      - text: "Deleting this conference will permanently remove it and all its topics from the system."
+        bold: false
+      - text: "Hundreds or even thousands of conference posts will be lost forever."
+        bold: false
+    buttons:
+      - id: "yes"
+        link: "placeholder"
+        confirm: true
+        tone: "red"
+        icon: "✓"
+        text: "Yes, Delete It"
+      - id: "no"
+        link: "placeholder"
+        confirm: false
+        tone: "green"
+        icon: "✗"
+        text: "No, Cancel"

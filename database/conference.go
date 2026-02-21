@@ -813,6 +813,131 @@ func (c *Conference) Stats(ctx context.Context) (int, int, error) {
 	return ntopic, npost, err
 }
 
+// backgroundPurgeConference purges out all the conference information in the background.
+func backgroundPurgeConference(ctx context.Context, confid int32) error {
+	// Purge out auxiliary conference tables first.
+	tx := amdb.MustBegin()
+	_, err := tx.ExecContext(ctx, "DELETE FROM confmember WHERE confid = ?", confid)
+	if err != nil {
+		log.Warnf("backgroundPurgeConference(%d): failed purging confmember: %v", confid, err)
+	}
+	_, err = tx.ExecContext(ctx, "DELETE FROM confsettings WHERE confid = ?", confid)
+	if err != nil {
+		log.Warnf("backgroundPurgeConference(%d): failed purging confsettings: %v", confid, err)
+	}
+	_, err = tx.ExecContext(ctx, "DELETE FROM confhotlist WHERE confid = ?", confid)
+	if err != nil {
+		log.Warnf("backgroundPurgeConference(%d): failed purging confhotlist: %v", confid, err)
+	}
+	_, err = tx.ExecContext(ctx, "DELETE FROM propconf WHERE confid = ?", confid)
+	if err != nil {
+		log.Warnf("backgroundPurgeConference(%d): failed purging propconf: %v", confid, err)
+	}
+	_, err = tx.ExecContext(ctx, "DELETE FROM confcustom WHERE confid = ?", confid)
+	if err != nil {
+		log.Warnf("backgroundPurgeConference(%d): failed purging confcustom: %v", confid, err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Get all topic IDs in this conference.
+	var topicIds []int32
+	err = amdb.SelectContext(ctx, &topicIds, "SELECT topicid FROM topics WHERE confid = ?", confid)
+	if err != nil {
+		return err
+	}
+
+	// Erase each topic in turn by calling two of the "delete topic" internal functions.
+	for _, topicId := range topicIds {
+		tx := amdb.MustBegin()
+		err = eraseTopicRecords(ctx, tx, topicId)
+		if err == nil {
+			err = tx.Commit()
+		}
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		err = backgroundPurgeTopic(ctx, topicId)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Delete unlinks this conference from the community, deleting it entirely if the last link is gone.
+func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipaddr string, background *util.WorkerPool) error {
+	success := false
+	tx := amdb.MustBegin()
+	defer func() {
+		if !success {
+			tx.Rollback()
+		}
+	}()
+	getConferenceMutex.Lock()
+	defer getConferenceMutex.Unlock()
+
+	// any references to conference other than this community?
+	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", c.ConfId, comm.Id)
+	refCount := 0
+	err := row.Scan(&refCount)
+	if err != nil {
+		return err
+	}
+
+	// break the link with the community
+	if _, err = tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId); err != nil {
+		return err
+	}
+
+	if refCount == 0 {
+		// We have to delete all the conference core data now.
+		_, err = tx.ExecContext(ctx, "DELETE FROM confs WHERE confid = ?", c.ConfId)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM confalias WHERE confid = ?", c.ConfId)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	success = true
+
+	if refCount == 0 {
+		// kick the conference out of the cache
+		conferenceCache.Remove(c.ConfId)
+
+		// add an audit record
+		AmStoreAudit(AmNewAudit(AuditConferenceDelete, u.Uid, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
+
+		// set up a background job to purge the rest of the data
+		confid := c.ConfId
+		background.Submit(func(ctx context.Context) {
+			start := time.Now()
+			// Just dump the whole conference property cache
+			getConferencePropMutex.Lock()
+			conferencePropCache.Purge()
+			getConferencePropMutex.Unlock()
+
+			// purge the conference data
+			err := backgroundPurgeConference(ctx, confid)
+			if err != nil {
+				log.Errorf("Conference purge(#%d) background job failed: %v", confid, err)
+			}
+			dur := time.Since(start)
+			log.Infof("Conference.Delete task completed in %v", dur)
+		})
+	}
+	return nil
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.

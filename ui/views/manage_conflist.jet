@@ -70,7 +70,7 @@
                                     {{ end }}
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-center w-12">
-                                    <a href="/TODO" class="text-2xl hover:scale-125 inline-block transition-transform" 
+                                    <a href="{{ baseUrl }}/del/{{ c.Alias }}" class="text-2xl hover:scale-125 inline-block transition-transform" 
                                         title="Delete Conference">❌</a>
                                 </td>
                                 <td class="px-4 py-3 text-sm">

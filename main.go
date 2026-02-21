@@ -118,8 +118,10 @@ func setupEcho() *echo.Echo {
 	// conference group
 	commGroup.GET("/create_conf", ui.AmWrap(CreateConferenceForm))
 	commGroup.POST("/create_conf", ui.AmWrap(CreateConference))
-	commGroup.GET("/manage_conf", ui.AmWrap(ManageConferenceList))
+	commGroup.GET("/manage_conf", ui.AmWrap(ManageConferenceList), ui.ValidateConference)
+	commGroup.GET("/manage_conf/del/:confid", ui.AmWrap(ManageDeleteConference), ui.ValidateConference, ui.SetConference)
 	commGroup.GET("/conf", ui.AmWrap(Conferences), ui.ValidateConference)
+
 	confGroup := commGroup.Group("/conf/:confid", ui.ValidateConference, ui.SetConference)
 	confGroup.GET("", ui.AmWrap(Topics))
 	confGroup.GET("/new_topic", ui.AmWrap(NewTopicForm))
@@ -145,6 +147,7 @@ func setupEcho() *echo.Echo {
 	confGroup.GET("/invite", ui.AmWrap(InviteToConference))
 	confGroup.GET("/r/:topic", ui.AmWrap(ReadPosts), ui.SetTopic)
 	confGroup.POST("/r/:topic", ui.AmWrap(PostInTopic), ui.SetTopic)
+
 	opsGroup := confGroup.Group("/op/:topic", ui.SetTopic)
 	opsGroup.GET("/find", ui.AmWrap(FindPostsPageTopic))
 	opsGroup.POST("/find", ui.AmWrap(FindPostsTopic))

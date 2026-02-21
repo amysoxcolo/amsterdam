@@ -478,10 +478,13 @@ func (t *Topic) Delete(ctx context.Context, u *User, ipaddr string, background *
 	// Spin off a background task to finish deleting this topic.
 	myTopicId := t.TopicId
 	background.Submit(func(ctx context.Context) {
+		start := time.Now()
 		err := backgroundPurgeTopic(ctx, myTopicId)
 		if err != nil {
 			log.Errorf("backgroundTopicPurge FAILED with %v", err)
 		}
+		dur := time.Since(start)
+		log.Infof("Topic.Delete task completed in %v", dur)
 	})
 
 	return nil

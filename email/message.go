@@ -126,10 +126,13 @@ func (m *amMessage) Send() {
  *     The new Message.
  */
 func AmNewEmailMessage(sender int32, ip string) Message {
-	rc := freeMessages.Get().(*amMessage)
-	if rc == nil {
+	var rc *amMessage
+	tmp := freeMessages.Get()
+	if tmp == nil {
 		rc = &amMessage{to: make([]string, 0), cc: make([]string, 0), bcc: make([]string, 0),
 			headers: make(map[string]string), vars: make(jet.VarMap)}
+	} else {
+		rc = tmp.(*amMessage)
 	}
 	rc.uid = sender
 	rc.ip = ip

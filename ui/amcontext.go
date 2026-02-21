@@ -524,14 +524,17 @@ var amContextRecycleBin chan *amContext
  *     Standard Go error status.
  */
 func newContext(ctxt echo.Context) (*amContext, error) {
-	rc := freeContext.Get().(*amContext)
-	if rc == nil {
+	var rc *amContext
+	tmp := freeContext.Get()
+	if tmp == nil {
 		rc = &amContext{
 			rendervars: make(jet.VarMap),
 			frameTitle: "",
 			frameMeta:  make(map[int]map[string]string),
 			outputType: "",
 		}
+	} else {
+		rc = tmp.(*amContext)
 	}
 
 	var err error
