@@ -20,7 +20,7 @@ _(italicized items can be deferred)_
   - Import User Accounts
 - Conferences list:
   - ~~Find~~
-  - Manage (reorder/show/hide/delete)
+  - ~~Manage (reorder/show/hide/delete)~~
   - ~~Create New~~
 - ~~Conferences List honor "hide in list" flag~~
 - Community Admin Menu:
