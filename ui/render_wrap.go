@@ -27,11 +27,15 @@ import (
  *     amctxt - The associated AmContext.
  *     command - The type of rendering to be done. Known values are:
  *         "bytes" - Output "data" as a byte array.
- *         "redirect" - Treat "data" as a URL to be redirected to and send a 302 Redirect.
- *         "string" - Output "data" as a string.
- *         "template" - Treat "data" as a template name, and output that template.
+ *         "error" - Output the error rendering page.
  *         "framed" - Treat "data" as an inner template name, and output that template rendered
  *		       within the outer "frame.jet" template.
+ *         "ipban" - Output the IP address ban rendering page.
+ *         "nocontent" - Output a 204 No Content response.
+ *         "redirect" - Treat "data" as a URL to be redirected to and send a 302 Redirect.
+ *         "stream" - Treat "data" as an io.Reader and use it to stream data.
+ *         "string" - Output "data" as a string.
+ *         "template" - Treat "data" as a template name, and output that template.
  *     data - The data to be output, as determined by the command.
  * Returns:
  *     Standard Go error status.

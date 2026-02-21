@@ -98,7 +98,8 @@ const (
 
 // Flag values for conference property index ConferencePropFlags defined.
 const (
-	ConferenceFlagPicturesInPosts = uint(0)
+	ConferenceFlagPicturesInPosts  = uint(0) // show pictures in posts
+	ConferenceFlagBuggyAttachments = uint(1) // buggy attachment behavior
 )
 
 // conferenceCache is the cache for Conference objects.
@@ -991,6 +992,26 @@ func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, err
 		conferenceAliasMap.Store(alias, confid)
 	}
 	return AmGetConference(ctx, confid)
+}
+
+/* AmGetConferenceContainingPost looks up a post ID and returns the conference containing it.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     postId - The post ID to look up.
+ * Returns:
+ *     Pointer to the conference, or nil.
+ *     Standard Go error status.
+ */
+func AmGetConferenceContainingPost(ctx context.Context, postId int64) (*Conference, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT t.confid FROM topics t, posts p WHERE p.postid = ? AND p.topicid = t.topicid", postId)
+	var confId int32
+	err := row.Scan(&confId)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("post not found: %d", postId)
+	} else if err != nil {
+		return nil, err
+	}
+	return AmGetConference(ctx, confId)
 }
 
 /* AmGetConferenceByAliasInCommunity returns a conference in a community given its alias.

@@ -107,7 +107,24 @@ func AttachmentSend(ctxt ui.AmContext) (string, any) {
 	} else if info == nil {
 		return "error", echo.NewHTTPError(http.StatusNotFound, "attachment not found")
 	}
-	data, err := hdr.AttachmentData(ctxt.Ctx(), config.CommandLine.BuggyAttachments)
+
+	// Do we need the buggy-attachment workaround? If it's not selected on the command line, check the
+	// conference flags, which means we need to get the containing conference.
+	bugWorkaround := config.CommandLine.BuggyAttachments
+	if !bugWorkaround {
+		conf, err := database.AmGetConferenceContainingPost(ctxt.Ctx(), postId)
+		if err == nil {
+			flg, err := conf.Flags(ctxt.Ctx())
+			if err == nil {
+				bugWorkaround = flg.Get(database.ConferenceFlagBuggyAttachments)
+			}
+		}
+		if err != nil {
+			return "error", err
+		}
+	}
+
+	data, err := hdr.AttachmentData(ctxt.Ctx(), bugWorkaround)
 	if err != nil {
 		return "error", err
 	}

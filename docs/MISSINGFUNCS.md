@@ -72,6 +72,7 @@ _(italicized items can be deferred)_
     - Import Messages
     - ~~Delete Conference~~
   - ~~Add to Hotlist/Remove from Hotlist~~
+- Actually implement pictures in posts
 - Related to bugs in Export Messages caused by bad data:
-  - Provide a per-conference flag that will set BuggyAttachment behavior
+  - ~~Provide a per-conference flag that will set BuggyAttachment behavior~~
   - New feature: remove attachment from message (requires Conference.Nuke permission)

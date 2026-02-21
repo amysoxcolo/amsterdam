@@ -72,6 +72,7 @@ func EditConferenceForm(ctxt ui.AmContext) (string, any) {
 		return "error", err
 	}
 	dlg.Field("pic_in_post").SetChecked(flags.Get(database.ConferenceFlagPicturesInPosts))
+	dlg.Field("bugattach").SetChecked(flags.Get(database.ConferenceFlagBuggyAttachments))
 	return dlg.Render(ctxt)
 }
 
@@ -113,6 +114,7 @@ func EditConference(ctxt ui.AmContext) (string, any) {
 				flags, err = conf.Flags(ctxt.Ctx())
 				if err == nil {
 					flags.Set(database.ConferenceFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())
+					flags.Set(database.ConferenceFlagBuggyAttachments, dlg.Field("bugattach").IsChecked())
 					err = conf.SaveFlags(ctxt.Ctx(), flags)
 				}
 			}
@@ -711,12 +713,22 @@ func ConferenceExport(ctxt ui.AmContext) (string, any) {
 		}
 	}
 
+	// Get the value of the "bug workaround" flag. If not from the command line, then from the conference flags.
+	bugWorkaround := config.CommandLine.BuggyAttachments
+	if !bugWorkaround {
+		flg, err := conf.Flags(ctxt.Ctx())
+		if err != nil {
+			return "error", err
+		}
+		bugWorkaround = flg.Get(database.ConferenceFlagBuggyAttachments)
+	}
+
 	// The tricky bit! We use a dedicated goroutine to generate the streamed output and send it to the inlet end of a pipe.
 	filename := time.Now().Format("exported-data-20060102.xml")
 	r, w := io.Pipe()
 	go func() {
 		start := time.Now()
-		err := exports.VCIFStreamTopicFile(context.Background(), w, topics, config.CommandLine.BuggyAttachments)
+		err := exports.VCIFStreamTopicFile(context.Background(), w, topics, bugWorkaround)
 		if err != nil {
 			log.Errorf("ConferenceExport task failed with %v", err)
 			s := fmt.Sprintf("<!-- ***PROCESSING ERROR*** %v -->\r\n", err)
