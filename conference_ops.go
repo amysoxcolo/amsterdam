@@ -482,6 +482,64 @@ func NukeMessage(ctxt ui.AmContext) (string, any) {
 	return mbox.Render(ctxt)
 }
 
+/* PruneMessageAttachment prunes (removes and deletes) a message's attachmeent.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func PruneMessageAttachment(ctxt ui.AmContext) (string, any) {
+	if ctxt.CurrentUser().IsAnon {
+		return "error", ENOPERM
+	}
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
+	msgNum, err := strconv.Atoi(ctxt.URLParam("msg"))
+	if err != nil {
+		return "error", err
+	}
+	hdrs, err := database.AmGetPostRange(ctxt.Ctx(), topic, int32(msgNum), int32(msgNum))
+	if err != nil {
+		return "error", err
+	} else if len(hdrs) != 1 {
+		return "error", EPOSTREF
+	}
+	if !conf.TestPermission("Conference.Nuke", myLevel) {
+		return "error", ENOPERM
+	}
+
+	// Load the message box, and, if we have a valid "yes," then perform the prune!
+	mbox, err := ui.AmLoadMessageBox("prune")
+	if err != nil {
+		return "error", err
+	}
+	if mbox.Validate(ctxt, "yes") {
+		// do the pruning!
+		err := hdrs[0].PruneAttachment(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
+		if err != nil {
+			return "error", err
+		}
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+	}
+
+	// Set up to display the message box.
+	link, err := hdrs[0].Link(ctxt.Ctx(), "community")
+	if err != nil {
+		return "error", err
+	}
+	creator, err := hdrs[0].Creator(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+	mbox.SetMessage(fmt.Sprintf(`You are about to prune the attachment of message <span class="font-mono font-bold text-red-600">&lt;%s&gt;</span>, 
+                        		originally composed by <span class="font-bold text-red-600">&lt;%s&gt;</span>!`, link, creator.Username))
+	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
+	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/op/%d/prune/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
+	return mbox.Render(ctxt)
+}
+
 /* MoveMessageForm displays the form for moving a message..
  * Parameters:
  *     ctxt - The AmContext for the request.

@@ -77,6 +77,7 @@ const (
 	AuditConferenceDelete           = 315
 	AuditConferenceMoveMessage      = 316
 	AuditConferenceStickyTopic      = 317
+	AuditConferencePruneAttachment  = 318
 )
 
 // auditWriteQueue is a channel to store audit records in the background.

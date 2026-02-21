@@ -223,6 +223,21 @@ func (p *PostHeader) HitAttachment(ctx context.Context) error {
 	return err
 }
 
+// PruneAttachment prunes (removes and deletes) the attachment of this post.
+func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, ipaddr string) error {
+	if p.ScribbleDate != nil && p.ScribbleUid != nil {
+		return errors.New("no attachment on scribbled post")
+	}
+	rs, err := amdb.ExecContext(ctx, "DELETE FROM postattach WHERE postid = ?", p.PostId)
+	if err == nil {
+		rowCount, err := rs.RowsAffected()
+		if err == nil && rowCount > 1 {
+			AmStoreAudit(AmNewAudit(AuditConferencePruneAttachment, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId)))
+		}
+	}
+	return err
+}
+
 // Text returns the text associated with a post.
 func (p *PostHeader) Text(ctx context.Context) (string, error) {
 	var dbdata []PostData

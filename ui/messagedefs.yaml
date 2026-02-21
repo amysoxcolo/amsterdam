@@ -31,6 +31,30 @@ messagedefs:
         tone: "green"
         icon: "✗"
         text: "No, Cancel"
+  - id: "prune"
+    title: "Prune Message Attachment"
+    tone: "red"
+    destructive: true
+    message: "You are about to prune a message's attachment!"
+    warningIcon: "💣"
+    warningLines:
+      - text: "Warning: This action cannot be undone!"
+        bold: true
+      - text: "Pruning this message's attachment will permanently delete it from the system."
+        bold: false
+    buttons:
+      - id: "yes"
+        link: "placeholder"
+        confirm: true
+        tone: "red"
+        icon: "✓"
+        text: "Yes, Prune It"
+      - id: "no"
+        link: "placeholder"
+        confirm: false
+        tone: "green"
+        icon: "✗"
+        text: "No, Cancel"
   - id: "deleteTopic"
     title: "Delete Topic"
     tone: "red"

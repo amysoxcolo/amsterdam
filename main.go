@@ -160,6 +160,7 @@ func setupEcho() *echo.Echo {
 	opsGroup.GET("/hide/:msg", ui.AmWrap(HideMessage))
 	opsGroup.GET("/scribble/:msg", ui.AmWrap(ScribbleMessage))
 	opsGroup.GET("/nuke/:msg", ui.AmWrap(NukeMessage))
+	opsGroup.GET("/prune/:msg", ui.AmWrap(PruneMessageAttachment))
 	opsGroup.GET("/publish/:msg", ui.AmWrap(PublishMessage))
 	opsGroup.GET("/move/:msg", ui.AmWrap(MoveMessageForm))
 	opsGroup.POST("/move/:msg", ui.AmWrap(MoveMessage))
