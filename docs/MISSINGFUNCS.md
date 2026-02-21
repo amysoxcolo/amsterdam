@@ -18,7 +18,7 @@ _(italicized items can be deferred)_
   - ~~User Account Management~~
   - System Audit Logs
   - Import User Accounts
-- Conferences list:
+- ~~Conferences list:~~
   - ~~Find~~
   - ~~Manage (reorder/show/hide/delete)~~
   - ~~Create New~~
@@ -70,7 +70,7 @@ _(italicized items can be deferred)_
     - ~~E-mail~~
     - ~~Export Messages~~
     - Import Messages
-    - Delete Conference
+    - ~~Delete Conference~~
   - ~~Add to Hotlist/Remove from Hotlist~~
 - Related to bugs in Export Messages caused by bad data:
   - Provide a per-conference flag that will set BuggyAttachment behavior
