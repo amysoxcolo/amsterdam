@@ -156,6 +156,39 @@ func AmNewAudit(rectype int32, uid int32, ip string, data ...string) *AuditRecor
 	return &rc
 }
 
+/* AmNewCommAudit creates a new audit record tied to a community.
+ * Parameters:
+ *     rectype - Audit record type.
+ *     uid - User ID of the user.
+ *     commid - Community ID of the community.
+ *     ip - User's IP address.
+ *     data - Argument data values for the audit record.
+ * Returns:
+ *     The audit record pointer.
+ */
+func AmNewCommAudit(rectype int32, uid int32, commid int32, ip string, data ...string) *AuditRecord {
+	rc := AuditRecord{Event: rectype, Uid: uid, CommId: commid}
+	if len(ip) > 0 {
+		rc.IP = &ip
+	}
+	if data != nil {
+		l := len(data)
+		if l > 0 {
+			rc.Data1 = &(data[0])
+		}
+		if l > 1 {
+			rc.Data2 = &(data[1])
+		}
+		if l > 2 {
+			rc.Data3 = &(data[2])
+		}
+		if l > 3 {
+			rc.Data4 = &(data[3])
+		}
+	}
+	return &rc
+}
+
 // Store stores the audit record in the database.
 func (ar *AuditRecord) Store(ctx context.Context) error {
 	if ar.Record > 0 {
