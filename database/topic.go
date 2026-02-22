@@ -132,42 +132,30 @@ func (t *Topic) SetHidden(ctx context.Context, u *User, hidden bool) error {
 
 // SetFrozen sets a topic's "frozen" state.
 func (t *Topic) SetFrozen(ctx context.Context, frozen bool, u *User, comm *Community, ipaddr string) error {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	_, err := amdb.ExecContext(ctx, "UPDATE topics SET frozen = ? WHERE topicid = ?", frozen, t.TopicId)
 	if err == nil {
 		t.Frozen = frozen
-		ar = AmNewCommAudit(AuditConferenceFreezeTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("frozen=%t", frozen))
+		AmStoreAudit(AmNewCommAudit(AuditConferenceFreezeTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("frozen=%t", frozen)))
 	}
 	return err
 }
 
 // SetArchived sets a topic's "archived" state.
 func (t *Topic) SetArchived(ctx context.Context, archived bool, u *User, comm *Community, ipaddr string) error {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	_, err := amdb.ExecContext(ctx, "UPDATE topics SET archived = ? WHERE topicid = ?", archived, t.TopicId)
 	if err == nil {
 		t.Archived = archived
-		ar = AmNewCommAudit(AuditConferenceArchiveTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("archived=%t", archived))
+		AmStoreAudit(AmNewCommAudit(AuditConferenceArchiveTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("archived=%t", archived)))
 	}
 	return err
 }
 
 // SetSticky sets a topic's "sticky" state.
 func (t *Topic) SetSticky(ctx context.Context, sticky bool, u *User, comm *Community, ipaddr string) error {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	_, err := amdb.ExecContext(ctx, "UPDATE topics SET sticky = ? where topicid = ?", sticky, t.TopicId)
 	if err == nil {
 		t.Sticky = sticky
-		ar = AmNewCommAudit(AuditConferenceStickyTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("sticky=%t", sticky))
+		AmStoreAudit(AmNewCommAudit(AuditConferenceStickyTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("topic=%d", t.TopicId), fmt.Sprintf("sticky=%t", sticky)))
 	}
 	return err
 }
@@ -441,10 +429,6 @@ func eraseTopicRecords(ctx context.Context, tx *sqlx.Tx, topicid int32) error {
 
 // Delete deletes this topic.
 func (t *Topic) Delete(ctx context.Context, u *User, comm *Community, ipaddr string, background *util.WorkerPool) error {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -472,8 +456,8 @@ func (t *Topic) Delete(ctx context.Context, u *User, comm *Community, ipaddr str
 	success = true
 
 	// create audit record
-	ar = AmNewCommAudit(AuditConferenceDeleteTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
-		fmt.Sprintf("topic=%d", t.TopicId))
+	AmStoreAudit(AmNewCommAudit(AuditConferenceDeleteTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
+		fmt.Sprintf("topic=%d", t.TopicId)))
 
 	// Spin off a background task to finish deleting this topic.
 	myTopicId := t.TopicId
@@ -748,10 +732,6 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
  */
 func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
 	zeroPostLines int32, comm *Community, ipaddr string) (*Topic, error) {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -826,8 +806,8 @@ func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string,
 	success = true
 
 	// create audit record
-	ar = AmNewCommAudit(AuditConferenceCreateTopic, user.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
-		fmt.Sprintf("num=%d", topic.Number), fmt.Sprintf("name=%s", topic.Name))
+	AmStoreAudit(AmNewCommAudit(AuditConferenceCreateTopic, user.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
+		fmt.Sprintf("num=%d", topic.Number), fmt.Sprintf("name=%s", topic.Name)))
 
 	return topic, nil
 }

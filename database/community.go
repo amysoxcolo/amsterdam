@@ -854,10 +854,6 @@ func AmSetCommunityProperty(ctx context.Context, cid int32, ndx int32, val *stri
  */
 func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid int32, language *string, synopsis *string,
 	rules *string, joinkey *string, hideDirectory bool, hideSearch bool, remoteIP string) (*Community, error) {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -917,8 +913,8 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 	success = true
 
 	// operation was a success - add an audit record
-	ar = AmNewCommAudit(AuditCommunityCreate, hostUid, comm.Id, remoteIP, fmt.Sprintf("id=%d", comm.Id),
-		fmt.Sprintf("name=%s", comm.Name), fmt.Sprintf("alias=%s", comm.Alias))
+	AmStoreAudit(AmNewCommAudit(AuditCommunityCreate, hostUid, comm.Id, remoteIP, fmt.Sprintf("id=%d", comm.Id),
+		fmt.Sprintf("name=%s", comm.Name), fmt.Sprintf("alias=%s", comm.Alias)))
 	return comm, nil
 }
 

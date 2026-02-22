@@ -1214,10 +1214,6 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 		newConf.CreateLevel = AmDefaultRole("Conference.Create.Public").Level()
 	}
 
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -1290,6 +1286,6 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 
 	// Add the new conference to the cache, and create our audit record.
 	conferenceCache.Add(rc[0].ConfId, &(rc[0]))
-	ar = AmNewCommAudit(AuditConferenceCreate, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", rc[0].ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias))
+	AmStoreAudit(AmNewCommAudit(AuditConferenceCreate, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", rc[0].ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias)))
 	return &(rc[0]), nil
 }

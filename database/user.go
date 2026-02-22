@@ -250,11 +250,6 @@ func (u *User) NewAuthToken(ctx context.Context) (string, error) {
  *     Standard Go error status.
  */
 func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP string) error {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
-
 	log.Debugf("ConfirmEMailAddress for UID %d", u.Uid)
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
@@ -264,7 +259,7 @@ func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP 
 	}
 	if confnum != u.EmailConfNum {
 		log.Warn("...confirmation number incorrect")
-		ar = AmNewAudit(AuditVerifyEmailFail, u.Uid, remoteIP, "Invalid confirmation number")
+		AmStoreAudit(AmNewAudit(AuditVerifyEmailFail, u.Uid, remoteIP, "Invalid confirmation number"))
 		return errors.New("confirmation number is incorrect. Please try again")
 	}
 	_, err := amdb.ExecContext(ctx, "UPDATE users SET verify_email = 1, base_lvl = ? WHERE uid = ?",
@@ -273,7 +268,7 @@ func (u *User) ConfirmEMailAddress(ctx context.Context, confnum int32, remoteIP 
 		u.VerifyEMail = true
 		u.BaseLevel = AmDefaultRole("Global.AfterVerify").Level()
 		if err = AmAutoJoinCommunities(ctx, u); err == nil {
-			ar = AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP)
+			AmStoreAudit(AmNewAudit(AuditVerifyEmailOK, u.Uid, remoteIP))
 		}
 	}
 	return err
@@ -293,22 +288,19 @@ func (u *User) NewEmailConfirmationNumber(ctx context.Context) error {
 
 // ChangePassword resets a user's password.
 func (u *User) ChangePassword(ctx context.Context, password string, changer *User, remoteIP string) error {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
-
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	pval := hashPassword(password)
 	_, err := amdb.ExecContext(ctx, "UPDATE users SET passhash = ? WHERE uid = ?", pval, u.Uid)
 	if err == nil {
 		u.Passhash = pval
+		var arec *AuditRecord = nil
 		if changer.Uid == u.Uid {
-			ar = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
+			arec = AmNewAudit(AuditChangePassword, u.Uid, remoteIP, "via password change request")
 		} else {
-			ar = AmNewAudit(AuditAdminChangeUserPassword, changer.Uid, remoteIP, fmt.Sprintf("uid=%d", u.Uid))
+			arec = AmNewAudit(AuditAdminChangeUserPassword, changer.Uid, remoteIP, fmt.Sprintf("uid=%d", u.Uid))
 		}
+		AmStoreAudit(arec)
 	}
 	return err
 }
@@ -379,16 +371,11 @@ func (u *User) Prefs(ctx context.Context) (*UserPrefs, error) {
  *     Standard Go error status.
  */
 func (u *User) SetProfileData(ctx context.Context, reminder string, dob *time.Time, descr *string, setter *User, ipaddr string) error {
-	ara := make([]*AuditRecord, 0, 3)
-	defer func() {
-		for _, ar := range ara {
-			AmStoreAudit(ar)
-		}
-	}()
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	_, err := amdb.ExecContext(ctx, "UPDATE users SET passreminder = ?, dob = ?, description = ? WHERE uid = ?", reminder, dob, descr, u.Uid)
 	if err == nil {
+		ara := make([]*AuditRecord, 0, 3)
 		if setter.Uid != u.Uid {
 			if u.Description != descr {
 				ara = append(ara, AmNewAudit(AuditAdminChangeUserAccount, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), "field=description"))
@@ -400,18 +387,15 @@ func (u *User) SetProfileData(ctx context.Context, reminder string, dob *time.Ti
 		u.PassReminder = reminder
 		u.DOB = dob
 		u.Description = descr
+		for _, a := range ara {
+			AmStoreAudit(a)
+		}
 	}
 	return err
 }
 
 // SetSecurityData sets the "security" variables for this user.
 func (u *User) SetSecurityData(ctx context.Context, baseLevel uint16, lockout, verifyEmail bool, setter *User, ipaddr string) error {
-	ara := make([]*AuditRecord, 0, 3)
-	defer func() {
-		for _, ar := range ara {
-			AmStoreAudit(ar)
-		}
-	}()
 	bofhLevel := AmRole("Global.BOFH").Level()
 	if (u.BaseLevel == bofhLevel || baseLevel == bofhLevel) && u.BaseLevel != baseLevel {
 		return errors.New("cannot change levels to or from global system administrator")
@@ -420,6 +404,7 @@ func (u *User) SetSecurityData(ctx context.Context, baseLevel uint16, lockout, v
 	defer u.Mutex.Unlock()
 	_, err := amdb.ExecContext(ctx, "UPDATE users SET base_lvl = ?, lockout = ?, verify_email = ? WHERE uid = ?", baseLevel, lockout, verifyEmail, u.Uid)
 	if err == nil {
+		ara := make([]*AuditRecord, 0, 3)
 		if u.BaseLevel != baseLevel {
 			ara = append(ara, AmNewAudit(AuditAdminSetAccountSecurity, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", baseLevel)))
 		}
@@ -438,6 +423,9 @@ func (u *User) SetSecurityData(ctx context.Context, baseLevel uint16, lockout, v
 		u.BaseLevel = baseLevel
 		u.Lockout = lockout
 		u.VerifyEMail = verifyEmail
+		for _, a := range ara {
+			AmStoreAudit(a)
+		}
 	}
 	return err
 }
@@ -605,10 +593,6 @@ func touchUser(ctx context.Context, tx *sqlx.Tx, user *User) {
  */
 func AmAuthenticateUser(ctx context.Context, name string, password string, remoteIP string) (*User, error) {
 	log.Debugf("AmAuthenticateUser() authenticating user %s...", name)
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -620,17 +604,17 @@ func AmAuthenticateUser(ctx context.Context, name string, password string, remot
 	user, err := AmGetUserByName(ctx, name, tx)
 	if err != nil {
 		log.Error("...user not found")
-		ar = AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad username: %s", name))
+		AmStoreAudit(AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad username: %s", name)))
 		return nil, errors.New("the user account you have specified does not exist; please try again")
 	}
 	if user.IsAnon {
 		log.Error("...user is the Anonymous Honyak, can't explicitly log in")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Anonymous user")
+		AmStoreAudit(AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Anonymous user"))
 		return nil, errors.New("this account cannot be explicitly logged into; please try again")
 	}
 	if user.Lockout {
 		log.Error("...user is locked out by the admin")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out")
+		AmStoreAudit(AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out"))
 		return nil, errors.New("this account has been administratively locked; please contact the system administrator for assistance")
 	}
 	passok := false
@@ -642,7 +626,7 @@ func AmAuthenticateUser(ctx context.Context, name string, password string, remot
 	}
 	if !passok {
 		log.Warn("...invalid password")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Bad password")
+		AmStoreAudit(AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Bad password"))
 		return nil, errors.New("the password you have specified is incorrect; please try again")
 	}
 	log.Debug("...authenticated")
@@ -651,7 +635,7 @@ func AmAuthenticateUser(ctx context.Context, name string, password string, remot
 		return nil, err
 	}
 	success = true
-	ar = AmNewAudit(AuditLoginOK, user.Uid, remoteIP)
+	AmStoreAudit(AmNewAudit(AuditLoginOK, user.Uid, remoteIP))
 	return user, nil
 }
 
@@ -689,10 +673,6 @@ func crackAuthString(authString string) (int32, string, error) {
  *     Standard Go error status.
  */
 func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP string) (*User, error) {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	success := false
 	tx := amdb.MustBegin()
 	defer func() {
@@ -709,23 +689,23 @@ func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP 
 	user, err = AmGetUserTx(ctx, tx, uid)
 	if err != nil {
 		log.Error("...user not found")
-		ar = AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad uid: %d", uid))
+		AmStoreAudit(AmNewAudit(AuditLoginFail, 0, remoteIP, fmt.Sprintf("Bad uid: %d", uid)))
 		return nil, fmt.Errorf("uid %d not found, ignore: %v", uid, err)
 	}
 	log.Debugf("AmAuthenicateUserByToken() authenticating user %d...", uid)
 	if user.IsAnon {
 		log.Error("...user is the Anonymous Honyak, can't explicitly log in")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Anonymous user")
+		AmStoreAudit(AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Anonymous user"))
 		return nil, errors.New("this account cannot be explicitly logged into; please try again")
 	}
 	if user.Lockout {
 		log.Error("...user is locked out by the admin")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out")
+		AmStoreAudit(AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Account locked out"))
 		return nil, errors.New("this account has been administratively locked; please contact the system administrator for assistance")
 	}
 	if user.Tokenauth == nil || *(user.Tokenauth) != token {
 		log.Error("...token mismatch")
-		ar = AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Token mismatch")
+		AmStoreAudit(AmNewAudit(AuditLoginFail, user.Uid, remoteIP, "Token mismatch"))
 		return nil, errors.New("token mismatch")
 	}
 	log.Debug("...authenticated")
@@ -734,7 +714,7 @@ func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP 
 		return nil, err
 	}
 	success = true
-	ar = AmNewAudit(AuditLoginOK, user.Uid, remoteIP)
+	AmStoreAudit(AmNewAudit(AuditLoginOK, user.Uid, remoteIP))
 	return user, nil
 }
 
@@ -751,10 +731,6 @@ func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP 
  *     Standard Go error status.
  */
 func AmCreateNewUser(ctx context.Context, username string, password string, reminder string, dob *time.Time, remoteIP string) (*User, error) {
-	var ar *AuditRecord = nil
-	defer func() {
-		AmStoreAudit(ar)
-	}()
 	anon, _ := AmGetAnonUser(ctx)
 	success := false
 	tx := amdb.MustBegin()
@@ -827,7 +803,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	}
 
 	// operation was a success - add an audit record
-	ar = AmNewAudit(AuditAccountCreated, user.Uid, remoteIP)
+	AmStoreAudit(AmNewAudit(AuditAccountCreated, user.Uid, remoteIP))
 	return user, nil
 }
 
