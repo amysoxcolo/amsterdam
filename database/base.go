@@ -10,11 +10,13 @@
 package database
 
 import (
+	"context"
 	"slices"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 )
 
 // amdb is the reference to the Amsterdam database.
@@ -41,4 +43,37 @@ func SetupDb() (func(), error) {
 		}
 		amdb.Close()
 	}, err
+}
+
+/* transaction starts a transaction and returns functions for commit and rollback. The rollback
+ * function can be immediately deferred; if commit is called successfully, rollback becomes a no-op.
+ * Parameters:
+ *     ctx - Standard Go error status.
+ * Returns:
+ *     The sqlx transaction object
+ *     The commit function (no parameters, returns error)
+ *     The rollback function (no parameters or return)
+ */
+func transaction(ctx context.Context) (*sqlx.Tx, func() error, func()) {
+	tx := amdb.MustBeginTx(ctx, nil)
+	live := true
+	fCom := func() error {
+		var err error = nil
+		if live {
+			err = tx.Commit()
+			if err == nil {
+				live = false
+			}
+		}
+		return err
+	}
+	fRoll := func() {
+		if live {
+			if err := tx.Rollback(); err != nil {
+				log.Errorf("***ROLLBACK ERROR*** %v", err)
+			}
+			live = false
+		}
+	}
+	return tx, fCom, fRoll
 }

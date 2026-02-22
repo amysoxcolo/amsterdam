@@ -588,13 +588,8 @@ func (c *Conference) Fixseen(ctx context.Context, u *User) error {
 	if u.IsAnon {
 		return nil
 	}
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Get a count of topics beforehand.
 	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM topics WHERE confid = ?", c.ConfId)
@@ -634,10 +629,9 @@ func (c *Conference) Fixseen(ctx context.Context, u *User) error {
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
@@ -657,13 +651,8 @@ func (c *Conference) GetCustomBlocks(ctx context.Context) (string, string, error
 
 // SetCustomBlocks sets the custom HTML blocks for this conference.
 func (c *Conference) SetCustomBlocks(ctx context.Context, topBlock, bottomBlock string) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM confcustom WHERE confid = ?", c.ConfId)
 	ct := 0
 	err := row.Scan(&ct)
@@ -678,10 +667,9 @@ func (c *Conference) SetCustomBlocks(ctx context.Context, topBlock, bottomBlock 
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
@@ -815,7 +803,7 @@ func (c *Conference) Stats(ctx context.Context) (int, int, error) {
 // backgroundPurgeConference purges out all the conference information in the background.
 func backgroundPurgeConference(ctx context.Context, confid int32) error {
 	// Purge out auxiliary conference tables first.
-	tx := amdb.MustBegin()
+	tx, commit, rollback := transaction(ctx)
 	_, err := tx.ExecContext(ctx, "DELETE FROM confmember WHERE confid = ?", confid)
 	if err != nil {
 		log.Warnf("backgroundPurgeConference(%d): failed purging confmember: %v", confid, err)
@@ -836,9 +824,9 @@ func backgroundPurgeConference(ctx context.Context, confid int32) error {
 	if err != nil {
 		log.Warnf("backgroundPurgeConference(%d): failed purging confcustom: %v", confid, err)
 	}
-	err = tx.Commit()
+	err = commit()
 	if err != nil {
-		tx.Rollback()
+		rollback()
 		return err
 	}
 
@@ -851,13 +839,13 @@ func backgroundPurgeConference(ctx context.Context, confid int32) error {
 
 	// Erase each topic in turn by calling two of the "delete topic" internal functions.
 	for _, topicId := range topicIds {
-		tx := amdb.MustBegin()
+		tx, commit, rollback := transaction(ctx)
 		err = eraseTopicRecords(ctx, tx, topicId)
 		if err == nil {
-			err = tx.Commit()
+			err = commit()
 		}
 		if err != nil {
-			tx.Rollback()
+			rollback()
 			return err
 		}
 		err = backgroundPurgeTopic(ctx, topicId)
@@ -870,13 +858,8 @@ func backgroundPurgeConference(ctx context.Context, confid int32) error {
 
 // Delete unlinks this conference from the community, deleting it entirely if the last link is gone.
 func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipaddr string, background *util.WorkerPool) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 	getConferenceMutex.Lock()
 	defer getConferenceMutex.Unlock()
 
@@ -904,10 +887,9 @@ func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipadd
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 
 	if refCount == 0 {
 		// kick the conference out of the cache
@@ -1154,13 +1136,8 @@ func AmSetConferenceProperty(ctx context.Context, confid int32, ndx int32, val *
 
 // AmReorderConferences reorders two conferences by sequence number.
 func AmReorderConferences(ctx context.Context, cid int32, seq1, seq2 int16) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 	_, err := tx.ExecContext(ctx, "UPDATE commtoconf SET sequence = -1 WHERE commid = ? AND sequence = ?", cid, seq1)
 	if err == nil {
 		_, err = tx.ExecContext(ctx, "UPDATE commtoconf SET sequence = ? WHERE commid = ? AND sequence = ?", seq1, cid, seq2)
@@ -1171,10 +1148,9 @@ func AmReorderConferences(ctx context.Context, cid int32, seq1, seq2 int16) erro
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
@@ -1214,13 +1190,8 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 		newConf.CreateLevel = AmDefaultRole("Conference.Create.Public").Level()
 	}
 
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 	getConferenceMutex.Lock()
 	defer getConferenceMutex.Unlock()
 
@@ -1279,10 +1250,9 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 		return nil, err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 
 	// Add the new conference to the cache, and create our audit record.
 	conferenceCache.Add(rc[0].ConfId, &(rc[0]))

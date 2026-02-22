@@ -336,13 +336,9 @@ func (c *Community) ListMembers(ctx context.Context, field int, oper int, term s
  *     Standard Go error status.
  */
 func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, locked bool, personUID int32, ipaddr string) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
+
 	if level == 0 {
 		res, err := tx.ExecContext(ctx, "DELETE FROM commmember WHERE commid = ? AND uid = ?", c.Id, u.Uid)
 		if err != nil {
@@ -382,11 +378,14 @@ func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, lo
 			return err
 		}
 	}
-	if err := c.TouchUpdateTx(ctx, tx); err == nil {
-		AmStoreAudit(AmNewCommAudit(AuditCommunitySetMembership, personUID, c.Id, ipaddr, fmt.Sprintf("cid=%d", c.Id),
-			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level)))
+	var err error
+	if err = c.TouchUpdateTx(ctx, tx); err == nil {
+		if err = commit(); err == nil {
+			AmStoreAudit(AmNewCommAudit(AuditCommunitySetMembership, personUID, c.Id, ipaddr, fmt.Sprintf("cid=%d", c.Id),
+				fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level)))
+		}
 	}
-	return nil
+	return err
 }
 
 /* TestPermission is shorthand that tests if a user has a permission with respect to the community.
@@ -541,13 +540,13 @@ func (c *Community) TouchUpdateTx(ctx context.Context, tx *sqlx.Tx) error {
 
 // TouchUpdateTx updates the last access and last update times of the community.
 func (c *Community) TouchUpdate(ctx context.Context) error {
-	tx := amdb.MustBegin()
+	tx, commit, rollback := transaction(ctx)
 	err := c.TouchUpdateTx(ctx, tx)
 	if err != nil {
-		err = tx.Commit()
+		err = commit()
 	}
 	if err != nil {
-		tx.Rollback()
+		rollback()
 	}
 	return err
 }
@@ -854,13 +853,8 @@ func AmSetCommunityProperty(ctx context.Context, cid int32, ndx int32, val *stri
  */
 func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid int32, language *string, synopsis *string,
 	rules *string, joinkey *string, hideDirectory bool, hideSearch bool, remoteIP string) (*Community, error) {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// validate alias does not already exist
 	row := tx.QueryRowContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
@@ -907,10 +901,9 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 		return nil, err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 
 	// operation was a success - add an audit record
 	AmStoreAudit(AmNewCommAudit(AuditCommunityCreate, hostUid, comm.Id, remoteIP, fmt.Sprintf("id=%d", comm.Id),

@@ -66,13 +66,8 @@ func AmGetSideboxes(ctx context.Context, uid int32) ([]*Sidebox, error) {
 
 // AmReorderSideboxes changes the position of two sideboxes on the user's list.
 func AmReorderSideboxes(ctx context.Context, uid int32, seq1, seq2 int32) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	_, err := tx.ExecContext(ctx, "UPDATE sideboxes SET sequence = -1 WHERE uid = ? AND sequence = ?", uid, seq1)
 	if err == nil {
@@ -84,22 +79,16 @@ func AmReorderSideboxes(ctx context.Context, uid int32, seq1, seq2 int32) error 
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
 // AmRemoveSidebox removes a sidebox from the user configuration.
 func AmRemoveSidebox(ctx context.Context, uid int32, boxid int32) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Get the old sequence number.
 	row := tx.QueryRowContext(ctx, "SELECT sequence FROM sideboxes WHERE uid = ? AND boxid = ?", uid, boxid)
@@ -118,22 +107,16 @@ func AmRemoveSidebox(ctx context.Context, uid int32, boxid int32) error {
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
 // AmAppendSidebox appends a new sidebox to the existing user's configuration.
 func AmAppendSidebox(ctx context.Context, uid int32, boxid int32, param *string) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	row := tx.QueryRowContext(ctx, "SELECT MAX(sequence) FROM sideboxes WHERE uid = ?", uid)
 	var topseq int32
@@ -147,9 +130,8 @@ func AmAppendSidebox(ctx context.Context, uid int32, boxid int32, param *string)
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }

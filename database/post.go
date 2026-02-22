@@ -294,13 +294,8 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, comm *Community, ipa
 		return errors.New("cannot scribble an already-scribbled post")
 	}
 
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 	// Scribble on the post header.
 	scribblePseud := "<EM><B>(Scribbled)</B></EM>" // FUTURE: configurable option
 	_, err := tx.ExecContext(ctx, "UPDATE posts SET linecount = 0, hidden = 0, scribble_uid = ?, scribble_date = NOW(), pseud = ? WHERE postid = ?", u.Uid, scribblePseud, p.PostId)
@@ -327,10 +322,9 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, comm *Community, ipa
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 
 	// Patch fields in the post header
 	var newLines int32 = 0
@@ -348,13 +342,8 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, comm *Community, ipa
 
 // Nuke causes a post to be nuked (deleted entirely from the topic).
 func (p *PostHeader) Nuke(ctx context.Context, u *User, comm *Community, ipaddr string) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Delete all the references to this post.
 	_, err := tx.ExecContext(ctx, "DELETE FROM posts WHERE postid = ?", p.PostId)
@@ -394,10 +383,9 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, comm *Community, ipaddr 
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	AmStoreAudit(AmNewCommAudit(AuditConferenceNukeMessage, u.Uid, comm.Id, ipaddr, fmt.Sprintf("post=%d", p.PostId)))
 	return nil
 }
@@ -408,13 +396,8 @@ func (p *PostHeader) Publish(ctx context.Context, comm *Community, publisher *Us
 		return errors.New("cannot publish scribbled post")
 	}
 
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Check if we were already published.
 	row := tx.QueryRowContext(ctx, "SELECT by_uid FROM postpublish WHERE postid = ?", p.PostId)
@@ -431,10 +414,9 @@ func (p *PostHeader) Publish(ctx context.Context, comm *Community, publisher *Us
 		comm.Id, p.PostId, publisher.Uid); err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	AmStoreAudit(AmNewAudit(AuditPublishToFrontPage, publisher.Uid, ipaddr, fmt.Sprintf("comm=%d,post=%d", comm.Id, p.PostId)))
 	return nil
 }
@@ -463,13 +445,8 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, comm *C
 		return err
 	}
 
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Adjust post record in the database to make it part of the new topic.
 	_, err = tx.ExecContext(ctx, "UPDATE posts SET parent = 0, topicid = ?, num = ? WHERE postid = ?", target.TopicId, target.TopMessage+1, p.PostId)
@@ -511,10 +488,9 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, comm *C
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 
 	// Now patch the data structures we have.
 	p.Parent = 0
@@ -589,13 +565,8 @@ func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]*Po
  */
 func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, pseud string, post string, postLines int32,
 	comm *Community, ipaddr string) (*PostHeader, error) {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Add the post header information.
 	rs, err := tx.ExecContext(ctx, "INSERT INTO posts (topicid, num, linecount, creator_uid, posted, pseud) VALUES (?, ?, ?, ?, NOW(), ?)",
@@ -644,10 +615,9 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 		return nil, err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 
 	// create audit record
 	AmStoreAudit(AmNewCommAudit(AuditConferencePostMessage, user.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),

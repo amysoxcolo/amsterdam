@@ -372,13 +372,8 @@ func (t *Topic) GetActiveUserEMailAddrs(ctx context.Context, userSelect, dayLimi
 
 // backgroundPurgeTopic removes all posts from a topic that's been deleted.
 func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Get some stats on the posts we have to remove.
 	row := tx.QueryRowContext(ctx, "SELECT MAX(postid) FROM posts WHERE topicid = ?", topicid)
@@ -408,10 +403,9 @@ func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
@@ -429,13 +423,8 @@ func eraseTopicRecords(ctx context.Context, tx *sqlx.Tx, topicid int32) error {
 
 // Delete deletes this topic.
 func (t *Topic) Delete(ctx context.Context, u *User, comm *Community, ipaddr string, background *util.WorkerPool) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	conf, err := AmGetConference(ctx, t.ConfId)
 	if err != nil {
@@ -450,10 +439,9 @@ func (t *Topic) Delete(ctx context.Context, u *User, comm *Community, ipaddr str
 	if err = conf.TouchUpdate(ctx, tx, time.Now()); err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 
 	// create audit record
 	AmStoreAudit(AmNewCommAudit(AuditConferenceDeleteTopic, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
@@ -732,13 +720,8 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
  */
 func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
 	zeroPostLines int32, comm *Community, ipaddr string) (*Topic, error) {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Insert the new topic into the database.
 	conf.Mutex.Lock()
@@ -800,10 +783,9 @@ func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string,
 		return nil, err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 
 	// create audit record
 	AmStoreAudit(AmNewCommAudit(AuditConferenceCreateTopic, user.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),

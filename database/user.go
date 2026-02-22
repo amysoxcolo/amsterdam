@@ -593,13 +593,8 @@ func touchUser(ctx context.Context, tx *sqlx.Tx, user *User) {
  */
 func AmAuthenticateUser(ctx context.Context, name string, password string, remoteIP string) (*User, error) {
 	log.Debugf("AmAuthenticateUser() authenticating user %s...", name)
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	user, err := AmGetUserByName(ctx, name, tx)
 	if err != nil {
@@ -631,10 +626,9 @@ func AmAuthenticateUser(ctx context.Context, name string, password string, remot
 	}
 	log.Debug("...authenticated")
 	touchUser(ctx, tx, user)
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 	AmStoreAudit(AmNewAudit(AuditLoginOK, user.Uid, remoteIP))
 	return user, nil
 }
@@ -673,13 +667,8 @@ func crackAuthString(authString string) (int32, string, error) {
  *     Standard Go error status.
  */
 func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP string) (*User, error) {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	uid, token, err := crackAuthString(authString)
 	if err != nil {
@@ -710,10 +699,9 @@ func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP 
 	}
 	log.Debug("...authenticated")
 	touchUser(ctx, tx, user)
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 	AmStoreAudit(AmNewAudit(AuditLoginOK, user.Uid, remoteIP))
 	return user, nil
 }
@@ -732,13 +720,8 @@ func AmAuthenticateUserByToken(ctx context.Context, authString string, remoteIP 
  */
 func AmCreateNewUser(ctx context.Context, username string, password string, reminder string, dob *time.Time, remoteIP string) (*User, error) {
 	anon, _ := AmGetAnonUser(ctx)
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	// Test if the user name is already taken.
 	row := tx.QueryRowContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
@@ -787,10 +770,9 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 		return nil, err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return nil, err
 	}
-	success = true
 
 	// auto-join communities
 	if err = AmAutoJoinCommunities(ctx, user); err != nil {

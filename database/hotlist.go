@@ -49,35 +49,24 @@ func AmCopyConferenceHotlist(ctx context.Context, from, to *User) error {
 		return err
 	}
 
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 	for _, hl := range hotlist {
 		if _, err = tx.ExecContext(ctx, "INSERT INTO confhotlist (uid, sequence, commid, confid) VALUES (?, ?, ?, ?)",
 			to.Uid, hl.Sequence, hl.CommId, hl.ConfId); err != nil {
 			return err
 		}
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
 // AmReorderHotlist exchanges the position of two items on the user's hotlist.
 func AmReorderHotlist(ctx context.Context, u *User, seq1, seq2 int16) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	_, err := tx.ExecContext(ctx, "UPDATE confhotlist SET sequence = -1 WHERE uid = ? AND sequence = ?", u.Uid, seq1)
 	if err == nil {
@@ -89,22 +78,16 @@ func AmReorderHotlist(ctx context.Context, u *User, seq1, seq2 int16) error {
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
 // AmRemoveEntryFromHotlist removes an entry from the user's hotlist.
 func AmRemoveEntryFromHotlist(ctx context.Context, u *User, seq int16) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	_, err := tx.ExecContext(ctx, "DELETE FROM confhotlist WHERE uid = ? AND sequence = ?", u.Uid, seq)
 	if err == nil {
@@ -113,22 +96,16 @@ func AmRemoveEntryFromHotlist(ctx context.Context, u *User, seq int16) error {
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
 // AmAppendToHotlist adds a community/conference ID to the end of the user's hotlist.
 func AmAppendToHotlist(ctx context.Context, u *User, commid, confid int32) error {
-	success := false
-	tx := amdb.MustBegin()
-	defer func() {
-		if !success {
-			tx.Rollback()
-		}
-	}()
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
 
 	var newseq int16
 	row := tx.QueryRowContext(ctx, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
@@ -150,10 +127,9 @@ func AmAppendToHotlist(ctx context.Context, u *User, commid, confid int32) error
 	if err != nil {
 		return err
 	}
-	if err = tx.Commit(); err != nil {
+	if err = commit(); err != nil {
 		return err
 	}
-	success = true
 	return nil
 }
 
