@@ -27,7 +27,7 @@ _(italicized items can be deferred)_
   - Set Community Category
   - Membership Control
   - E-Mail to All Members
-  - Display Audit Records
+  - ~~Display Audit Records~~
   - Delete Community
 - ~~Community Profile: Invite~~
 - _Help link atop page headers_

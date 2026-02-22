@@ -731,6 +731,8 @@ func SystemAudit(ctxt ui.AmContext) (string, any) {
 		}
 	}
 
+	ctxt.VarMap().Set("backLink", "/sysadmin")
+	ctxt.VarMap().Set("selfLink", "/sysadmin/audit")
 	ctxt.VarMap().Set("total", total)
 	ctxt.VarMap().Set("ofs", ofs)
 	ctxt.VarMap().Set("auditRecords", auditRecs)

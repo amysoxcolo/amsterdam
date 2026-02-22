@@ -78,7 +78,7 @@ menudefs:
         link: "/TODO/comm/[CID]/admin/massmail"
         permission: "Community.MassMail"
       - text: "Display Audit Records"
-        link: "/TODO/comm/[CID]/admin/audit"
+        link: "/comm/[CID]/admin/audit"
         permission: "Community.ShowAdmin"
       - text: "Delete Community"
         link: "/TODO/comm/[CID]/admin/delete"

@@ -115,6 +115,7 @@ func setupEcho() *echo.Echo {
 	commGroup.POST("/admin/profile", ui.AmWrap(EditCommunityProfile))
 	commGroup.GET("/admin/logo", ui.AmWrap(CommunityLogoForm))
 	commGroup.POST("/admin/logo", ui.AmWrap(EditCommunityLogo))
+	commGroup.Match(GetAndPost, "/admin/audit", ui.AmWrap(CommunityAudit))
 
 	// conference group
 	commGroup.GET("/create_conf", ui.AmWrap(CreateConferenceForm))

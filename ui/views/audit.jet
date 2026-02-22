@@ -9,15 +9,25 @@
 <div class="p-4">
     <!-- Page Title -->
     <div class="mb-6">
-        <h1 class="text-blue-800 text-4xl font-bold mb-2">System Audit Records</h1>
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">
+            {{ if isset(commName) }}
+                Audit Records for Community "{{ commName }}"
+            {{ else }}
+                System Audit Records
+            {{ end }}
+        </h1>
         <hr class="border-2 border-gray-400 w-4/5 mb-6">
     </div>
 
     <!-- Backlink -->
     <div class="mb-4">
-        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="/sysadmin">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="{{ backLink }}">
             <span>←</span>
-            Return to System Administration Menu
+            {{ if isset(commName) }}
+                Return to Community Administration Menu
+            {{ else }}
+                Return to System Administration Menu
+            {{ end }}
         </a>
     </div>
 
@@ -62,7 +72,7 @@
     {{ if isset(showPrev) || isset(showNext) }}
         <!-- Bottom Navigation -->
         <div class="flex justify-end mt-6">
-            <form method="POST" action="/sysadmin/audit">
+            <form method="POST" action="{{ selfLink }}">
                 <input type="hidden" name="ofs" value="{{ ofs }}"/>
                 {{ if isset(showPrev) }}
                     <button type="submit" name="prev"
