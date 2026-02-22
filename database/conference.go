@@ -171,7 +171,7 @@ func (c *Conference) AliasesQ(ctx context.Context) []string {
 }
 
 // AddAlias adds an alias to the conference.
-func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, ipaddr string) error {
+func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *Community, ipaddr string) error {
 	row := amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
 	tmp := ""
 	err := row.Scan(&tmp)
@@ -186,13 +186,12 @@ func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, ipaddr
 		return err
 	}
 
-	ar := AmNewAudit(AuditConferenceAlias, u.Uid, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("add=%s", alias))
-	AmStoreAudit(ar)
+	AmStoreAudit(AmNewCommAudit(AuditConferenceAlias, u.Uid, comm.Id, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("add=%s", alias)))
 	return nil
 }
 
 // RemoveAlias removes an alias from the conference.
-func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, ipaddr string) error {
+func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, comm *Community, ipaddr string) error {
 	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM confalias WHERE confid = ?", c.ConfId)
 	aliasCount := 0
 	err := row.Scan(&aliasCount)
@@ -223,8 +222,7 @@ func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, ipa
 		return errors.New("alias not found")
 	}
 
-	ar := AmNewAudit(AuditConferenceAlias, u.Uid, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("remove=%s", alias))
-	AmStoreAudit(ar)
+	AmStoreAudit(AmNewCommAudit(AuditConferenceAlias, u.Uid, comm.Id, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("remove=%s", alias)))
 	return nil
 }
 
@@ -332,7 +330,7 @@ func (c *Conference) Membership(ctx context.Context, u *User) (bool, uint16, err
 }
 
 // SetMembership sets the membership level for the given user in this conference.
-func (c *Conference) SetMembership(ctx context.Context, u *User, level uint16, by *User, ipaddr string) error {
+func (c *Conference) SetMembership(ctx context.Context, u *User, level uint16, by *User, comm *Community, ipaddr string) error {
 	if level == 0 {
 		_, err := amdb.ExecContext(ctx, "DELETE FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 		return err
@@ -350,8 +348,8 @@ func (c *Conference) SetMembership(ctx context.Context, u *User, level uint16, b
 		_, err = amdb.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", c.ConfId, u.Uid, level)
 	}
 	if err != nil {
-		ar := AmNewAudit(AuditConferenceMembership, by.Uid, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level))
-		AmStoreAudit(ar)
+		AmStoreAudit(AmNewCommAudit(AuditConferenceMembership, by.Uid, comm.Id, ipaddr, fmt.Sprintf("conf=%d", c.ConfId),
+			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level)))
 	}
 	return err
 }
@@ -916,7 +914,7 @@ func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipadd
 		conferenceCache.Remove(c.ConfId)
 
 		// add an audit record
-		AmStoreAudit(AmNewAudit(AuditConferenceDelete, u.Uid, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
+		AmStoreAudit(AmNewCommAudit(AuditConferenceDelete, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
 
 		// set up a background job to purge the rest of the data
 		confid := c.ConfId
@@ -1292,6 +1290,6 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 
 	// Add the new conference to the cache, and create our audit record.
 	conferenceCache.Add(rc[0].ConfId, &(rc[0]))
-	ar = AmNewAudit(AuditConferenceCreate, u.Uid, ipaddr, fmt.Sprintf("confid=%d", rc[0].ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias))
+	ar = AmNewCommAudit(AuditConferenceCreate, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", rc[0].ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias))
 	return &(rc[0]), nil
 }

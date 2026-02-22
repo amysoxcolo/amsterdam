@@ -91,7 +91,7 @@ const (
 	AuditAdminLockUnlockAccount     = 113
 	AuditCommunityCreate            = 201
 	AuditCommunitySetMembership     = 202
-	AuditCommuntiyContactInfo       = 203
+	AuditCommunityContactInfo       = 203
 	AuditCommunityFeatureSet        = 204
 	AuditCommunityName              = 205
 	AuditCommunityAlias             = 206

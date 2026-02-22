@@ -383,9 +383,8 @@ func (c *Community) SetMembership(ctx context.Context, u *User, level uint16, lo
 		}
 	}
 	if err := c.TouchUpdateTx(ctx, tx); err == nil {
-		ar := AmNewAudit(AuditCommunitySetMembership, personUID, ipaddr, fmt.Sprintf("cid=%d", c.Id),
-			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level))
-		AmStoreAudit(ar)
+		AmStoreAudit(AmNewCommAudit(AuditCommunitySetMembership, personUID, c.Id, ipaddr, fmt.Sprintf("cid=%d", c.Id),
+			fmt.Sprintf("uid=%d", u.Uid), fmt.Sprintf("level=%d", level)))
 	}
 	return nil
 }
@@ -918,7 +917,7 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 	success = true
 
 	// operation was a success - add an audit record
-	ar = AmNewAudit(AuditCommunityCreate, hostUid, remoteIP, fmt.Sprintf("id=%d", comm.Id),
+	ar = AmNewCommAudit(AuditCommunityCreate, hostUid, comm.Id, remoteIP, fmt.Sprintf("id=%d", comm.Id),
 		fmt.Sprintf("name=%s", comm.Name), fmt.Sprintf("alias=%s", comm.Alias))
 	return comm, nil
 }

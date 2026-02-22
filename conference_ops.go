@@ -64,7 +64,8 @@ func AttachmentUpload(ctxt ui.AmContext) (string, any) {
 				var data []byte
 				data, err = slurpFile(file)
 				if err == nil {
-					err = post.SetAttachment(ctxt.Ctx(), ctxt.CurrentUser(), file.Filename, file.Header.Get("Content-Type"), int32(file.Size), data, ctxt.RemoteIP())
+					err = post.SetAttachment(ctxt.Ctx(), ctxt.CurrentUser(), file.Filename, file.Header.Get("Content-Type"), int32(file.Size),
+						data, ctxt.CurrentCommunity(), ctxt.RemoteIP())
 					if err == nil {
 						return "redirect", target
 					}
@@ -268,7 +269,7 @@ func FreezeTopic(ctxt ui.AmContext) (string, any) {
 	if !conf.TestPermission("Conference.Hide", myLevel) {
 		return "error", ENOPERM
 	}
-	err := topic.SetFrozen(ctxt.Ctx(), !topic.Frozen, ctxt.CurrentUser(), ctxt.RemoteIP())
+	err := topic.SetFrozen(ctxt.Ctx(), !topic.Frozen, ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}
@@ -289,7 +290,7 @@ func ArchiveTopic(ctxt ui.AmContext) (string, any) {
 	if !conf.TestPermission("Conference.Hide", myLevel) {
 		return "error", ENOPERM
 	}
-	err := topic.SetArchived(ctxt.Ctx(), !topic.Archived, ctxt.CurrentUser(), ctxt.RemoteIP())
+	err := topic.SetArchived(ctxt.Ctx(), !topic.Archived, ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}
@@ -310,7 +311,7 @@ func StickTopic(ctxt ui.AmContext) (string, any) {
 	if !conf.TestPermission("Conference.Hide", myLevel) {
 		return "error", ENOPERM
 	}
-	err := topic.SetSticky(ctxt.Ctx(), !topic.Sticky, ctxt.CurrentUser(), ctxt.RemoteIP())
+	err := topic.SetSticky(ctxt.Ctx(), !topic.Sticky, ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}
@@ -341,7 +342,7 @@ func DeleteTopic(ctxt ui.AmContext) (string, any) {
 		return "error", err
 	}
 	if mbox.Validate(ctxt, "yes") {
-		err := topic.Delete(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP(), ampool)
+		err := topic.Delete(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP(), ampool)
 		if err != nil {
 			return "error", err
 		}
@@ -383,7 +384,7 @@ func HideMessage(ctxt ui.AmContext) (string, any) {
 	if (hdrs[0].CreatorUid != ctxt.CurrentUserId()) && !conf.TestPermission("Conference.Hide", myLevel) {
 		return "error", ENOPERM
 	}
-	err = hdrs[0].SetHidden(ctxt.Ctx(), ctxt.CurrentUser(), !(hdrs[0].Hidden), ctxt.RemoteIP())
+	err = hdrs[0].SetHidden(ctxt.Ctx(), ctxt.CurrentUser(), !(hdrs[0].Hidden), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}
@@ -417,7 +418,7 @@ func ScribbleMessage(ctxt ui.AmContext) (string, any) {
 	if (hdrs[0].CreatorUid != ctxt.CurrentUserId()) && !conf.TestPermission("Conference.Nuke", myLevel) {
 		return "error", ENOPERM
 	}
-	err = hdrs[0].Scribble(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
+	err = hdrs[0].Scribble(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}
@@ -459,7 +460,7 @@ func NukeMessage(ctxt ui.AmContext) (string, any) {
 	}
 	if mbox.Validate(ctxt, "yes") {
 		// do the nuking!
-		err := hdrs[0].Nuke(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
+		err := hdrs[0].Nuke(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 		if err != nil {
 			return "error", err
 		}
@@ -517,7 +518,7 @@ func PruneMessageAttachment(ctxt ui.AmContext) (string, any) {
 	}
 	if mbox.Validate(ctxt, "yes") {
 		// do the pruning!
-		err := hdrs[0].PruneAttachment(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP())
+		err := hdrs[0].PruneAttachment(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.CurrentCommunity(), ctxt.RemoteIP())
 		if err != nil {
 			return "error", err
 		}
@@ -666,7 +667,7 @@ func MoveMessage(ctxt ui.AmContext) (string, any) {
 	}
 
 	// Move the topic!
-	err = hdrs[0].MoveTo(ctxt.Ctx(), target, ctxt.CurrentUser(), ctxt.RemoteIP())
+	err = hdrs[0].MoveTo(ctxt.Ctx(), target, ctxt.CurrentUser(), comm, ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}

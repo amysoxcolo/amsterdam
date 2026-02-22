@@ -163,7 +163,7 @@ func (p *PostHeader) AttachmentData(ctx context.Context, bugWorkaround bool) ([]
  * Returns:
  *     Standard Go error status.
  */
-func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string, mimeType string, length int32, data []byte, ipaddr string) error {
+func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string, mimeType string, length int32, data []byte, comm *Community, ipaddr string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -209,7 +209,7 @@ func (p *PostHeader) SetAttachment(ctx context.Context, u *User, fileName string
 	_, err = amdb.ExecContext(ctx, "INSERT INTO postattach (postid, datalen, filename, mimetype, stgmethod, data) VALUES (?, ?, ?, ?, ?, ?)",
 		p.PostId, length, fileName, mimeType, stgmethod, realData)
 	// Generate an audit record.
-	ar = AmNewAudit(AuditConferenceUploadAttachment, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId),
+	ar = AmNewCommAudit(AuditConferenceUploadAttachment, u.Uid, comm.Id, ipaddr, fmt.Sprintf("post=%d", p.PostId),
 		fmt.Sprintf("len=%d,type=%s,name=%s,method=%d", length, mimeType, fileName, stgmethod))
 	return err
 }
@@ -224,7 +224,7 @@ func (p *PostHeader) HitAttachment(ctx context.Context) error {
 }
 
 // PruneAttachment prunes (removes and deletes) the attachment of this post.
-func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, ipaddr string) error {
+func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, comm *Community, ipaddr string) error {
 	if p.ScribbleDate != nil && p.ScribbleUid != nil {
 		return errors.New("no attachment on scribbled post")
 	}
@@ -232,7 +232,7 @@ func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, ipaddr string
 	if err == nil {
 		rowCount, err := rs.RowsAffected()
 		if err == nil && rowCount > 1 {
-			AmStoreAudit(AmNewAudit(AuditConferencePruneAttachment, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId)))
+			AmStoreAudit(AmNewCommAudit(AuditConferencePruneAttachment, u.Uid, comm.Id, ipaddr, fmt.Sprintf("post=%d", p.PostId)))
 		}
 	}
 	return err
@@ -277,7 +277,7 @@ func (p *PostHeader) Link(ctx context.Context, scope string) (string, error) {
 }
 
 // SetHidden sets the "hidden" flag on a post.
-func (p *PostHeader) SetHidden(ctx context.Context, u *User, flag bool, ipaddr string) error {
+func (p *PostHeader) SetHidden(ctx context.Context, u *User, flag bool, comm *Community, ipaddr string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -291,13 +291,13 @@ func (p *PostHeader) SetHidden(ctx context.Context, u *User, flag bool, ipaddr s
 	_, err := amdb.ExecContext(ctx, "UPDATE posts SET hidden = ? WHERE postid = ?", flag, p.PostId)
 	if err == nil {
 		p.Hidden = flag
-		ar = AmNewAudit(AuditConferenceHideMessage, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId), fmt.Sprintf("hidden=%t", flag))
+		ar = AmNewCommAudit(AuditConferenceHideMessage, u.Uid, comm.Id, ipaddr, fmt.Sprintf("post=%d", p.PostId), fmt.Sprintf("hidden=%t", flag))
 	}
 	return err
 }
 
 // Scribble causes a post to be scribbled.
-func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error {
+func (p *PostHeader) Scribble(ctx context.Context, u *User, comm *Community, ipaddr string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -354,12 +354,12 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, ipaddr string) error
 	p.Pseud = &scribblePseud
 
 	// Audit the operation.
-	ar = AmNewAudit(AuditConferenceScribbleMessage, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId))
+	ar = AmNewCommAudit(AuditConferenceScribbleMessage, u.Uid, comm.Id, ipaddr, fmt.Sprintf("post=%d", p.PostId))
 	return nil
 }
 
 // Nuke causes a post to be nuked (deleted entirely from the topic).
-func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
+func (p *PostHeader) Nuke(ctx context.Context, u *User, comm *Community, ipaddr string) error {
 	var ar *AuditRecord = nil
 	defer func() {
 		AmStoreAudit(ar)
@@ -414,7 +414,7 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, ipaddr string) error {
 		return err
 	}
 	success = true
-	ar = AmNewAudit(AuditConferenceNukeMessage, u.Uid, ipaddr, fmt.Sprintf("post=%d", p.PostId))
+	ar = AmNewCommAudit(AuditConferenceNukeMessage, u.Uid, comm.Id, ipaddr, fmt.Sprintf("post=%d", p.PostId))
 	return nil
 }
 
@@ -460,7 +460,7 @@ func (p *PostHeader) Publish(ctx context.Context, comm *Community, publisher *Us
 }
 
 // MoveTo moves this message to a new topic.
-func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, ipaddr string) error {
+func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, comm *Community, ipaddr string) error {
 	if target.TopicId == p.TopicId {
 		return nil // this is a no-op
 	}
@@ -548,7 +548,7 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, ipaddr 
 	target.LastUpdate = lastUpdate
 
 	// And audit the result.
-	ar = AmNewAudit(AuditConferenceMoveMessage, u.Uid, ipaddr, fmt.Sprintf("conf=%d,post=%d", conf.ConfId, p.PostId),
+	ar = AmNewCommAudit(AuditConferenceMoveMessage, u.Uid, comm.Id, ipaddr, fmt.Sprintf("conf=%d,post=%d", conf.ConfId, p.PostId),
 		fmt.Sprintf("fromTopic=%d", oldTopic.TopicId), fmt.Sprintf("toTopic=%d", target.TopicId))
 	return nil
 }
@@ -611,7 +611,8 @@ func AmGetPostRange(ctx context.Context, topic *Topic, first, last int32) ([]*Po
  *     New post header pointer.
  *     Standard Go error status.
  */
-func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, pseud string, post string, postLines int32, ipaddr string) (*PostHeader, error) {
+func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, pseud string, post string, postLines int32,
+	comm *Community, ipaddr string) (*PostHeader, error) {
 	success := false
 	var ar *AuditRecord = nil
 	defer func() {
@@ -677,7 +678,7 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	success = true
 
 	// create audit record
-	ar = AmNewAudit(AuditConferencePostMessage, user.Uid, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
+	ar = AmNewCommAudit(AuditConferencePostMessage, user.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
 		fmt.Sprintf("topic=%d", topic.Number), fmt.Sprintf("post=%d", hdr.PostId), fmt.Sprintf("pseud=%s", *hdr.Pseud))
 
 	return hdr, nil

@@ -286,7 +286,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		lines, _ := checker.Lines()
 
 		// Add the topic!
-		topic, err := database.AmNewTopic(ctxt.Ctx(), conf, ctxt.CurrentUser(), topicName, zeroPostPseud, zeroPost, int32(lines), ctxt.RemoteIP())
+		topic, err := database.AmNewTopic(ctxt.Ctx(), conf, ctxt.CurrentUser(), topicName, zeroPostPseud, zeroPost, int32(lines), comm, ctxt.RemoteIP())
 		if err != nil {
 			return "error", err
 		}
@@ -780,7 +780,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	lines, _ := checker.Lines()
 
 	// Add the post!
-	hdr, err := database.AmNewPost(ctxt.Ctx(), conf, topic, ctxt.CurrentUser(), postPseud, postText, int32(lines), ctxt.RemoteIP())
+	hdr, err := database.AmNewPost(ctxt.Ctx(), conf, topic, ctxt.CurrentUser(), postPseud, postText, int32(lines), comm, ctxt.RemoteIP())
 	if err != nil {
 		return "error", err
 	}

@@ -151,7 +151,7 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any) {
 	ctxt.SetFrameTitle(fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
 
 	if ctxt.HasParameter("del") {
-		err := conf.RemoveAlias(ctxt.Ctx(), ctxt.Parameter("del"), ctxt.CurrentUser(), ctxt.RemoteIP())
+		err := conf.RemoveAlias(ctxt.Ctx(), ctxt.Parameter("del"), ctxt.CurrentUser(), comm, ctxt.RemoteIP())
 		if err != nil {
 			ctxt.VarMap().Set("errorMessage", err.Error())
 		}
@@ -192,7 +192,7 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any) {
 	var err error = nil
 	if ctxt.FormFieldIsSet("add") {
 		if database.AmIsValidAmsterdamID(newAlias) {
-			err = conf.AddAlias(ctxt.Ctx(), newAlias, ctxt.CurrentUser(), ctxt.RemoteIP())
+			err = conf.AddAlias(ctxt.Ctx(), newAlias, ctxt.CurrentUser(), comm, ctxt.RemoteIP())
 		} else {
 			err = fmt.Errorf("value '%s' is not a valid Amsterdam id", newAlias)
 		}
@@ -300,7 +300,7 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any) {
 							var u *database.User
 							u, err = database.AmGetUser(ctxt.Ctx(), uid)
 							if err == nil {
-								err = conf.SetMembership(ctxt.Ctx(), u, newLevel, ctxt.CurrentUser(), ctxt.RemoteIP())
+								err = conf.SetMembership(ctxt.Ctx(), u, newLevel, ctxt.CurrentUser(), comm, ctxt.RemoteIP())
 							}
 						}
 					}
