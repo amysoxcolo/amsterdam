@@ -108,7 +108,7 @@ func EditConference(ctxt ui.AmContext) (string, any) {
 	if err = dlg.Validate(); err == nil {
 		if err = conf.SetInfo(ctxt.Ctx(), dlg.Field("name").Value, dlg.Field("descr").Value, dlg.Field("read_lvl").GetLevel(), dlg.Field("post_lvl").GetLevel(),
 			dlg.Field("create_lvl").GetLevel(), dlg.Field("hide_lvl").GetLevel(), dlg.Field("nuke_lvl").GetLevel(), dlg.Field("change_lvl").GetLevel(),
-			dlg.Field("delete_lvl").GetLevel()); err == nil {
+			dlg.Field("delete_lvl").GetLevel(), ctxt.CurrentUser(), comm, ctxt.RemoteIP()); err == nil {
 			if err = conf.SetHiddenInList(ctxt.Ctx(), comm, dlg.Field("hide").IsChecked()); err == nil {
 				var flags *util.OptionSet
 				flags, err = conf.Flags(ctxt.Ctx())

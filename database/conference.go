@@ -457,7 +457,8 @@ func (c *Conference) Link(ctx context.Context, scope string) (string, error) {
 }
 
 // SetInfo sets the name, pseud, and security levels on a conference.
-func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl uint16) error {
+func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl uint16,
+	u *User, comm *Community, ipaddr string) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	_, err := amdb.ExecContext(ctx, `UPDATE confs SET name = ?, descr = ?, read_lvl = ?, post_lvl = ?, create_lvl = ?,
@@ -470,6 +471,19 @@ func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, 
 			if len(tmp) != 1 {
 				err = errors.New("internal error rereading conference")
 			} else {
+				if c.Name != tmp[0].Name {
+					AmStoreAudit(AmNewCommAudit(AuditConferenceName, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId), fmt.Sprintf("name='%s'", tmp[0].Name)))
+				}
+				deltaSecurity := false
+				if (c.ReadLevel != tmp[0].ReadLevel) || (c.PostLevel != tmp[0].PostLevel) || (c.CreateLevel != tmp[0].CreateLevel) || (c.HideLevel != tmp[0].HideLevel) {
+					deltaSecurity = true
+				}
+				if (c.NukeLevel != tmp[0].NukeLevel) || (c.ChangeLevel != tmp[0].ChangeLevel) || (c.DeleteLevel != tmp[0].DeleteLevel) {
+					deltaSecurity = true
+				}
+				if deltaSecurity {
+					AmStoreAudit(AmNewCommAudit(AuditConferenceSecurity, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
+				}
 				c.Name = tmp[0].Name
 				c.Description = tmp[0].Description
 				c.ReadLevel = tmp[0].ReadLevel

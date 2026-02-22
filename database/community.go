@@ -464,7 +464,7 @@ func (c *Community) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 // SetProfileData sets all the "settable" profile data
 func (c *Community) SetProfileData(ctx context.Context, name string, alias string, synopsis *string, rules *string, language *string,
 	joinkey *string, membersonly bool, hideDirectory bool, hideSearch bool, read_lvl uint16, write_lvl uint16,
-	create_lvl uint16, delete_lvl uint16, join_lvl uint16) error {
+	create_lvl uint16, delete_lvl uint16, join_lvl uint16, u *User, ipaddr string) error {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	_, err := amdb.ExecContext(ctx, `UPDATE communities SET commname = ?, alias = ?, synopsis = ?, rules = ?, language = ?,
@@ -473,6 +473,24 @@ func (c *Community) SetProfileData(ctx context.Context, name string, alias strin
 		name, alias, synopsis, rules, language, joinkey, membersonly, hideDirectory, hideSearch, read_lvl, write_lvl,
 		create_lvl, delete_lvl, join_lvl, c.Id)
 	if err == nil {
+		if name != c.Name {
+			AmStoreAudit(AmNewCommAudit(AuditCommunityName, u.Uid, c.Id, ipaddr, fmt.Sprintf("name=%s", name)))
+		}
+		if alias != c.Alias {
+			AmStoreAudit(AmNewCommAudit(AuditCommunityAlias, u.Uid, c.Id, ipaddr, fmt.Sprintf("alias=%s", alias)))
+		}
+		if (hideDirectory != c.HideFromDirectory) || (hideSearch != c.HideFromSearch) {
+			AmStoreAudit(AmNewCommAudit(AuditCommunityHideInfo, u.Uid, c.Id, ipaddr, fmt.Sprintf("directory=%t, search=%t", hideDirectory, hideSearch)))
+		}
+		if membersonly != c.MembersOnly {
+			AmStoreAudit(AmNewCommAudit(AuditCommunityMembersOnly, u.Uid, c.Id, ipaddr, fmt.Sprintf("flag=%t", membersonly)))
+		}
+		if joinkey != c.JoinKey {
+			AmStoreAudit(AmNewCommAudit(AuditCommunityJoinKey, u.Uid, c.Id, ipaddr))
+		}
+		if (read_lvl != c.ReadLevel) || (write_lvl != c.WriteLevel) || (create_lvl != c.CreateLevel) || (delete_lvl != c.DeleteLevel) || (join_lvl != c.JoinLevel) {
+			AmStoreAudit(AmNewCommAudit(AuditCommunitySecurity, u.Uid, c.Id, ipaddr))
+		}
 		c.Name = name
 		c.Alias = alias
 		c.Synopsis = synopsis

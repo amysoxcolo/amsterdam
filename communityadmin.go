@@ -219,7 +219,8 @@ func EditCommunityProfile(ctxt ui.AmContext) (string, any) {
 				err = comm.SetProfileData(ctxt.Ctx(), dlg.Field("name").Value, dlg.Field("alias").Value, dlg.Field("synopsis").ValPtr(),
 					dlg.Field("rules").ValPtr(), dlg.Field("language").ValPtr(), joinkey, dlg.Field("membersonly").IsChecked(),
 					hidedir, hidesearch, dlg.Field("read_lvl").GetLevel(), dlg.Field("write_lvl").GetLevel(),
-					dlg.Field("create_lvl").GetLevel(), dlg.Field("delete_lvl").GetLevel(), dlg.Field("join_lvl").GetLevel())
+					dlg.Field("create_lvl").GetLevel(), dlg.Field("delete_lvl").GetLevel(), dlg.Field("join_lvl").GetLevel(),
+					ctxt.CurrentUser(), ctxt.RemoteIP())
 			}
 			if err == nil {
 				flags.Set(database.CommunityFlagPicturesInPosts, dlg.Field("pic_in_post").IsChecked())

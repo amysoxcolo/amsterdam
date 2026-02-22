@@ -194,6 +194,8 @@ func (ci *ContactInfo) Save(ctx context.Context, changer *User, ipaddr string) (
 		if changer.Uid != ci.OwnerUid {
 			AmStoreAudit(AmNewAudit(AuditAdminSetUserContactInfo, changer.Uid, ipaddr, fmt.Sprintf("uid=%d", ci.OwnerUid), fmt.Sprintf("contactid=%d", ci.ContactId)))
 		}
+	} else {
+		AmStoreAudit(AmNewCommAudit(AuditCommunityContactInfo, changer.Uid, ci.OwnerCommId, ipaddr, fmt.Sprintf("contactid=%d", ci.ContactId)))
 	}
 	return emailChange, err
 }
