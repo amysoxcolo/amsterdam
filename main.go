@@ -86,6 +86,7 @@ func setupEcho() *echo.Echo {
 	e.POST("/sysadmin/users/:uname/photo", ui.AmWrap(AdminUserPhoto))
 	e.GET("/sysadmin/ipban", ui.AmWrap(IPBanList))
 	e.GET("/sysadmin/ipban/add", ui.AmWrap(AddIPBanForm))
+	e.Match(GetAndPost, "/sysadmin/audit", ui.AmWrap(SystemAudit))
 	e.POST("/sysadmin/ipban/add", ui.AmWrap(AddIPBan))
 	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
 	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
@@ -195,10 +196,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	bofh, err := database.AmGetBOFH(context.Background())
-	if err != nil {
-		panic(err)
-	}
 
 	// Set up to trap SIGINT/SIGTERM and shut down gracefully
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -215,7 +212,7 @@ func main() {
 	e := setupEcho()
 
 	// Audit the startup
-	database.AmStoreAudit(database.AmNewAudit(database.AuditStartup, bofh.Uid, myIP.String(),
+	database.AmStoreAudit(database.AmNewAudit(database.AuditStartup, 0, myIP.String(),
 		fmt.Sprintf("version=%s", config.AMSTERDAM_VERSION)))
 
 	// Start server
@@ -234,5 +231,5 @@ func main() {
 	}
 
 	// Audit the shutdown
-	database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, bofh.Uid, myIP.String()))
+	database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
 }

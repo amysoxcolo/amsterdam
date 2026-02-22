@@ -47,7 +47,7 @@ menudefs:
         link: "/sysadmin/users"
         permission: "Global.SysAdminAccess"
       - text: "System Audit Logs"
-        link: "/TODO/sysadmin/audit"
+        link: "/sysadmin/audit"
         permission: "Global.SysAdminAccess"
       - text: "Import User Accounts"
         link: "/TODO/sysadmin/import"

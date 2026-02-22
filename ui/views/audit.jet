@@ -1,0 +1,82 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">System Audit Records</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="/sysadmin">
+            <span>←</span>
+            Return to System Administration Menu
+        </a>
+    </div>
+
+    <!-- Search results -->
+    <hr class="border-gray-400 mb-4">
+    <div class="flex justify-between items-center mb-4">
+        <div class="text-sm text-black">Displaying records <b>{{ ofs + 1 }}</b> to <b>{{ ofs + len(auditRecords) }}</b> of <b>{{ total }}</b></div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-2 py-1 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date/Time</th>
+                        <th class="px-2 py-1 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Description</th>
+                        <th class="px-2 py-1 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">User</th>
+                        <th class="px-2 py-1 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Community</th>
+                        <th class="px-2 py-1 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">IP Address</th>
+                        <th class="px-2 py-1 text-left text-xs font-bold text-gray-700 uppercase tracking-wider" colspan="4">Additional Data</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {{ range i, a := auditRecords }}
+                        <tr class="hover:bg-blue-50">
+                            <td class="px-2 py-1 text-sm whitespace-nowrap text-gray-700">{{ DisplayDateTime( a.OnDate, .) }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ descr[i] }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ user[i] }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ community[i] }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ iif(isset(a.IP), a.IP, "") }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ iif(isset(a.Data1), a.Data1, "") }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ iif(isset(a.Data2), a.Data2, "") }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ iif(isset(a.Data3), a.Data3, "") }}</td>
+                            <td class="px-2 py-1 text-sm text-gray-700">{{ iif(isset(a.Data4), a.Data4, "") }}</td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{ if isset(showPrev) || isset(showNext) }}
+        <!-- Bottom Navigation -->
+        <div class="flex justify-end mt-6">
+            <form method="POST" action="/sysadmin/audit">
+                <input type="hidden" name="ofs" value="{{ ofs }}"/>
+                {{ if isset(showPrev) }}
+                    <button type="submit" name="prev"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                        ⏪ Prev
+                    </button>
+                {{ end }}
+                {{ if isset(showNext) }}
+                    <button type="submit" name="next"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                        Next ⏩
+                    </button>
+                {{ end }}
+            </form>
+        </div>
+    {{ end }}
+</div>

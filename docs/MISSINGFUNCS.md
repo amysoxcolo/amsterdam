@@ -16,7 +16,7 @@ _(italicized items can be deferred)_
   - ~~Edit Global Properties~~
   - ~~View/Edit IP Address Bans~~
   - ~~User Account Management~~
-  - System Audit Logs
+  - ~~System Audit Logs~~
   - Import User Accounts
 - ~~Conferences list:~~
   - ~~Find~~

@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	_ "embed"
 	"fmt"
 	"time"
@@ -126,6 +127,45 @@ const (
 // auditWriteQueue is a channel to store audit records in the background.
 var auditWriteQueue chan *AuditRecord
 
+// auditWriter is the routine that stores audit records in trhe background.
+func auditWriter(workChan chan *AuditRecord, doneChan chan bool) {
+	for ar := range workChan {
+		err := ar.Store(context.Background())
+		if err != nil {
+			log.Errorf("dropped audit record (%+v) on the floor: %v", *ar, err)
+		}
+	}
+	doneChan <- true
+}
+
+// setupAuditWriter sets up the background audit writer.
+func setupAuditWriter() func() {
+	auditWriteQueue = make(chan *AuditRecord, config.GlobalConfig.Tuning.Queues.AuditWrites)
+	doneChan := make(chan bool)
+	go auditWriter(auditWriteQueue, doneChan)
+	return func() {
+		close(auditWriteQueue)
+		<-doneChan
+	}
+}
+
+// Store stores the audit record in the database.
+func (ar *AuditRecord) Store(ctx context.Context) error {
+	if ar.Record > 0 {
+		return fmt.Errorf("audit record %d already stored", ar.Record)
+	}
+	moment := time.Now().UTC()
+	rs, err := amdb.ExecContext(ctx, `INSERT INTO audit (on_date, event, uid, commid, ip, data1, data2, data3, data4)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`, moment, ar.Event, ar.Uid, ar.CommId, ar.IP,
+		ar.Data1, ar.Data2, ar.Data3, ar.Data4)
+	if err != nil {
+		return err
+	}
+	ar.Record, _ = rs.LastInsertId()
+	ar.OnDate = moment
+	return nil
+}
+
 /* AmNewAudit creates a new audit record.
  * Parameters:
  *     rectype - Audit record type.
@@ -191,34 +231,6 @@ func AmNewCommAudit(rectype int32, uid int32, commid int32, ip string, data ...s
 	return &rc
 }
 
-// Store stores the audit record in the database.
-func (ar *AuditRecord) Store(ctx context.Context) error {
-	if ar.Record > 0 {
-		return fmt.Errorf("audit record %d already stored", ar.Record)
-	}
-	moment := time.Now().UTC()
-	rs, err := amdb.ExecContext(ctx, `INSERT INTO audit (on_date, event, uid, commid, ip, data1, data2, data3, data4)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`, moment, ar.Event, ar.Uid, ar.CommId, ar.IP,
-		ar.Data1, ar.Data2, ar.Data3, ar.Data4)
-	if err != nil {
-		return err
-	}
-	ar.Record, _ = rs.LastInsertId()
-	ar.OnDate = moment
-	return nil
-}
-
-// auditWriter is the routine that stores audit records in trhe background.
-func auditWriter(workChan chan *AuditRecord, doneChan chan bool) {
-	for ar := range workChan {
-		err := ar.Store(context.Background())
-		if err != nil {
-			log.Errorf("dropped audit record (%+v) on the floor: %v", *ar, err)
-		}
-	}
-	doneChan <- true
-}
-
 // AmStoreAudit stores the audit record in the background.
 func AmStoreAudit(rec *AuditRecord) {
 	if rec != nil {
@@ -226,13 +238,35 @@ func AmStoreAudit(rec *AuditRecord) {
 	}
 }
 
-// setupAuditWriter sets up the background audit writer.
-func setupAuditWriter() func() {
-	auditWriteQueue = make(chan *AuditRecord, config.GlobalConfig.Tuning.Queues.AuditWrites)
-	doneChan := make(chan bool)
-	go auditWriter(auditWriteQueue, doneChan)
-	return func() {
-		close(auditWriteQueue)
-		<-doneChan
+// AmListAuditRecords lists a section of the audit records.
+func AmListAuditRecords(ctx context.Context, comm *Community, offset, max int) ([]AuditRecord, int, error) {
+	var row *sql.Row
+	if comm != nil {
+		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM audit WHERE commid = ?", comm.Id)
+	} else {
+		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM audit")
 	}
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return nil, -1, err
+	}
+	var rc []AuditRecord
+	if comm != nil {
+		if offset > 0 {
+			err = amdb.SelectContext(ctx, &rc, "SELECT * FROM audit WHERE commid = ? ORDER BY on_date DESC LIMIT ? OFFSET ?", comm.Id, max, offset)
+		} else {
+			err = amdb.SelectContext(ctx, &rc, "SELECT * FROM audit WHERE commid = ? ORDER BY on_date DESC LIMIT ?", comm.Id, max)
+		}
+	} else {
+		if offset > 0 {
+			err = amdb.SelectContext(ctx, &rc, "SELECT * FROM audit ORDER BY on_date DESC LIMIT ? OFFSET ?", max, offset)
+		} else {
+			err = amdb.SelectContext(ctx, &rc, "SELECT * FROM audit ORDER BY on_date DESC LIMIT ?", max)
+		}
+	}
+	if err != nil {
+		return nil, count, err
+	}
+	return rc, count, nil
 }

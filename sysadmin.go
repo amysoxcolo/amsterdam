@@ -683,3 +683,66 @@ func AddIPBan(ctxt ui.AmContext) (string, any) {
 	}
 	return dlg.RenderError(ctxt, err.Error())
 }
+
+func SystemAudit(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+
+	ofs := 0
+	maxRecs := ctxt.Globals().NumAuditPage
+	if ctxt.Verb() == "POST" {
+		if ctxt.FormFieldIsSet("prev") {
+			ofs = min(0, ofs-int(maxRecs))
+		} else if ctxt.FormFieldIsSet("next") {
+			ofs += int(maxRecs)
+		}
+	}
+
+	auditRecs, total, err := database.AmListAuditRecords(ctxt.Ctx(), nil, ofs, int(maxRecs))
+	if err != nil {
+		return "error", err
+	}
+
+	descr := make([]string, len(auditRecs))
+	userName := make([]string, len(auditRecs))
+	communityName := make([]string, len(auditRecs))
+	for i, ar := range auditRecs {
+		descr[i] = database.AmAuditText(int(ar.Event))
+		if ar.Uid > 0 {
+			user, err := database.AmGetUser(ctxt.Ctx(), ar.Uid)
+			if err != nil {
+				userName[i] = fmt.Sprintf("<<%v>>", err)
+			} else {
+				userName[i] = user.Username
+			}
+		} else {
+			userName[i] = ""
+		}
+		if ar.CommId > 0 {
+			comm, err := database.AmGetCommunity(ctxt.Ctx(), ar.CommId)
+			if err != nil {
+				communityName[i] = fmt.Sprintf("<<%v>>", err)
+			} else {
+				communityName[i] = comm.Name
+			}
+		} else {
+			communityName[i] = ""
+		}
+	}
+
+	ctxt.VarMap().Set("total", total)
+	ctxt.VarMap().Set("ofs", ofs)
+	ctxt.VarMap().Set("auditRecords", auditRecs)
+	ctxt.VarMap().Set("descr", descr)
+	ctxt.VarMap().Set("user", userName)
+	ctxt.VarMap().Set("community", communityName)
+	if ofs > 0 {
+		ctxt.VarMap().Set("showPrev", true)
+	}
+	if ofs+int(maxRecs) < total {
+		ctxt.VarMap().Set("showNext", true)
+	}
+	ctxt.SetFrameTitle("System Audit Records")
+	return "framed", "audit.jet"
+}
