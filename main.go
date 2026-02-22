@@ -190,6 +190,16 @@ func main() {
 	closer = ui.SetupUILayer()
 	defer closer()
 
+	// Determine my IP address and the admin user.
+	myIP, err := util.MyIPAddress()
+	if err != nil {
+		panic(err)
+	}
+	bofh, err := database.AmGetBOFH(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
 	// Set up to trap SIGINT/SIGTERM and shut down gracefully
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -203,6 +213,10 @@ func main() {
 
 	// Set up Echo.
 	e := setupEcho()
+
+	// Audit the startup
+	database.AmStoreAudit(database.AmNewAudit(database.AuditStartup, bofh.Uid, myIP.String(),
+		fmt.Sprintf("version=%s", config.AMSTERDAM_VERSION)))
 
 	// Start server
 	go func() {
@@ -218,4 +232,7 @@ func main() {
 	if err := e.Shutdown(ctx); err != nil {
 		e.Logger.Fatal(err)
 	}
+
+	// Audit the shutdown
+	database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, bofh.Uid, myIP.String()))
 }

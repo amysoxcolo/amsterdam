@@ -76,6 +76,8 @@ type AuditRecord struct {
 // at all times!
 const (
 	AuditPublishToFrontPage         = 1
+	AuditStartup                    = 2
+	AuditShutdown                   = 3
 	AuditLoginOK                    = 101
 	AuditLoginFail                  = 102
 	AuditAccountCreated             = 103

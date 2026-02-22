@@ -561,6 +561,17 @@ func AmGetAnonUser(ctx context.Context) (*User, error) {
 	return rc, err
 }
 
+// AmGetBOFH returns the user account of the global system administrator.
+func AmGetBOFH(ctx context.Context) (*User, error) {
+	row := amdb.QueryRowContext(ctx, "SELECT uid FROM users WHERE base_lvl = ?", AmRole("Global.BOFH").Level())
+	var uid int32
+	err := row.Scan(&uid)
+	if err != nil {
+		return nil, err
+	}
+	return AmGetUser(ctx, uid)
+}
+
 // hashPassword hashes the password value.
 func hashPassword(password string) string {
 	if len(password) == 0 {

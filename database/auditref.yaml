@@ -12,6 +12,10 @@
 auditReference:
   - code: 1
     text: "Publish Message to Front Page"
+  - code: 2
+    text: "Server Startup"
+  - code: 3
+    text: "Server Shutdown"
   - code: 101
     text: "Login OK"
   - code: 102
