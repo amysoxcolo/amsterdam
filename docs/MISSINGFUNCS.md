@@ -6,7 +6,7 @@ _(italicized items can be deferred)_
 - ~~Send out E-mails to topic subscribers when a post is made~~
 - _Error handling: shift titles and templates for different error codes_
 - ~~Find Posts~~
-- Services mechanism: Conference vtable
+- ~~Services mechanism: Conference vtable~~
 - ~~User creation: copy conference hotlists ~~
 - _Calendar (top menu link)_
 - _Chat (top menu link)_

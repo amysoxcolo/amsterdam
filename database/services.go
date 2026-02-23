@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,15 +17,16 @@ import (
 	"sync"
 
 	"git.erbosoft.com/amy/amsterdam/config"
+	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/yaml.v3"
 )
 
-// ServiceVTable is a serioes of functions called for services on specific events.
+// ServiceVTable is a series of functions called for services on specific events.
 type ServiceVTable interface {
 	OnNewCommunity(context.Context, *sqlx.Tx, *Community) error
-	OnDeleteCommunity(context.Context, *sqlx.Tx, int32) error
+	OnDeleteCommunity(context.Context, *sqlx.Tx, int32, *util.WorkerPool) error
 	OnUserJoinCommunity(context.Context, *sqlx.Tx, *Community, *User) error
 	OnUserLeaveCommunity(context.Context, *sqlx.Tx, *Community, *User) error
 }
@@ -37,7 +38,7 @@ func (*emptyServiceVTable) OnNewCommunity(context.Context, *sqlx.Tx, *Community)
 	return nil
 }
 
-func (*emptyServiceVTable) OnDeleteCommunity(context.Context, *sqlx.Tx, int32) error {
+func (*emptyServiceVTable) OnDeleteCommunity(context.Context, *sqlx.Tx, int32, *util.WorkerPool) error {
 	return nil
 }
 
@@ -116,7 +117,7 @@ func init() {
 	dom.byId["Profile"].vtable = &empty
 	dom.byId["Admin"].vtable = &empty
 	dom.byId["SysAdmin"].vtable = &empty
-	dom.byId["Conference"].vtable = &empty // TODO
+	dom.byId["Conference"].vtable = &(conferenceServiceVTable{})
 	dom.byId["Members"].vtable = &empty
 }
 
@@ -247,14 +248,15 @@ func AmEstablishCommunityServices(ctx context.Context, tx *sqlx.Tx, c *Community
  *     ctx - Standard Go context value.
  *     tx - The transaction to use.
  *     cid - The ID of the departing community.
+ *     background - Pool in which background jobs can be submitted to clean up the database.
  * Returns:
  *     Standard Go error status.
  */
-func AmDeleteCommunityServices(ctx context.Context, tx *sqlx.Tx, cid int32) error {
+func AmDeleteCommunityServices(ctx context.Context, tx *sqlx.Tx, cid int32, background *util.WorkerPool) error {
 	arr, err := AmGetCommunityServices(ctx, cid)
 	if err == nil {
 		for _, svc := range arr {
-			if err = svc.vtable.OnDeleteCommunity(ctx, tx, cid); err != nil {
+			if err = svc.vtable.OnDeleteCommunity(ctx, tx, cid, background); err != nil {
 				break
 			}
 		}
@@ -310,6 +312,15 @@ func AmOnUserLeaveCommunityServices(ctx context.Context, tx *sqlx.Tx, c *Communi
 	return err
 }
 
+/* AmTestService checks whether the community supports a service.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     c - The community that is being tested.
+ *     serviceId - The service ID to test.
+ * Returns:
+ *     true if the community supports that service, false if not.
+ *     Standard Go error status.
+ */
 func AmTestService(ctx context.Context, c *Community, serviceId string) (bool, error) {
 	arr, err := AmGetCommunityServices(ctx, c.Id)
 	if err == nil {

@@ -933,6 +933,81 @@ func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipadd
 	return nil
 }
 
+// The service vtable (see services.go) for the conferencing service.
+type conferenceServiceVTable struct{}
+
+func (*conferenceServiceVTable) OnNewCommunity(context.Context, *sqlx.Tx, *Community) error {
+	return nil
+}
+
+func (*conferenceServiceVTable) OnDeleteCommunity(ctx context.Context, tx *sqlx.Tx, commid int32, background *util.WorkerPool) error {
+	// Get the list of conferences in this community.
+	var confids []int32
+	err := tx.SelectContext(ctx, &confids, "SELECT confid FROM commtoconf WHERE commid = ?", commid)
+	if err != nil {
+		return err
+	}
+	for i, confid := range confids {
+		// any references to conference other than this community?
+		row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", confid, commid)
+		refCount := 0
+		err = row.Scan(&refCount)
+		if err != nil {
+			return err
+		}
+		// break the link with the community
+		if _, err = tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", commid, confid); err != nil {
+			return err
+		}
+		if refCount > 0 {
+			confids[i] = -1
+			continue // done with this conference
+		}
+		// We have to delete all the conference core data now.
+		_, err = tx.ExecContext(ctx, "DELETE FROM confs WHERE confid = ?", confid)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM confalias WHERE confid = ?", confid)
+		}
+		if err != nil {
+			return err
+		}
+		// kick the conference out of the cache
+		getConferenceMutex.Lock()
+		conferenceCache.Remove(confid)
+		getConferenceMutex.Unlock()
+	}
+
+	// Just dump the whole conference property cache.
+	getConferencePropMutex.Lock()
+	conferencePropCache.Purge()
+	getConferencePropMutex.Unlock()
+
+	// start a background job to remove all the conference data
+	background.Submit(func(ctx context.Context) {
+		start := time.Now()
+		// purge the conference data
+		for _, confid := range confids {
+			if confid > 0 {
+				err := backgroundPurgeConference(ctx, confid)
+				if err != nil {
+					log.Errorf("Conference purge(#%d) background job failed: %v", confid, err)
+				}
+			}
+		}
+		dur := time.Since(start)
+		log.Infof("conference deletion task completed in %v", dur)
+	})
+	return nil
+}
+
+func (*conferenceServiceVTable) OnUserJoinCommunity(context.Context, *sqlx.Tx, *Community, *User) error {
+	return nil
+}
+
+func (*conferenceServiceVTable) OnUserLeaveCommunity(context.Context, *sqlx.Tx, *Community, *User) error {
+	return nil
+}
+
 /* AmGetConference returns a conference given its ID.
  * Parameters:
  *     ctx - Standard Go context value.
