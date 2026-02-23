@@ -51,6 +51,7 @@ func setupEcho() *echo.Echo {
 	// This is the set of all middleware functions used by the UI, as opposed to other things.
 	uiset := []echo.MiddlewareFunc{ui.SessionStoreInjector, ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest}
 
+	e.RouteNotFound("/*", ui.AmWrap(AmNotFoundHandler), uiset...)
 	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage), uiset...)
 	e.GET("/img/*", ui.AmServeImage)
 	e.GET("/static/*", ui.AmStaticFileHandler())

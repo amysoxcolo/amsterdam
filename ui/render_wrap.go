@@ -114,11 +114,16 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		case "top":
 			menus[0] = AmMenu("top")
 		case "community":
-			md, err := AmBuildCommunityMenu(ctxt.Request().Context(), amctxt.CurrentCommunity())
-			if err != nil {
-				return err
+			comm := amctxt.CurrentCommunity()
+			if comm != nil {
+				md, err := AmBuildCommunityMenu(ctxt.Request().Context(), comm)
+				if err != nil {
+					return err
+				}
+				menus[0] = md
+			} else {
+				menus[0] = AmMenu("top")
 			}
-			menus[0] = md
 		default:
 			return fmt.Errorf("AmSendPageData(): unknown left menu context: %s", amctxt.LeftMenu())
 		}
@@ -174,4 +179,41 @@ func AmWrap(myfunc AmPageFunc) echo.HandlerFunc {
 		}
 		return nil
 	}
+}
+
+// AmWithTempContext runs a page function with a temporary context. Used in error handling.
+func AmWithTempContext(c echo.Context, fn AmPageFunc) error {
+	var ctxt AmContext = nil
+	myctxt := c.Get("__amsterdam_context")
+	if myctxt != nil {
+		ac, ok := myctxt.(*amContext)
+		if ok {
+			ctxt = ac
+			ac.echoContext = c
+		}
+	}
+	if ctxt == nil {
+		ac, err := newContext(c)
+		if err != nil {
+			return err
+		}
+		ctxt = ac
+		defer func() {
+			amContextRecycleBin <- ac
+		}()
+	}
+
+	// Call the function
+	command, arg := fn(ctxt)
+
+	// Add the dynamic headers.
+	c.Response().Header().Set("Pragma", "No-cache")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Expires", expireTime)
+
+	if err := AmSendPageData(c, ctxt, command, arg); err != nil {
+		c.Logger().Errorf("Rendering error: %v", err)
+		return err
+	}
+	return nil
 }

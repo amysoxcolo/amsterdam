@@ -549,34 +549,37 @@ func newContext(ctxt echo.Context) (*amContext, error) {
 
 	rc.echoContext = ctxt
 	ctxt.Set("__amsterdam_context", rc)
-	store := ctxt.Get("AmSessionStore").(AmSessionStore)
-	sess, err := store.Get(ctxt.Request(), "AMSTERDAM_SESSION")
-	if err == nil {
-		rc.session = sess
-		sess.SetOptions(defoptions)
-		if sess.IsNew() {
-			sess.FirstTime(ctxt.Request().Context())
-		} else {
-			sess.Hit()
-		}
-	}
-	id, ok := sess.Uid()
-	if ok {
-		rc.user, err = database.AmGetUser(ctxt.Request().Context(), id)
+	stmp := ctxt.Get("AmSessionStore")
+	if stmp != nil {
+		store := stmp.(AmSessionStore)
+		sess, err := store.Get(ctxt.Request(), "AMSTERDAM_SESSION")
 		if err == nil {
-			rc.effectiveLevel = rc.user.BaseLevel
+			rc.session = sess
+			sess.SetOptions(defoptions)
+			if sess.IsNew() {
+				sess.FirstTime(ctxt.Request().Context())
+			} else {
+				sess.Hit()
+			}
+		}
+		id, ok := sess.Uid()
+		if ok {
+			rc.user, err = database.AmGetUser(ctxt.Request().Context(), id)
+			if err == nil {
+				rc.effectiveLevel = rc.user.BaseLevel
+			} else {
+				rc.user = nil
+				rc.effectiveLevel = database.AmRole("NotInList").Level()
+			}
 		} else {
 			rc.user = nil
 			rc.effectiveLevel = database.AmRole("NotInList").Level()
 		}
-	} else {
-		rc.user = nil
-		rc.effectiveLevel = database.AmRole("NotInList").Level()
-	}
-	if rc.user != nil && !rc.user.IsAnon {
-		cp, ok := sess.Get("lastCommunity")
-		if ok {
-			rc.SetCommunityContext(fmt.Sprintf("%d", cp))
+		if rc.user != nil && !rc.user.IsAnon {
+			cp, ok := sess.Get("lastCommunity")
+			if ok {
+				rc.SetCommunityContext(fmt.Sprintf("%d", cp))
+			}
 		}
 	}
 	return rc, err
