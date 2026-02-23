@@ -801,168 +801,169 @@ func (ht *htmlCheckerImpl) finishParen() error {
 func (ht *htmlCheckerImpl) parse(str string) error {
 	i := 0
 	for i < len(str) {
-		err := ht.ctx.Err()
-		if err != nil {
-			return err
-		}
-		ch := str[i]
-		switch ht.state {
-		case stateWhitespace:
-			switch ch {
-			case ' ', '\t': // append space and tab verbatim
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			case '\r', '\n': // flush and go to Newline state
-				ht.doFlushWhitespace()
-				ht.state = stateNewline
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			case '<':
-				ht.doFlushWhitespace()
-				if ht.config.Angles {
-					ht.state = stateLeftAngle
-				} else {
-					// process < as ordinary character
+		select {
+		case <-ht.ctx.Done():
+			return ht.ctx.Err()
+		default:
+			ch := str[i]
+			switch ht.state {
+			case stateWhitespace:
+				switch ch {
+				case ' ', '\t': // append space and tab verbatim
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				case '\r', '\n': // flush and go to Newline state
+					ht.doFlushWhitespace()
+					ht.state = stateNewline
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				case '<':
+					ht.doFlushWhitespace()
+					if ht.config.Angles {
+						ht.state = stateLeftAngle
+					} else {
+						// process < as ordinary character
+						ht.state = stateChars
+						ht.tempBuffer.WriteByte(ch)
+					}
+					i++
+				case '(':
+					ht.doFlushWhitespace()
+					if ht.config.Parens {
+						ht.state = stateParen
+					} else {
+						// process ( as ordinary character)
+						ht.state = stateChars
+						ht.tempBuffer.WriteByte(ch)
+					}
+					i++
+				case '\\': // backslash processing is tricky - go to Chars state to handle it
+					ht.doFlushWhitespace()
+					ht.state = stateChars
+				default:
+					ht.doFlushWhitespace()
 					ht.state = stateChars
 					ht.tempBuffer.WriteByte(ch)
+					i++
 				}
-				i++
-			case '(':
-				ht.doFlushWhitespace()
-				if ht.config.Parens {
-					ht.state = stateParen
-				} else {
-					// process ( as ordinary character)
-					ht.state = stateChars
-					ht.tempBuffer.WriteByte(ch)
-				}
-				i++
-			case '\\': // backslash processing is tricky - go to Chars state to handle it
-				ht.doFlushWhitespace()
-				ht.state = stateChars
-			default:
-				ht.doFlushWhitespace()
-				ht.state = stateChars
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			}
-		case stateChars:
-			switch ch {
-			case ' ', '\t': // go to Whitespace state
-				_, err := ht.doFlushString()
-				if err != nil {
-					return err
-				}
-				ht.state = stateWhitespace
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			case '\r', '\n': // go to Newline state
-				_, err := ht.doFlushString()
-				if err != nil {
-					return err
-				}
-				ht.state = stateNewline
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			case '<': // may be a start of tag
-				if ht.config.Angles {
+			case stateChars:
+				switch ch {
+				case ' ', '\t': // go to Whitespace state
 					_, err := ht.doFlushString()
 					if err != nil {
 						return err
 					}
-					ht.state = stateLeftAngle
-				} else {
-					ht.tempBuffer.WriteByte(ch)
-				}
-				i++
-			case '\\':
-				if i < (len(str) - 1) {
-					i++
-					ch = str[i]
-					if (ch == '(' && ht.config.Parens) || (ch == '<' && ht.config.Angles) {
-						// append the escaped character, omitting the backslash
-						ht.tempBuffer.WriteByte(ch)
-						i++
-					} else {
-						// append the backslash and hit the new character
-						ht.tempBuffer.WriteByte('\\')
-					}
-				} else {
-					// just append the backslash normally
+					ht.state = stateWhitespace
 					ht.tempBuffer.WriteByte(ch)
 					i++
-				}
-			default: // just append the next character
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			}
-		case stateLeftAngle:
-			switch ch {
-			case ' ', '\t', '\r', '\n': // output <, go to Whitespace state
-				ht.emitRune('<', ht.outputFilters, true)
-				ht.state = stateWhitespace
-			case '<': // output < and stay in this state
-				ht.emitRune('<', ht.outputFilters, true)
-				i++
-			default: // begin processing tag
-				ht.state = stateTag
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			}
-		case stateTag:
-			switch ch {
-			case '>': // finish the tag - this changes the state, and possibly calls parse() recursively
-				err := ht.finishTag()
-				if err != nil {
-					return err
-				}
-				i++
-			case '\'', '"': // go into "quote string" state inside the tag
-				ht.tempBuffer.WriteByte(ch)
-				ht.state = stateTagQuote
-				ht.quoteChar = ch
-				i++
-			default: // just append the character
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			}
-		case stateParen:
-			switch ch {
-			case '(': // nest parentheses one level deeper
-				ht.tempBuffer.WriteByte(ch)
-				ht.parenLevel++
-				i++
-			case ')':
-				if ht.parenLevel == 0 {
-					err := ht.finishParen() // finish paren, changing state and recursively parsing if necessary
+				case '\r', '\n': // go to Newline state
+					_, err := ht.doFlushString()
 					if err != nil {
 						return err
 					}
-				} else {
-					// nest parentheses one LESS level deeper
+					ht.state = stateNewline
 					ht.tempBuffer.WriteByte(ch)
-					ht.parenLevel--
+					i++
+				case '<': // may be a start of tag
+					if ht.config.Angles {
+						_, err := ht.doFlushString()
+						if err != nil {
+							return err
+						}
+						ht.state = stateLeftAngle
+					} else {
+						ht.tempBuffer.WriteByte(ch)
+					}
+					i++
+				case '\\':
+					if i < (len(str) - 1) {
+						i++
+						ch = str[i]
+						if (ch == '(' && ht.config.Parens) || (ch == '<' && ht.config.Angles) {
+							// append the escaped character, omitting the backslash
+							ht.tempBuffer.WriteByte(ch)
+							i++
+						} else {
+							// append the backslash and hit the new character
+							ht.tempBuffer.WriteByte('\\')
+						}
+					} else {
+						// just append the backslash normally
+						ht.tempBuffer.WriteByte(ch)
+						i++
+					}
+				default: // just append the next character
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				}
+			case stateLeftAngle:
+				switch ch {
+				case ' ', '\t', '\r', '\n': // output <, go to Whitespace state
+					ht.emitRune('<', ht.outputFilters, true)
+					ht.state = stateWhitespace
+				case '<': // output < and stay in this state
+					ht.emitRune('<', ht.outputFilters, true)
+					i++
+				default: // begin processing tag
+					ht.state = stateTag
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				}
+			case stateTag:
+				switch ch {
+				case '>': // finish the tag - this changes the state, and possibly calls parse() recursively
+					err := ht.finishTag()
+					if err != nil {
+						return err
+					}
+					i++
+				case '\'', '"': // go into "quote string" state inside the tag
+					ht.tempBuffer.WriteByte(ch)
+					ht.state = stateTagQuote
+					ht.quoteChar = ch
+					i++
+				default: // just append the character
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				}
+			case stateParen:
+				switch ch {
+				case '(': // nest parentheses one level deeper
+					ht.tempBuffer.WriteByte(ch)
+					ht.parenLevel++
+					i++
+				case ')':
+					if ht.parenLevel == 0 {
+						err := ht.finishParen() // finish paren, changing state and recursively parsing if necessary
+						if err != nil {
+							return err
+						}
+					} else {
+						// nest parentheses one LESS level deeper
+						ht.tempBuffer.WriteByte(ch)
+						ht.parenLevel--
+					}
+					i++
+				default:
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				}
+			case stateTagQuote:
+				ht.tempBuffer.WriteByte(ch)
+				if ch == ht.quoteChar {
+					ht.state = stateTag
 				}
 				i++
+			case stateNewline:
+				if ch == '\r' || ch == '\n' {
+					ht.tempBuffer.WriteByte(ch)
+					i++
+				} else {
+					ht.doFlushNewlines()
+				}
 			default:
-				ht.tempBuffer.WriteByte(ch)
-				i++
+				log.Fatalf("invalid parser state: %d", ht.state)
 			}
-		case stateTagQuote:
-			ht.tempBuffer.WriteByte(ch)
-			if ch == ht.quoteChar {
-				ht.state = stateTag
-			}
-			i++
-		case stateNewline:
-			if ch == '\r' || ch == '\n' {
-				ht.tempBuffer.WriteByte(ch)
-				i++
-			} else {
-				ht.doFlushNewlines()
-			}
-		default:
-			log.Fatalf("invalid parser state: %d", ht.state)
 		}
 	}
 	return nil

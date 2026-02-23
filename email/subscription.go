@@ -101,19 +101,22 @@ func AmDeliverSubscription(ctx context.Context, comm *database.Community, conf *
 
 	// The delivery loop; build each message and send it.  Note that sending a message puts the Message structure on
 	// the sender goroutine channel, so we have to create a new Message each time, unlike what we did in Venice.
+SendLoop:
 	for i := range recipUids {
-		err = ctx.Err()
-		if err != nil {
-			log.Errorf("AmDeliverSubscription: aborted on send loop iter %d with %v", i+1, err)
-		}
-		if ci, err := database.AmGetContactInfoForUser(ctx, recipUids[i]); err == nil {
-			msg := AmNewEmailMessage(poster.Uid, ipaddr)
-			msg.SetSubject(subjectSink.GetSubject())
-			msg.SetText(sendText)
-			msg.AddTo(*ci.Email, ci.FullName(false))
-			msg.Send()
-		} else {
-			log.Warnf("AmDeliverSubscription skipped uid %d because no contact info retrieved (%v)", recipUids[i], err)
+		select {
+		case <-ctx.Done():
+			log.Errorf("AmDeliverSubscription: aborted on send loop iter %d with %v", i+1, ctx.Err())
+			break SendLoop
+		default:
+			if ci, err := database.AmGetContactInfoForUser(ctx, recipUids[i]); err == nil {
+				msg := AmNewEmailMessage(poster.Uid, ipaddr)
+				msg.SetSubject(subjectSink.GetSubject())
+				msg.SetText(sendText)
+				msg.AddTo(*ci.Email, ci.FullName(false))
+				msg.Send()
+			} else {
+				log.Warnf("AmDeliverSubscription skipped uid %d because no contact info retrieved (%v)", recipUids[i], err)
+			}
 		}
 	}
 }
