@@ -46,43 +46,45 @@ func setupEcho() *echo.Echo {
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
-	e.Use(LogrusMiddleware, ui.SessionStoreInjector, ui.ContextCreator)
-	e.Use(ui.IPBanTest, ui.CookieLoginTest)
+	e.Use(LogrusMiddleware)
 
-	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage))
+	// This is the set of all middleware functions used by the UI, as opposed to other things.
+	uiset := []echo.MiddlewareFunc{ui.SessionStoreInjector, ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest}
+
+	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage), uiset...)
 	e.GET("/img/*", ui.AmServeImage)
 	e.GET("/static/*", ui.AmStaticFileHandler())
 	e.GET("/go/:postlink", ui.AmWrap(JumpToShortcut))
 
-	e.GET("/", ui.AmWrap(TopPage))
-	e.GET("/about", ui.AmWrap(AboutPage))
-	e.GET("/login", ui.AmWrap(LoginForm))
-	e.POST("/login", ui.AmWrap(Login))
-	e.GET("/logout", ui.AmWrap(Logout))
-	e.GET("/newacct", ui.AmWrap(NewAccountUserAgreement))
-	e.GET("/newacct2", ui.AmWrap(NewAccountForm))
-	e.POST("/newacct2", ui.AmWrap(NewAccount))
-	e.GET("/verify", ui.AmWrap(VerifyEmailForm))
-	e.POST("/verify", ui.AmWrap(VerifyEMail))
-	e.GET("/passrecovery/:uid/:auth", ui.AmWrap(PasswordRecovery))
-	e.GET("/profile", ui.AmWrap(EditProfileForm))
-	e.POST("/profile", ui.AmWrap(EditProfile))
-	e.GET("/profile_photo", ui.AmWrap(ProfilePhotoForm))
-	e.POST("/profile_photo", ui.AmWrap(ProfilePhoto))
-	e.GET("/find", ui.AmWrap(FindPage))
-	e.POST("/find", ui.AmWrap(Find))
-	e.GET("/user/:uname", ui.AmWrap(ShowProfile))
-	e.POST("/quick_email", ui.AmWrap(QuickEMail))
-	e.GET("/hotlist", ui.AmWrap(Hotlist))
-	e.GET("/sideboxes", ui.AmWrap(ManageSideboxes))
-	e.POST("/sideboxes", ui.AmWrap(AddSidebox))
-	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm))
-	e.POST("/create_comm", ui.AmWrap(CreateCommunity))
-	e.GET("/manage_comm", ui.AmWrap(ManageCommunities))
-	e.POST("/attachment_upload", ui.AmWrap(AttachmentUpload))
-	e.GET("/attachment/:post", ui.AmWrap(AttachmentSend))
-	e.POST("/__invite_send", ui.AmWrap(InviteSend))
-	sysGroup := e.Group("/sysadmin")
+	e.GET("/", ui.AmWrap(TopPage), uiset...)
+	e.GET("/about", ui.AmWrap(AboutPage), uiset...)
+	e.GET("/login", ui.AmWrap(LoginForm), uiset...)
+	e.POST("/login", ui.AmWrap(Login), uiset...)
+	e.GET("/logout", ui.AmWrap(Logout), uiset...)
+	e.GET("/newacct", ui.AmWrap(NewAccountUserAgreement), uiset...)
+	e.GET("/newacct2", ui.AmWrap(NewAccountForm), uiset...)
+	e.POST("/newacct2", ui.AmWrap(NewAccount), uiset...)
+	e.GET("/verify", ui.AmWrap(VerifyEmailForm), uiset...)
+	e.POST("/verify", ui.AmWrap(VerifyEMail), uiset...)
+	e.GET("/passrecovery/:uid/:auth", ui.AmWrap(PasswordRecovery), uiset...)
+	e.GET("/profile", ui.AmWrap(EditProfileForm), uiset...)
+	e.POST("/profile", ui.AmWrap(EditProfile), uiset...)
+	e.GET("/profile_photo", ui.AmWrap(ProfilePhotoForm), uiset...)
+	e.POST("/profile_photo", ui.AmWrap(ProfilePhoto), uiset...)
+	e.GET("/find", ui.AmWrap(FindPage), uiset...)
+	e.POST("/find", ui.AmWrap(Find), uiset...)
+	e.GET("/user/:uname", ui.AmWrap(ShowProfile), uiset...)
+	e.POST("/quick_email", ui.AmWrap(QuickEMail), uiset...)
+	e.GET("/hotlist", ui.AmWrap(Hotlist), uiset...)
+	e.GET("/sideboxes", ui.AmWrap(ManageSideboxes), uiset...)
+	e.POST("/sideboxes", ui.AmWrap(AddSidebox), uiset...)
+	e.GET("/create_comm", ui.AmWrap(CreateCommunityForm), uiset...)
+	e.POST("/create_comm", ui.AmWrap(CreateCommunity), uiset...)
+	e.GET("/manage_comm", ui.AmWrap(ManageCommunities), uiset...)
+	e.POST("/attachment_upload", ui.AmWrap(AttachmentUpload), uiset...)
+	e.GET("/attachment/:post", ui.AmWrap(AttachmentSend), uiset...)
+	e.POST("/__invite_send", ui.AmWrap(InviteSend), uiset...)
+	sysGroup := e.Group("/sysadmin", uiset...)
 	sysGroup.GET("", ui.AmWrap(SysAdminMenu))
 	sysGroup.GET("/globals", ui.AmWrap(GlobalPropertiesForm))
 	sysGroup.POST("/globals", ui.AmWrap(GlobalPropertiesSet))
@@ -97,7 +99,9 @@ func setupEcho() *echo.Echo {
 	sysGroup.Match(GetAndPost, "/audit", ui.AmWrap(SystemAudit))
 
 	// community group
-	commGroup := e.Group("/comm/:cid", ui.SetCommunity)
+	uiset2 := make([]echo.MiddlewareFunc, len(uiset), len(uiset)+1)
+	copy(uiset2, uiset)
+	commGroup := e.Group("/comm/:cid", append(uiset2, ui.SetCommunity)...)
 	fn := ui.AmWrap(ShowCommunity)
 	commGroup.GET("", fn)
 	commGroup.GET("/profile", fn)
@@ -220,6 +224,10 @@ func main() {
 	// Audit the startup
 	database.AmStoreAudit(database.AmNewAudit(database.AuditStartup, 0, myIP.String(),
 		fmt.Sprintf("version=%s", config.AMSTERDAM_VERSION)))
+	defer func() {
+		// Audit the shutdown
+		database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
+	}()
 
 	// Start server
 	go func() {
@@ -235,7 +243,4 @@ func main() {
 	if err := e.Shutdown(ctx); err != nil {
 		e.Logger.Fatal(err)
 	}
-
-	// Audit the shutdown
-	database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
 }
