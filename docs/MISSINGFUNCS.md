@@ -26,7 +26,7 @@ _(italicized items can be deferred)_
 - Community Admin Menu:
   - ~~Set Community Category~~
   - Membership Control
-  - E-Mail to All Members
+  - ~~E-Mail to All Members~~
   - ~~Display Audit Records~~
   - Delete Community
 - ~~Community Profile: Invite~~

@@ -622,20 +622,22 @@ func ConferenceEmail(ctxt ui.AmContext) (string, any) {
 	log.Infof("ConferenceEmail: About to send mass E-mail to %d recipients", len(recipients))
 	ampool.Submit(func(ctx context.Context) {
 		start := time.Now()
+	RunLoop:
 		for _, addr := range recipients {
-			err := ctx.Err()
-			if err != nil {
-				break
+			select {
+			case <-ctx.Done():
+				break RunLoop
+			default:
+				msg := email.AmNewEmailMessage(myUID, myIP)
+				msg.AddTo(addr, "")
+				msg.SetSubject(subj)
+				msg.SetTemplate(templateName)
+				msg.AddVariable("text", pb)
+				msg.AddVariable("topicName", topicName)
+				msg.AddVariable("confName", confName)
+				msg.AddVariable("commName", commName)
+				msg.Send()
 			}
-			msg := email.AmNewEmailMessage(myUID, myIP)
-			msg.AddTo(addr, "")
-			msg.SetSubject(subj)
-			msg.SetTemplate(templateName)
-			msg.AddVariable("text", pb)
-			msg.AddVariable("topicName", topicName)
-			msg.AddVariable("confName", confName)
-			msg.AddVariable("commName", commName)
-			msg.Send()
 		}
 		elapsed := time.Since(start)
 		log.Infof("ConferenceEmail delivery completed in %s", elapsed)

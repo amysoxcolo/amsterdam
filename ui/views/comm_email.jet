@@ -1,0 +1,82 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Community E-Mail:</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">{{ commName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Warning Box -->
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded max-w-4xl">
+        <div class="flex items-start">
+            <span class="text-2xl mr-3">⚠️</span>
+            <div class="text-sm text-yellow-900">
+                <p class="font-bold mb-1">Administrator Notice:</p>
+                <p>You are about to send an E-mail to <i>all</i> community members. Please use this feature responsibly and avoid spamming community members unnecessarily.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Form -->
+    <form method="POST" action="{{ selfLink }}">
+        <div class="max-w-4xl space-y-6">
+            <!-- Recipient Selection -->
+            <div class="bg-gray-50 border border-gray-300 rounded-lg p-6">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-xl">📧</span>
+                    <span class="text-gray-700 font-bold">Send E-mail to all members of the community:</span>
+                </div>
+
+                <!-- Email Content -->
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span class="text-xl">✉️</span>
+                    Compose Message
+                </h3>
+                
+                <!-- Subject Line -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        Subject:
+                    </label>
+                    <input type="text" name="subj" value="{{ subj }}" maxlength="255" placeholder="Enter email subject..."
+                            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Message Body -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Message:</label>
+                    <textarea name="pb" rows="10" class="w-full border border-gray-300 rounded px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                                placeholder="Enter your message here...">{{ pb | raw }}</textarea>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-4 border-t border-gray-300">
+                <button 
+                    type="submit" 
+                    name="send"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                    <span class="text-xl">📨</span>
+                    Send E-Mail
+                </button>
+                <button 
+                    type="submit" 
+                    name="cancel"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg flex items-center gap-2">
+                    <span class="text-xl">✗</span>
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

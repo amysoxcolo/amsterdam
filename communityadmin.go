@@ -17,8 +17,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/labstack/echo/v4"
@@ -477,6 +479,77 @@ func CommunityCategory(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/admin/category", comm.Alias))
 	ctxt.SetFrameTitle("Set Community Category")
 	return "framed", "comm_category.jet"
+}
+
+/* CommunityEmailForm displays the form for sending mass mail to the community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func CommunityEmailForm(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.MassMail", ctxt.EffectiveLevel()) {
+		return "error", ENOACCESS
+	}
+
+	ctxt.VarMap().Set("commName", comm.Name)
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/admin/massmail", comm.Alias))
+	ctxt.VarMap().Set("subj", "")
+	ctxt.VarMap().Set("pb", "")
+	ctxt.SetFrameTitle("Community E-Mail: " + comm.Name)
+	return "framed", "comm_email.jet"
+}
+
+func CommunityEmail(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.MassMail", ctxt.EffectiveLevel()) {
+		return "error", ENOACCESS
+	}
+
+	// Handle button presses.
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias)
+	} else if !ctxt.FormFieldIsSet("send") {
+		return "error", EBUTTON
+	}
+
+	recipients, err := comm.GetMemberEMailAddrs(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+
+	// Kick off a background task to send all the E-mail messages.
+	subj := ctxt.FormField("subj")
+	pb := ctxt.FormField("pb")
+	commName := comm.Name
+	myUID := ctxt.CurrentUserId()
+	myIP := ctxt.RemoteIP()
+	log.Infof("CommunityEmail: About to send mass E-mail to %d recipients", len(recipients))
+	ampool.Submit(func(ctx context.Context) {
+		start := time.Now()
+	RunLoop:
+		for _, addr := range recipients {
+			select {
+			case <-ctx.Done():
+				break RunLoop
+			default:
+				msg := email.AmNewEmailMessage(myUID, myIP)
+				msg.AddTo(addr, "")
+				msg.SetSubject(subj)
+				msg.SetTemplate("comm_massmail.jet")
+				msg.AddVariable("text", pb)
+				msg.AddVariable("commName", commName)
+				msg.Send()
+			}
+		}
+		elapsed := time.Since(start)
+		log.Infof("CommunityEmail delivery completed in %s", elapsed)
+	})
+
+	return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias)
 }
 
 /* CreateCommunityForm renders the form for creating a new community.

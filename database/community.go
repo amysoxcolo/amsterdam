@@ -583,6 +583,15 @@ func (c *Community) TouchUpdate(ctx context.Context) error {
 	return err
 }
 
+// GetMemberEmailAddrs gets the E-mail address of all community members, except those that have opted out.
+func (c *Community) GetMemberEMailAddrs(ctx context.Context) ([]string, error) {
+	sql := fmt.Sprintf(`SELECT c.email FROM contacts c, users u, commmember m, propuser p WHERE c.contactid = u.contactid AND u.uid = m.uid AND m.commid = ?
+		AND u.is_anon = 0 AND u.uid = p.uid AND p.ndx = %d AND p.data NOT LIKE '%%%s%%'`, UserPropFlags, util.OptionCharFromIndex(UserFlagMassMailOptOut))
+	var rc []string
+	err := amdb.SelectContext(ctx, &rc, sql, c.Id)
+	return rc, err
+}
+
 /* AmGetCommunity returns a reference to the specified community.
  * Parameters:
  *     ctx - Standard Go context value.
