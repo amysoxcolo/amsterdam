@@ -272,17 +272,12 @@ func AmListIPBans(ctx context.Context) ([]IPBanEntry, error) {
 
 // AmGetIPBan returns a single IP address ban structure.
 func AmGetIPBan(ctx context.Context, id int32) (*IPBanEntry, error) {
-	var dbdata []IPBanEntry
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM ipban WHERE id = ?", id)
+	var ban IPBanEntry
+	err := amdb.GetContext(ctx, &ban, "SELECT * FROM ipban WHERE id = ?", id)
 	if err != nil {
 		return nil, err
 	}
-	if len(dbdata) == 0 {
-		return nil, errors.New("not found")
-	} else if len(dbdata) > 1 {
-		return nil, errors.New("internal error, too many returns")
-	}
-	return &(dbdata[0]), nil
+	return &ban, nil
 }
 
 // AmAddIPBan adds a new IP address ban.

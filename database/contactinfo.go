@@ -250,16 +250,10 @@ func setupContactsCache() {
 
 // internalContactInfo retrieves the contact info from the database.
 func internalContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
-	var dbdata []ContactInfo
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * from contacts WHERE contactid = ?", id)
+	var cinf ContactInfo
+	err := amdb.GetContext(ctx, &cinf, "SELECT * from contacts WHERE contactid = ?", id)
 	if err == nil {
-		if len(dbdata) > 1 {
-			err = fmt.Errorf("internalContactInfo(%d): Too many responses (%d)", id, len(dbdata))
-		} else if len(dbdata) == 0 {
-			return nil, nil
-		} else {
-			return &(dbdata[0]), nil
-		}
+		return &cinf, nil
 	}
 	return nil, err
 }

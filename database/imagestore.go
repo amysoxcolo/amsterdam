@@ -12,7 +12,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
 )
 
 // ImageStore is the structure for the image store table.
@@ -61,17 +60,12 @@ func (img *ImageStore) Save(ctx context.Context) error {
  *     Standard Go error status.
  */
 func AmLoadImage(ctx context.Context, id int32) (*ImageStore, error) {
-	var dbdata []ImageStore
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM imagestore WHERE imgid = ?", id)
+	var imgdata ImageStore
+	err := amdb.GetContext(ctx, &imgdata, "SELECT * FROM imagestore WHERE imgid = ?", id)
 	if err != nil {
 		return nil, err
 	}
-	if len(dbdata) == 0 {
-		return nil, fmt.Errorf("image ID %d not found", id)
-	} else if len(dbdata) > 1 {
-		return nil, fmt.Errorf("image ID %d too many images (%d)", id, len(dbdata))
-	}
-	return &(dbdata[0]), nil
+	return &imgdata, nil
 }
 
 /* AmStoreImage stores an image in the database, overwriting one with the same type code and owner if it exists.

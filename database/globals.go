@@ -12,7 +12,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"sync"
 
 	"git.erbosoft.com/amy/amsterdam/util"
@@ -108,15 +107,12 @@ func AmGlobals(ctx context.Context) (*Globals, error) {
 	globalsMutex.Lock()
 	defer globalsMutex.Unlock()
 	if theGlobals == nil {
-		var dbdata []Globals
-		err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM globals")
+		var g Globals
+		err := amdb.GetContext(ctx, &g, "SELECT * FROM globals")
 		if err != nil {
 			return nil, err
 		}
-		if len(dbdata) > 1 {
-			return nil, errors.New("should only be one globals record")
-		}
-		theGlobals = &(dbdata[0])
+		theGlobals = &g
 	}
 	return theGlobals, nil
 }

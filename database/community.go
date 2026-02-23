@@ -605,16 +605,11 @@ func AmGetCommunity(ctx context.Context, id int32) (*Community, error) {
 	defer getCommunityMutex.Unlock()
 	rc, ok := communityCache.Get(id)
 	if !ok {
-		var dbdata []Community
-		if err := amdb.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id); err != nil {
+		var newcomm Community
+		if err := amdb.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id); err != nil {
 			return nil, err
 		}
-		if len(dbdata) == 0 {
-			return nil, fmt.Errorf("community with ID %d not found", id)
-		} else if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetCommunity(%d): too many responses(%d)", id, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &newcomm
 		communityCache.Add(id, rc)
 	}
 	return rc.(*Community), nil
@@ -634,16 +629,11 @@ func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, e
 	defer getCommunityMutex.Unlock()
 	rc, ok := communityCache.Get(id)
 	if !ok {
-		var dbdata []Community
-		if err := tx.SelectContext(ctx, &dbdata, "SELECT * from communities WHERE commid = ?", id); err != nil {
+		var newcomm Community
+		if err := tx.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id); err != nil {
 			return nil, err
 		}
-		if len(dbdata) == 0 {
-			return nil, fmt.Errorf("community with ID %d not found", id)
-		} else if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetCommunity(%d): too many responses(%d)", id, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &newcomm
 		communityCache.Add(id, rc)
 	}
 	return rc.(*Community), nil
@@ -809,17 +799,11 @@ func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityP
 	defer getCommunityPropMutex.Unlock()
 	rc, ok := communityPropCache.Get(key)
 	if !ok {
-		var dbdata []CommunityProperties
-		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx); err != nil {
+		var prop CommunityProperties
+		if err = amdb.GetContext(ctx, &prop, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx); err != nil {
 			return nil, err
 		}
-		if len(dbdata) == 0 {
-			return nil, nil
-		}
-		if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetCommunityProperty(%d): too many responses(%d)", cid, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &prop
 		communityPropCache.Add(key, rc)
 	}
 	return rc.(*CommunityProperties), nil

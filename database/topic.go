@@ -65,16 +65,10 @@ func (t *Topic) GetPost(ctx context.Context, num int32) (*PostHeader, error) {
 	if num > t.TopMessage {
 		return nil, fmt.Errorf("no post %d in topic %d", num, t.TopicId)
 	}
-	var dbdata []PostHeader
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num)
+	var pd PostHeader
+	err := amdb.GetContext(ctx, &pd, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num)
 	if err == nil {
-		if len(dbdata) == 0 {
-			err = fmt.Errorf("no post %d in topic %d", num, t.TopicId)
-		} else if len(dbdata) > 1 {
-			err = fmt.Errorf("topic.GetPost: too many entries (%d) for post %d in topic %d", len(dbdata), num, t.TopicId)
-		} else {
-			return &(dbdata[0]), nil
-		}
+		return &pd, nil
 	}
 	return nil, err
 }
@@ -498,17 +492,11 @@ type TopicSummary struct {
  *     Standard Go error status.
  */
 func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
-	var dbdata []Topic
-	if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
+	var top Topic
+	if err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
 		return nil, err
 	}
-	if len(dbdata) == 0 {
-		return nil, fmt.Errorf("topic %d not found", topicId)
-	}
-	if len(dbdata) > 1 {
-		return nil, fmt.Errorf("AmGetTopic(%d): too many responses (%d)", topicId, len(dbdata))
-	}
-	return &(dbdata[0]), nil
+	return &top, nil
 }
 
 /* AmGetTopicTx retrieves a topic by ID, in a transaction.
@@ -521,17 +509,11 @@ func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
  *     Standard Go error status.
  */
 func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, error) {
-	var dbdata []Topic
-	if err := tx.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
+	var top Topic
+	if err := tx.GetContext(ctx, &top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
 		return nil, err
 	}
-	if len(dbdata) == 0 {
-		return nil, fmt.Errorf("topic %d not found", topicId)
-	}
-	if len(dbdata) > 1 {
-		return nil, fmt.Errorf("AmGetTopic(%d): too many responses (%d)", topicId, len(dbdata))
-	}
-	return &(dbdata[0]), nil
+	return &top, nil
 }
 
 /* AmGetTopicByNumber retrieves a topic by conference and sequence number.
@@ -544,16 +526,10 @@ func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, erro
  *     Standard Go error status.
  */
 func AmGetTopicByNumber(ctx context.Context, conf *Conference, topicNum int16) (*Topic, error) {
-	var dbdata []Topic
-	err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
+	var top Topic
+	err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
 	if err == nil {
-		if len(dbdata) == 0 {
-			err = fmt.Errorf("no topic numbered %d in conference %s (#%d)", topicNum, conf.Name, conf.ConfId)
-		} else if len(dbdata) > 1 {
-			err = fmt.Errorf("AmGetTopicByNumber: too many entries (%d) for topic #%d in conference %s (#%d)", len(dbdata), topicNum, conf.Name, conf.ConfId)
-		} else {
-			return &(dbdata[0]), nil
-		}
+		return &top, nil
 	}
 	return nil, err
 }

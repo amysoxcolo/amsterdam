@@ -415,11 +415,13 @@ func (c *Conference) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 
 // Settings returns the settings for a user.
 func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings, error) {
-	var dbdata []ConferenceSettings
-	if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid); err != nil {
-		return nil, err
-	}
-	if len(dbdata) == 0 {
+	var settings ConferenceSettings
+	err := amdb.GetContext(ctx, &settings, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	switch err {
+	case nil:
+		settings.newflag = false
+		return &settings, nil
+	case sql.ErrNoRows:
 		settings := ConferenceSettings{
 			ConfId:       c.ConfId,
 			Uid:          u.Uid,
@@ -430,11 +432,7 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 		}
 		return &settings, nil
 	}
-	if len(dbdata) > 1 {
-		return nil, fmt.Errorf("conference.Settings(c=%d,u=%d): too many results (%d)", c.ConfId, u.Uid, len(dbdata))
-	}
-	dbdata[0].newflag = false
-	return &(dbdata[0]), nil
+	return nil, err
 }
 
 // Link returns a link string to this conference.
@@ -465,36 +463,32 @@ func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, 
 		hide_lvl = ?, nuke_lvl = ?, change_lvl = ?, delete_lvl = ?, lastupdate = NOW() WHERE confid = ?`, name, descr, read_lvl, post_lvl,
 		create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl, c.ConfId)
 	if err == nil {
-		var tmp []Conference
-		err := amdb.SelectContext(ctx, &tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId)
+		var tmp Conference
+		err := amdb.GetContext(ctx, &tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId)
 		if err == nil {
-			if len(tmp) != 1 {
-				err = errors.New("internal error rereading conference")
-			} else {
-				if c.Name != tmp[0].Name {
-					AmStoreAudit(AmNewCommAudit(AuditConferenceName, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId), fmt.Sprintf("name='%s'", tmp[0].Name)))
-				}
-				deltaSecurity := false
-				if (c.ReadLevel != tmp[0].ReadLevel) || (c.PostLevel != tmp[0].PostLevel) || (c.CreateLevel != tmp[0].CreateLevel) || (c.HideLevel != tmp[0].HideLevel) {
-					deltaSecurity = true
-				}
-				if (c.NukeLevel != tmp[0].NukeLevel) || (c.ChangeLevel != tmp[0].ChangeLevel) || (c.DeleteLevel != tmp[0].DeleteLevel) {
-					deltaSecurity = true
-				}
-				if deltaSecurity {
-					AmStoreAudit(AmNewCommAudit(AuditConferenceSecurity, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
-				}
-				c.Name = tmp[0].Name
-				c.Description = tmp[0].Description
-				c.ReadLevel = tmp[0].ReadLevel
-				c.PostLevel = tmp[0].PostLevel
-				c.CreateLevel = tmp[0].CreateLevel
-				c.HideLevel = tmp[0].HideLevel
-				c.NukeLevel = tmp[0].NukeLevel
-				c.ChangeLevel = tmp[0].ChangeLevel
-				c.DeleteLevel = tmp[0].DeleteLevel
-				c.LastUpdate = tmp[0].LastUpdate
+			if c.Name != tmp.Name {
+				AmStoreAudit(AmNewCommAudit(AuditConferenceName, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId), fmt.Sprintf("name='%s'", tmp.Name)))
 			}
+			deltaSecurity := false
+			if (c.ReadLevel != tmp.ReadLevel) || (c.PostLevel != tmp.PostLevel) || (c.CreateLevel != tmp.CreateLevel) || (c.HideLevel != tmp.HideLevel) {
+				deltaSecurity = true
+			}
+			if (c.NukeLevel != tmp.NukeLevel) || (c.ChangeLevel != tmp.ChangeLevel) || (c.DeleteLevel != tmp.DeleteLevel) {
+				deltaSecurity = true
+			}
+			if deltaSecurity {
+				AmStoreAudit(AmNewCommAudit(AuditConferenceSecurity, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
+			}
+			c.Name = tmp.Name
+			c.Description = tmp.Description
+			c.ReadLevel = tmp.ReadLevel
+			c.PostLevel = tmp.PostLevel
+			c.CreateLevel = tmp.CreateLevel
+			c.HideLevel = tmp.HideLevel
+			c.NukeLevel = tmp.NukeLevel
+			c.ChangeLevel = tmp.ChangeLevel
+			c.DeleteLevel = tmp.DeleteLevel
+			c.LastUpdate = tmp.LastUpdate
 		}
 	}
 	return err
@@ -1022,16 +1016,11 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
 	defer getConferenceMutex.Unlock()
 	rc, ok := conferenceCache.Get(id)
 	if !ok {
-		var dbdata []Conference
-		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from confs where confid = ?", id); err != nil {
+		var conf Conference
+		if err = amdb.GetContext(ctx, &conf, "SELECT * from confs where confid = ?"); err != nil {
 			return nil, err
 		}
-		if len(dbdata) == 0 {
-			return nil, fmt.Errorf("conference with ID %d not found", id)
-		} else if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetConference(%d): too many responses(%d)", id, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &conf
 		conferenceCache.Add(id, rc)
 	}
 	return rc.(*Conference), err
@@ -1157,17 +1146,11 @@ func internalGetConfProp(ctx context.Context, confid int32, ndx int32) (*Confere
 	defer getConferencePropMutex.Unlock()
 	rc, ok := conferencePropCache.Get(key)
 	if !ok {
-		var dbdata []ConferenceProperties
-		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx); err != nil {
+		var prop ConferenceProperties
+		if err = amdb.GetContext(ctx, &prop, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx); err != nil {
 			return nil, err
 		}
-		if len(dbdata) == 0 {
-			return nil, nil
-		}
-		if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetConferenceProperty(%d): too many responses(%d)", confid, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &prop
 		conferencePropCache.Add(key, rc)
 	}
 	return rc.(*ConferenceProperties), nil
@@ -1304,16 +1287,14 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	if err != nil {
 		return nil, err
 	}
-	var rc []Conference
-	err = tx.SelectContext(ctx, &rc, "SELECT * FROM confs WHERE confid = ?", int32(newId))
+	var rc Conference
+	err = tx.GetContext(ctx, &rc, "SELECT * FROM confs WHERE confid = ?", int32(newId))
 	if err != nil {
 		return nil, err
-	} else if len(rc) != 1 {
-		return nil, errors.New("internal error reading back conference")
 	}
 
 	// Attach the alias to the conference.
-	_, err = tx.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", rc[0].ConfId, alias)
+	_, err = tx.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", rc.ConfId, alias)
 	if err != nil {
 		return nil, err
 	}
@@ -1327,14 +1308,14 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	}
 
 	// Link the conference into the community, and set the hide flag.
-	_, err = tx.ExecContext(ctx, "INSERT INTO commtoconf (commid, confid, sequence, hide_list) VALUES (?, ?, ?, ?)", comm.Id, rc[0].ConfId,
+	_, err = tx.ExecContext(ctx, "INSERT INTO commtoconf (commid, confid, sequence, hide_list) VALUES (?, ?, ?, ?)", comm.Id, rc.ConfId,
 		int16(seq+COMMTOCONF_SEQ_SPACING), hide_list)
 	if err != nil {
 		return nil, err
 	}
 
 	// Make the specified user the first host of the conference.
-	_, err = tx.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", rc[0].ConfId, u.Uid, AmDefaultRole("Conference.NewHost").Level())
+	_, err = tx.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", rc.ConfId, u.Uid, AmDefaultRole("Conference.NewHost").Level())
 	if err != nil {
 		return nil, err
 	}
@@ -1344,7 +1325,7 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	}
 
 	// Add the new conference to the cache, and create our audit record.
-	conferenceCache.Add(rc[0].ConfId, &(rc[0]))
-	AmStoreAudit(AmNewCommAudit(AuditConferenceCreate, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", rc[0].ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias)))
-	return &(rc[0]), nil
+	conferenceCache.Add(rc.ConfId, &rc)
+	AmStoreAudit(AmNewCommAudit(AuditConferenceCreate, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", rc.ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias)))
+	return &rc, nil
 }

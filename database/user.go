@@ -62,14 +62,12 @@ func (p *UserPrefs) Save(ctx context.Context, u, setter *User, ipaddr string) er
 	}
 	var old *UserPrefs
 	if setter.Uid != u.Uid {
-		var dbdata []UserPrefs
-		err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
+		var pref UserPrefs
+		err := amdb.GetContext(ctx, &pref, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
 		if err != nil {
 			return err
-		} else if len(dbdata) != 1 {
-			return errors.New("unable to take snapshot")
 		}
-		old = &(dbdata[0])
+		old = &pref
 	}
 	_, err := amdb.NamedExecContext(ctx, "UPDATE userprefs SET localeid = :localeid, tzid = :tzid WHERE uid = :uid", p)
 	if err == nil && u != nil {
@@ -349,14 +347,11 @@ func (u *User) Prefs(ctx context.Context) (*UserPrefs, error) {
 	u.Mutex.Lock()
 	defer u.Mutex.Unlock()
 	if u.prefs == nil {
-		var dbdata []UserPrefs
-		if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM userprefs WHERE uid = ?", u.Uid); err != nil {
+		var pref UserPrefs
+		if err := amdb.GetContext(ctx, &pref, "SELECT * FROM userprefs WHERE uid = ?", u.Uid); err != nil {
 			return nil, err
 		}
-		if len(dbdata) != 1 {
-			return nil, fmt.Errorf("invalid preferences records for user %d", u.Uid)
-		}
-		u.prefs = &(dbdata[0])
+		u.prefs = &pref
 	}
 	return u.prefs, nil
 }
@@ -444,14 +439,11 @@ func AmGetUser(ctx context.Context, uid int32) (*User, error) {
 	defer getUserMutex.Unlock()
 	rc, ok := userCache.Get(uid)
 	if !ok {
-		var dbdata []User
-		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid); err != nil {
+		var user User
+		if err = amdb.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid); err != nil {
 			return nil, err
 		}
-		if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetUser(%d): too many responses(%d)", uid, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &user
 		userCache.Add(uid, rc)
 	}
 	return rc.(*User), err
@@ -472,14 +464,11 @@ func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
 	defer getUserMutex.Unlock()
 	rc, ok := userCache.Get(uid)
 	if !ok {
-		var dbdata []User
-		if err = tx.SelectContext(ctx, &dbdata, "SELECT * from users WHERE uid = ?", uid); err != nil {
+		var user User
+		if err = tx.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid); err != nil {
 			return nil, err
 		}
-		if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetUser(%d): too many responses(%d)", uid, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &user
 		userCache.Add(uid, rc)
 	}
 	return rc.(*User), err
@@ -495,26 +484,21 @@ func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
  *     Standard Go error status
  */
 func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, error) {
-	var dbdata []User
+	var user User
 	var err error
 	if tx != nil {
-		err = tx.SelectContext(ctx, &dbdata, "SELECT * FROM users WHERE username = ?", name)
+		err = tx.GetContext(ctx, &user, "SELECT * FROM users WHERE username = ?", name)
 	} else {
-		err = amdb.SelectContext(ctx, &dbdata, "SELECT * FROM users WHERE username = ?", name)
+		err = amdb.GetContext(ctx, &user, "SELECT * FROM users WHERE username = ?", name)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if len(dbdata) > 1 {
-		return nil, fmt.Errorf("AmGetUserByName(\"%s\"): too many responses(%d)", name, len(dbdata))
-	} else if len(dbdata) == 0 {
-		return nil, errors.New("user not found")
-	}
 	getUserMutex.Lock()
-	rc, ok := userCache.Get(dbdata[0].Uid)
+	rc, ok := userCache.Get(user.Uid)
 	if !ok {
-		rc = &(dbdata[0])
-		userCache.Add(dbdata[0].Uid, rc)
+		rc = &user
+		userCache.Add(user.Uid, rc)
 	}
 	getUserMutex.Unlock()
 	return rc.(*User), nil
@@ -797,17 +781,11 @@ func internalGetProp(ctx context.Context, uid int32, ndx int32) (*UserProperties
 	defer getUserPropMutex.Unlock()
 	rc, ok := userPropCache.Get(key)
 	if !ok {
-		var dbdata []UserProperties
-		if err = amdb.SelectContext(ctx, &dbdata, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
+		var prop UserProperties
+		if err = amdb.GetContext(ctx, &prop, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
 			return nil, err
 		}
-		if len(dbdata) == 0 {
-			return nil, nil
-		}
-		if len(dbdata) > 1 {
-			return nil, fmt.Errorf("AmGetUserProperty(%d): too many responses(%d)", uid, len(dbdata))
-		}
-		rc = &(dbdata[0])
+		rc = &prop
 		userPropCache.Add(key, rc)
 	}
 	return rc.(*UserProperties), nil

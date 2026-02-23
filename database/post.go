@@ -236,17 +236,17 @@ func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, comm *Communi
 
 // Text returns the text associated with a post.
 func (p *PostHeader) Text(ctx context.Context) (string, error) {
-	var dbdata []PostData
-	if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM postdata WHERE postid = ?", p.PostId); err != nil {
+	var pd PostData
+	if err := amdb.GetContext(ctx, &pd, "SELECT * FROM postdata WHERE postid = ?", p.PostId); err != nil {
+		if err == sql.ErrNoRows {
+			return "", ErrNoPostData
+		}
 		return "", err
 	}
-	if len(dbdata) > 1 {
-		return "", fmt.Errorf("too many data records (%d) for post #%d", len(dbdata), p.PostId)
-	}
-	if len(dbdata) == 0 || dbdata[0].Data == nil {
+	if pd.Data == nil {
 		return "", ErrNoPostData
 	}
-	return *dbdata[0].Data, nil
+	return *pd.Data, nil
 }
 
 // Link returns a link string to this post.
@@ -514,17 +514,11 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, comm *C
  *     Standard Go error status.
  */
 func AmGetPost(ctx context.Context, postId int64) (*PostHeader, error) {
-	var dbdata []PostHeader
-	if err := amdb.SelectContext(ctx, &dbdata, "SELECT * FROM posts WHERE postid = ?", postId); err != nil {
+	var pd PostHeader
+	if err := amdb.GetContext(ctx, &pd, "SELECT * FROM posts WHERE postid = ?", postId); err != nil {
 		return nil, err
 	}
-	if len(dbdata) == 0 {
-		return nil, errors.New("post not found")
-	}
-	if len(dbdata) > 1 {
-		return nil, fmt.Errorf("AmGetPost: too many entries (%d) for post ID %d", len(dbdata), postId)
-	}
-	return &(dbdata[0]), nil
+	return &pd, nil
 }
 
 /* AmGetPostRange gets a range of posts from a topic by post numbers.
@@ -580,17 +574,11 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	}
 
 	// Read back the post header.
-	var dbdata []PostHeader
-	if err := tx.SelectContext(ctx, &dbdata, "SELECT * FROM posts WHERE postid = ?", xid); err != nil {
+	var pd PostHeader
+	if err := tx.GetContext(ctx, &pd, "SELECT * FROM posts WHERE postid = ?", xid); err != nil {
 		return nil, err
 	}
-	if len(dbdata) == 0 {
-		return nil, errors.New("AmNewPost: new post not found")
-	}
-	if len(dbdata) > 1 {
-		return nil, fmt.Errorf("AmNewPost: too many entries (%d) for post ID %d", len(dbdata), xid)
-	}
-	hdr := &(dbdata[0])
+	hdr := &pd
 
 	// Add the post data.
 	_, err = tx.ExecContext(ctx, "INSERT INTO postdata (postid, data) VALUES (?, ?)", hdr.PostId, post)
