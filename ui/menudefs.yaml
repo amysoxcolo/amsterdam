@@ -53,7 +53,7 @@ menudefs:
         link: "/TODO/sysadmin/import"
         permission: "Global.SysAdminAccess"
   - id: "communityadmin"
-    title: "Community Administration"
+    title: "Community Administration:"
     subtitle: "[CNAME]"
     permSet: "community"
     warning: >
@@ -64,7 +64,7 @@ menudefs:
         link: "/comm/[CID]/admin/profile"
         permission: "Community.Write"
       - text: "Set Community Category"
-        link: "/TODO/comm/[CID]/admin/category"
+        link: "/comm/[CID]/admin/category"
         permission: "Community.Write"
         ifdef: "USECAT"
       - text: "Set Community Services"

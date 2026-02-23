@@ -422,6 +422,63 @@ func CommunityAudit(ctxt ui.AmContext) (string, any) {
 	return "framed", "audit.jet"
 }
 
+/* CommunityCategory handles setting the community category.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func CommunityCategory(ctxt ui.AmContext) (string, any) {
+	if ctxt.GlobalFlags().Get(database.GlobalFlagNoCategories) {
+		return "error", "This instance of Amsterdam does not use the categorization system."
+	}
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
+		return "error", ENOACCESS
+	}
+
+	if setId := ctxt.QueryParamInt("set", -1); setId >= 0 {
+		err := comm.SetCategory(ctxt.Ctx(), int32(setId), ctxt.CurrentUser(), ctxt.RemoteIP())
+		if err != nil {
+			return "error", err
+		}
+		return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias)
+	}
+
+	currentCat, err := database.AmGetCategory(ctxt.Ctx(), comm.CategoryId)
+	if err != nil {
+		return "error", err
+	}
+
+	displayId := ctxt.QueryParamInt("d", int(comm.CategoryId))
+	var newCat []*database.Category
+	if displayId >= 0 {
+		newCat, err = database.AmGetCategoryHierarchy(ctxt.Ctx(), int32(displayId))
+		if err != nil {
+			return "error", err
+		}
+	} else {
+		newCat = make([]*database.Category, 0)
+	}
+
+	subCats, err := database.AmGetSubCategories(ctxt.Ctx(), int32(displayId))
+	if err != nil {
+		return "error", err
+	}
+
+	ctxt.VarMap().Set("commName", comm.Name)
+	ctxt.VarMap().Set("oldCat", currentCat)
+	ctxt.VarMap().Set("newCat", newCat)
+	ctxt.VarMap().Set("newCatId", displayId)
+	ctxt.VarMap().Set("subCats", subCats)
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/admin", comm.Alias))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/admin/category", comm.Alias))
+	ctxt.SetFrameTitle("Set Community Category")
+	return "framed", "comm_category.jet"
+}
+
 /* CreateCommunityForm renders the form for creating a new community.
  * Parameters:
  *     ctxt - The AmContext for the request.

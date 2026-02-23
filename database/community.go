@@ -461,6 +461,20 @@ func (c *Community) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 	return err
 }
 
+// SetCategory sets the community's category ID.
+func (c *Community) SetCategory(ctx context.Context, catId int32, u *User, ipaddr string) error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	_, err := amdb.ExecContext(ctx, "UPDATE communities SET catid = ? WHERE commid = ?", catId, c.Id)
+	if err == nil {
+		if catId != c.CategoryId {
+			AmStoreAudit(AmNewCommAudit(AuditCommunityCategory, u.Uid, c.Id, ipaddr, fmt.Sprintf("catid=%d", catId)))
+		}
+		c.CategoryId = catId
+	}
+	return err
+}
+
 // SetProfileData sets all the "settable" profile data
 func (c *Community) SetProfileData(ctx context.Context, name string, alias string, synopsis *string, rules *string, language *string,
 	joinkey *string, membersonly bool, hideDirectory bool, hideSearch bool, read_lvl uint16, write_lvl uint16,

@@ -143,11 +143,8 @@ func AmGetCategoryHierarchy(ctx context.Context, catid int32) ([]*Category, erro
 		p = c.Parent
 	}
 	// reverse the array for return
-	rc := make([]*Category, 0, len(ia))
-	for i := range ia {
-		rc = append(rc, ia[len(ia)-(i+1)])
-	}
-	return rc, nil
+	slices.Reverse(ia)
+	return ia, nil
 }
 
 /* AmGetSubCategories returns a list of all subcategories of the given category ID.

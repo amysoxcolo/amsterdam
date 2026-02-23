@@ -1,6 +1,6 @@
 {*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,9 +9,13 @@
  <div class="p-4">
     <!-- Page Title -->
     <div class="mb-6">
-        <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ menu.Title }}</h1>
         {{ if menu.Subtitle != "" }}
-            <span class="text-blue-800 text-2xl font-bold ml-2">{{ menu.Subtitle }}</span>
+            <div class="flex items-baseline gap-3 mb-2">
+                <h1 class="text-blue-800 text-4xl font-bold">{{ menu.Title }}</h1>
+                <h2 class="text-blue-800 text-2xl font-bold">{{ menu.Subtitle }}</h2>
+            </div>
+        {{ else }}
+            <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ menu.Title }}</h1>
         {{ end }}
         <hr class="border-2 border-gray-400 w-4/5 mb-4">
     </div>

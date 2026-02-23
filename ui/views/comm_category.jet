@@ -1,0 +1,86 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Set Community Category:</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">{{ commName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-6">
+        <a href="{{ backLink }}"
+            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors">
+            Cancel
+        </a>
+    </div>
+
+    <div class="mb-6">
+        <div class="text-sm text-black"><b>Previous community category:</b> {{ oldCat.Name }}</div>
+    </div>
+
+    <div class="mb-6">
+        <div class="text-sm text-black font-bold">Current category:</div>
+        <div class="text-sm text-black">
+            {{ if len(newCat) == 0 }}
+                <span class="text-sm">Top</span>
+            {{ else }}
+                <span class="text-sm font-bold"><a class="text-blue-700 hover:text-blue-900" href="{{ selfLink }}?d=-1">Top</a>:</span>
+                {{ range i, c := newCat }}
+                    {{ if i == (len(newCat) - 1) }}
+                        <span class="text-sm">{{ c.Name }}</span>
+                    {{ else }}
+                        <span class="text-sm font-bold"><a class="text-blue-700 hover:text-blue-900" href="{{ selfLink }}?d={{ c.CatId }}">{{ c.Name }}</a>:</span>
+                    {{ end }}
+                {{ end }}
+                {{ if oldCat.CatId != newCatId }}
+                    <span class="text-lg"><a href="{{ selfLink }}?set={{ newCatId }}" title="Set Category">*️⃣</a></span>
+                {{ end }}
+            {{ end }}
+        </div>
+    </div>
+
+    <div class="mb-6">
+        <div class="text-sm text-black font-bold">Subcategories:</div>
+        {{ if len(subCats) == 0 }}
+            <div class="text-sm text-black italic">(None)</div>
+        {{ else }}
+            <table class="border-none">
+                <tbody>
+                    {{ range i, c := subCats }}
+                        <tr>
+                            <td class="px-2 py-1">
+                                <span class="text-sm pt-0.5">🟣</span>
+                                <a class="text-blue-700 hover:text-blue-900 font-bold" href="{{ selfLink }}?d={{ c.CatId }}">{{ c.Name }}</a>
+                            </td>
+                            <td class="px-2 py-1">
+                                {{ if c.CatId != oldCat.CatId }}
+                                    <span class="text-lg"><a href="{{ selfLink }}?set={{ c.CatId }}" title="Set Category">*️⃣</a></span>
+                                {{ else }}
+                                    &nbsp;
+                                {{ end }}
+                            </td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        {{ end }}
+    </div>
+
+    <!-- Information Note -->
+    <div class="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+        <p class="text-base text-gray-700 font-bold">Changing the Community's Category:</p>
+        <p class="text-sm text-gray-700">Click on a subcategory name to make that category the currently-displayed one.</p>
+        <p class="text-sm text-gray-700">Click on a *️⃣ icon to set that category as the community's new category and return to the <b>Community Administration</b> menu.</p>
+    </div>
+
+</div>

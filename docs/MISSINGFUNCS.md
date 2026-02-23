@@ -24,7 +24,7 @@ _(italicized items can be deferred)_
   - ~~Create New~~
 - ~~Conferences List honor "hide in list" flag~~
 - Community Admin Menu:
-  - Set Community Category
+  - ~~Set Community Category~~
   - Membership Control
   - E-Mail to All Members
   - ~~Display Audit Records~~
