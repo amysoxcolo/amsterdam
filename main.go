@@ -124,6 +124,7 @@ func setupEcho() *echo.Echo {
 	adminGroup.POST("/logo", ui.AmWrap(EditCommunityLogo))
 	adminGroup.Match(GetAndPost, "/audit", ui.AmWrap(CommunityAudit))
 	adminGroup.GET("/category", ui.AmWrap(CommunityCategory))
+	adminGroup.Match(GetAndPost, "/members", ui.AmWrap(CommunityMembers))
 	adminGroup.GET("/massmail", ui.AmWrap(CommunityEmailForm))
 	adminGroup.POST("/massmail", ui.AmWrap(CommunityEmail))
 
@@ -189,6 +190,7 @@ var ampool *util.WorkerPool
 
 // main is Ye Olde Main Function.
 func main() {
+	start := time.Now()
 	// Configure the system.
 	config.SetupConfig()
 	closer, err := database.SetupDb()
@@ -229,6 +231,9 @@ func main() {
 		// Audit the shutdown
 		database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
 	}()
+
+	stime := time.Since(start)
+	log.Infof("Amsterdam startup sequence completed in %v", stime)
 
 	// Start server
 	go func() {

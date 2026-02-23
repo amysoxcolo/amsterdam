@@ -214,10 +214,11 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any) {
 	return "framed", "conf_aliases.jet"
 }
 
-// CMData is the result data passed to the conference members page.
+// CMData is the result data passed to the community or conference members page.
 type CMData struct {
 	User  *database.User
 	Level uint16
+	Lock  bool
 }
 
 /* ConferenceMembers shows the conference members and allows their access levels to be adjusted.

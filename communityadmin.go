@@ -481,6 +481,139 @@ func CommunityCategory(ctxt ui.AmContext) (string, any) {
 	return "framed", "comm_category.jet"
 }
 
+func CommunityMembers(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Write", ctxt.EffectiveLevel()) {
+		return "error", ENOACCESS
+	}
+
+	// Set the first batch of page variables.
+	hostRole := database.AmRole("Community.Host")
+	ctxt.VarMap().Set("commName", comm.Name)
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/admin", comm.Alias))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/admin/members", comm.Alias))
+	ctxt.VarMap().Set("roleList", database.AmRoleList("Community.Userlevels"))
+	ctxt.VarMap().Set("hostRole", hostRole)
+	ctxt.SetFrameTitle(fmt.Sprintf("Membership in Community: %s", comm.Name))
+
+	// Get the search parameter values and adjust them.
+	mode := "comm"
+	field := "name"
+	oper := "st"
+	term := ""
+	offset := 0
+	if ctxt.Verb() == "POST" {
+		mode = ctxt.FormField("mode")
+		field = ctxt.FormField("field")
+		oper = ctxt.FormField("oper")
+		term = ctxt.FormField("term")
+		var e1 error
+		offset, e1 = ctxt.FormFieldInt("ofs")
+		if e1 != nil {
+			offset = 0
+		}
+	}
+	maxPage := ctxt.Globals().MaxSearchPage
+
+	// Adjust the offset based on the page buttons.
+	if ctxt.FormFieldIsSet("prev") {
+		offset = max(0, offset-int(maxPage))
+	} else if ctxt.FormFieldIsSet("next") {
+		offset += int(maxPage)
+	}
+
+	// Write the search parameters back to the page variables.
+	ctxt.VarMap().Set("mode", mode)
+	ctxt.VarMap().Set("field", field)
+	ctxt.VarMap().Set("oper", oper)
+	ctxt.VarMap().Set("term", term)
+	ctxt.VarMap().Set("offset", offset)
+	ctxt.VarMap().Set("max", maxPage)
+
+	if ctxt.FormFieldIsSet("update") {
+		// Parse out the list of valid UIDs.
+		uids := util.Map(strings.Split(ctxt.FormField("validUids"), "|"), func(in string) int32 {
+			rc, err := strconv.Atoi(in)
+			if err != nil {
+				return -1
+			}
+			return int32(rc)
+		})
+		for _, uid := range uids {
+			if uid > 0 {
+				// Get old and new access levels from the form.
+				tmp, err := ctxt.FormFieldInt(fmt.Sprintf("old_%d", uid))
+				if err == nil {
+					oldLevel := uint16(tmp)
+					if oldLevel == hostRole.Level() {
+						tmp = int(oldLevel)
+					} else {
+						tmp, err = ctxt.FormFieldInt(fmt.Sprintf("new_%d", uid))
+					}
+					if err == nil {
+						newLevel := uint16(tmp)
+						oldLock := ctxt.FormField(fmt.Sprintf("oldlock_%d", uid)) == "1"
+						newLock := ctxt.FormField(fmt.Sprintf("lock_%d", uid)) == "Y"
+						if (oldLevel != newLevel) || (oldLock != newLock) {
+							// Update the level for this user.
+							var u *database.User
+							u, err = database.AmGetUser(ctxt.Ctx(), uid)
+							if err == nil {
+								err = comm.SetMembership(ctxt.Ctx(), u, newLevel, newLock, ctxt.CurrentUserId(), ctxt.RemoteIP())
+							}
+						}
+					}
+				}
+				if err != nil {
+					return "error", err
+				}
+			}
+		}
+		ctxt.VarMap().Set("updated", true)
+	}
+
+	// Generate the result list.
+	total := 0
+	var err error
+	var userlist []*database.User
+	switch mode {
+	case "comm":
+		userlist, total, err = comm.ListMembers(ctxt.Ctx(), database.ListMembersFieldNone, database.ListMembersOperNone, "", offset, int(maxPage), false)
+	case "user":
+		userlist, total, err = database.AmSearchUsers(ctxt.Ctx(), SearchUserFieldMap[field], SearchUserOperMap[oper], term, offset, int(maxPage))
+	}
+	if err != nil {
+		return "error", err
+	}
+	mr := make([]CMData, len(userlist))
+	for i := range userlist {
+		mr[i].User = userlist[i]
+		var mbr bool
+		mbr, mr[i].Lock, mr[i].Level, err = comm.Membership(ctxt.Ctx(), userlist[i])
+		if err != nil {
+			return "error", err
+		}
+		if !mbr {
+			mr[i].Level = 0
+			mr[i].Lock = false
+		}
+	}
+
+	// Set the last few variables and return.
+	ctxt.VarMap().Set("resultList", mr)
+	ctxt.VarMap().Set("total", total)
+	ctxt.VarMap().Set("validUids", strings.Join(util.Map(mr, func(cd CMData) string {
+		return fmt.Sprintf("%d", cd.User.Uid)
+	}), "|"))
+	if offset > 0 {
+		ctxt.VarMap().Set("showPrev", true)
+	}
+	if (offset + len(mr)) < total {
+		ctxt.VarMap().Set("showNext", true)
+	}
+	return "framed", "comm_members.jet"
+}
+
 /* CommunityEmailForm displays the form for sending mass mail to the community.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -503,6 +636,14 @@ func CommunityEmailForm(ctxt ui.AmContext) (string, any) {
 	return "framed", "comm_email.jet"
 }
 
+/* CommunityEmail sends mass mail to the community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
 func CommunityEmail(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	if !comm.TestPermission("Community.MassMail", ctxt.EffectiveLevel()) {

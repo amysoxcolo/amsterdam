@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/labstack/gommon/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -239,7 +240,11 @@ func (r *CfgRoleList) FindForLevel(level uint16) Role {
  *     The specified role.
  */
 func AmRole(id string) Role {
-	return securityRoot.roleMap[id]
+	rc, ok := securityRoot.roleMap[id]
+	if !ok {
+		log.Errorf("AmRole('%s') - role not found!", id)
+	}
+	return rc
 }
 
 /* AmDefaultRole returns a Role given a default ID.
@@ -249,7 +254,12 @@ func AmRole(id string) Role {
  *     The specified role.
  */
 func AmDefaultRole(id string) Role {
-	return securityRoot.defaultsMap[id].roleptr
+	dr, ok := securityRoot.defaultsMap[id]
+	if !ok {
+		log.Errorf("AmDefaultRole('%s') - default role not found!", id)
+		return nil
+	}
+	return dr.roleptr
 }
 
 /* AmRoleList returns a RoleList given a list ID.
@@ -259,7 +269,11 @@ func AmDefaultRole(id string) Role {
  *     The specified role list.
  */
 func AmRoleList(id string) RoleList {
-	return securityRoot.listsMap[id]
+	rc, ok := securityRoot.listsMap[id]
+	if !ok {
+		log.Errorf("AmRoleList('%s') - role list not found!", id)
+	}
+	return rc
 }
 
 /* AmTestPermission tests a specified access level to see if it satisfies the given permission.
@@ -270,12 +284,22 @@ func AmRoleList(id string) RoleList {
  *     true if the permission test is satisfied, false if not.
  */
 func AmTestPermission(id string, level uint16) bool {
-	return securityRoot.permsMap[id].level <= level
+	perm, ok := securityRoot.permsMap[id]
+	if !ok {
+		log.Errorf("AmTestPermission('%s') - permission not found!", id)
+		return false
+	}
+	return perm.level <= level
 }
 
 // AmPermissionLevel returns a level value for a permission.
 func AmPermissionLevel(id string) uint16 {
-	return securityRoot.permsMap[id].level
+	perm, ok := securityRoot.permsMap[id]
+	if !ok {
+		log.Errorf("AmPermissionLevel('%s') - permission not found!", id)
+		return 0
+	}
+	return perm.level
 }
 
 /* AmCombinePermissionRole combines a permission and a role into a single permission level.
@@ -286,10 +310,18 @@ func AmPermissionLevel(id string) uint16 {
  *     The combined permission level.
  */
 func AmCombinePermissionRole(perm string, role string) uint16 {
-	p1 := securityRoot.permsMap[perm].level
-	p2 := securityRoot.roleMap[role].level
-	if p1 > p2 {
-		return p1
+	pperm, ok := securityRoot.permsMap[perm]
+	if !ok {
+		log.Errorf("AmCombinePermissionRole('%s', '%s') - permission not found!", perm, role)
+		return 0
 	}
-	return p2
+	prole, ok := securityRoot.roleMap[role]
+	if !ok {
+		log.Errorf("AmCombinePermissionRole('%s', '%s') - role not found!", perm, role)
+		return 0
+	}
+	if pperm.level > prole.level {
+		return pperm.level
+	}
+	return prole.level
 }

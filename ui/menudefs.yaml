@@ -72,7 +72,7 @@ menudefs:
         permission: "Community.Write"
         disabled: true
       - text: "Membership Control"
-        link: "/TODO/comm/[CID]/admin/members"
+        link: "/comm/[CID]/admin/members"
         permission: "Community.ShowAdmin"
       - text: "E-Mail to All Members"
         link: "/comm/[CID]/admin/massmail"
