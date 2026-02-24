@@ -1003,7 +1003,7 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
 		return rc.(*Conference), nil
 	}
 	var conf Conference
-	err := amdb.GetContext(ctx, &conf, "SELECT * from confs where confid = ?")
+	err := amdb.GetContext(ctx, &conf, "SELECT * from confs where confid = ?", id)
 	switch err {
 	case nil:
 		conferenceCache.Add(id, &conf)
