@@ -23,14 +23,12 @@ fields:
   - type: "password"
     name: "pass1"
     caption: "Password"
-    required: true
     size: 32
     maxlength: 128
   - type: "password"
     name: "pass2"
     caption: "Password"
     subcaption: "(retype)"
-    required: true
     size: 32
     maxlength: 128
   - type: "text"

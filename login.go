@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,6 +35,12 @@ func LoginForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
+	if target == "" {
 		target = "/"
 	}
 
@@ -63,6 +69,12 @@ func Login(ctxt ui.AmContext) (string, any) {
 	if err == nil {
 		dlg.LoadFromForm(ctxt)
 		target := dlg.Field("tgt").Value
+		if target == "" {
+			v := ctxt.GetSession("lastKnownGood")
+			if v != nil {
+				target = v.(string)
+			}
+		}
 		if target == "" {
 			target = "/"
 		}
@@ -167,6 +179,12 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
+	if target == "" {
 		target = "/"
 	}
 
@@ -223,6 +241,12 @@ func VerifyEMail(ctxt ui.AmContext) (string, any) {
 		dlg.LoadFromForm(ctxt)
 		target := dlg.Field("tgt").Value
 		if target == "" {
+			v := ctxt.GetSession("lastKnownGood")
+			if v != nil {
+				target = v.(string)
+			}
+		}
+		if target == "" {
 			target = "/"
 		}
 
@@ -277,6 +301,12 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
+	if target == "" {
 		target = "/"
 	}
 
@@ -302,6 +332,12 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 func NewAccountForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
+	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
 	if target == "" {
 		target = "/"
 	}
@@ -337,6 +373,12 @@ func NewAccount(ctxt ui.AmContext) (string, any) {
 	if err == nil {
 		dlg.LoadFromForm(ctxt)
 		target := dlg.Field("tgt").Value
+		if target == "" {
+			v := ctxt.GetSession("lastKnownGood")
+			if v != nil {
+				target = v.(string)
+			}
+		}
 		if target == "" {
 			target = "/"
 		}

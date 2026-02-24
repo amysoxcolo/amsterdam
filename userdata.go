@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,6 +45,12 @@ func userPhotoURL(ci *database.ContactInfo) string {
 func EditProfileForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
+	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
 	if target == "" {
 		target = "/"
 	}
@@ -125,6 +131,12 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 	if err == nil {
 		dlg.LoadFromForm(ctxt)
 		target := dlg.Field("tgt").Value
+		if target == "" {
+			v := ctxt.GetSession("lastKnownGood")
+			if v != nil {
+				target = v.(string)
+			}
+		}
 		if target == "" {
 			target = "/"
 		}
@@ -229,6 +241,12 @@ func ProfilePhotoForm(ctxt ui.AmContext) (string, any) {
 	// Get target URI.
 	target := ctxt.Parameter("tgt")
 	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
+	if target == "" {
 		target = "/"
 	}
 	u := ctxt.CurrentUser()
@@ -264,6 +282,12 @@ func ProfilePhoto(ctxt ui.AmContext) (string, any) {
 		return "error", err
 	}
 	target := ctxt.FormField("tgt")
+	if target == "" {
+		v := ctxt.GetSession("lastKnownGood")
+		if v != nil {
+			target = v.(string)
+		}
+	}
 	if target == "" {
 		target = "/"
 	}

@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,6 +81,27 @@ func AmServeImage(c echo.Context) error {
 					return c.Blob(http.StatusOK, img.MimeType, img.Data)
 				}
 			}
+		}
+	}
+	if err == nil {
+		err = fmt.Errorf("image not found: %s", c.Request().URL.Path)
+	}
+	return c.String(http.StatusNotFound, err.Error())
+}
+
+/* AmServeVeniceCompatibleImage serves an image from the image store under a Venice-compatible URI.
+ * Parameters:
+ *     c - The Echo context for this request.
+ * Returns:
+ *     Standard Go error return.
+ */
+func AmServeVeniceCompatibleImage(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err == nil {
+		var img *database.ImageStore
+		img, err = database.AmLoadImage(c.Request().Context(), int32(id))
+		if err == nil {
+			return c.Blob(http.StatusOK, img.MimeType, img.Data)
 		}
 	}
 	if err == nil {

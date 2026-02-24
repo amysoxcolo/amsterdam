@@ -54,6 +54,9 @@ func setupEcho() *echo.Echo {
 	e.RouteNotFound("/*", ui.AmWrap(AmNotFoundHandler), uiset...)
 	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage), uiset...)
 	e.GET("/img/*", ui.AmServeImage)
+	if config.GlobalConfig.Rendering.VeniceCompatibleImageURLs {
+		e.GET("/venice/imagedata/:id", ui.AmServeVeniceCompatibleImage)
+	}
 	e.GET("/static/*", ui.AmStaticFileHandler())
 	e.GET("/go/:postlink", ui.AmWrap(JumpToShortcut))
 

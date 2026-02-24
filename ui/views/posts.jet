@@ -110,6 +110,7 @@
                 {{ post_overrideLink := "" }}
                 {{ post_attach := nil }}
                 {{ post_bozo := false }}
+                {{ post_profile_pic := "" }}
                 {{ range i, p := posts }}
                     {{ post_cur = p }}
                     {{ post_userName = post_getUserName(p, .) }}
@@ -118,6 +119,9 @@
                     {{ post_overrideLink = post_getOverrideLink(p, post_topicPermalink) }}
                     {{ post_attach = post_getAttachmentInfo(p, .) }}
                     {{ post_bozo = post_isBozo(p, post_topic, .) }}
+                    {{ if showPics }}
+                        {{ post_profile_pic = post_profileImage(p, .) }}
+                    {{ end }}
                     {{ include "singlepost.jet" }}
                     {{ if advancedControls }}
                         <div class="flex flex-col gap-2">

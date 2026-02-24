@@ -90,6 +90,7 @@ type AmConfig struct {
 		CountryList struct {
 			Prioritize string `yaml:"prioritize"`
 		} `yaml:"countryList"`
+		VeniceCompatibleImageURLs bool `yaml:"veniceCompatibleImageURLs"`
 	} `yaml:"rendering"`
 	Posting struct {
 		ExternalDictionary string `yaml:"externalDictionary"`
@@ -198,6 +199,17 @@ func overlayInt(loaded int, defaulted int) int {
 	return defaulted
 }
 
+/* overlayOptionFlag is a helper that takes a loaded or defaulted option flag and returns it.
+ * Parameters:
+ *     loaded - The option flag loaded from a configuration file.
+ *     defaulted - The default value of this option flag.
+ * Returns:
+ *     Combined value.
+ */
+func overlayOptionFlag(loaded, defaulted bool) bool {
+	return loaded || defaulted
+}
+
 /* overlayConfig takes two configuration structures and overlays them to create the third.
  * Parameters:
  *     dest - Points to the destination copnfiguration structure.
@@ -230,6 +242,7 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)
 	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
 	dest.Rendering.CountryList.Prioritize = overlayString(loaded.Rendering.CountryList.Prioritize, defaults.Rendering.CountryList.Prioritize)
+	dest.Rendering.VeniceCompatibleImageURLs = overlayOptionFlag(loaded.Rendering.VeniceCompatibleImageURLs, defaults.Rendering.VeniceCompatibleImageURLs)
 	dest.Posting.ExternalDictionary = overlayString(loaded.Posting.ExternalDictionary, defaults.Posting.ExternalDictionary)
 	dest.Posting.Uploads.MaxSize = overlayString(loaded.Posting.Uploads.MaxSize, defaults.Posting.Uploads.MaxSize)
 	dest.Posting.Uploads.NoCompressTypes = overlayStringArray(loaded.Posting.Uploads.NoCompressTypes, defaults.Posting.Uploads.NoCompressTypes)

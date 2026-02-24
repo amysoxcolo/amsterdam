@@ -20,7 +20,8 @@
             <!-- Left Column: Photo and Metadata -->
             <div class="flex-shrink-0 w-40">
                 <div class="border-2 border-gray-300 rounded mb-4">
-                    <img src="{{ photoURL }}" alt="{{ username }}'s photo" class="w-full h-auto">
+                    <img src="{{ photoURL }}" alt="{{ username }}'s photo" class="w-full h-auto rounded-3xl border-2 border-gray-300"
+                        onerror="this.src='/img/builtin/no-user.png'">
                 </div>
                 <div class="text-xs text-gray-700 space-y-2">
                     <div>

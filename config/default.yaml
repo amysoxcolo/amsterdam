@@ -43,6 +43,7 @@ rendering:
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
   countryList:
     prioritize: US
+  veniceCompatibleImageURLs: false
 posting:
   externalDictionary: ""
   uploads:

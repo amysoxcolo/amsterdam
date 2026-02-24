@@ -436,6 +436,23 @@ func templateBozo(args jet.Arguments) reflect.Value {
 	return reflect.ValueOf(rc)
 }
 
+// templateProfileImage returns the user profile image associated with this post.
+func templateProfileImage(args jet.Arguments) reflect.Value {
+	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
+	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	rc := "/img/builtin/no-user.png"
+	user, err := post.Creator(ctxt.Ctx())
+	if err == nil {
+		ci, err := user.ContactInfo(ctxt.Ctx())
+		if err == nil {
+			if ci.PhotoURL != nil {
+				rc = *ci.PhotoURL
+			}
+		}
+	}
+	return reflect.ValueOf(rc)
+}
+
 /* ReadPosts displays posts in a topic.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -555,6 +572,16 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("pseud", pseud)
 
+	// Get property flags from conference and user.
+	cflags, err := conf.Flags(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+	uflags, err := ctxt.CurrentUser().Flags(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+
 	// Set permission and status flags.
 	confHidePerm := conf.TestPermission("Conference.Hide", myLevel)
 	ctxt.VarMap().Set("canFreeze", confHidePerm)
@@ -568,6 +595,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	confPostPerm := conf.TestPermission("Conference.Post", myLevel)
 	ctxt.VarMap().Set("canPost", (!(topic.Frozen || topic.Archived) || confHidePerm) && confPostPerm)
 	ctxt.VarMap().Set("showFrozenArchiveMessages", confPostPerm)
+	ctxt.VarMap().Set("showPics", cflags.Get(database.ConferenceFlagPicturesInPosts) && uflags.Get(database.UserFlagPicturesInPosts))
 
 	// Set advanced controls.
 	advancedControls := ctxt.HasParameter("ac") && (len(posts) == 1)
@@ -622,6 +650,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 	ctxt.VarMap().SetFunc("post_getAttachmentInfo", templateAttachmentInfo)
 	ctxt.VarMap().SetFunc("post_isBozo", templateBozo)
+	ctxt.VarMap().SetFunc("post_profileImage", templateProfileImage)
 	ctxt.VarMap().Set("post_stem", fmt.Sprintf("%s/r/%d", urlStem, topic.Number))
 	ctxt.VarMap().Set("post_max", topic.TopMessage)
 	ctxt.VarMap().Set("posts", posts)
