@@ -7,7 +7,7 @@ _(italicized items can be deferred)_
 - _Error handling: shift titles and templates for different error codes_
 - ~~Find Posts~~
 - ~~Services mechanism: Conference vtable~~
-- ~~User creation: copy conference hotlists ~~
+- ~~User creation: copy conference hotlists~~
 - _Calendar (top menu link)_
 - _Chat (top menu link)_
 - _Documentation (top menu link)_
