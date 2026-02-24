@@ -931,6 +931,25 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 		return nil, err
 	}
 
+	// Set the "pictures in posts" flag default from the global flag.
+	g, err := AmGlobals(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fglob, err := g.Flags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fcomm, err := comm.Flags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fcomm.Set(CommunityFlagPicturesInPosts, fglob.Get(GlobalFlagPicturesInPosts))
+	err = comm.SaveFlags(ctx, fcomm)
+	if err != nil {
+		return nil, err
+	}
+
 	// operation was a success - add an audit record
 	AmStoreAudit(AmNewCommAudit(AuditCommunityCreate, hostUid, comm.Id, remoteIP, fmt.Sprintf("id=%d", comm.Id),
 		fmt.Sprintf("name=%s", comm.Name), fmt.Sprintf("alias=%s", comm.Alias)))

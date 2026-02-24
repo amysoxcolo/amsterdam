@@ -1304,8 +1304,25 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 		return nil, err
 	}
 
-	// Add the new conference to the cache, and create our audit record.
+	// Add the new conference to the cache.
 	conferenceCache.Add(rc.ConfId, &rc)
+
+	// Set the "pictures in posts" flag for the conference from the community default.
+	fcomm, err := comm.Flags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fconf, err := rc.Flags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fconf.Set(ConferenceFlagPicturesInPosts, fcomm.Get(CommunityFlagPicturesInPosts))
+	err = rc.SaveFlags(ctx, fconf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the audit record.
 	AmStoreAudit(AmNewCommAudit(AuditConferenceCreate, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", rc.ConfId), fmt.Sprintf("name=%s", name), fmt.Sprintf("alias=%s", alias)))
 	return &rc, nil
 }
