@@ -32,6 +32,9 @@ import (
 	"golang.org/x/text/message"
 )
 
+// ErrNoUser is an error returned if the user is not found in the database.
+var ErrNoUser error = errors.New("no such user")
+
 // UserPrefs represents the user's preferences in a table (one row per user).
 type UserPrefs struct {
 	Uid        int32  `db:"uid"`      // user ID
@@ -434,19 +437,21 @@ func (u *User) SetSecurityData(ctx context.Context, baseLevel uint16, lockout, v
  *     Standard Go error status
  */
 func AmGetUser(ctx context.Context, uid int32) (*User, error) {
-	var err error = nil
 	getUserMutex.Lock()
 	defer getUserMutex.Unlock()
-	rc, ok := userCache.Get(uid)
-	if !ok {
-		var user User
-		if err = amdb.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid); err != nil {
-			return nil, err
-		}
-		rc = &user
-		userCache.Add(uid, rc)
+	if rc, ok := userCache.Get(uid); ok {
+		return rc.(*User), nil
 	}
-	return rc.(*User), err
+	var user User
+	err := amdb.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid)
+	switch err {
+	case nil:
+		userCache.Add(uid, &user)
+		return &user, nil
+	case sql.ErrNoRows:
+		return nil, ErrNoUser
+	}
+	return nil, err
 }
 
 /* AmGetUserTx returns a reference to the specified user inside a transaction.
@@ -459,19 +464,21 @@ func AmGetUser(ctx context.Context, uid int32) (*User, error) {
  *     Standard Go error status
  */
 func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
-	var err error = nil
 	getUserMutex.Lock()
 	defer getUserMutex.Unlock()
-	rc, ok := userCache.Get(uid)
-	if !ok {
-		var user User
-		if err = tx.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid); err != nil {
-			return nil, err
-		}
-		rc = &user
-		userCache.Add(uid, rc)
+	if rc, ok := userCache.Get(uid); ok {
+		return rc.(*User), nil
 	}
-	return rc.(*User), err
+	var user User
+	err := tx.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid)
+	switch err {
+	case nil:
+		userCache.Add(uid, &user)
+		return &user, nil
+	case sql.ErrNoRows:
+		return nil, ErrNoUser
+	}
+	return nil, err
 }
 
 /* AmGetUserByName returns a reference to the specified user.
@@ -491,25 +498,26 @@ func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, erro
 	} else {
 		err = amdb.GetContext(ctx, &user, "SELECT * FROM users WHERE username = ?", name)
 	}
-	if err != nil {
-		return nil, err
+	switch err {
+	case nil:
+		getUserMutex.Lock()
+		defer getUserMutex.Unlock()
+		if rc, ok := userCache.Get(user.Uid); ok {
+			return rc.(*User), nil
+		} else {
+			userCache.Add(user.Uid, &user)
+		}
+		return &user, nil
+	case sql.ErrNoRows:
+		return nil, ErrNoUser
 	}
-	getUserMutex.Lock()
-	rc, ok := userCache.Get(user.Uid)
-	if !ok {
-		rc = &user
-		userCache.Add(user.Uid, rc)
-	}
-	getUserMutex.Unlock()
-	return rc.(*User), nil
+	return nil, err
 }
 
 // getAnonUserID retrieves the UID of the "anonymous" user from the database.
 func getAnonUserID(ctx context.Context) (int32, error) {
 	if anonUid < 0 {
-		row := amdb.QueryRowContext(ctx, "SELECT uid FROM users WHERE is_anon = 1")
-		err := row.Scan(&anonUid)
-		if err != nil {
+		if err := amdb.GetContext(ctx, &anonUid, "SELECT uid FROM users WHERE is_anon = 1"); err != nil {
 			return -1, err
 		}
 	}
@@ -708,9 +716,8 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	defer rollback()
 
 	// Test if the user name is already taken.
-	row := tx.QueryRowContext(ctx, "SELECT uid FROM users WHERE username = ?", username)
 	var tmpuid int32
-	err := row.Scan(&tmpuid)
+	err := tx.GetContext(ctx, &tmpuid, "SELECT uid FROM users WHERE username = ?", username)
 	if err == nil {
 		log.Warnf("username \"%s\" already exists", username)
 		return nil, errors.New("that user name already exists. Please try again")
@@ -775,20 +782,18 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 
 // internalGetProp is a helper used by the property functions.
 func internalGetProp(ctx context.Context, uid int32, ndx int32) (*UserProperties, error) {
-	var err error = nil
 	key := fmt.Sprintf("%d:%d", uid, ndx)
 	getUserPropMutex.Lock()
 	defer getUserPropMutex.Unlock()
-	rc, ok := userPropCache.Get(key)
-	if !ok {
-		var prop UserProperties
-		if err = amdb.GetContext(ctx, &prop, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
-			return nil, err
-		}
-		rc = &prop
-		userPropCache.Add(key, rc)
+	if rc, ok := userPropCache.Get(key); ok {
+		return rc.(*UserProperties), nil
 	}
-	return rc.(*UserProperties), nil
+	var prop UserProperties
+	if err := amdb.GetContext(ctx, &prop, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
+		return nil, err
+	}
+	userPropCache.Add(key, &prop)
+	return &prop, nil
 }
 
 /* AmGetUserProperty retrieves the value of a user property.
@@ -890,9 +895,8 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 		return nil, -1, errors.New("invalid operator selector")
 	}
 	q := queryPortion.String()
-	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q)
 	var total int
-	err := row.Scan(&total)
+	err := amdb.GetContext(ctx, &total, "SELECT COUNT(*) FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q)
 	if err != nil {
 		return nil, -1, err
 	}

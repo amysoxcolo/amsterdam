@@ -71,9 +71,8 @@ func (p *PostHeader) IsScribbled() bool {
 
 // IsPublished returns true if the post has been published to the front page.
 func (p *PostHeader) IsPublished(ctx context.Context) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM postpublish WHERE postid = ?", p.PostId)
 	ct := 0
-	err := row.Scan(&ct)
+	err := amdb.GetContext(ctx, &ct, "SELECT COUNT(*) FROM postpublish WHERE postid = ?", p.PostId)
 	return ct > 0, err
 }
 
@@ -237,16 +236,17 @@ func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, comm *Communi
 // Text returns the text associated with a post.
 func (p *PostHeader) Text(ctx context.Context) (string, error) {
 	var pd PostData
-	if err := amdb.GetContext(ctx, &pd, "SELECT * FROM postdata WHERE postid = ?", p.PostId); err != nil {
-		if err == sql.ErrNoRows {
+	err := amdb.GetContext(ctx, &pd, "SELECT * FROM postdata WHERE postid = ?", p.PostId)
+	switch err {
+	case nil:
+		if pd.Data == nil {
 			return "", ErrNoPostData
 		}
-		return "", err
-	}
-	if pd.Data == nil {
+		return *pd.Data, nil
+	case sql.ErrNoRows:
 		return "", ErrNoPostData
 	}
-	return *pd.Data, nil
+	return "", err
 }
 
 // Link returns a link string to this post.
@@ -304,9 +304,8 @@ func (p *PostHeader) Scribble(ctx context.Context, u *User, comm *Community, ipa
 	}
 
 	// Reread the scribble date.
-	row := tx.QueryRowContext(ctx, "SELECT scribble_date FROM posts WHERE postid = ?", p.PostId)
 	var newScribbleDate time.Time
-	if err = row.Scan(&newScribbleDate); err != nil {
+	if err = tx.GetContext(ctx, &newScribbleDate, "SELECT scribble_date FROM posts WHERE postid = ?", p.PostId); err != nil {
 		return err
 	}
 
@@ -367,10 +366,9 @@ func (p *PostHeader) Nuke(ctx context.Context, u *User, comm *Community, ipaddr 
 	if _, err = tx.ExecContext(ctx, "UPDATE posts SET num = (num - 1) WHERE topicid = ? AND num > ?", p.TopicId, p.Num); err != nil {
 		return err
 	}
-	row := tx.QueryRowContext(ctx, "SELECT top_message FROM topics WHERE topicid = ?", p.TopicId)
 	// Renumber phase 2 - reset the top message in this topic
 	var topMessage int32
-	if err = row.Scan(&topMessage); err != nil {
+	if err = tx.GetContext(ctx, &topMessage, "SELECT top_message FROM topics WHERE topicid = ?", p.TopicId); err != nil {
 		return err
 	}
 	topMessage--
@@ -400,9 +398,8 @@ func (p *PostHeader) Publish(ctx context.Context, comm *Community, publisher *Us
 	defer rollback()
 
 	// Check if we were already published.
-	row := tx.QueryRowContext(ctx, "SELECT by_uid FROM postpublish WHERE postid = ?", p.PostId)
 	var tmp int32
-	err := row.Scan(&tmp)
+	err := tx.GetContext(ctx, &tmp, "SELECT by_uid FROM postpublish WHERE postid = ?", p.PostId)
 	if err == nil {
 		return errors.New("post already published")
 	} else if err != sql.ErrNoRows {
@@ -459,10 +456,8 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, comm *C
 		return err
 	}
 	// Read back the last update.
-	row := tx.QueryRowContext(ctx, "SELECT lastupdate FROM topics WHERE topicid = ?", target.TopicId)
 	var lastUpdate time.Time
-	err = row.Scan(&lastUpdate)
-	if err != nil {
+	if err = tx.GetContext(ctx, &lastUpdate, "SELECT lastupdate FROM topics WHERE topicid = ?", target.TopicId); err != nil {
 		return err
 	}
 
@@ -574,11 +569,10 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	}
 
 	// Read back the post header.
-	var pd PostHeader
-	if err := tx.GetContext(ctx, &pd, "SELECT * FROM posts WHERE postid = ?", xid); err != nil {
+	var hdr PostHeader
+	if err := tx.GetContext(ctx, &hdr, "SELECT * FROM posts WHERE postid = ?", xid); err != nil {
 		return nil, err
 	}
-	hdr := &pd
 
 	// Add the post data.
 	_, err = tx.ExecContext(ctx, "INSERT INTO postdata (postid, data) VALUES (?, ?)", hdr.PostId, post)
@@ -611,7 +605,7 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
 	AmStoreAudit(AmNewCommAudit(AuditConferencePostMessage, user.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", conf.ConfId),
 		fmt.Sprintf("topic=%d", topic.Number), fmt.Sprintf("post=%d", hdr.PostId), fmt.Sprintf("pseud=%s", *hdr.Pseud)))
 
-	return hdr, nil
+	return &hdr, nil
 }
 
 /* AmGetPublishedPosts gets all posts published to the front page, up to the maximum number configured in the database.
@@ -785,10 +779,10 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 	}
 
 	// Get the count of matching posts.
-	var row *sql.Row
+	var count int
 	switch scope {
 	case "global":
-		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
@@ -796,7 +790,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
 			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, searchTerms)
 	case "community":
-		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
@@ -804,7 +798,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, searchTerms)
 	case "conference":
-		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
@@ -812,7 +806,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms)
 	case "topic":
-		row = amdb.QueryRowContext(ctx, `SELECT COUNT(*)
+		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
@@ -821,8 +815,6 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			AND q.commid = ? AND c.confid = ? AND t.topicid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`,
 			u.Uid, confService, comm.Id, conf.ConfId, topic.TopicId, searchTerms)
 	}
-	var count int
-	err = row.Scan(&count)
 	if err != nil {
 		log.Errorf("AmSearchPosts query 1 error %v", err)
 		return nil, -1, err

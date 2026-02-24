@@ -23,9 +23,8 @@ import (
  *     Standard Go error status.
  */
 func AmIsEmailAddressBanned(ctx context.Context, address string) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT by_uid FROM emailban WHERE address = ?", address)
 	var uid int32
-	err := row.Scan(&uid)
+	err := amdb.GetContext(ctx, &uid, "SELECT by_uid FROM emailban WHERE address = ?", address)
 	switch err {
 	case nil:
 		return true, nil

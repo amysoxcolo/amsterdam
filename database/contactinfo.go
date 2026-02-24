@@ -56,8 +56,7 @@ type ContactInfo struct {
 // lookupCommunityContact looks up the ID of a contact for a community.
 func lookupCommunityContact(ctx context.Context, id int32) (int32, error) {
 	var rc int32 = -1
-	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
-	err := row.Scan(&rc)
+	err := amdb.GetContext(ctx, &rc, "SELECT contactid FROM contacts WHERE owner_commid = ?", id)
 	if err == sql.ErrNoRows {
 		return -1, nil
 	}
@@ -67,8 +66,7 @@ func lookupCommunityContact(ctx context.Context, id int32) (int32, error) {
 // lookupUserContact looks up the ID of a contact for a user.
 func lookupUserContact(ctx context.Context, uid int32) (int32, error) {
 	var rc int32 = -1
-	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
-	err := row.Scan(&rc)
+	err := amdb.GetContext(ctx, &rc, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
 	if err == sql.ErrNoRows {
 		return -1, nil
 	}
@@ -150,9 +148,8 @@ func (ci *ContactInfo) Save(ctx context.Context, changer *User, ipaddr string) (
 	}
 	if !emailChange {
 		// we don't THINK the E-mail address is changing, but we could be wrong...
-		row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
 		var tmpcid int32
-		err := row.Scan(&tmpcid)
+		err := amdb.GetContext(ctx, &tmpcid, "SELECT contactid FROM contacts WHERE contactid = ? AND email = ?", ci.ContactId, ci.Email)
 		if err == sql.ErrNoRows {
 			emailChange = true
 		} else if err != nil {
@@ -185,9 +182,7 @@ func (ci *ContactInfo) Save(ctx context.Context, changer *User, ipaddr string) (
 		contactCache.Add(ci.ContactId, ci)
 	}
 	// Refresh the last update date.
-	row := amdb.QueryRowContext(ctx, "SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId)
-	err := row.Scan(&(ci.LastUpdate))
-	if err != nil {
+	if err := amdb.GetContext(ctx, &(ci.LastUpdate), "SELECT lastupdate FROM contacts WHERE contactid = ?", ci.ContactId); err != nil {
 		return false, err
 	}
 	if ci.OwnerCommId < 0 {
@@ -197,7 +192,7 @@ func (ci *ContactInfo) Save(ctx context.Context, changer *User, ipaddr string) (
 	} else {
 		AmStoreAudit(AmNewCommAudit(AuditCommunityContactInfo, changer.Uid, ci.OwnerCommId, ipaddr, fmt.Sprintf("contactid=%d", ci.ContactId)))
 	}
-	return emailChange, err
+	return emailChange, nil
 }
 
 // Clone makes a copy of the ContactInfo.
@@ -251,11 +246,10 @@ func setupContactsCache() {
 // internalContactInfo retrieves the contact info from the database.
 func internalContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
 	var cinf ContactInfo
-	err := amdb.GetContext(ctx, &cinf, "SELECT * from contacts WHERE contactid = ?", id)
-	if err == nil {
-		return &cinf, nil
+	if err := amdb.GetContext(ctx, &cinf, "SELECT * from contacts WHERE contactid = ?", id); err != nil {
+		return nil, err
 	}
-	return nil, err
+	return &cinf, nil
 }
 
 /* AmGetContactInfo retrieves the contact info for a given identifier.
@@ -292,9 +286,8 @@ func AmGetContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
  *     Standard Go error status.
  */
 func AmGetContactInfoForUser(ctx context.Context, uid int32) (*ContactInfo, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
 	var cid int32
-	err := row.Scan(&cid)
+	err := amdb.GetContext(ctx, &cid, "SELECT contactid FROM contacts WHERE owner_uid = ? AND owner_commid = -1", uid)
 	switch err {
 	case nil:
 		return AmGetContactInfo(ctx, cid)

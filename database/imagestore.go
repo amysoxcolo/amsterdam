@@ -61,8 +61,7 @@ func (img *ImageStore) Save(ctx context.Context) error {
  */
 func AmLoadImage(ctx context.Context, id int32) (*ImageStore, error) {
 	var imgdata ImageStore
-	err := amdb.GetContext(ctx, &imgdata, "SELECT * FROM imagestore WHERE imgid = ?", id)
-	if err != nil {
+	if err := amdb.GetContext(ctx, &imgdata, "SELECT * FROM imagestore WHERE imgid = ?", id); err != nil {
 		return nil, err
 	}
 	return &imgdata, nil
@@ -81,9 +80,8 @@ func AmLoadImage(ctx context.Context, id int32) (*ImageStore, error) {
  */
 func AmStoreImage(ctx context.Context, typecode int16, owner int32, mimetype string, data []byte) (*ImageStore, error) {
 	var img *ImageStore
-	row := amdb.QueryRowContext(ctx, "SELECT imgid FROM imagestore WHERE typecode = ? AND ownerid = ?", typecode, owner)
 	var id int32
-	err := row.Scan(&id)
+	err := amdb.GetContext(ctx, &id, "SELECT imgid FROM imagestore WHERE typecode = ? AND ownerid = ?", typecode, owner)
 	switch err {
 	case nil:
 		img, err = AmLoadImage(ctx, id)

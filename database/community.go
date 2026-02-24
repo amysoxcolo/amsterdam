@@ -28,6 +28,9 @@ import (
 	"golang.org/x/text/language"
 )
 
+// ErrNoCommunity is an error returned for "no community found" errors
+var ErrNoCommunity error = errors.New("no such community")
+
 // Community struct contains the high level data for a community.
 type Community struct {
 	Mutex             sync.RWMutex
@@ -221,18 +224,17 @@ func (c *Community) Membership(ctx context.Context, u *User) (bool, bool, uint16
 
 // MemberCount returns the number of members in the community.
 func (c *Community) MemberCount(ctx context.Context, hidden bool) (int, error) {
-	var row *sql.Row
-	if hidden {
-		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM commmember WHERE commid = ?", c.Id)
-	} else {
-		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM commmember WHERE commid = ? AND hidden = 0", c.Id)
-	}
 	var rc int
-	if err := row.Scan(&rc); err == nil {
-		return rc, nil
+	var err error
+	if hidden {
+		err = amdb.GetContext(ctx, &rc, "SELECT COUNT(*) FROM commmember WHERE commid = ?", c.Id)
 	} else {
-		return -1, err
+		err = amdb.GetContext(ctx, &rc, "SELECT COUNT(*) FROM commmember WHERE commid = ? AND hidden = 0", c.Id)
 	}
+	if err == nil {
+		return rc, nil
+	}
+	return -1, err
 }
 
 /* ListMembers lists or searches for community members matching certain criteria.
@@ -294,12 +296,11 @@ func (c *Community) ListMembers(ctx context.Context, field int, oper int, term s
 		query.WriteString(" AND m.hidden = 0")
 	}
 	q := query.String()
-	row := amdb.QueryRowContext(ctx, `SELECT COUNT(*) FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
-		AND u.contactid = c.contactid`+q, c.Id)
 	var total int
 	var err error
 	var rs *sql.Rows
-	if err = row.Scan(&total); err == nil {
+	if err = amdb.GetContext(ctx, &total, `SELECT COUNT(*) FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
+		AND u.contactid = c.contactid`+q, c.Id); err == nil {
 		if offset > 0 {
 			rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
 				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
@@ -519,8 +520,7 @@ func (c *Community) SetProfileData(ctx context.Context, name string, alias strin
 		c.CreateLevel = create_lvl
 		c.DeleteLevel = delete_lvl
 		c.JoinLevel = join_lvl
-		row := amdb.QueryRowContext(ctx, "SELECT lastupdate FROM communities WHERE commid = ?", c.Id)
-		err2 := row.Scan(&(c.LastUpdate))
+		err2 := amdb.GetContext(ctx, &(c.LastUpdate), "SELECT lastupdate FROM communities WHERE commid = ?", c.Id)
 		if err2 != nil {
 			log.Errorf("SetProfileData scan error: %v", err2)
 		}
@@ -545,9 +545,8 @@ func (c *Community) Touch(ctx context.Context) error {
 	defer c.Mutex.Unlock()
 	_, err := amdb.ExecContext(ctx, "UPDATE communities SET lastaccess = NOW() WHERE commid = ?", c.Id)
 	if err == nil {
-		row := amdb.QueryRowContext(ctx, "SELECT lastaccess FROM communities WHERE commid = ?", c.Id)
 		var na time.Time
-		if err = row.Scan(&na); err == nil {
+		if err = amdb.GetContext(ctx, &na, "SELECT lastaccess FROM communities WHERE commid = ?", c.Id); err == nil {
 			c.LastAccess = &na
 		}
 	}
@@ -603,16 +602,19 @@ func (c *Community) GetMemberEMailAddrs(ctx context.Context) ([]string, error) {
 func AmGetCommunity(ctx context.Context, id int32) (*Community, error) {
 	getCommunityMutex.Lock()
 	defer getCommunityMutex.Unlock()
-	rc, ok := communityCache.Get(id)
-	if !ok {
-		var newcomm Community
-		if err := amdb.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id); err != nil {
-			return nil, err
-		}
-		rc = &newcomm
-		communityCache.Add(id, rc)
+	if rc, ok := communityCache.Get(id); ok {
+		return rc.(*Community), nil
 	}
-	return rc.(*Community), nil
+	var newcomm Community
+	err := amdb.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id)
+	switch err {
+	case nil:
+		communityCache.Add(id, &newcomm)
+		return &newcomm, nil
+	case sql.ErrNoRows:
+		return nil, ErrNoCommunity
+	}
+	return nil, err
 }
 
 /* AmGetCommunityTx returns a reference to the specified community, in a transaction.
@@ -627,16 +629,19 @@ func AmGetCommunity(ctx context.Context, id int32) (*Community, error) {
 func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, error) {
 	getCommunityMutex.Lock()
 	defer getCommunityMutex.Unlock()
-	rc, ok := communityCache.Get(id)
-	if !ok {
-		var newcomm Community
-		if err := tx.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id); err != nil {
-			return nil, err
-		}
-		rc = &newcomm
-		communityCache.Add(id, rc)
+	if rc, ok := communityCache.Get(id); ok {
+		return rc.(*Community), nil
 	}
-	return rc.(*Community), nil
+	var newcomm Community
+	err := tx.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id)
+	switch err {
+	case nil:
+		communityCache.Add(id, &newcomm)
+		return &newcomm, nil
+	case sql.ErrNoRows:
+		return nil, ErrNoCommunity
+	}
+	return nil, err
 }
 
 /* AmGetCommunityByAlias returns a reference to the specified community.
@@ -648,13 +653,11 @@ func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, e
  *     Standard Go error status (nil if community not found)
  */
 func AmGetCommunityByAlias(ctx context.Context, alias string) (*Community, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
 	var cid int32
-	err := row.Scan(&cid)
-	if err == nil {
-		return AmGetCommunity(ctx, cid)
+	if err := amdb.GetContext(ctx, &cid, "SELECT commid FROM communities WHERE alias = ?", alias); err != nil {
+		return nil, err
 	}
-	return nil, err
+	return AmGetCommunity(ctx, cid)
 }
 
 /* AmGetCommunityByAliasTx returns a reference to the specified community, within a transaction.
@@ -667,13 +670,11 @@ func AmGetCommunityByAlias(ctx context.Context, alias string) (*Community, error
  *     Standard Go error status (nil if community not found)
  */
 func AmGetCommunityByAliasTx(ctx context.Context, tx *sqlx.Tx, alias string) (*Community, error) {
-	row := tx.QueryRowContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
 	var cid int32
-	err := row.Scan(&cid)
-	if err == nil {
-		return AmGetCommunityTx(ctx, tx, cid)
+	if err := tx.GetContext(ctx, &cid, "SELECT commid FROM communities WHERE alias = ?", alias); err != nil {
+		return nil, err
 	}
-	return nil, err
+	return AmGetCommunityTx(ctx, tx, cid)
 }
 
 /* AmGetCommunityFromParam returns a reference to the specified community based on the parameter.
@@ -793,20 +794,22 @@ func AmAutoJoinCommunities(ctx context.Context, user *User) error {
 
 // internalGetCommProp is a helper used by the community property functions.
 func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityProperties, error) {
-	var err error = nil
 	key := fmt.Sprintf("%d:%d", cid, ndx)
 	getCommunityPropMutex.Lock()
 	defer getCommunityPropMutex.Unlock()
-	rc, ok := communityPropCache.Get(key)
-	if !ok {
-		var prop CommunityProperties
-		if err = amdb.GetContext(ctx, &prop, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx); err != nil {
-			return nil, err
-		}
-		rc = &prop
-		communityPropCache.Add(key, rc)
+	if rc, ok := communityPropCache.Get(key); ok {
+		return rc.(*CommunityProperties), nil
 	}
-	return rc.(*CommunityProperties), nil
+	var prop CommunityProperties
+	err := amdb.GetContext(ctx, &prop, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
+	switch err {
+	case nil:
+		communityPropCache.Add(key, &prop)
+		return &prop, nil
+	case sql.ErrNoRows:
+		return nil, nil
+	}
+	return nil, err
 }
 
 /* AmGetCommunityProperty retrieves the value of a community property.
@@ -882,10 +885,8 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 	defer rollback()
 
 	// validate alias does not already exist
-	row := tx.QueryRowContext(ctx, "SELECT commid FROM communities WHERE alias = ?", alias)
 	var tmpcid int32
-	err := row.Scan(&tmpcid)
-	if err != sql.ErrNoRows {
+	if err := tx.GetContext(ctx, &tmpcid, "SELECT commid FROM communities WHERE alias = ?", alias); err != sql.ErrNoRows {
 		if err == nil {
 			err = errors.New("a community with that alias already exists")
 		}
@@ -893,7 +894,7 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
 	}
 
 	// establish the community record
-	_, err = tx.ExecContext(ctx, `INSERT INTO communities (createdate, lastaccess, lastupdate, read_lvl, write_lvl,
+	_, err := tx.ExecContext(ctx, `INSERT INTO communities (createdate, lastaccess, lastupdate, read_lvl, write_lvl,
 		create_lvl, delete_lvl, join_lvl, host_uid, hide_dir, hide_search, commname, language,
 		synopsis, rules, joinkey, alias) VALUES (NOW(), NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		AmRoleList("Community.Read").Default().Level(), AmRoleList("Community.Write").Default().Level(),
@@ -950,14 +951,12 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
  */
 func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, max int, showAll bool) ([]*Community, int, error) {
 	var err error
-	var row *sql.Row
-	if showAll {
-		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM communities WHERE catid = ?", catid)
-	} else {
-		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM communities WHERE catid = ? AND hide_dir = 0", catid)
-	}
 	var total int
-	err = row.Scan(&total)
+	if showAll {
+		err = amdb.GetContext(ctx, &total, "SELECT COUNT(*) FROM communities WHERE catid = ?", catid)
+	} else {
+		err = amdb.GetContext(ctx, &total, "SELECT COUNT(*) FROM communities WHERE catid = ? AND hide_dir = 0", catid)
+	}
 	if err != nil || total == 0 {
 		return make([]*Community, 0), 0, err // short-circuit return
 	}
@@ -1043,9 +1042,8 @@ func AmSearchCommunities(ctx context.Context, field int, oper int, term string, 
 		queryPortion.WriteString(" AND hide_search = 0")
 	}
 	q := queryPortion.String()
-	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM communities "+q)
 	var total int
-	err := row.Scan(&total)
+	err := amdb.GetContext(ctx, &total, "SELECT COUNT(*) FROM communities "+q)
 	if err != nil || total == 0 {
 		return make([]*Community, 0), 0, err // short-circuit return
 	}
@@ -1123,10 +1121,9 @@ func AmSearchCommunityMembers(ctx context.Context, c *Community, field int, oper
 		return nil, -1, errors.New("invalid operator selector")
 	}
 	q := queryPortion.String()
-	row := amdb.QueryRowContext(ctx, `SELECT COUNT(*) FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
-		AND m.commid = ? AND u.is_anon = 0 AND `+q, c.Id)
 	var total int
-	err := row.Scan(&total)
+	err := amdb.GetContext(ctx, &total, `SELECT COUNT(*) FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
+		AND m.commid = ? AND u.is_anon = 0 AND `+q, c.Id)
 	if err != nil {
 		return nil, -1, err
 	}

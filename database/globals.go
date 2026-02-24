@@ -108,8 +108,7 @@ func AmGlobals(ctx context.Context) (*Globals, error) {
 	defer globalsMutex.Unlock()
 	if theGlobals == nil {
 		var g Globals
-		err := amdb.GetContext(ctx, &g, "SELECT * FROM globals")
-		if err != nil {
+		if err := amdb.GetContext(ctx, &g, "SELECT * FROM globals"); err != nil {
 			return nil, err
 		}
 		theGlobals = &g
@@ -146,8 +145,7 @@ func AmGetGlobalProperty(ctx context.Context, index int32) (string, error) {
 	var err error = nil
 	rc, ok := globalProps[index]
 	if !ok {
-		row := amdb.QueryRowContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
-		err = row.Scan(&rc)
+		err := amdb.GetContext(ctx, &rc, "SELECT data FROM propglobal WHERE ndx = ?", index)
 		switch err {
 		case nil:
 			globalProps[index] = rc
@@ -172,9 +170,8 @@ func AmSetGlobalProperty(ctx context.Context, index int32, value string) error {
 	defer globalPropMutex.Unlock()
 	_, updateMode := globalProps[index]
 	if !updateMode {
-		row := amdb.QueryRowContext(ctx, "SELECT data FROM propglobal WHERE ndx = ?", index)
 		var tmpdata string
-		err := row.Scan(&tmpdata)
+		err := amdb.GetContext(ctx, &tmpdata, "SELECT data FROM propglobal WHERE ndx = ?", index)
 		switch err {
 		case nil:
 			updateMode = true

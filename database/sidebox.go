@@ -91,9 +91,8 @@ func AmRemoveSidebox(ctx context.Context, uid int32, boxid int32) error {
 	defer rollback()
 
 	// Get the old sequence number.
-	row := tx.QueryRowContext(ctx, "SELECT sequence FROM sideboxes WHERE uid = ? AND boxid = ?", uid, boxid)
 	var oldseq int32
-	err := row.Scan(&oldseq)
+	err := tx.GetContext(ctx, &oldseq, "SELECT sequence FROM sideboxes WHERE uid = ? AND boxid = ?", uid, boxid)
 	if err != nil {
 		return err
 	}
@@ -118,9 +117,8 @@ func AmAppendSidebox(ctx context.Context, uid int32, boxid int32, param *string)
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
 
-	row := tx.QueryRowContext(ctx, "SELECT MAX(sequence) FROM sideboxes WHERE uid = ?", uid)
 	var topseq int32
-	err := row.Scan(&topseq)
+	err := tx.GetContext(ctx, &topseq, "SELECT MAX(sequence) FROM sideboxes WHERE uid = ?", uid)
 	if err != nil {
 		return err
 	}

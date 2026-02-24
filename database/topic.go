@@ -66,11 +66,10 @@ func (t *Topic) GetPost(ctx context.Context, num int32) (*PostHeader, error) {
 		return nil, fmt.Errorf("no post %d in topic %d", num, t.TopicId)
 	}
 	var pd PostHeader
-	err := amdb.GetContext(ctx, &pd, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num)
-	if err == nil {
-		return &pd, nil
+	if err := amdb.GetContext(ctx, &pd, "SELECT * FROM posts WHERE topicid = ? AND num = ?", t.TopicId, num); err != nil {
+		return nil, err
 	}
-	return nil, err
+	return &pd, nil
 }
 
 // GetLastRead returns the "last read" message for a user on a topic.
@@ -78,9 +77,8 @@ func (t *Topic) GetLastRead(ctx context.Context, u *User) (int32, error) {
 	if u.IsAnon {
 		return -1, nil
 	}
-	row := amdb.QueryRowContext(ctx, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	var rc int32 = -1
-	err := row.Scan(&rc)
+	err := amdb.GetContext(ctx, &rc, "SELECT last_message FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	if err == sql.ErrNoRows {
 		return -1, nil
 	}
@@ -106,9 +104,8 @@ func (t *Topic) SetLastRead(ctx context.Context, u *User, postNum int32) error {
 
 // IsHidden tells us whether the user has the topic hidden.
 func (t *Topic) IsHidden(ctx context.Context, u *User) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT hidden FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	rc := false
-	err := row.Scan(&rc)
+	err := amdb.GetContext(ctx, &rc, "SELECT hidden FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	return rc, err
 }
 
@@ -159,9 +156,8 @@ func (t *Topic) IsBozo(ctx context.Context, u *User, testUid int32) (bool, error
 	if u.IsAnon {
 		return false, nil
 	}
-	row := amdb.QueryRowContext(ctx, "SELECT bozo_uid FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, testUid)
 	var tmp int32
-	err := row.Scan(&tmp)
+	err := amdb.GetContext(ctx, &tmp, "SELECT bozo_uid FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, testUid)
 	switch err {
 	case nil:
 		return true, nil
@@ -176,9 +172,8 @@ func (t *Topic) SetBozo(ctx context.Context, u *User, subjectUid int32, bozo boo
 	var err error = nil
 	if !u.IsAnon {
 		if bozo { // Flipping the bozo bit!
-			row := amdb.QueryRowContext(ctx, "SELECT bozo_uid FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, subjectUid)
 			var tmp int32
-			err = row.Scan(&tmp)
+			err = amdb.GetContext(ctx, &tmp, "SELECT bozo_uid FROM topicbozo WHERE topicid = ? AND uid = ? AND bozo_uid = ?", t.TopicId, u.Uid, subjectUid)
 			switch err {
 			case nil:
 				return nil
@@ -225,9 +220,8 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
 
 // IsSubscribed returns true if the given user is subscribed to receive E-mails of topic posts.
 func (t *Topic) IsSubscribed(ctx context.Context, u *User) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT subscribe FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	var rc bool
-	err := row.Scan(&rc)
+	err := amdb.GetContext(ctx, &rc, "SELECT subscribe FROM topicsettings WHERE topicid = ? AND uid = ?", t.TopicId, u.Uid)
 	switch err {
 	case nil:
 		return rc, nil
@@ -370,9 +364,8 @@ func backgroundPurgeTopic(ctx context.Context, topicid int32) error {
 	defer rollback()
 
 	// Get some stats on the posts we have to remove.
-	row := tx.QueryRowContext(ctx, "SELECT MAX(postid) FROM posts WHERE topicid = ?", topicid)
 	var postMax int32
-	err := row.Scan(&postMax)
+	err := tx.GetContext(ctx, &postMax, "SELECT MAX(postid) FROM posts WHERE topicid = ?", topicid)
 	if err != nil {
 		return err
 	}

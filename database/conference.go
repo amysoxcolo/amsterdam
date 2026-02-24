@@ -26,6 +26,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ErrNoConference is an error thrown when a conference is not found.
+var ErrNoConference error = errors.New("no such conference")
+
 // Conference struct is the top-level structure for a conference.
 type Conference struct {
 	Mutex       sync.Mutex
@@ -172,17 +175,14 @@ func (c *Conference) AliasesQ(ctx context.Context) []string {
 
 // AddAlias adds an alias to the conference.
 func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *Community, ipaddr string) error {
-	row := amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
 	tmp := ""
-	err := row.Scan(&tmp)
-	if err != sql.ErrNoRows {
+	if err := amdb.GetContext(ctx, &tmp, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias); err != sql.ErrNoRows {
 		if err == nil {
 			return fmt.Errorf("the alias '%s' is already in use by another conference", alias)
 		}
 		return err
 	}
-	_, err = amdb.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", c.ConfId, alias)
-	if err != nil {
+	if _, err := amdb.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", c.ConfId, alias); err != nil {
 		return err
 	}
 
@@ -192,17 +192,14 @@ func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *
 
 // RemoveAlias removes an alias from the conference.
 func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, comm *Community, ipaddr string) error {
-	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM confalias WHERE confid = ?", c.ConfId)
 	aliasCount := 0
-	err := row.Scan(&aliasCount)
-	if err != nil {
+	if err := amdb.GetContext(ctx, &aliasCount, "SELECT COUNT(*) FROM confalias WHERE confid = ?", c.ConfId); err != nil {
 		return err
 	}
 
 	if aliasCount == 1 {
-		row = amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
 		tmp := ""
-		err = row.Scan(&tmp)
+		err := amdb.GetContext(ctx, &tmp, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
 		if err == nil {
 			return errors.New("the conference must have at least one alias")
 		} else if err != sql.ErrNoRows {
@@ -254,9 +251,8 @@ func (c *Conference) HostsQ(ctx context.Context) []*User {
 
 // InCommunity returns true if the specified conference is in the community.
 func (c *Conference) InCommunity(ctx context.Context, comm *Community) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT commid FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
 	var tmp int32
-	err := row.Scan(&tmp)
+	err := amdb.GetContext(ctx, &tmp, "SELECT commid FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
 	switch err {
 	case nil:
 		return true, nil
@@ -268,9 +264,8 @@ func (c *Conference) InCommunity(ctx context.Context, comm *Community) (bool, er
 
 // HiddenInList returns whether or not this conference is hidden in the community's conference list.
 func (c *Conference) HiddenInList(ctx context.Context, comm *Community) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT hide_list FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
 	var rc bool
-	err := row.Scan(&rc)
+	err := amdb.GetContext(ctx, &rc, "SELECT hide_list FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
 	switch err {
 	case nil:
 		return rc, nil
@@ -317,9 +312,8 @@ func (c *Conference) Members(ctx context.Context) ([]ConferenceMember, error) {
 
 // Membership returns a membership flag and granted level for the user in this conference.
 func (c *Conference) Membership(ctx context.Context, u *User) (bool, uint16, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	var level uint16
-	err := row.Scan(&level)
+	err := amdb.GetContext(ctx, &level, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	switch err {
 	case nil:
 		return true, level, nil
@@ -335,9 +329,8 @@ func (c *Conference) SetMembership(ctx context.Context, u *User, level uint16, b
 		_, err := amdb.ExecContext(ctx, "DELETE FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 		return err
 	}
-	row := amdb.QueryRowContext(ctx, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	var oldLevel uint16
-	err := row.Scan(&oldLevel)
+	err := amdb.GetContext(ctx, &oldLevel, "SELECT granted_lvl FROM confmember WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	switch err {
 	case nil:
 		if oldLevel == level {
@@ -464,8 +457,7 @@ func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, 
 		create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl, c.ConfId)
 	if err == nil {
 		var tmp Conference
-		err := amdb.GetContext(ctx, &tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId)
-		if err == nil {
+		if err = amdb.GetContext(ctx, &tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId); err == nil {
 			if c.Name != tmp.Name {
 				AmStoreAudit(AmNewCommAudit(AuditConferenceName, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId), fmt.Sprintf("name='%s'", tmp.Name)))
 			}
@@ -576,11 +568,10 @@ func (c *Conference) TouchPost(ctx context.Context, tx *sqlx.Tx, u *User, lastPo
 
 // UnreadMessages returns the total number of unread messages in a conference for a user.
 func (c *Conference) UnreadMessages(ctx context.Context, u *User) (int32, error) {
-	row := amdb.QueryRowContext(ctx, `SELECT SUM(t.top_message - IFNULL(s.last_message,-1))
+	var rc int32
+	err := amdb.GetContext(ctx, &rc, `SELECT SUM(t.top_message - IFNULL(s.last_message,-1))
 		FROM topics t LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ?
 		WHERE t.confid = ? AND t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)`, u.Uid, c.ConfId)
-	var rc int32
-	err := row.Scan(&rc)
 	return rc, err
 }
 
@@ -600,10 +591,8 @@ func (c *Conference) Fixseen(ctx context.Context, u *User) error {
 	defer rollback()
 
 	// Get a count of topics beforehand.
-	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM topics WHERE confid = ?", c.ConfId)
 	count := 0
-	err := row.Scan(&count)
-	if err != nil {
+	if err := tx.GetContext(ctx, &count, "SELECT COUNT(*) FROM topics WHERE confid = ?", c.ConfId); err != nil {
 		return err
 	}
 
@@ -661,9 +650,8 @@ func (c *Conference) GetCustomBlocks(ctx context.Context) (string, string, error
 func (c *Conference) SetCustomBlocks(ctx context.Context, topBlock, bottomBlock string) error {
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
-	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM confcustom WHERE confid = ?", c.ConfId)
 	ct := 0
-	err := row.Scan(&ct)
+	err := tx.GetContext(ctx, &ct, "SELECT COUNT(*) FROM confcustom WHERE confid = ?", c.ConfId)
 	if err != nil {
 		return err
 	}
@@ -872,18 +860,17 @@ func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipadd
 	defer getConferenceMutex.Unlock()
 
 	// any references to conference other than this community?
-	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", c.ConfId, comm.Id)
 	refCount := 0
-	err := row.Scan(&refCount)
-	if err != nil {
+	if err := tx.GetContext(ctx, &refCount, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", c.ConfId, comm.Id); err != nil {
 		return err
 	}
 
 	// break the link with the community
-	if _, err = tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId); err != nil {
 		return err
 	}
 
+	var err error
 	if refCount == 0 {
 		// We have to delete all the conference core data now.
 		_, err = tx.ExecContext(ctx, "DELETE FROM confs WHERE confid = ?", c.ConfId)
@@ -943,9 +930,8 @@ func (*conferenceServiceVTable) OnDeleteCommunity(ctx context.Context, tx *sqlx.
 	}
 	for i, confid := range confids {
 		// any references to conference other than this community?
-		row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", confid, commid)
 		refCount := 0
-		err = row.Scan(&refCount)
+		err := tx.GetContext(ctx, &refCount, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", confid, commid)
 		if err != nil {
 			return err
 		}
@@ -1011,19 +997,21 @@ func (*conferenceServiceVTable) OnUserLeaveCommunity(context.Context, *sqlx.Tx, 
  *     Standard Go error status.
  */
 func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
-	var err error = nil
 	getConferenceMutex.Lock()
 	defer getConferenceMutex.Unlock()
-	rc, ok := conferenceCache.Get(id)
-	if !ok {
-		var conf Conference
-		if err = amdb.GetContext(ctx, &conf, "SELECT * from confs where confid = ?"); err != nil {
-			return nil, err
-		}
-		rc = &conf
-		conferenceCache.Add(id, rc)
+	if rc, ok := conferenceCache.Get(id); ok {
+		return rc.(*Conference), nil
 	}
-	return rc.(*Conference), err
+	var conf Conference
+	err := amdb.GetContext(ctx, &conf, "SELECT * from confs where confid = ?")
+	switch err {
+	case nil:
+		conferenceCache.Add(id, &conf)
+		return &conf, nil
+	case sql.ErrNoRows:
+		return nil, ErrNoConference
+	}
+	return nil, err
 }
 
 /* AmGetConferenceByAlias returns a conference given its alias.
@@ -1040,8 +1028,7 @@ func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, err
 	if ok {
 		confid = xconf.(int32)
 	} else {
-		row := amdb.QueryRowContext(ctx, "SELECT confid FROM confalias WHERE alias = ?", alias)
-		err := row.Scan(&confid)
+		err := amdb.GetContext(ctx, &confid, "SELECT confid FROM confalias WHERE alias = ?", alias)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("alias not found: %s", alias)
 		} else if err != nil {
@@ -1061,9 +1048,8 @@ func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, err
  *     Standard Go error status.
  */
 func AmGetConferenceContainingPost(ctx context.Context, postId int64) (*Conference, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT t.confid FROM topics t, posts p WHERE p.postid = ? AND p.topicid = t.topicid", postId)
 	var confId int32
-	err := row.Scan(&confId)
+	err := amdb.GetContext(ctx, &confId, "SELECT t.confid FROM topics t, posts p WHERE p.postid = ? AND p.topicid = t.topicid", postId)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("post not found: %d", postId)
 	} else if err != nil {
@@ -1082,10 +1068,9 @@ func AmGetConferenceContainingPost(ctx context.Context, postId int64) (*Conferen
  *     Standard Go error status.
  */
 func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias string) (*Conference, error) {
-	row := amdb.QueryRowContext(ctx, `SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
-		AND c.commid = ? AND a.alias = ?`, cid, alias)
 	var confid int32
-	err := row.Scan(&confid)
+	err := amdb.GetContext(ctx, &confid, `SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
+		AND c.commid = ? AND a.alias = ?`, cid, alias)
 	switch err {
 	case nil:
 		return AmGetConference(ctx, confid)
@@ -1124,8 +1109,7 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 		}
 	}
 	for i := range rc {
-		row := amdb.QueryRowContext(ctx, "SELECT alias FROM confalias WHERE confid = ?", rc[i].ConfId)
-		err = row.Scan(&(rc[i].Alias))
+		err := amdb.GetContext(ctx, &(rc[i].Alias), "SELECT alias FROM confalias WHERE confid = ?", rc[i].ConfId)
 		if err != nil {
 			return nil, err
 		}
@@ -1140,20 +1124,22 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 
 // internalGetConfProp is a helper used by the conference property functions.
 func internalGetConfProp(ctx context.Context, confid int32, ndx int32) (*ConferenceProperties, error) {
-	var err error = nil
 	key := fmt.Sprintf("%d:%d", confid, ndx)
 	getConferencePropMutex.Lock()
 	defer getConferencePropMutex.Unlock()
-	rc, ok := conferencePropCache.Get(key)
-	if !ok {
-		var prop ConferenceProperties
-		if err = amdb.GetContext(ctx, &prop, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx); err != nil {
-			return nil, err
-		}
-		rc = &prop
-		conferencePropCache.Add(key, rc)
+	if rc, ok := conferencePropCache.Get(key); ok {
+		return rc.(*ConferenceProperties), nil
 	}
-	return rc.(*ConferenceProperties), nil
+	var prop ConferenceProperties
+	err := amdb.GetContext(ctx, &prop, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx)
+	switch err {
+	case nil:
+		conferencePropCache.Add(key, &prop)
+		return &prop, nil
+	case sql.ErrNoRows:
+		return nil, nil
+	}
+	return nil, err
 }
 
 /* AmGetConferenceProperty retrieves the value of a conference property.
@@ -1268,9 +1254,8 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	defer getConferenceMutex.Unlock()
 
 	// Ensure the alias is not in use.
-	row := tx.QueryRowContext(ctx, "SELECT confid FROM confalias WHERE alias = ?", alias)
 	var tmp int32
-	err := row.Scan(&tmp)
+	err := tx.GetContext(ctx, &tmp, "SELECT confid FROM confalias WHERE alias = ?", alias)
 	if err == nil {
 		return nil, fmt.Errorf("the alias '%s' is already in use by a different conference", alias)
 	} else if err != sql.ErrNoRows {
@@ -1294,29 +1279,24 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	}
 
 	// Attach the alias to the conference.
-	_, err = tx.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", rc.ConfId, alias)
-	if err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", rc.ConfId, alias); err != nil {
 		return nil, err
 	}
 
 	// Get the current "last" sequence number.
-	row = tx.QueryRowContext(ctx, "SELECT MAX(sequence) FROM commtoconf WHERE commid = ?", comm.Id)
 	var seq int
-	err = row.Scan(&seq)
-	if err != nil {
+	if err = tx.GetContext(ctx, &seq, "SELECT MAX(sequence) FROM commtoconf WHERE commid = ?", comm.Id); err != nil {
 		return nil, err
 	}
 
 	// Link the conference into the community, and set the hide flag.
-	_, err = tx.ExecContext(ctx, "INSERT INTO commtoconf (commid, confid, sequence, hide_list) VALUES (?, ?, ?, ?)", comm.Id, rc.ConfId,
-		int16(seq+COMMTOCONF_SEQ_SPACING), hide_list)
-	if err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO commtoconf (commid, confid, sequence, hide_list) VALUES (?, ?, ?, ?)", comm.Id, rc.ConfId,
+		int16(seq+COMMTOCONF_SEQ_SPACING), hide_list); err != nil {
 		return nil, err
 	}
 
 	// Make the specified user the first host of the conference.
-	_, err = tx.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", rc.ConfId, u.Uid, AmDefaultRole("Conference.NewHost").Level())
-	if err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO confmember (confid, uid, granted_lvl) VALUES (?, ?, ?)", rc.ConfId, u.Uid, AmDefaultRole("Conference.NewHost").Level()); err != nil {
 		return nil, err
 	}
 

@@ -65,9 +65,8 @@ func loadCategories(ctx context.Context) error {
 	categoryMutex.Lock()
 	defer categoryMutex.Unlock()
 	if allCategories == nil {
-		row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM refcategory")
-		var ncats int32
-		if err := row.Scan(&ncats); err != nil {
+		var ncats int
+		if err := amdb.GetContext(ctx, &ncats, "SELECT COUNT(*) FROM refcategory"); err != nil {
 			return err
 		}
 		allCategories = make([]Category, 0, ncats)
@@ -226,10 +225,9 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 		queryString.WriteString(" AND hide_search = 0")
 	}
 	q := queryString.String()
-	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM refcategory WHERE "+q)
 	var total int
-	if err = row.Scan(&total); err != nil {
-		return nil, total, err
+	if err = amdb.GetContext(ctx, &total, "SELECT COUNT(*) FROM refcategory WHERE "+q); err != nil {
+		return nil, -1, err
 	}
 	if total == 0 {
 		return make([]*Category, 0), 0, nil

@@ -11,7 +11,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	_ "embed"
 	"fmt"
 	"time"
@@ -240,14 +239,13 @@ func AmStoreAudit(rec *AuditRecord) {
 
 // AmListAuditRecords lists a section of the audit records.
 func AmListAuditRecords(ctx context.Context, comm *Community, offset, max int) ([]AuditRecord, int, error) {
-	var row *sql.Row
-	if comm != nil {
-		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM audit WHERE commid = ?", comm.Id)
-	} else {
-		row = amdb.QueryRowContext(ctx, "SELECT COUNT(*) FROM audit")
-	}
+	var err error
 	var count int
-	err := row.Scan(&count)
+	if comm != nil {
+		err = amdb.GetContext(ctx, &count, "SELECT COUNT(*) FROM audit WHERE commid = ?", comm.Id)
+	} else {
+		err = amdb.GetContext(ctx, &count, "SELECT COUNT(*) FROM audit")
+	}
 	if err != nil {
 		return nil, -1, err
 	}

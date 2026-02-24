@@ -108,15 +108,13 @@ func AmAppendToHotlist(ctx context.Context, u *User, commid, confid int32) error
 	defer rollback()
 
 	var newseq int16
-	row := tx.QueryRowContext(ctx, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
-	err := row.Scan(&newseq)
+	err := tx.GetContext(ctx, &newseq, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
 	if err == nil {
 		return errors.New("community/conference already exist in hotlist")
 	} else if err != sql.ErrNoRows {
 		return err
 	}
-	row = tx.QueryRowContext(ctx, "SELECT MAX(sequence) FROM confhotlist WHERE uid = ?", u.Uid)
-	err = row.Scan(&newseq)
+	err = tx.GetContext(ctx, &newseq, "SELECT MAX(sequence) FROM confhotlist WHERE uid = ?", u.Uid)
 	if err == sql.ErrNoRows {
 		newseq = 0
 	} else if err != nil {
@@ -135,9 +133,8 @@ func AmAppendToHotlist(ctx context.Context, u *User, commid, confid int32) error
 
 // AmIsInHotlist returns true if the community/conference pair is in the hotlist.
 func AmIsInHotlist(ctx context.Context, u *User, commid, confid int32) (bool, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
 	var tmp int16
-	err := row.Scan(&tmp)
+	err := amdb.GetContext(ctx, &tmp, "SELECT sequence FROM confhotlist WHERE uid = ? AND commid = ? AND confid = ?", u.Uid, commid, confid)
 	switch err {
 	case nil:
 		return true, nil
