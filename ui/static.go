@@ -72,7 +72,7 @@ func breakUpHTML(r io.Reader) (string, string, error) {
 		if n.Type == html.ElementNode {
 			switch n.Data {
 			case "title":
-				body = extractPlainText(n)
+				title = extractPlainText(n)
 			case "body":
 				body = extractInnerHTML(n)
 			}
@@ -95,13 +95,20 @@ func breakUpHTML(r io.Reader) (string, string, error) {
  */
 func AmStaticFramePage(staticFS fs.FS, prefix string) AmPageFunc {
 	return func(ctxt AmContext) (string, any) {
+		// Cut the prefix off the path.
 		fname := ctxt.URLPath()
 		if strings.HasPrefix(fname, prefix) {
 			fname = fname[len(prefix):]
 		} else {
 			return "error", "invalid path name"
 		}
+		// Extract the basic MIME type.
 		mtype := mimeTypeFromFilename(fname)
+		p := strings.Index(mtype, ";")
+		if p >= 0 {
+			mtype = mtype[:p]
+		}
+		// Decide from there how to render it.
 		ctxt.VarMap().Set("mimeType", mtype)
 		switch mtype {
 		case "text/html":
