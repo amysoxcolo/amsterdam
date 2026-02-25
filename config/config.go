@@ -63,6 +63,7 @@ type AmConfig struct {
 			Title string `yaml:"title"`
 			Text  string `yaml:"text"`
 		} `yaml:"userAgreement"`
+		ExternalPath string `yaml:"externalPath"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`
@@ -212,7 +213,7 @@ func overlayOptionFlag(loaded, defaulted bool) bool {
 
 /* overlayConfig takes two configuration structures and overlays them to create the third.
  * Parameters:
- *     dest - Points to the destination copnfiguration structure.
+ *     dest - Points to the destination configuration structure.
  *     loaded - Points to the loaded configuration structure.
  *     defaults - Points to the default configuration structure.
  */
@@ -225,6 +226,7 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Site.SessionExpire = overlayString(loaded.Site.SessionExpire, defaults.Site.SessionExpire)
 	dest.Site.UserAgreement.Title = overlayString(loaded.Site.UserAgreement.Title, defaults.Site.UserAgreement.Title)
 	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
+	dest.Site.ExternalPath = overlayString(loaded.Site.ExternalPath, defaults.Site.ExternalPath)
 	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)
 	dest.Database.Dsn = overlayString(loaded.Database.Dsn, defaults.Database.Dsn)
 	dest.Defaults.Language = overlayString(loaded.Defaults.Language, defaults.Defaults.Language)

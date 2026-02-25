@@ -17,6 +17,7 @@ site:
     title: "Amsterdam User Agreement"
     text: >
       Text of this agreement is TBD.
+  externalPath: ""
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"

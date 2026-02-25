@@ -52,6 +52,15 @@ func setupEcho() *echo.Echo {
 	uiset := []echo.MiddlewareFunc{ui.SessionStoreInjector, ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest}
 
 	e.RouteNotFound("/*", ui.AmWrap(AmNotFoundHandler), uiset...)
+	if config.GlobalConfig.Site.ExternalPath != "" {
+		root, err := os.OpenRoot(config.GlobalConfig.Site.ExternalPath)
+		if err != nil {
+			panic(err)
+		}
+		fs := root.FS()
+		e.StaticFS("/ext", fs)
+		e.GET("/fext/*", ui.AmWrap(ui.AmStaticFramePage(fs, "/fext/")), uiset...)
+	}
 	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage), uiset...)
 	e.GET("/img/*", ui.AmServeImage)
 	if config.GlobalConfig.Rendering.VeniceCompatibleImageURLs {
