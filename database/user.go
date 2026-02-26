@@ -121,6 +121,22 @@ func (p *UserPrefs) Location() *time.Location {
 	return rc
 }
 
+// LocationISO8601Offset returns an offset value for the user's time location.
+func (p *UserPrefs) LocationISO8601Offset() string {
+	loc := p.Location()
+	_, secondsOut := time.Now().In(loc).Zone()
+	if secondsOut == 0 {
+		return "Z"
+	}
+	minutesOut := secondsOut / 60
+	if minutesOut < 0 {
+		minutesOut = -minutesOut
+		return fmt.Sprintf("-%02d:%02d", minutesOut/60, minutesOut%60)
+	} else {
+		return fmt.Sprintf("+%02d:%02d", minutesOut/60, minutesOut%60)
+	}
+}
+
 // User represents a user in the Amsterdam database.
 type User struct {
 	Mutex        sync.RWMutex

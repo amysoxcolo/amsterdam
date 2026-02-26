@@ -91,16 +91,17 @@ type CfgPermission struct {
 
 // CfgSecurityDefs is the master structure for security definitions.
 type CfgSecurityDefs struct {
-	Scopes      []CfgScope      `yaml:"scopes"`
-	Roles       []CfgRole       `yaml:"roles"`
-	Defaults    []CfgDefault    `yaml:"defaults"`
-	Lists       []CfgRoleList   `yaml:"lists"`
-	Permissions []CfgPermission `yaml:"permissions"`
-	scopeMap    map[string]*CfgScope
-	roleMap     map[string]*CfgRole
-	defaultsMap map[string]*CfgDefault
-	listsMap    map[string]*CfgRoleList
-	permsMap    map[string]*CfgPermission
+	Scopes         []CfgScope      `yaml:"scopes"`
+	Roles          []CfgRole       `yaml:"roles"`
+	Defaults       []CfgDefault    `yaml:"defaults"`
+	Lists          []CfgRoleList   `yaml:"lists"`
+	Permissions    []CfgPermission `yaml:"permissions"`
+	scopeMap       map[string]*CfgScope
+	roleMap        map[string]*CfgRole
+	roleMapReverse map[uint16]*CfgRole
+	defaultsMap    map[string]*CfgDefault
+	listsMap       map[string]*CfgRoleList
+	permsMap       map[string]*CfgPermission
 }
 
 //go:embed securitydefs.yaml
@@ -153,10 +154,12 @@ func init() {
 		securityRoot.scopeMap[sc.Name] = &(securityRoot.Scopes[i])
 	}
 	securityRoot.roleMap = make(map[string]*CfgRole)
+	securityRoot.roleMapReverse = make(map[uint16]*CfgRole)
 	for i, ro := range securityRoot.Roles {
 		scope := securityRoot.scopeMap[ro.Scope]
 		securityRoot.Roles[i].level = parseLevelValue(scope.bounds, ro.Value)
 		securityRoot.roleMap[ro.Internal] = &(securityRoot.Roles[i])
+		securityRoot.roleMapReverse[securityRoot.Roles[i].level] = &(securityRoot.Roles[i])
 	}
 	securityRoot.defaultsMap = make(map[string]*CfgDefault)
 	for i, def := range securityRoot.Defaults {
@@ -243,6 +246,20 @@ func AmRole(id string) Role {
 	rc, ok := securityRoot.roleMap[id]
 	if !ok {
 		log.Errorf("AmRole('%s') - role not found!", id)
+	}
+	return rc
+}
+
+/* AmRoleForLevel returns a Role given an integer level.
+ * Parameters:
+ *     level - Level of the Role to look up.
+ * Returns:
+ *     The specified role.
+ */
+func AmRoleForLevel(level uint16) Role {
+	rc, ok := securityRoot.roleMapReverse[level]
+	if !ok {
+		log.Errorf("AmRoleForLevel('%d') - role not found!", level)
 	}
 	return rc
 }

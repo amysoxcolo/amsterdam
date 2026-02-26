@@ -123,6 +123,14 @@ lists:
       - "Global.Normal"
       - "UnrestrictedUser"
       - "Global.PFY"
+  - name: "Global.AllUserLevels"
+    roles:
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+      - "UnrestrictedUser"
+      - "Global.PFY"
+      - "Global.BOFH"
   - name: "Global.CreateCommunity"
     default: "Global.Normal"
     roles:

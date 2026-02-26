@@ -25,7 +25,11 @@ import (
  * Amsterdam uses this name for the format for backwards compatibility.
  */
 
+// ISO8601 is the full ISO 8601 formatting string.
 const ISO8601 = "20060102T150405"
+
+// ISO8601_DATE is the ISO 8601 date-only formatting string.
+const ISO8601_DATE = "20060102"
 
 // VCIFBase is the top-level element for a VCIF file.
 type VCIFBase struct {

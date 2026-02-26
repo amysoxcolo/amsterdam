@@ -180,3 +180,12 @@ func MyIPAddress() (net.IP, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	return localAddr.IP, nil
 }
+
+// IIF is an "immediate-if" function returning its second argument if the first one is true, the third one if not.
+func IIF[A any](expr bool, v1, v2 A) A {
+	if expr {
+		return v1
+	} else {
+		return v2
+	}
+}
