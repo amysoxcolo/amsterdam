@@ -107,6 +107,7 @@ func VIUUserFromUser(ctx context.Context, target *VIUUser, u *database.User) err
 	target.Options.HidePhone = ci.PrivatePhone
 	target.Options.HideFax = ci.PrivateFax
 	target.Options.HideEmail = ci.PrivateEmail
+	target.Options.AutoJoin = u.VerifyEMail
 
 	// Load user preferences.
 	prefs, err := u.Prefs(ctx)
@@ -129,9 +130,6 @@ func VIUUserFromUser(ctx context.Context, target *VIUUser, u *database.User) err
 	target.Options.OptOut = flags.Get(database.UserFlagMassMailOptOut)
 	target.Options.NoPhoto = flags.Get(database.UserFlagDisallowSetPhoto)
 
-	// TODO - fill in Autojoin option and Joins
-	/*
-	   AutoJoin     bool     `xml:"autojoin,attr"`     // auto-join communities?
-	*/
+	// TODO - fill in Joins
 	return nil
 }
