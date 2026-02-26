@@ -361,7 +361,7 @@ func MemberList(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("oper", "st")
 	ctxt.VarMap().Set("term", "")
 	ctxt.VarMap().Set("ofs", ofs)
-	ctxt.SetFrameTitle("List Members")
+	ctxt.SetFrameTitle("Members of Community " + comm.Name)
 	listMax := int(ctxt.Globals().MaxCommunityMemberPage)
 	results, total, err := comm.ListMembers(ctxt.Ctx(), database.ListMembersFieldNone, database.ListMembersOperNone, "", ofs*listMax, listMax, showHidden)
 	if err != nil {

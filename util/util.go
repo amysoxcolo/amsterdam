@@ -189,3 +189,11 @@ func IIF[A any](expr bool, v1, v2 A) A {
 		return v2
 	}
 }
+
+// SRef dereferences the string pointer if it's not nil, or returns an empty string if it is nil.
+func SRef(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}

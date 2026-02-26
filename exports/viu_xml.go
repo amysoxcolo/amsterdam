@@ -12,6 +12,9 @@ package exports
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
+	"io"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
@@ -73,6 +76,7 @@ type VIUCommunityJoin struct {
 	Community string   `xml:",chardata"` // name of community joined
 }
 
+// VIUUserFromUser fills in a VIUUser structure with details from the given user.
 func VIUUserFromUser(ctx context.Context, target *VIUUser, u *database.User) error {
 	// Fill base fields first.
 	target.ID = int(u.Uid)
@@ -80,7 +84,7 @@ func VIUUserFromUser(ctx context.Context, target *VIUUser, u *database.User) err
 	target.Password.Prehashed = true
 	target.Password.Hash = u.Passhash
 	target.PasswordReminder = u.PassReminder
-	target.Description = util.IIF(u.Description != nil, *u.Description, "")
+	target.Description = util.SRef(u.Description)
 
 	// Get the contact info.
 	ci, err := u.ContactInfo(ctx)
@@ -126,10 +130,66 @@ func VIUUserFromUser(ctx context.Context, target *VIUUser, u *database.User) err
 		return err
 	}
 
+	// Fill options from user flags.
 	target.Options.PostPictures = flags.Get(database.UserFlagPicturesInPosts)
 	target.Options.OptOut = flags.Get(database.UserFlagMassMailOptOut)
 	target.Options.NoPhoto = flags.Get(database.UserFlagDisallowSetPhoto)
 
-	// TODO - fill in Joins
+	// Get the list of communities for the user and set up the Joins list.
+	comms, err := database.AmGetCommunitiesForUser(ctx, u.Uid)
+	if err != nil {
+		return err
+	}
+	target.Joins = make([]VIUCommunityJoin, len(comms))
+	roles := database.AmRoleList("Community.AllUserlevels")
+	for i, c := range comms {
+		_, _, level, err := c.Membership(ctx, u)
+		if err != nil {
+			return err
+		}
+		target.Joins[i].Role = roles.FindForLevel(level).ID()
+		target.Joins[i].Community = c.Alias
+	}
+
 	return nil
+}
+
+// VIUStreamCommunityMembersList streams a list of users of the given community to the given stream in VIU format.
+func VIUStreamCommunityMemberList(ctx context.Context, w io.Writer, comm *database.Community) error {
+	// Get the list of community members.
+	total, err := comm.MemberCount(ctx, false)
+	if err != nil {
+		return err
+	}
+	users, _, err := comm.ListMembers(ctx, database.ListMembersFieldNone, database.ListMembersOperNone, "", 0, total, false)
+	if err != nil {
+		return err
+	}
+
+	// Write the header of the file.
+	var b strings.Builder
+	b.WriteString(xml.Header)
+	b.WriteString("\r\n<venice-import-users>\r\n")
+	_, err = w.Write([]byte(b.String()))
+	if err != nil {
+		return err
+	}
+
+	// Create the XML encoder.
+	enc := xml.NewEncoder(w)
+	enc.Indent("  ", "  ")
+
+	// Build each user and then encode them to the output.
+	for _, u := range users {
+		var encodedUser VIUUser
+		err = VIUUserFromUser(ctx, &encodedUser, u)
+		if err != nil {
+			return fmt.Errorf("error converting user %d: %v", u.Uid, err)
+		}
+		enc.Encode(encodedUser)
+	}
+
+	// Write the trailing tag.
+	_, err = w.Write([]byte("</venice-import-users>\r\n"))
+	return err
 }

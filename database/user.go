@@ -100,7 +100,7 @@ func (p *UserPrefs) Localizer() lctime.Localizer {
 func (p *UserPrefs) LanguageTag() *language.Tag {
 	lt, err := language.Parse(p.ReadLocale())
 	if err != nil {
-		log.Fatalf("BOGUS LANGUAGE TAG %s in user prefs for uid %d", p.LocaleID, p.Uid)
+		log.Errorf("BOGUS LANGUAGE TAG %s in user prefs for uid %d", p.LocaleID, p.Uid)
 		return nil
 	}
 	return &lt
@@ -115,7 +115,7 @@ func (p *UserPrefs) MessagePrinter() *message.Printer {
 func (p *UserPrefs) Location() *time.Location {
 	rc, err := time.LoadLocation(p.TimeZoneID)
 	if err != nil {
-		log.Fatalf("BOGUS TIMEZONE TAG %s in user prefs for uid %d", p.TimeZoneID, p.Uid)
+		log.Errorf("BOGUS TIMEZONE TAG %s in user prefs for uid %d", p.TimeZoneID, p.Uid)
 		return time.Local
 	}
 	return rc
@@ -669,7 +669,7 @@ func crackAuthString(authString string) (int32, string, error) {
  * Parameters:
  *     ctx - Standard Go context value.
  *     authString - The stored cookie authentication string.
- *     remoteIP - The remote IP address wheter trhe user is logging in from.
+ *     remoteIP - The remote IP address where the user is logging in from.
  * Returns:
  *     Pointer to the authenticated User, or nil.
  *     Standard Go error status.

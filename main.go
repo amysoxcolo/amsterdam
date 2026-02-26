@@ -36,6 +36,7 @@ var GetAndPost = []string{http.MethodGet, http.MethodPost}
 // setupEcho creates, configures, and returns a new Echo instance.
 func setupEcho() *echo.Echo {
 	e := echo.New()
+	e.HideBanner = true
 	e.Logger = &EchoLogrusAdapter{}
 	e.Renderer = &ui.TemplateRenderer{}
 	e.HTTPErrorHandler = AmErrorHandler
@@ -125,6 +126,7 @@ func setupEcho() *echo.Echo {
 	commGroup.POST("/unjoin", ui.AmWrap(UnjoinCommunityConfirm))
 	commGroup.GET("/members", ui.AmWrap(MemberList))
 	commGroup.POST("/members", ui.AmWrap(MemberSearch))
+	commGroup.GET("/members/export", ui.AmWrap(ExportCommunityMembers))
 	commGroup.GET("/invite", ui.AmWrap(InviteToCommunity))
 	commGroup.GET("/find", ui.AmWrap(FindPostsPageCommunity))
 	commGroup.POST("/find", ui.AmWrap(FindPostsCommunity))

@@ -14,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,11 +22,47 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
+	"git.erbosoft.com/amy/amsterdam/exports"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
+
+/* ExportCommunityMembers exports the members of the community as XML.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ExportCommunityMembers(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.ShowAdmin", ctxt.EffectiveLevel()) {
+		return "error", ENOACCESS
+	}
+
+	// use a dedicated goroutine to generate the streamed XML and send it into one end of a pipe
+	filename := time.Now().Format("exported-users-20060102.xml")
+	r, w := io.Pipe()
+	go func() {
+		start := time.Now()
+		err := exports.VIUStreamCommunityMemberList(context.Background(), w, comm)
+		if err != nil {
+			log.Errorf("ExportCommunityMembers task failed with %v", err)
+			s := fmt.Sprintf("<!-- ***PROCESSING ERROR*** %v -->\r\n", err)
+			w.Write([]byte(s))
+		}
+		w.Close()
+		dur := time.Since(start)
+		log.Infof("ExportCommunityMembers task completed in %v", dur)
+	}()
+
+	// Now we connect the outlet end of the pipe to the output to the browser.
+	ctxt.SetOutputType("text/xml")
+	ctxt.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	return "stream", r
+}
 
 /* CommunityAdminMenu renders the community administration menu.
  * Parameters:
@@ -35,7 +72,7 @@ import (
  *     Data as a parameter for the command string.
  */
 func CommunityAdminMenu(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity() // set by middleware
+	comm := ctxt.CurrentCommunity()
 	if !comm.TestPermission("Community.ShowAdmin", ctxt.EffectiveLevel()) {
 		return "error", ENOACCESS
 	}

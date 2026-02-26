@@ -14,7 +14,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"regexp"
 	"strconv"
@@ -180,7 +179,7 @@ func overlayStringArray(loaded, defaulted []string) []string {
 		m[s] = true
 	}
 	rc := make([]string, 0, len(m))
-	for s := range maps.Keys(m) {
+	for s := range m {
 		rc = append(rc, s)
 	}
 	return rc

@@ -199,12 +199,12 @@ type VCKey struct {
 func VCardFromContactInfo(ctx context.Context, target *VCard, ci *database.ContactInfo) error {
 	target.Version = "2.0"
 	target.FullName = ci.FullName(false)
-	target.Name.Family = util.IIF(ci.FamilyName != nil, *ci.FamilyName, "")
-	target.Name.Given = util.IIF(ci.GivenName != nil, *ci.GivenName, "")
-	target.Name.Middle = util.IIF(ci.MiddleInit != nil, *ci.MiddleInit+".", "")
-	target.Name.Prefix = util.IIF(ci.Prefix != nil, *ci.Prefix, "")
-	target.Name.Suffix = util.IIF(ci.Suffix != nil, *ci.Suffix, "")
-	target.URL = util.IIF(ci.URL != nil, *ci.URL, "")
+	target.Name.Family = util.SRef(ci.FamilyName)
+	target.Name.Given = util.SRef(ci.GivenName)
+	target.Name.Middle = util.SRef(ci.MiddleInit)
+	target.Name.Prefix = util.SRef(ci.Prefix)
+	target.Name.Suffix = util.SRef(ci.Suffix)
+	target.URL = util.SRef(ci.URL)
 	if ci.LastUpdate != nil {
 		target.LastUpdate = ci.LastUpdate.Format(ISO8601)
 	}
@@ -213,12 +213,12 @@ func VCardFromContactInfo(ctx context.Context, target *VCard, ci *database.Conta
 	addr[0].Home.Local = "HOME"
 	addr[0].Postal.Local = "POSTAL"
 	addr[0].Preferred.Local = "PREF"
-	addr[0].Street = util.IIF(ci.Addr1 != nil, *ci.Addr1, "")
-	addr[0].ExtAddr = util.IIF(ci.Addr2 != nil, *ci.Addr2, "")
-	addr[0].Locality = util.IIF(ci.Locality != nil, *ci.Locality, "")
-	addr[0].Region = util.IIF(ci.Region != nil, *ci.Region, "")
-	addr[0].PCode = util.IIF(ci.PostalCode != nil, *ci.PostalCode, "")
-	addr[0].Country = util.IIF(ci.Country != nil, *ci.Country, "")
+	addr[0].Street = util.SRef(ci.Addr1)
+	addr[0].ExtAddr = util.SRef(ci.Addr2)
+	addr[0].Locality = util.SRef(ci.Locality)
+	addr[0].Region = util.SRef(ci.Region)
+	addr[0].PCode = util.SRef(ci.PostalCode)
+	addr[0].Country = util.SRef(ci.Country)
 	target.Address = &addr
 
 	phcount := util.IIF(ci.Phone != nil, 1, 0) + util.IIF(ci.Fax != nil, 1, 0) + util.IIF(ci.Mobile != nil, 1, 0)

@@ -195,6 +195,18 @@ lists:
       - "Community.Member"
       - "UnrestrictedUser"
       - "Community.Cohost"
+  - name: "Community.AllUserlevels"
+    roles:
+      - "NotInList"
+      - "Global.Anonymous"
+      - "Global.Unverified"
+      - "Global.Normal"
+      - "Community.Member"
+      - "UnrestrictedUser"
+      - "Community.Cohost"
+      - "Community.Host"
+      - "Global.PFY"
+      - "Global.BOFH"
   - name: "Conference.Read"
     roles:
       - "Global.Anonymous"
