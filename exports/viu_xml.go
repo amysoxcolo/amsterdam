@@ -200,7 +200,7 @@ func VIUStreamCommunityMemberList(ctx context.Context, w io.Writer, comm *databa
 
 func VIUCreateUser(ctx context.Context, udata *VIUUser, loader *database.User, ipaddr string) error {
 	if !database.AmIsValidAmsterdamID(udata.Username) {
-		return fmt.Errorf("the username \"%s\" is not a valid Amsterdam ID")
+		return fmt.Errorf("the username \"%s\" is not a valid Amsterdam ID", udata.Username)
 	}
 	email, err := VCardGetEmailAddress(&(udata.VCard))
 	if err != nil {
