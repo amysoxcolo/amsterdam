@@ -655,6 +655,9 @@ func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, e
 func AmGetCommunityByAlias(ctx context.Context, alias string) (*Community, error) {
 	var cid int32
 	if err := amdb.GetContext(ctx, &cid, "SELECT commid FROM communities WHERE alias = ?", alias); err != nil {
+		if err == sql.ErrNoRows {
+			err = ErrNoCommunity
+		}
 		return nil, err
 	}
 	return AmGetCommunity(ctx, cid)
@@ -672,6 +675,9 @@ func AmGetCommunityByAlias(ctx context.Context, alias string) (*Community, error
 func AmGetCommunityByAliasTx(ctx context.Context, tx *sqlx.Tx, alias string) (*Community, error) {
 	var cid int32
 	if err := tx.GetContext(ctx, &cid, "SELECT commid FROM communities WHERE alias = ?", alias); err != nil {
+		if err == sql.ErrNoRows {
+			err = ErrNoCommunity
+		}
 		return nil, err
 	}
 	return AmGetCommunityTx(ctx, tx, cid)

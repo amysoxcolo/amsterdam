@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/exports"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
@@ -792,8 +793,15 @@ func UserImport(ctxt ui.AmContext) (string, any) {
 		ctxt.SetFrameTitle("Import User Accounts")
 		return "framed", "import_users.jet"
 	}
-
+	count, scroll, err := exports.VIUImportUserList(ctxt.Ctx(), f, ctxt.CurrentUser(), ctxt.RemoteIP())
 	f.Close()
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.SetFrameTitle("Import User Accounts")
+		return "framed", "import_users.jet"
+	}
 
+	_ = count
+	_ = scroll
 	return "error", "Not yet implemented"
 }

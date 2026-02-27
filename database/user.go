@@ -35,6 +35,9 @@ import (
 // ErrNoUser is an error returned if the user is not found in the database.
 var ErrNoUser error = errors.New("no such user")
 
+// ErrUserExists is an error returned if the user name already exists when trying to create a user.
+var ErrUserExists error = errors.New("that user name already exists. Please try again")
+
 // UserPrefs represents the user's preferences in a table (one row per user).
 type UserPrefs struct {
 	Uid        int32  `db:"uid"`      // user ID
@@ -63,14 +66,15 @@ func (p *UserPrefs) Save(ctx context.Context, u, setter *User, ipaddr string) er
 	if u != nil && u.Uid != p.Uid {
 		return errors.New("internal mismatch of IDs")
 	}
-	var old *UserPrefs
+	var old *UserPrefs = nil
 	if setter.Uid != u.Uid {
 		var pref UserPrefs
 		err := amdb.GetContext(ctx, &pref, "SELECT * FROM userprefs WHERE uid = ?", u.Uid)
-		if err != nil {
+		if err == nil {
+			old = &pref
+		} else if err != sql.ErrNoRows {
 			return err
 		}
-		old = &pref
 	}
 	_, err := amdb.NamedExecContext(ctx, "UPDATE userprefs SET localeid = :localeid, tzid = :tzid WHERE uid = :uid", p)
 	if err == nil && u != nil {
@@ -444,6 +448,17 @@ func (u *User) SetSecurityData(ctx context.Context, baseLevel uint16, lockout, v
 	return err
 }
 
+// SetHashedPassword sets the hashed password for the user. Should only be used by import.
+func (u *User) SetHashedPassword(ctx context.Context, hashValue string) error {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET passhash = ? WHERE uid = ?", hashValue, u.Uid)
+	if err != nil {
+		u.Passhash = hashValue
+	}
+	return err
+}
+
 /* AmGetUser returns a reference to the specified user.
  * Parameters:
  *	   ctx - Standard Go context value.
@@ -736,7 +751,7 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	err := tx.GetContext(ctx, &tmpuid, "SELECT uid FROM users WHERE username = ?", username)
 	if err == nil {
 		log.Warnf("username \"%s\" already exists", username)
-		return nil, errors.New("that user name already exists. Please try again")
+		return nil, ErrUserExists
 	} else if err != sql.ErrNoRows {
 		return nil, err
 	}

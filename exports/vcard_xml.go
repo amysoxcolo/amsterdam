@@ -282,7 +282,7 @@ func VCardFromContactInfo(ctx context.Context, target *VCard, ci *database.Conta
 	return nil
 }
 
-// VCardSetContactINfo fills the ContactInfo object with data from the VCard.
+// VCardSetContactInfo fills the ContactInfo object with data from the VCard.
 func VCardSetContactInfo(ci *database.ContactInfo, vc *VCard) {
 	ci.GivenName = util.IIF(vc.Name.Given == "", nil, &vc.Name.Given)
 	ci.FamilyName = util.IIF(vc.Name.Family == "", nil, &vc.Name.Family)

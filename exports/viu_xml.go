@@ -198,7 +198,9 @@ func VIUStreamCommunityMemberList(ctx context.Context, w io.Writer, comm *databa
 	return err
 }
 
+// VIUCreateUser creates a new user based on the import data.
 func VIUCreateUser(ctx context.Context, udata *VIUUser, loader *database.User, ipaddr string) error {
+	// Do some initial error checking and pre-parsing.
 	if !database.AmIsValidAmsterdamID(udata.Username) {
 		return fmt.Errorf("the username \"%s\" is not a valid Amsterdam ID", udata.Username)
 	}
@@ -220,11 +222,32 @@ func VIUCreateUser(ctx context.Context, udata *VIUUser, loader *database.User, i
 	if udata.Password.Prehashed {
 		pwd = ""
 	}
+	role := database.AmRole(udata.Options.Role)
+	if role == nil {
+		return fmt.Errorf("the security role \"%s\" is not found", udata.Options.Role)
+	}
 
+	// Create the user and set its direct information.
 	user, err := database.AmCreateNewUser(ctx, udata.Username, pwd, udata.PasswordReminder, dob, ipaddr)
 	if err != nil {
 		return err
 	}
+	err = user.SetProfileData(ctx, udata.PasswordReminder, dob, util.IIF(udata.Description == "", nil, &udata.Description), loader, ipaddr)
+	if err != nil {
+		return err
+	}
+	err = user.SetSecurityData(ctx, role.Level(), udata.Options.Locked, udata.Options.Confirmed, loader, ipaddr)
+	if err != nil {
+		return err
+	}
+	if udata.Password.Prehashed {
+		err = user.SetHashedPassword(ctx, udata.Password.Hash)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set the contact info.
 	ci := database.AmNewUserContactInfo(user.Uid)
 	VCardSetContactInfo(ci, &(udata.VCard))
 	ci.PrivateAddr = udata.Options.HideAddr
@@ -239,10 +262,57 @@ func VIUCreateUser(ctx context.Context, udata *VIUUser, loader *database.User, i
 	if err != nil {
 		return err
 	}
-	// TODO
+
+	// Set the user preferences and flags.
+	prefs := database.UserPrefs{
+		Uid:        user.Uid,
+		LocaleID:   udata.Options.Locale,
+		TimeZoneID: udata.Options.ZoneHint,
+	}
+	err = prefs.Save(ctx, user, loader, ipaddr)
+	if err != nil {
+		return err
+	}
+	flags := util.NewOptionSet()
+	flags.Set(database.UserFlagDisallowSetPhoto, udata.Options.NoPhoto)
+	flags.Set(database.UserFlagMassMailOptOut, udata.Options.OptOut)
+	flags.Set(database.UserFlagPicturesInPosts, udata.Options.PostPictures)
+	err = user.SaveFlags(ctx, flags)
+	if err != nil {
+		return err
+	}
+
+	// Autojoin base communities.
+	if udata.Options.AutoJoin {
+		err := database.AmAutoJoinCommunities(ctx, user)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set community membership based on the joins listed.
+	for _, j := range udata.Joins {
+		role = database.AmRole(j.Role)
+		if role == nil {
+			return fmt.Errorf("the security role \"%s\" is not found", udata.Options.Role)
+		}
+		comm, err := database.AmGetCommunityByAlias(ctx, j.Community)
+		if err == database.ErrNoCommunity {
+			log.Warnf("community \"%s\" not found, skipping", j.Community)
+			continue
+		} else if err != nil {
+			return err
+		}
+		err = comm.SetMembership(ctx, user, role.Level(), false, loader.Uid, ipaddr)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
+// VIUImportUserList takes a list of user accounts in VIU XML format and imports them.
 func VIUImportUserList(ctx context.Context, r io.Reader, loader *database.User, ipaddr string) (int, []string, error) {
 	dec := xml.NewDecoder(r)
 	var importData VIUBase
