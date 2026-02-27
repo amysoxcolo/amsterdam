@@ -49,18 +49,18 @@ type VCIFTopic struct {
 
 // VCIFPost is the VCIF element representing a post in a topic.
 type VCIFPost struct {
-	XMLName     xml.Name            `xml:"post"`        // I am the <post> element
-	ID          int64               `xml:"id,attr"`     // post ID (PostId)
-	Parent      int64               `xml:"parent,attr"` // parent PostId (usually 0)
-	Index       int                 `xml:"index,attr"`  // post index (number)
-	Lines       int                 `xml:"lines,attr"`  // line count
-	Author      string              `xml:"author,attr"` // author username
-	DateISO8601 string              `xml:"date,attr"`   // post date, ISO 8601 format
-	Hidden      bool                `xml:"hidden,attr"` // is post hidden?
-	Scribbled   *VCIFScribble       `xml:"scribbled"`   // is post scribbled?
-	Pseud       string              `xml:"pseud"`       // post pseud
-	Text        string              `xml:"text"`        // post text
-	Attachment  *VCIFPostAttachment `xml:"attachment"`  // attachment data
+	XMLName     xml.Name            `xml:"post"`                 // I am the <post> element
+	ID          int64               `xml:"id,attr"`              // post ID (PostId)
+	Parent      int64               `xml:"parent,attr"`          // parent PostId (usually 0)
+	Index       int                 `xml:"index,attr"`           // post index (number)
+	Lines       int                 `xml:"lines,attr"`           // line count
+	Author      string              `xml:"author,attr"`          // author username
+	DateISO8601 string              `xml:"date,attr"`            // post date, ISO 8601 format
+	Hidden      bool                `xml:"hidden,attr"`          // is post hidden?
+	Scribbled   *VCIFScribble       `xml:"scribbled,omitempty"`  // is post scribbled?
+	Pseud       string              `xml:"pseud"`                // post pseud
+	Text        string              `xml:"text"`                 // post text
+	Attachment  *VCIFPostAttachment `xml:"attachment,omitempty"` // attachment data
 }
 
 // VCIFScribble is the VCIF element representing that a post has been scribbled.

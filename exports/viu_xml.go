@@ -33,15 +33,15 @@ type VIUBase struct {
 
 // VIUUser is the structure representing a single user.
 type VIUUser struct {
-	XMLName          xml.Name           `xml:"venice-user"`       // must be a <venice-user> tag
-	ID               int                `xml:"id,attr"`           // the UID for the user
-	Username         string             `xml:"username"`          // user name
-	Password         VIUPassword        `xml:"password"`          // password information
-	PasswordReminder string             `xml:"password-reminder"` // password reminder string
-	Description      string             `xml:"description"`       // description string
-	Options          VIUOptions         `xml:"options"`           // user options
-	VCard            VCard              `xml:"vcard-temp vCard"`  // user contact info in vCard XML format
-	Joins            []VIUCommunityJoin `xml:"join"`              // joined communities
+	XMLName          xml.Name           `xml:"venice-user"`                 // must be a <venice-user> tag
+	ID               int                `xml:"id,attr"`                     // the UID for the user
+	Username         string             `xml:"username"`                    // user name
+	Password         VIUPassword        `xml:"password,omitempty"`          // password information
+	PasswordReminder string             `xml:"password-reminder,omitempty"` // password reminder string
+	Description      string             `xml:"description,omitempty"`       // description string
+	Options          VIUOptions         `xml:"options"`                     // user options
+	VCard            VCard              `xml:"vcard-temp vCard"`            // user contact info in vCard XML format
+	Joins            []VIUCommunityJoin `xml:"join,omitempty"`              // joined communities
 }
 
 // VIUPassword represents the user password information.

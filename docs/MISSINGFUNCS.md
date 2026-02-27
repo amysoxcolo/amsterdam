@@ -32,7 +32,7 @@ _(italicized items can be deferred)_
 - ~~Community Profile: Invite~~
 - _Help link atop page headers_
 - _Policy page_
-- Member List: Export
+- ~~Member List: Export~~
 - ~~HTML reference for post boxes~~
 - ~~Posts view:~~
   - ~~Find~~

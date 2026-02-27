@@ -23,6 +23,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -212,11 +213,7 @@ func (fld *DialogItem) ValPtr() *string {
 
 // SetVal sets the value of a field from a string pointer.
 func (fld *DialogItem) SetVal(p *string) {
-	if p == nil {
-		fld.Value = ""
-	} else {
-		fld.Value = *p
-	}
+	fld.Value = util.SRef(p)
 }
 
 // SetInt sets the value of a field to an integer.
