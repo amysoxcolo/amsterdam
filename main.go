@@ -111,6 +111,7 @@ func setupEcho() *echo.Echo {
 	sysGroup.GET("/ipban/add", ui.AmWrap(AddIPBanForm))
 	sysGroup.POST("/ipban/add", ui.AmWrap(AddIPBan))
 	sysGroup.Match(GetAndPost, "/audit", ui.AmWrap(SystemAudit))
+	sysGroup.Match(GetAndPost, "/import", ui.AmWrap(UserImport))
 
 	// community group
 	uiset2 := make([]echo.MiddlewareFunc, len(uiset), len(uiset)+1)
@@ -247,7 +248,7 @@ func main() {
 	}()
 
 	stime := time.Since(start)
-	log.Infof("Amsterdam startup sequence completed in %v", stime)
+	log.Infof("Amsterdam %s startup sequence completed in %v", config.AMSTERDAM_VERSION, stime)
 
 	// Start server
 	go func() {

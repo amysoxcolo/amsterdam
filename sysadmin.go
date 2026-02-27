@@ -684,6 +684,13 @@ func AddIPBan(ctxt ui.AmContext) (string, any) {
 	return dlg.RenderError(ctxt, err.Error())
 }
 
+/* SystemAudit displays the system audit loga.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
 func SystemAudit(ctxt ui.AmContext) (string, any) {
 	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
 		return "error", ENOACCESS
@@ -747,4 +754,46 @@ func SystemAudit(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.SetFrameTitle("System Audit Records")
 	return "framed", "audit.jet"
+}
+
+/* UserImport handles importing user accounts.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func UserImport(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+
+	if ctxt.Verb() == "GET" {
+		ctxt.SetFrameTitle("Import User Accounts")
+		return "framed", "import_users.jet"
+	}
+
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", "/sysadmin"
+	} else if !ctxt.FormFieldIsSet("upload") {
+		return "error", EBUTTON
+	}
+
+	importData, err := ctxt.FormFile("idata")
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.SetFrameTitle("Import User Accounts")
+		return "framed", "import_users.jet"
+	}
+
+	f, err := importData.Open()
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.SetFrameTitle("Import User Accounts")
+		return "framed", "import_users.jet"
+	}
+
+	f.Close()
+
+	return "error", "Not yet implemented"
 }

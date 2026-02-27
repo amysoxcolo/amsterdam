@@ -18,6 +18,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -186,10 +187,80 @@ func VIUStreamCommunityMemberList(ctx context.Context, w io.Writer, comm *databa
 		if err != nil {
 			return fmt.Errorf("error converting user %d: %v", u.Uid, err)
 		}
-		enc.Encode(encodedUser)
+		err = enc.Encode(encodedUser)
+		if err != nil {
+			log.Warnf("error dumping XML for user %d: %v", u.Uid, err)
+		}
 	}
 
 	// Write the trailing tag.
 	_, err = w.Write([]byte("</venice-import-users>\r\n"))
 	return err
+}
+
+func VIUCreateUser(ctx context.Context, udata *VIUUser, loader *database.User, ipaddr string) error {
+	if !database.AmIsValidAmsterdamID(udata.Username) {
+		return fmt.Errorf("the username \"%s\" is not a valid Amsterdam ID")
+	}
+	email, err := VCardGetEmailAddress(&(udata.VCard))
+	if err != nil {
+		return err
+	}
+	ban, err := database.AmIsEmailAddressBanned(ctx, email)
+	if err != nil {
+		return err
+	} else if ban {
+		return fmt.Errorf("the E-mail address %s has been banned", email)
+	}
+	dob, err := VCardGetBirthday(&(udata.VCard))
+	if err != nil {
+		return err
+	}
+	pwd := udata.Password.Hash
+	if udata.Password.Prehashed {
+		pwd = ""
+	}
+
+	user, err := database.AmCreateNewUser(ctx, udata.Username, pwd, udata.PasswordReminder, dob, ipaddr)
+	if err != nil {
+		return err
+	}
+	ci := database.AmNewUserContactInfo(user.Uid)
+	VCardSetContactInfo(ci, &(udata.VCard))
+	ci.PrivateAddr = udata.Options.HideAddr
+	ci.PrivatePhone = udata.Options.HidePhone
+	ci.PrivateFax = udata.Options.HideFax
+	ci.PrivateEmail = udata.Options.HideEmail
+	_, err = ci.Save(ctx, loader, ipaddr)
+	if err != nil {
+		return err
+	}
+	err = user.SetContactID(ctx, ci.ContactId)
+	if err != nil {
+		return err
+	}
+	// TODO
+	return nil
+}
+
+func VIUImportUserList(ctx context.Context, r io.Reader, loader *database.User, ipaddr string) (int, []string, error) {
+	dec := xml.NewDecoder(r)
+	var importData VIUBase
+	err := dec.Decode(&importData)
+	if err != nil {
+		return 0, make([]string, 0), err
+	}
+
+	scroll := make([]string, 0, len(importData.Users))
+	userCount := 0
+	for _, udata := range importData.Users {
+		err = VIUCreateUser(ctx, &udata, loader, ipaddr)
+		if err != nil {
+			scroll = append(scroll, fmt.Sprintf("Error creating user \"%s\": %v", udata.Username, err))
+		} else {
+			scroll = append(scroll, fmt.Sprintf("User \"%v\" created", udata.Username))
+			userCount++
+		}
+	}
+	return userCount, scroll, nil
 }

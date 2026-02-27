@@ -50,7 +50,7 @@ menudefs:
         link: "/sysadmin/audit"
         permission: "Global.SysAdminAccess"
       - text: "Import User Accounts"
-        link: "/TODO/sysadmin/import"
+        link: "/sysadmin/import"
         permission: "Global.SysAdminAccess"
   - id: "communityadmin"
     title: "Community Administration:"

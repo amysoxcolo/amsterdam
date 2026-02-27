@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
@@ -279,4 +280,138 @@ func VCardFromContactInfo(ctx context.Context, target *VCard, ci *database.Conta
 		target.Org = &org
 	}
 	return nil
+}
+
+// VCardSetContactINfo fills the ContactInfo object with data from the VCard.
+func VCardSetContactInfo(ci *database.ContactInfo, vc *VCard) {
+	ci.GivenName = util.IIF(vc.Name.Given == "", nil, &vc.Name.Given)
+	ci.FamilyName = util.IIF(vc.Name.Family == "", nil, &vc.Name.Family)
+	if vc.Name.Middle == "" {
+		ci.MiddleInit = nil
+	} else {
+		s := vc.Name.Middle[0:1]
+		ci.MiddleInit = &s
+	}
+	ci.Prefix = util.IIF(vc.Name.Prefix == "", nil, &vc.Name.Prefix)
+	ci.Suffix = util.IIF(vc.Name.Suffix == "", nil, &vc.Name.Suffix)
+	if vc.Org != nil {
+		ci.Company = &(vc.Org.OrgName)
+	}
+	if vc.URL != "" {
+		ci.URL = &(vc.URL)
+	}
+	addr := VCardSelectAddress(vc)
+	if addr != nil {
+		ci.Addr1 = util.IIF(addr.Street == "", nil, &addr.Street)
+		ci.Addr2 = util.IIF(addr.ExtAddr == "", nil, &addr.ExtAddr)
+		ci.Locality = util.IIF(addr.Locality == "", nil, &addr.Locality)
+		ci.Region = util.IIF(addr.Region == "", nil, &addr.Region)
+		ci.PostalCode = util.IIF(addr.PCode == "", nil, &addr.PCode)
+		ci.Country = util.IIF(addr.Country == "", nil, &addr.Country)
+	}
+	email, err := VCardGetEmailAddress(vc)
+	if err == nil {
+		ci.Email = &email
+	}
+	phone, fax, mobile := VCardSelectPhones(vc)
+	if phone != nil {
+		ci.Phone = &(phone.Number)
+	}
+	if fax != nil {
+		ci.Fax = &(fax.Number)
+	}
+	if mobile != nil {
+		ci.Mobile = &(mobile.Number)
+	}
+}
+
+// VCardSelectAddress selects a valid address from the VCard.
+func VCardSelectAddress(vc *VCard) *VCAddress {
+	if vc.Address == nil || len(*vc.Address) == 0 {
+		return nil
+	}
+	if len(*vc.Address) == 1 {
+		return &((*vc.Address)[0])
+	}
+	for i := range *vc.Address {
+		if (*vc.Address)[i].Preferred != nil {
+			return &((*vc.Address)[i])
+		}
+	}
+	return &((*vc.Address)[0])
+}
+
+// VCardSelectPhones finds the phone, fax, and mobile numbers in the telephone block.
+func VCardSelectPhones(vc *VCard) (*VCTelephone, *VCTelephone, *VCTelephone) {
+	if vc.Tel == nil || len(*vc.Tel) == 0 {
+		return nil, nil, nil
+	}
+	var mobile *VCTelephone = nil
+	for i := range *vc.Tel {
+		if (*vc.Tel)[i].Cell != nil {
+			if mobile == nil || (*vc.Tel)[i].Preferred != nil {
+				mobile = &((*vc.Tel)[i])
+			}
+		}
+	}
+	var fax *VCTelephone = nil
+	for i := range *vc.Tel {
+		if (*vc.Tel)[i].Fax != nil {
+			if fax == nil || (*vc.Tel)[i].Preferred != nil {
+				fax = &((*vc.Tel)[i])
+			}
+		}
+	}
+	var phone *VCTelephone = nil
+	for i := range *vc.Tel {
+		if (*vc.Tel)[i].Voice != nil && (*vc.Tel)[i].Cell == nil {
+			if phone == nil || (*vc.Tel)[i].Preferred != nil {
+				phone = &((*vc.Tel)[i])
+			}
+		}
+	}
+	return phone, fax, mobile
+}
+
+// VCardGetEmailAddress finds a useful E-mail address in a VCard.
+func VCardGetEmailAddress(vc *VCard) (string, error) {
+	if vc.Email == nil || len(*vc.Email) == 0 {
+		return "", errors.New("no E-mail address found for user")
+	}
+	addrs := make([]*VCEmail, 0, len(*vc.Email))
+	for i, a := range *vc.Email {
+		if a.Internet != nil {
+			addrs = append(addrs, &((*vc.Email)[i]))
+		}
+	}
+	if len(addrs) == 0 {
+		return "", errors.New("no Internet E-mail addresses found for user")
+	}
+	if len(addrs) == 1 {
+		return addrs[0].UserID, nil
+	}
+	for _, a := range addrs {
+		if a.Preferred != nil {
+			return a.UserID, nil
+		}
+	}
+	for _, a := range addrs {
+		if a.Home != nil {
+			return a.UserID, nil
+		}
+	}
+	return addrs[0].UserID, nil
+}
+
+// VCardGetBirthday extracts the birthday from the VCard as a time value.
+func VCardGetBirthday(vc *VCard) (*time.Time, error) {
+	s := vc.BDay
+	if s == "" {
+		return nil, nil
+	}
+	if len(s) > 8 {
+		s = s[:8]
+	}
+	val, err := time.Parse(ISO8601_DATE, s)
+	return &val, err
 }
