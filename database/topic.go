@@ -22,6 +22,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ErrNoTopic is an error returned if no topic is found.
+var ErrNoTopic error = errors.New("no such topic found")
+
 // Topic is the top-level structure detailing topics.
 type Topic struct {
 	TopicId    int32     `db:"topicid"`     // unique ID of the topic
@@ -487,6 +490,9 @@ type TopicSummary struct {
 func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
 	var top Topic
 	if err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
+		if err == sql.ErrNoRows {
+			err = ErrNoTopic
+		}
 		return nil, err
 	}
 	return &top, nil
@@ -504,6 +510,9 @@ func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
 func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, error) {
 	var top Topic
 	if err := tx.GetContext(ctx, &top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
+		if err == sql.ErrNoRows {
+			err = ErrNoTopic
+		}
 		return nil, err
 	}
 	return &top, nil
@@ -523,6 +532,30 @@ func AmGetTopicByNumber(ctx context.Context, conf *Conference, topicNum int16) (
 	err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
 	if err == nil {
 		return &top, nil
+	}
+	if err == sql.ErrNoRows {
+		err = ErrNoTopic
+	}
+	return nil, err
+}
+
+/* AmGetTopicByName retrieves a topic by conference and name.
+ * Parameters:
+ *     ctx - Standard Go context value.
+ *     conf - The conference to look in.
+ *     name - The topic name within that conference.
+ * Returns:
+ *     Pointer to the Topic, or nil.
+ *     Standard Go error status.
+ */
+func AmGetTopicByName(ctx context.Context, conf *Conference, name string) (*Topic, error) {
+	var top Topic
+	err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE confid = ? AND name = ?", conf.ConfId, name)
+	if err == nil {
+		return &top, nil
+	}
+	if err == sql.ErrNoRows {
+		err = ErrNoTopic
 	}
 	return nil, err
 }
@@ -658,6 +691,9 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 	// Execute and capture results
 	rs, err := amdb.QueryContext(ctx, fullStatement.String(), uid, confid)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			err = ErrNoTopic
+		}
 		return nil, err
 	}
 	rc := make([]*TopicSummary, 0)

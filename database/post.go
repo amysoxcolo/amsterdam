@@ -500,6 +500,16 @@ func (p *PostHeader) MoveTo(ctx context.Context, target *Topic, u *User, comm *C
 	return nil
 }
 
+// ImportFix fixes a couple of fields on the post that can't be set otherwise during an import.
+func (p *PostHeader) ImportFix(ctx context.Context, parent int64, dateStamp time.Time) error {
+	_, err := amdb.ExecContext(ctx, "UPDATE posts SET parent = ?, posted = ? WHERE postid = ?", parent, dateStamp, p.PostId)
+	if err == nil {
+		p.Parent = parent
+		p.Posted = dateStamp
+	}
+	return err
+}
+
 /* AmGetPost gets a single post from the database by ID.
  * Parameters:
  *     ctx - Standard Go context value.

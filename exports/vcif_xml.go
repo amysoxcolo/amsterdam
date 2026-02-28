@@ -16,8 +16,10 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/database"
+	"git.erbosoft.com/amy/amsterdam/util"
 )
 
 /*
@@ -31,6 +33,12 @@ const ISO8601 = "20060102T150405"
 // ISO8601_DATE is the ISO 8601 date-only formatting string.
 const ISO8601_DATE = "20060102"
 
+// Topic match modes
+const (
+	VCIFTopicMatchName = 0
+	VCIFTopicMatchNum  = 1
+)
+
 // VCIFBase is the top-level element for a VCIF file.
 type VCIFBase struct {
 	XMLName xml.Name    `xml:"vcif"`  // I am the <vcif> element
@@ -40,7 +48,7 @@ type VCIFBase struct {
 // VCIFTopic is the VCIF element representing a topic.
 type VCIFTopic struct {
 	XMLName  xml.Name   `xml:"topic"`         // I am the <topic> element
-	Index    int        `xml:"index,attr"`    // topic index (number, not TopicId)
+	Index    int16      `xml:"index,attr"`    // topic index (number, not TopicId)
 	Frozen   bool       `xml:"frozen,attr"`   // is topic frozen?
 	Archived bool       `xml:"archived,attr"` // is topic archived?
 	Name     string     `xml:"topicname"`     // topic name
@@ -52,8 +60,8 @@ type VCIFPost struct {
 	XMLName     xml.Name            `xml:"post"`                 // I am the <post> element
 	ID          int64               `xml:"id,attr"`              // post ID (PostId)
 	Parent      int64               `xml:"parent,attr"`          // parent PostId (usually 0)
-	Index       int                 `xml:"index,attr"`           // post index (number)
-	Lines       int                 `xml:"lines,attr"`           // line count
+	Index       int32               `xml:"index,attr"`           // post index (number)
+	Lines       int32               `xml:"lines,attr"`           // line count
 	Author      string              `xml:"author,attr"`          // author username
 	DateISO8601 string              `xml:"date,attr"`            // post date, ISO 8601 format
 	Hidden      bool                `xml:"hidden,attr"`          // is post hidden?
@@ -73,7 +81,7 @@ type VCIFScribble struct {
 // VCIFPostAttachment is the VCIF element representing an attachment to a post.
 type VCIFPostAttachment struct {
 	XMLName    xml.Name `xml:"attachment"`    // I am the <attachment> element
-	Length     int      `xml:"length,attr"`   // length in bytes
+	Length     int32    `xml:"length,attr"`   // length in bytes
 	MIMEType   string   `xml:"type,attr"`     // MIME datatype
 	Filename   string   `xml:"filename,attr"` // attachment filename
 	Base64Data string   `xml:",chardata"`     // attachment data, Base 64 encoded
@@ -128,7 +136,7 @@ func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHead
 		}
 		if ainfo != nil {
 			newAttachment := VCIFPostAttachment{
-				Length:   int(ainfo.Length),
+				Length:   ainfo.Length,
 				MIMEType: ainfo.MIMEType,
 				Filename: ainfo.Filename,
 			}
@@ -144,19 +152,15 @@ func VCIFFromPost(ctx context.Context, target *VCIFPost, post *database.PostHead
 	// Fill in the rest of the data that can't fail.
 	target.ID = post.PostId
 	target.Parent = post.Parent
-	target.Index = int(post.Num)
+	target.Index = post.Num
 	if post.LineCount != nil {
-		target.Lines = int(*post.LineCount)
+		target.Lines = *post.LineCount
 	} else {
 		target.Lines = 0
 	}
 	target.DateISO8601 = post.Posted.Format(ISO8601)
 	target.Hidden = post.Hidden
-	if post.Pseud != nil {
-		target.Pseud = *post.Pseud
-	} else {
-		target.Pseud = ""
-	}
+	target.Pseud = util.SRef(post.Pseud)
 	return nil
 }
 
@@ -187,7 +191,7 @@ func VCIFFromTopic(ctx context.Context, target *VCIFTopic, topic *database.Topic
 	target.Posts = myPostArray
 
 	// Fill in the rest of the data that can't fail.
-	target.Index = int(topic.Number)
+	target.Index = topic.Number
 	target.Frozen = topic.Frozen
 	target.Archived = topic.Archived
 	target.Name = topic.Name
@@ -230,4 +234,147 @@ func VCIFStreamTopicFile(ctx context.Context, w io.Writer, topics []*database.To
 	// Write the trailing tag.
 	_, err = w.Write([]byte("</vcif>\r\n"))
 	return err
+}
+
+// augmentPost sets the auxiliary data on a post that's not set by just posting it.
+func augmentPost(ctx context.Context, post *database.PostHeader, pdata *VCIFPost, comm *database.Community, loader *database.User, ipaddr string) error {
+	dateStamp, err := time.Parse(ISO8601, pdata.DateISO8601)
+	if err != nil {
+		dateStamp = time.Now().UTC()
+	}
+	err = post.ImportFix(ctx, pdata.Parent, dateStamp)
+	if err != nil {
+		return err
+	}
+	if pdata.Scribbled != nil {
+		creator, _ := post.Creator(ctx)
+		err = post.Scribble(ctx, creator, comm, ipaddr)
+		if err != nil {
+			return err
+		}
+	} else if pdata.Attachment != nil {
+		data, err := base64.StdEncoding.DecodeString(pdata.Attachment.Base64Data)
+		if err != nil {
+			return err
+		}
+		creator, _ := post.Creator(ctx)
+		err = post.SetAttachment(ctx, creator, pdata.Attachment.Filename, pdata.Attachment.MIMEType, pdata.Attachment.Length, data, comm, ipaddr)
+		if err != nil {
+			return err
+		}
+	}
+	if pdata.Hidden && pdata.Scribbled == nil {
+		err = post.SetHidden(ctx, loader, true, comm, ipaddr)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func matchOrCreateTopic(ctx context.Context, comm *database.Community, conf *database.Conference, tdata *VCIFTopic, matchMode int, createNew bool, loader *database.User,
+	ipaddr string) (*database.Topic, bool, []string, error) {
+	scroll := make([]string, 0)
+	var topic *database.Topic
+	var err error
+	switch matchMode {
+	case VCIFTopicMatchName:
+		topic, err = database.AmGetTopicByName(ctx, conf, tdata.Name)
+	case VCIFTopicMatchNum:
+		topic, err = database.AmGetTopicByNumber(ctx, conf, tdata.Index)
+	}
+	if err == nil {
+		return topic, false, scroll, nil
+	} else if err != database.ErrNoTopic {
+		return nil, false, scroll, err
+	}
+	if !createNew {
+		return nil, false, scroll, database.ErrNoTopic
+	}
+	scroll = append(scroll, fmt.Sprintf("Topic \"%s\" doesn't exist...creating...", tdata.Name))
+	zeroPost := &(tdata.Posts[0])
+	author, err := database.AmGetUserByName(ctx, zeroPost.Author, nil)
+	if err != nil {
+		return nil, true, scroll, err
+	}
+	topic, err = database.AmNewTopic(ctx, conf, author, tdata.Name, zeroPost.Pseud, zeroPost.Text, zeroPost.Lines, comm, ipaddr)
+	if err != nil {
+		return nil, true, scroll, err
+	}
+	zp, err := topic.GetPost(ctx, 0)
+	if err != nil {
+		return nil, true, scroll, err
+	}
+	err = augmentPost(ctx, zp, zeroPost, comm, loader, ipaddr)
+	if err != nil {
+		return nil, true, scroll, err
+	}
+	return topic, true, scroll, nil
+}
+
+func VCIFImportMessages(ctx context.Context, r io.Reader, comm *database.Community, conf *database.Conference, matchMode int, createNew bool, loader *database.User,
+	ipaddr string) (int, int, []string, error) {
+	dec := xml.NewDecoder(r)
+	var importData VCIFBase
+	err := dec.Decode(&importData)
+	if err != nil {
+		return 0, 0, make([]string, 0), err
+	}
+
+	scroll := make([]string, 0)
+	topicCount := 0
+	postCount := 0
+	for _, tdata := range importData.Topics {
+		topic, created, subscroll, err := matchOrCreateTopic(ctx, comm, conf, &tdata, matchMode, createNew, loader, ipaddr)
+		scroll = append(scroll, subscroll...)
+		if err != nil {
+			if created {
+				scroll = append(scroll, fmt.Sprintf("Unable to create topic \"%s\": %v", tdata.Name, err))
+			} else {
+				scroll = append(scroll, fmt.Sprintf("Unable to locate topic \"%s\": %v", tdata.Name, err))
+			}
+		} else {
+			topicCount++
+			if created {
+				scroll = append(scroll, fmt.Sprintf("New topic \"%s\" created with number %d", tdata.Name, topic.Number))
+			}
+			// If we created the topic, the "zero post" was already posted, so skip it in this loop so we don't post it again.
+			skipPost := created
+			for _, pdata := range tdata.Posts {
+				if skipPost {
+					skipPost = false
+					continue
+				}
+				//
+				author, err := database.AmGetUserByName(ctx, pdata.Author, nil)
+				if err != nil {
+					author = loader
+				}
+				post, err := database.AmNewPost(ctx, conf, topic, author, pdata.Pseud, pdata.Text, pdata.Lines, comm, ipaddr)
+				if err == nil {
+					err = augmentPost(ctx, post, &pdata, comm, loader, ipaddr)
+				}
+				if err == nil {
+					postCount++
+				} else {
+					scroll = append(scroll, fmt.Sprintf("Unable to post message %d to topic \"%s\": %v", pdata.Index, topic.Name, err))
+				}
+			}
+			if created {
+				if tdata.Frozen {
+					err = topic.SetFrozen(ctx, true, loader, comm, ipaddr)
+					if err != nil {
+						scroll = append(scroll, fmt.Sprintf("Unable to freeze topic \"%s\": %v", topic.Name, err))
+					}
+				}
+				if tdata.Archived {
+					err = topic.SetArchived(ctx, true, loader, comm, ipaddr)
+					if err != nil {
+						scroll = append(scroll, fmt.Sprintf("Unable to archive topic \"%s\": %v", topic.Name, err))
+					}
+				}
+			}
+		}
+	}
+	return topicCount, postCount, scroll, nil
 }
