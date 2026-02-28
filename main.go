@@ -171,6 +171,7 @@ func setupEcho() *echo.Echo {
 	confGroup.POST("/email", ui.AmWrap(ConferenceEmail))
 	confGroup.GET("/export", ui.AmWrap(ConferenceExportForm))
 	confGroup.POST("/export", ui.AmWrap(ConferenceExport))
+	confGroup.Match(GetAndPost, "/import", ui.AmWrap(ConferenceImport))
 	confGroup.GET("/delete", ui.AmWrap(DeleteConference))
 	confGroup.GET("/hotlist", ui.AmWrap(AddToHotlist))
 	confGroup.GET("/invite", ui.AmWrap(InviteToConference))

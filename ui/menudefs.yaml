@@ -106,7 +106,7 @@ menudefs:
       - text: "Export Messages"
         link: "/comm/[CID]/conf/[CONFID]/export"
       - text: "Import Messages"
-        link: "/TODO/comm/[CID]/conf/[CONFID]/import"
+        link: "/comm/[CID]/conf/[CONFID]/import"
       - text: "Delete Conference"
         link: "/comm/[CID]/conf/[CONFID]/delete"
         hazard: true

@@ -748,6 +748,36 @@ func ConferenceExport(ctxt ui.AmContext) (string, any) {
 	return "stream", r
 }
 
+/* ConferenceImport imports data to a conference from a downloaded VCIF file.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func ConferenceImport(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	conf := ctxt.GetScratch("currentConference").(*database.Conference)
+	myLevel := ctxt.GetScratch("levelInConference").(uint16)
+	if !conf.TestPermission("Conference.Change", myLevel) {
+		return "error", ENOPERM
+	}
+
+	if ctxt.Verb() == "GET" {
+		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
+		return "framed", "conf_import.jet"
+	}
+
+	if ctxt.FormFieldIsSet("cancel") {
+		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	} else if !ctxt.FormFieldIsSet("import") {
+		return "error", EBUTTON
+	}
+
+	return "error", "Not yet implemented"
+}
+
 /* DeleteConference handles the deletion of a conference from its operations menu.
  * Parameters:
  *     ctxt - The AmContext for the request.

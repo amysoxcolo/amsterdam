@@ -1,0 +1,83 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<!-- Page Title -->
+<div class="p-4">
+    <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-2">
+            <h1 class="text-blue-800 text-4xl font-bold">Import Messages</h1>
+            <h2 class="text-blue-800 text-2xl font-bold">Conference: {{ confName }}</h2>
+        </div>
+        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+    </div>
+
+    {{ if isset(errorMessage) }}
+        <!-- Error Message Banner -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" id="error-banner">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <span class="text-red-500 text-xl">⚠️</span>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium" id="error-message">{{ CapitalizeString(errorMessage) }}.</p>
+                </div>
+            </div>
+        </div>
+    {{ end }}
+
+    <!-- Upload Form -->
+    <form method="POST" enctype="multipart/form-data" action="/sysadmin/import" class="max-w-3xl">
+        <div class="bg-gray-50 p-6 rounded-lg">
+            <div class="mb-6 flex gap-2">
+                <label for="idata" class="block text-black text-sm font-medium mb-2">
+                    Content data to be uploaded:
+                </label>
+                <input type="file" id="idata" name="idata"
+                    class="block w-full text-sm text-gray-900 border border-gray-300 rounded cursor-pointer bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            </div>
+            <div class="mb-6 flex gap-2">
+                <label for="match" class="block text-black text-sm font-medium mb-2">
+                    Match existing topics in the conference:
+                </label>
+                <select id="match" name="match" class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="num">By topic number</option>
+                    <option value="name">By topic name</option>
+                </select>
+            </div>
+            <div class="mb-6 flex gap-2">
+                <input type="checkbox" id="create" name="create" value="Y" checked
+                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                <label for="create" class="block text-black text-sm font-medium mb-2">
+                    Create new topics if they don't exist
+                </label>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4">
+                <button type="submit" 
+                        name="import"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                    Import
+                </button>
+                <button type="submit" 
+                        name="cancel"
+                        class="bg-red-600 hover:bg-red-700 text-white px-8 py-2 rounded font-medium transition-colors">
+                    Cancel
+                </button>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
+                <h3 class="text-sm font-bold text-blue-900 mb-2">Topic Upload Guidelines:</h3>
+                <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                    <li>The topic and messages will be imported as a VCIF/XML file.</li>
+                </ul>
+            </div>
+        </div>
+    </form>
+</div>
