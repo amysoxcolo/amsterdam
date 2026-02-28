@@ -1,0 +1,35 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<!-- Page Title -->
+<div class="p-4">
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">Import Results</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-4">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4 flex gap-2">
+        [
+            <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="{{ backLink }}">
+                <span class="text-xl">❌</span>
+                Close
+            </a>
+        ]
+    </div>
+
+    <div class="font-bold text-black">{{ headline }}</div>
+
+    <div class="bg-gray-50 p-6 rounded-lg">
+        <div class="mb-6">
+            {{ range _, line := scroll }}
+                <p><code>{{ line }}</code></p>
+            {{ end }}
+        </div>
+    </div>
+</div>

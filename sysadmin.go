@@ -801,7 +801,9 @@ func UserImport(ctxt ui.AmContext) (string, any) {
 		return "framed", "import_users.jet"
 	}
 
-	_ = count
-	_ = scroll
-	return "error", "Not yet implemented"
+	ctxt.VarMap().Set("backLink", "/sysadmin")
+	ctxt.VarMap().Set("headline", fmt.Sprintf("%d user(s) were imported successfully.", count))
+	ctxt.VarMap().Set("scroll", scroll)
+	ctxt.SetFrameTitle("Import Results")
+	return "framed", "import_results.jet"
 }

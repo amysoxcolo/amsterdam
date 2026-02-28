@@ -12,12 +12,12 @@ _(italicized items can be deferred)_
 - _Chat (top menu link)_
 - _Documentation (top menu link)_
 - Quote banner rotation
-- Sysadmin Menu:
+- ~~Sysadmin Menu:~~
   - ~~Edit Global Properties~~
   - ~~View/Edit IP Address Bans~~
   - ~~User Account Management~~
   - ~~System Audit Logs~~
-  - Import User Accounts
+  - ~~Import User Accounts~~
 - ~~Conferences list:~~
   - ~~Find~~
   - ~~Manage (reorder/show/hide/delete)~~

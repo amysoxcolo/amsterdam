@@ -151,7 +151,6 @@ func init() {
 		Renderer:     renderSBOnlineUsers,
 	}
 	sideboxRegistry[database.SideboxIDOnlineUsers] = &sb3
-	log.Infof("sidebox registry has %d entries", len(sideboxRegistry))
 }
 
 // sbRender is a context used for controlling adding variables for sideboxes.
