@@ -787,6 +787,7 @@ func UserImport(ctxt ui.AmContext) (string, any) {
 		return "framed", "import_users.jet"
 	}
 
+	start := time.Now()
 	f, err := importData.Open()
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
@@ -795,6 +796,7 @@ func UserImport(ctxt ui.AmContext) (string, any) {
 	}
 	count, scroll, err := exports.VIUImportUserList(ctxt.Ctx(), f, ctxt.CurrentUser(), ctxt.RemoteIP())
 	f.Close()
+	log.Infof("import users operation completed in %v", time.Since(start))
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.SetFrameTitle("Import User Accounts")

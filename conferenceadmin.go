@@ -798,6 +798,7 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
+	start := time.Now()
 	f, err := importData.Open()
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
@@ -808,6 +809,7 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 	}
 	topics, posts, scroll, err := exports.VCIFImportMessages(ctxt.Ctx(), f, comm, conf, mode, ctxt.FormFieldIsSet("create"), ctxt.CurrentUser(), ctxt.RemoteIP())
 	f.Close()
+	log.Infof("import messages operation completed in %v", time.Since(start))
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("confName", conf.Name)

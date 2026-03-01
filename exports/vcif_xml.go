@@ -340,12 +340,13 @@ func VCIFImportMessages(ctx context.Context, r io.Reader, comm *database.Communi
 			}
 			// If we created the topic, the "zero post" was already posted, so skip it in this loop so we don't post it again.
 			skipPost := created
+			topicOK := 0
+			topicFail := 0
 			for _, pdata := range tdata.Posts {
 				if skipPost {
 					skipPost = false
 					continue
 				}
-				//
 				author, err := database.AmGetUserByName(ctx, pdata.Author, nil)
 				if err != nil {
 					author = loader
@@ -355,11 +356,14 @@ func VCIFImportMessages(ctx context.Context, r io.Reader, comm *database.Communi
 					err = augmentPost(ctx, post, &pdata, comm, loader, ipaddr)
 				}
 				if err == nil {
+					topicOK++
 					postCount++
 				} else {
+					topicFail++
 					scroll = append(scroll, fmt.Sprintf("Unable to post message %d to topic \"%s\": %v", pdata.Index, topic.Name, err))
 				}
 			}
+			scroll = append(scroll, fmt.Sprintf("In topic \"%s\": %d messages posted successfully, %d failed", topic.Name, topicOK, topicFail))
 			if created {
 				if tdata.Frozen {
 					err = topic.SetFrozen(ctx, true, loader, comm, ipaddr)
