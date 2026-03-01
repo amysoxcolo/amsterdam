@@ -54,9 +54,9 @@ _(italicized items can be deferred)_
 - ~~"New" flag on Conference Hotlist sidebox~~
 - ~~Manage on Conference Hotlist sidebox~~
 - ~~Sidebox configuration~~
-- Topics view:
+- ~~Topics view:~~
   - ~~Find~~
-  - Manage:
+  - ~~Manage:~~
     - ~~Set pseud~~
     - ~~Fixseen~~
     - ~~Send invite~~
@@ -69,7 +69,7 @@ _(italicized items can be deferred)_
     - ~~Activity reports~~
     - ~~E-mail~~
     - ~~Export Messages~~
-    - Import Messages
+    - ~~Import Messages~~
     - ~~Delete Conference~~
   - ~~Add to Hotlist/Remove from Hotlist~~
 - ~~Actually implement pictures in posts~~
