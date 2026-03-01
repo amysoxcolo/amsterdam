@@ -775,7 +775,47 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 		return "error", EBUTTON
 	}
 
-	return "error", "Not yet implemented"
+	mode := 0
+	switch ctxt.FormField("match") {
+	case "name":
+		mode = exports.VCIFTopicMatchName
+	case "num":
+		mode = exports.VCIFTopicMatchNum
+	default:
+		ctxt.VarMap().Set("errorMessage", "Invalid matching parameter.")
+		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
+		return "framed", "conf_import.jet"
+	}
+
+	importData, err := ctxt.FormFile("idata")
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
+		return "framed", "conf_import.jet"
+	}
+	f, err := importData.Open()
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
+		return "framed", "conf_import.jet"
+	}
+	topics, posts, scroll, err := exports.VCIFImportMessages(ctxt.Ctx(), f, comm, conf, mode, ctxt.FormFieldIsSet("create"), ctxt.CurrentUser(), ctxt.RemoteIP())
+	f.Close()
+	if err != nil {
+		ctxt.VarMap().Set("errorMessage", err.Error())
+		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
+		return "framed", "conf_import.jet"
+	}
+
+	ctxt.VarMap().Set("backLink", "/sysadmin")
+	ctxt.VarMap().Set("headline", fmt.Sprintf("Processed %d topic(s) and added %d new post(s).", topics, posts))
+	ctxt.VarMap().Set("scroll", scroll)
+	ctxt.SetFrameTitle("Import Results")
+	return "framed", "import_results.jet"
 }
 
 /* DeleteConference handles the deletion of a conference from its operations menu.

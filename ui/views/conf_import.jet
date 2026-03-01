@@ -45,8 +45,8 @@
                     Match existing topics in the conference:
                 </label>
                 <select id="match" name="match" class="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="num">By topic number</option>
                     <option value="name">By topic name</option>
+                    <option value="num">By topic number</option>
                 </select>
             </div>
             <div class="mb-6 flex gap-2">
