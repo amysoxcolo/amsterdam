@@ -3,7 +3,7 @@ amsterdam
 __debug_bin*
 
 # Ignore test files
-/test.yaml
+/test*.yaml
 
 # Ignore mac-specific files
 /.DS_Store
