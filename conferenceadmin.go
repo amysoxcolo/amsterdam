@@ -765,6 +765,7 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 
 	if ctxt.Verb() == "GET" {
 		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
 		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
@@ -784,6 +785,7 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 	default:
 		ctxt.VarMap().Set("errorMessage", "Invalid matching parameter.")
 		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
 		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
@@ -792,6 +794,7 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
 		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
@@ -799,6 +802,7 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
 		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
@@ -807,11 +811,12 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 		ctxt.VarMap().Set("confName", conf.Name)
+		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
 		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
 
-	ctxt.VarMap().Set("backLink", "/sysadmin")
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
 	ctxt.VarMap().Set("headline", fmt.Sprintf("Processed %d topic(s) and added %d new post(s).", topics, posts))
 	ctxt.VarMap().Set("scroll", scroll)
 	ctxt.SetFrameTitle("Import Results")

@@ -757,9 +757,11 @@ func AmCreateNewUser(ctx context.Context, username string, password string, remi
 	}
 
 	// Insert the user record.
+	ecn := util.GenerateRandomConfirmationNumber()
+	log.Debugf("generated E-mail confirmation number %d", ecn)
 	_, err = tx.ExecContext(ctx, `INSERT INTO users (username, passhash, verify_email, lockout, email_confnum,
 		base_lvl, created, lastaccess, passreminder, description, dob) VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW(), ?, '', ?)`,
-		username, hashPassword(password), util.GenerateRandomConfirmationNumber(), AmDefaultRole("Global.NewUser").Level(),
+		username, hashPassword(password), ecn, AmDefaultRole("Global.NewUser").Level(),
 		reminder, dob)
 	if err != nil {
 		return nil, err

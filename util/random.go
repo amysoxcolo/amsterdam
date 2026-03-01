@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,9 @@ package util
 
 import (
 	crand "crypto/rand"
+	"fmt"
 	"io"
-	mrand "math/rand"
+	"math/big"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -49,6 +50,15 @@ var syllabary = [...]string{
 	"za", "ze", "zi", "zo", "zu",
 }
 
+// RCN_BASE is the base for generating random confirmation numbers.
+var RCN_BASE *big.Int = big.NewInt(900000)
+
+// RCN_OFFSET is what we add to a generated random number to get a proper confirmation number.
+const RCN_OFFSET = 1000000
+
+// RCN_MAX is the maximum value of a confirmation number.
+const RCN_MAX = 9999999
+
 // GenerateRandomAuthString generates a random authentication string.
 func GenerateRandomAuthString() string {
 	b := make([]byte, authStringLen)
@@ -64,10 +74,18 @@ func GenerateRandomAuthString() string {
 
 // GenerateRandomConfirmationNumber generates a random 7-digit confirmation number.
 func GenerateRandomConfirmationNumber() int32 {
-	rc := mrand.Int31n(9000000) + 1000000
-	for rc < 1000000 || rc > 9999999 {
+	v1, err := crand.Int(crand.Reader, RCN_BASE)
+	if err != nil {
+		panic(fmt.Sprintf("GRCN ERR %v", err))
+	}
+	rc := int32(v1.Int64()) + RCN_OFFSET
+	for rc < RCN_OFFSET || rc > RCN_MAX {
 		log.Errorf("*** GRCN out of range error! %d", rc)
-		rc = mrand.Int31n(9000000) + 1000000
+		v1, err = crand.Int(crand.Reader, RCN_BASE)
+		if err != nil {
+			panic(fmt.Sprintf("GRCN ERR %v", err))
+		}
+		rc = int32(v1.Int64()) + RCN_OFFSET
 	}
 	return rc
 }

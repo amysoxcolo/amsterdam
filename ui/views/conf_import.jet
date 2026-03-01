@@ -31,7 +31,7 @@
     {{ end }}
 
     <!-- Upload Form -->
-    <form method="POST" enctype="multipart/form-data" action="/sysadmin/import" class="max-w-3xl">
+    <form method="POST" enctype="multipart/form-data" action="{{ selfLink }}" class="max-w-3xl">
         <div class="bg-gray-50 p-6 rounded-lg">
             <div class="mb-6 flex gap-2">
                 <label for="idata" class="block text-black text-sm font-medium mb-2">

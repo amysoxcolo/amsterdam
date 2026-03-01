@@ -568,8 +568,17 @@ func (c *Conference) TouchPost(ctx context.Context, tx *sqlx.Tx, u *User, lastPo
 
 // UnreadMessages returns the total number of unread messages in a conference for a user.
 func (c *Conference) UnreadMessages(ctx context.Context, u *User) (int32, error) {
+	var count int32
+	err := amdb.GetContext(ctx, &count, `SELECT COUNT(*) FROM topics t LEFT JOIN topicsettings s
+		ON t.topicid = s.topicid AND s.uid = ? WHERE t.confid = ? AND t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)`, u.Uid, c.ConfId)
+	if err != nil {
+		return -1, err
+	}
+	if count == 0 {
+		return 0, nil
+	}
 	var rc int32
-	err := amdb.GetContext(ctx, &rc, `SELECT SUM(t.top_message - IFNULL(s.last_message,-1))
+	err = amdb.GetContext(ctx, &rc, `SELECT SUM(t.top_message - IFNULL(s.last_message,-1))
 		FROM topics t LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ?
 		WHERE t.confid = ? AND t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)`, u.Uid, c.ConfId)
 	return rc, err
@@ -1284,10 +1293,17 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	}
 
 	// Get the current "last" sequence number.
-	var seq int
-	if err = tx.GetContext(ctx, &seq, "SELECT MAX(sequence) FROM commtoconf WHERE commid = ?", comm.Id); err != nil {
+	seq := 0
+	count := 0
+	if err = tx.GetContext(ctx, &count, "SELECT COUNT(*) FROM commtoconf WHERE commid = ?", comm.Id); err != nil {
 		return nil, err
 	}
+	if count > 0 {
+		if err = tx.GetContext(ctx, &seq, "SELECT MAX(sequence) FROM commtoconf WHERE commid = ?", comm.Id); err != nil {
+			return nil, err
+		}
+	}
+	// else assume we start with a 0 sequence
 
 	// Link the conference into the community, and set the hide flag.
 	if _, err = tx.ExecContext(ctx, "INSERT INTO commtoconf (commid, confid, sequence, hide_list) VALUES (?, ?, ?, ?)", comm.Id, rc.ConfId,

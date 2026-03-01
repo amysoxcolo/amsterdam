@@ -782,11 +782,10 @@ func CreateCommunity(ctxt ui.AmContext) (string, any) {
 			}
 			var testcomm *database.Community
 			testcomm, err = database.AmGetCommunityByAlias(ctxt.Ctx(), dlg.Field("alias").Value)
-			if err != nil {
-				return dlg.RenderError(ctxt, err.Error())
-			}
-			if testcomm != nil {
+			if err == nil {
 				return dlg.RenderError(ctxt, fmt.Sprintf("A community with the alias \"%s\" already exists; please try again.", testcomm.Alias))
+			} else if err != database.ErrNoCommunity {
+				return dlg.RenderError(ctxt, err.Error())
 			}
 			var hideDir, hideSearch bool
 			switch dlg.Field("hidemode").Value {

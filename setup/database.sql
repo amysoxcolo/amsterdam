@@ -69,7 +69,7 @@ CREATE TABLE users (
     verify_email TINYINT DEFAULT 0,
     lockout TINYINT DEFAULT 0,
     access_tries SMALLINT DEFAULT 0,
-    email_confnum MEDIUMINT DEFAULT 0,
+    email_confnum INT DEFAULT 0,
     base_lvl SMALLINT UNSIGNED NOT NULL,
     created DATETIME NOT NULL,
     lastaccess DATETIME,

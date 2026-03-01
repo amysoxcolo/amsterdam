@@ -18,36 +18,40 @@
     <div class="max-w-4xl">
         <div class="bg-gray-50 p-6 rounded-lg mb-6">
             <div class="space-y-6">
-                {{ range i, c := conferences }}
-                    <div class="flex items-start gap-3">
-                        <span class="text-lg pt-0.5 flex-shrink-0">🟣</span>
-                        <div class="flex-1">
-                            <div class="mb-2">
-                                <a href="/comm/{{ commAlias }}/conf/{{ c.Alias }}" 
-                                    class="text-blue-700 hover:text-blue-900 font-bold text-lg">{{ c.Name }}</a>
-                                <span class="text-gray-600 text-sm ml-2">- Latest activity: {{ DisplayActivity(c.LastUpdate, .) }}</span>
-                                {{ if newflag[i] }}
-                                    <span class="ml-2" title="There are new messages in this conference">🔔</span>
-                                {{ end }}
-                            </div>
-                            <div class="text-sm text-gray-700 mb-1">
-                                {{ if len(c.Hosts) == 1 }}
-                                    <span class="font-medium">Host:</span>
-                                {{ else }}
-                                    <span class="font-medium">Hosts:</span>
-                                {{ end }}
-                                {{ if len(c.Hosts) > 0 }}
-                                    {{ range j, u := c.Hosts }}
-                                        {{ if j > 0 }}, {{ end }}
-                                        <a href="/users/{{ u }}" class="text-blue-700 hover:text-blue-900">{{ u }}</a>
+                {{ if len(conferences) > 0 }}
+                    {{ range i, c := conferences }}
+                        <div class="flex items-start gap-3">
+                            <span class="text-lg pt-0.5 flex-shrink-0">🟣</span>
+                            <div class="flex-1">
+                                <div class="mb-2">
+                                    <a href="/comm/{{ commAlias }}/conf/{{ c.Alias }}" 
+                                        class="text-blue-700 hover:text-blue-900 font-bold text-lg">{{ c.Name }}</a>
+                                    <span class="text-gray-600 text-sm ml-2">- Latest activity: {{ DisplayActivity(c.LastUpdate, .) }}</span>
+                                    {{ if newflag[i] }}
+                                        <span class="ml-2" title="There are new messages in this conference">🔔</span>
                                     {{ end }}
-                                {{ else }}
-                                    None 
-                                {{ end }}
+                                </div>
+                                <div class="text-sm text-gray-700 mb-1">
+                                    {{ if len(c.Hosts) == 1 }}
+                                        <span class="font-medium">Host:</span>
+                                    {{ else }}
+                                        <span class="font-medium">Hosts:</span>
+                                    {{ end }}
+                                    {{ if len(c.Hosts) > 0 }}
+                                        {{ range j, u := c.Hosts }}
+                                            {{ if j > 0 }}, {{ end }}
+                                            <a href="/users/{{ u }}" class="text-blue-700 hover:text-blue-900">{{ u }}</a>
+                                        {{ end }}
+                                    {{ else }}
+                                        None 
+                                    {{ end }}
+                                </div>
+                                <div class="italic text-gray-600 text-sm">{{ c.Description }}</div>
                             </div>
-                            <div class="italic text-gray-600 text-sm">{{ c.Description }}</div>
                         </div>
-                    </div>
+                    {{ end }}
+                {{ else }}
+                    <div class="italic text-gray-600 text-lg">No conferences in this community.</div>
                 {{ end }}
             </div>
         </div>
