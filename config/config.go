@@ -31,7 +31,7 @@ const AMSTERDAM_COPYRIGHT = "2025-2026"
 
 // AmCLI is the command-line interface arguments structure.
 type AmCLI struct {
-	ConfigFile       string `arg:"-C,--config" help:"Location of the configuration file."`
+	ConfigFile       string `arg:"-C,--config,env:AMSTERDAM_CONFIG" help:"Location of the configuration file."`
 	DebugPanic       bool   `arg:"--debug-panic" help:"Development Only - disable Echo panic recovery"`
 	BuggyAttachments bool   `arg:"--buggy-attachments" help:"Some attachments may be buggy - truncate data if necessary"`
 }

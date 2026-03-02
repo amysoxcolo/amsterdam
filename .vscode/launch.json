@@ -25,7 +25,9 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-C", "${workspaceFolder}/test2.yaml"]
+            "env": {
+                "AMSTERDAM_CONFIG": "${workspaceFolder}/test2.yaml"
+            }
         },
     ]
 }
