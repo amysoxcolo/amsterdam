@@ -142,6 +142,7 @@ func setupEcho() *echo.Echo {
 	adminGroup.Match(GetAndPost, "/members", ui.AmWrap(CommunityMembers))
 	adminGroup.GET("/massmail", ui.AmWrap(CommunityEmailForm))
 	adminGroup.POST("/massmail", ui.AmWrap(CommunityEmail))
+	adminGroup.GET("/delete", ui.AmWrap(DeleteCommunity))
 
 	// conference group
 	commGroup.GET("/create_conf", ui.AmWrap(CreateConferenceForm))

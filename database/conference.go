@@ -937,6 +937,11 @@ func (*conferenceServiceVTable) OnDeleteCommunity(ctx context.Context, tx *sqlx.
 	if err != nil {
 		return err
 	}
+	// Delete any mention of this community from the conference hotlists.
+	_, err = tx.ExecContext(ctx, "DELETE FROM confhotlist WHERE commid = ?", commid)
+	if err != nil {
+		return err
+	}
 	for i, confid := range confids {
 		// any references to conference other than this community?
 		refCount := 0

@@ -591,6 +591,51 @@ func (c *Community) GetMemberEMailAddrs(ctx context.Context) ([]string, error) {
 	return rc, err
 }
 
+// Delete deletes this community.
+func (c *Community) Delete(ctx context.Context, u *User, ipaddr string, background *util.WorkerPool) error {
+	tx, commit, rollback := transaction(ctx)
+	defer rollback()
+
+	// Start by deleting all the community's services. This will purge the conferences, among other things.
+	err := AmDeleteCommunityServices(ctx, tx, c.Id, background)
+	if err != nil {
+		return err
+	}
+
+	// Now erase from the other tables as well: members, bans, properties, and communities themselves.
+	_, err = tx.ExecContext(ctx, "DELETE FROM commmember WHERE commid = ?", c.Id)
+	if err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM commban WHERE commid = ?", c.Id)
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM propcomm WHERE cid = ?", c.Id)
+			if err == nil {
+				_, err = tx.ExecContext(ctx, "DELETE FROM communities WHERE commid = ?", c.Id)
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+	if err = commit(); err != nil {
+		return err
+	}
+
+	// Purge the member and properties caches, and punt this community from the community cache.
+	memberMutex.Lock()
+	memberCache.Purge()
+	memberMutex.Unlock()
+	getCommunityPropMutex.Lock()
+	communityPropCache.Purge()
+	getCommunityPropMutex.Unlock()
+	getCommunityMutex.Lock()
+	communityCache.Remove(c.Id)
+	getCommunityMutex.Unlock()
+
+	// Save off an audit record for the delete.
+	AmStoreAudit(AmNewCommAudit(AuditCommunityDelete, u.Uid, c.Id, ipaddr))
+	return nil
+}
+
 /* AmGetCommunity returns a reference to the specified community.
  * Parameters:
  *     ctx - Standard Go context value.

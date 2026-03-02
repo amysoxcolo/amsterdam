@@ -730,6 +730,40 @@ func CommunityEmail(ctxt ui.AmContext) (string, any) {
 	return "redirect", fmt.Sprintf("/comm/%s/admin", comm.Alias)
 }
 
+/* DeleteCommunity handles the deletion of a community.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ *     Standard Go error status.
+ */
+func DeleteCommunity(ctxt ui.AmContext) (string, any) {
+	comm := ctxt.CurrentCommunity()
+	if !comm.TestPermission("Community.Delete", ctxt.EffectiveLevel()) {
+		return "error", ENOACCESS
+	}
+
+	// Load the message box, and, if we have a valid "yes," then perform the delete
+	mbox, err := ui.AmLoadMessageBox("deleteComm")
+	if err != nil {
+		return "error", err
+	}
+	if mbox.Validate(ctxt, "yes") {
+		err := comm.Delete(ctxt.Ctx(), ctxt.CurrentUser(), ctxt.RemoteIP(), ampool)
+		if err != nil {
+			return "error", err
+		}
+		return "redirect", "/"
+	}
+
+	// Set up to display the message box.
+	mbox.SetMessage(fmt.Sprintf(`You are about to <b>permanently</b> delete the <span class="font-bold text-red-600">"%s"</span> community!`, comm.Name))
+	mbox.SetLink("no", fmt.Sprintf("/comm/%s/admin", comm.Alias))
+	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/admin/delete", comm.Alias))
+	return mbox.Render(ctxt)
+}
+
 /* CreateCommunityForm renders the form for creating a new community.
  * Parameters:
  *     ctxt - The AmContext for the request.

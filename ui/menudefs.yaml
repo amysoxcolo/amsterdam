@@ -81,7 +81,7 @@ menudefs:
         link: "/comm/[CID]/admin/audit"
         permission: "Community.ShowAdmin"
       - text: "Delete Community"
-        link: "/TODO/comm/[CID]/admin/delete"
+        link: "/comm/[CID]/admin/delete"
         permission: "Community.Delete"
         hazard: true
   - id: "confhost"

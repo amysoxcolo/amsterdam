@@ -105,3 +105,31 @@ messagedefs:
         tone: "green"
         icon: "✗"
         text: "No, Cancel"
+  - id: "deleteComm"
+    title: "Delete Community"
+    tone: "red"
+    destructive: true
+    message: "You are about to delete a community!"
+    warningIcon: "💣"
+    warningLines:
+      - text: "Warning: This action cannot be undone!"
+        bold: true
+      - text: "Deleting this community will permanently remove it and all its contents from the system."
+        bold: false
+      - text: "Hundreds or even thousands of individual contributions will be lost forever."
+        bold: false
+      - text: "Please consider this action very carefully!"
+        bold: true
+    buttons:
+      - id: "yes"
+        link: "placeholder"
+        confirm: true
+        tone: "red"
+        icon: "✓"
+        text: "Yes, Delete It"
+      - id: "no"
+        link: "placeholder"
+        confirm: false
+        tone: "green"
+        icon: "✗"
+        text: "No, Cancel"

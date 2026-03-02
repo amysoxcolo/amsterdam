@@ -23,12 +23,12 @@ _(italicized items can be deferred)_
   - ~~Manage (reorder/show/hide/delete)~~
   - ~~Create New~~
 - ~~Conferences List honor "hide in list" flag~~
-- Community Admin Menu:
+- ~~Community Admin Menu:~~
   - ~~Set Community Category~~
   - ~~Membership Control~~
   - ~~E-Mail to All Members~~
   - ~~Display Audit Records~~
-  - Delete Community
+  - ~~Delete Community~~
 - ~~Community Profile: Invite~~
 - _Help link atop page headers_
 - _Policy page_
