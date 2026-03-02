@@ -51,7 +51,7 @@ var syllabary = [...]string{
 }
 
 // RCN_BASE is the base for generating random confirmation numbers.
-var RCN_BASE *big.Int = big.NewInt(900000)
+var RCN_BASE *big.Int = big.NewInt(9000000)
 
 // RCN_OFFSET is what we add to a generated random number to get a proper confirmation number.
 const RCN_OFFSET = 1000000
