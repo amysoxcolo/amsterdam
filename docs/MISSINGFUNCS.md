@@ -11,7 +11,7 @@ _(italicized items can be deferred)_
 - _Calendar (top menu link)_
 - _Chat (top menu link)_
 - _Documentation (top menu link)_
-- Quote banner rotation
+- ~~Quote banner rotation~~
 - ~~Sysadmin Menu:~~
   - ~~Edit Global Properties~~
   - ~~View/Edit IP Address Bans~~

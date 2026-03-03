@@ -28,6 +28,7 @@ func SetupDb() (func(), error) {
 	db, err := sqlx.Open(config.GlobalConfig.Database.Driver, config.GlobalConfig.Database.Dsn)
 	if err == nil {
 		amdb = db
+		setupAdCache()
 		setupUserCache()
 		setupContactsCache()
 		setupCommunityCache()

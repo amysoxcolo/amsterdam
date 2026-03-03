@@ -64,6 +64,7 @@ func setupEcho() *echo.Echo {
 	}
 	e.Match(GetAndPost, "/TODO/*", ui.AmWrap(NotImplPage), uiset...)
 	e.GET("/img/*", ui.AmServeImage)
+	e.GET("/images/*", ui.AmServeImage)
 	if config.GlobalConfig.Rendering.VeniceCompatibleImageURLs {
 		e.GET("/venice/imagedata/:id", ui.AmServeVeniceCompatibleImage)
 	}

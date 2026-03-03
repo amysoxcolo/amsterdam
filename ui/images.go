@@ -34,6 +34,9 @@ import (
 //go:embed static_images/*
 var static_images embed.FS
 
+//go:embed adbanners/*
+var ad_banners embed.FS
+
 // Constants for default photo sizes.
 const (
 	UserPhotoWidth        = 100
@@ -68,6 +71,12 @@ func AmServeImage(c echo.Context) error {
 		case "builtin/":
 			var b []byte
 			b, err = static_images.ReadFile(filepath.Join("static_images", components[3]))
+			if err == nil {
+				return c.Blob(http.StatusOK, mimeTypeFromFilename(components[3]), b)
+			}
+		case "ads/":
+			var b []byte
+			b, err = ad_banners.ReadFile(filepath.Join("adbanners", components[3]))
 			if err == nil {
 				return c.Blob(http.StatusOK, mimeTypeFromFilename(components[3]), b)
 			}

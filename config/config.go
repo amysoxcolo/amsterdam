@@ -110,6 +110,7 @@ type AmConfig struct {
 			WorkerTasks    int `yaml:"workerTasks"`
 		} `yaml:"queues"`
 		Caches struct {
+			Ads             int `yaml:"ads"`
 			Communities     int `yaml:"communities"`
 			CommunityProps  int `yaml:"communityProps"`
 			Conferences     int `yaml:"conferences"`
@@ -254,6 +255,7 @@ func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
 	dest.Tuning.Queues.EmailSend = overlayInt(loaded.Tuning.Queues.EmailSend, defaults.Tuning.Queues.EmailSend)
 	dest.Tuning.Queues.IPBans = overlayInt(loaded.Tuning.Queues.IPBans, defaults.Tuning.Queues.IPBans)
 	dest.Tuning.Queues.WorkerTasks = overlayInt(loaded.Tuning.Queues.WorkerTasks, defaults.Tuning.Queues.WorkerTasks)
+	dest.Tuning.Caches.Ads = overlayInt(loaded.Tuning.Caches.Ads, defaults.Tuning.Caches.Ads)
 	dest.Tuning.Caches.Communities = overlayInt(loaded.Tuning.Caches.Communities, defaults.Tuning.Caches.Communities)
 	dest.Tuning.Caches.CommunityProps = overlayInt(loaded.Tuning.Caches.CommunityProps, defaults.Tuning.Caches.CommunityProps)
 	dest.Tuning.Caches.Conferences = overlayInt(loaded.Tuning.Caches.Conferences, defaults.Tuning.Caches.Conferences)

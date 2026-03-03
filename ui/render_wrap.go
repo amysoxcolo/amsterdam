@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/klauspost/lctime"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
@@ -129,6 +130,17 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		}
 		menus[1] = AmMenu("fixed")
 		amctxt.VarMap().Set("__leftMenus", menus)
+		ad, err := database.AmGetRandomAd(ctxt.Request().Context())
+		if err != nil {
+			ad = &database.Advert{
+				AdId:      -1,
+				ImagePath: "",
+				PathStyle: -1,
+				Caption:   nil,
+				LinkURL:   nil,
+			}
+		}
+		amctxt.VarMap().Set("__bannerad", ad)
 		if tmp := amctxt.GetScratch("frame_suppressLogin"); tmp != nil {
 			amctxt.VarMap().Set("__suppressLogin", true)
 		}

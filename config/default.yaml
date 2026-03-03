@@ -64,6 +64,7 @@ tuning:
     ipBans: 32
     workerTasks: 128
   caches:
+    ads: 30
     communities: 50
     communityProps: 100
     conferences: 100

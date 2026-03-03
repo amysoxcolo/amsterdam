@@ -49,7 +49,16 @@
 
             <!-- Banner Ad -->
             <div class="w-2/5 flex justify-end">
-                <img src="/img/builtin/placeholder_ad.gif" alt="" class="w-96 h-15 mx-2 my-2">
+                {{ p := __bannerad.ResolvePath() }}
+                {{ if p != "" }}
+                    {{ if isset(__bannerad.LinkURL) }}
+                        <a href="{{ __bannerad.LinkURL }}"><img src="{{ p }}" {{ if isset(__bannerad.Caption) }}alt="{{ __bannerad.Caption }}"{{ end }} class="w-96 h-15 mx-2 my-2"></a>
+                    {{ else }}
+                        <img src="{{ p }}" {{ if isset(__bannerad.Caption) }}alt="{{ __bannerad.Caption }}"{{ end }} class="w-96 h-15 mx-2 my-2">
+                    {{ end }}
+                {{ else }}
+                    &nbsp;
+                {{ end }}
             </div>
         </div>
 
