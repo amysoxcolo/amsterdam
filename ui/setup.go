@@ -17,6 +17,7 @@ func SetupUILayer() func() {
 	exitfuncs := make([]func(), 0, 2)
 	setupTemplates()
 	setupMenuCache()
+	setupResources()
 	exitfuncs = append(exitfuncs, setupSessionManager())
 	exitfuncs = append(exitfuncs, setupContext())
 	return func() {

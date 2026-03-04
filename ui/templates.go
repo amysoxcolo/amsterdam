@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -202,28 +203,7 @@ func displayMemberCount(a jet.Arguments) reflect.Value {
 // displayFullName extracts a full name from a contact record.
 func displayFullName(a jet.Arguments) reflect.Value {
 	ci := a.Get(0).Convert(reflect.TypeFor[*database.ContactInfo]()).Interface().(*database.ContactInfo)
-	var rc strings.Builder
-	if ci.Prefix != nil && *ci.Prefix != "" {
-		rc.WriteString(*ci.Prefix)
-		rc.WriteString(" ")
-	}
-	if ci.GivenName != nil && *ci.GivenName != "" {
-		rc.WriteString(*ci.GivenName)
-	}
-	if ci.MiddleInit != nil && *ci.MiddleInit != "" {
-		rc.WriteString(" ")
-		rc.WriteString(*ci.MiddleInit)
-		rc.WriteString(".")
-	}
-	if ci.FamilyName != nil && *ci.FamilyName != "" {
-		rc.WriteString(" ")
-		rc.WriteString(*ci.FamilyName)
-	}
-	if ci.Suffix != nil && *ci.Suffix != "" {
-		rc.WriteString(" ")
-		rc.WriteString(*ci.Suffix)
-	}
-	return reflect.ValueOf(rc.String())
+	return reflect.ValueOf(ci.FullName(true))
 }
 
 // displayExpandCat displays a category expanded into a hierarchy.
@@ -305,13 +285,24 @@ func postRewrite(a jet.Arguments) reflect.Value {
 
 // setupTemplates is called to set up the template renderer after the configuration is loaded.
 func setupTemplates() {
-	views = jet.NewSet(
-		multi.NewLoader(
-			jet.NewOSFileSystemLoader(config.GlobalConfig.Rendering.TemplateDir),
-			embedfs.NewLoader("views/", static_views),
-		),
-		jet.DevelopmentMode(true),
-	)
+	// Set up the template loaders: the optional filesystem loader, then the embedded loader.
+	templateLoaders := make([]jet.Loader, 0, 2)
+	if config.GlobalConfig.Resources.ViewTemplateDir != "" {
+		finfo, err := os.Stat(config.GlobalConfig.Resources.ViewTemplateDir)
+		if err == nil {
+			if finfo.IsDir() {
+				templateLoaders = append(templateLoaders, jet.NewOSFileSystemLoader(config.GlobalConfig.Resources.ViewTemplateDir))
+			} else {
+				log.Errorf("view template directory %s is not a directory, ignored", config.GlobalConfig.Resources.ViewTemplateDir)
+			}
+		} else {
+			log.Errorf("view template directory %s is not valid, ignored (%v)", config.GlobalConfig.Resources.ViewTemplateDir, err)
+		}
+	}
+	templateLoaders = append(templateLoaders, embedfs.NewLoader("views/", static_views))
+
+	// Create the template renderer and add our globals to it.
+	views = jet.NewSet(multi.NewLoader(templateLoaders...), jet.DevelopmentMode(true))
 	views.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)

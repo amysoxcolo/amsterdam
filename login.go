@@ -315,8 +315,16 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 		return "error", ENOACCOUNT
 	}
 
+	// Load the user agreement from the resources.
+	agreementTitle, agreementBody, err := ui.AmLoadHTMLResource("useragreement.html")
+	if err != nil {
+		return "error", err
+	}
+
 	ctxt.SetLeftMenu("top")
 	ctxt.VarMap().Set("target", target)
+	ctxt.VarMap().Set("agreementTitle", agreementTitle)
+	ctxt.VarMap().Set("agreementBody", agreementBody)
 	ctxt.SetScratch("frame_suppressLogin", true)
 	ctxt.SetFrameTitle("New Account User Agreement")
 	return "framed", "agreement.jet"

@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -68,7 +69,6 @@ type AmConfig struct {
 			Title string `yaml:"title"`
 			Text  string `yaml:"text"`
 		} `yaml:"userAgreement"`
-		ExternalPath string `yaml:"externalPath"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`
@@ -91,13 +91,16 @@ type AmConfig struct {
 		Disclaimer   string `yaml:"disclaimer"`
 	} `yaml:"email"`
 	Rendering struct {
-		TemplateDir string `yaml:"templatedir"`
 		CookieKey   string `yaml:"cookiekey"`
 		CountryList struct {
 			Prioritize string `yaml:"prioritize"`
 		} `yaml:"countryList"`
 		VeniceCompatibleImageURLs bool `yaml:"veniceCompatibleImageURLs"`
 	} `yaml:"rendering"`
+	Resources struct {
+		ViewTemplateDir     string `yaml:"viewTemplateDir"`
+		ExternalContentPath string `yaml:"externalContentPath"`
+	} `yaml:"resources"`
 	Posting struct {
 		ExternalDictionary string `yaml:"externalDictionary"`
 		Uploads            struct {
@@ -254,6 +257,27 @@ func parseDataSize(s string) (int32, error) {
 		rc *= (1024 * 1024 * 1024)
 	}
 	return int32(rc), nil
+}
+
+// AmOpenExternalContentPath opens the "external content path" specified in the configuration as a root filesystem.
+func AmOpenExternalContentPath() (fs.FS, error) {
+	if GlobalConfig.Resources.ExternalContentPath == "" {
+		return nil, nil
+	}
+	finfo, err := os.Stat(GlobalConfig.Resources.ExternalContentPath)
+	if err != nil {
+		log.Errorf("external content path \"%s\" is not valid, ignored (%v)", GlobalConfig.Resources.ExternalContentPath, err)
+		return nil, nil
+	}
+	if !finfo.IsDir() {
+		log.Errorf("external content path \"%s\" is not a directory, ignored", GlobalConfig.Resources.ExternalContentPath)
+		return nil, nil
+	}
+	root, err := os.OpenRoot(GlobalConfig.Resources.ExternalContentPath)
+	if err != nil {
+		return nil, err
+	}
+	return root.FS(), nil
 }
 
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.

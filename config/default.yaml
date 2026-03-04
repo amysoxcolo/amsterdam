@@ -17,7 +17,6 @@ site:
     title: "Amsterdam User Agreement"
     text: >
       Text of this agreement is TBD.
-  externalPath: ""
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"
@@ -40,11 +39,13 @@ email:
     The Amsterdam Project is not responsible for the contents of this message
     Report abuses to: <abuse@example.com>
 rendering:
-  templatedir: custom_templates
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
   countryList:
     prioritize: US
   veniceCompatibleImageURLs: false
+resources:
+  viewTemplateDir: ""
+  externalContentPath: ""
 posting:
   externalDictionary: ""
   uploads:

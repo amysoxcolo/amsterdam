@@ -16,6 +16,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -24,6 +25,13 @@ import (
 
 //go:embed static/*
 var static_data embed.FS
+
+//go:embed resources/*
+var static_resources embed.FS
+
+func setupResources() {
+	// do nothing yet
+}
 
 // AmStaticFileHandler returns a handler for the files in the static embedded filesystem.
 func AmStaticFileHandler() echo.HandlerFunc {
@@ -83,6 +91,17 @@ func breakUpHTML(r io.Reader) (string, string, error) {
 	}
 	traverse(doc)
 	return title, body, nil
+}
+
+// AmLoadHTMLResource loads an HTML resource and splits it into title and body.
+func AmLoadHTMLResource(resourceName string) (string, string, error) {
+	f, err := static_resources.Open(filepath.Join("resources", resourceName))
+	if err != nil {
+		return "", "", err
+	}
+	title, body, err := breakUpHTML(f)
+	f.Close()
+	return title, body, err
 }
 
 /* AmStaticFramePage generates a handler that will serve up data from an external filesystem "framed" inside

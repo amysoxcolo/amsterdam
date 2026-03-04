@@ -7,6 +7,8 @@ After the point where it reaches feature parity with Venice circa 2006.
 * Policy page support.
 * User agreement in a separate file rather than directly in settings.
 * Support all customizations that were done with the EMinds instance of Venice.
+* Gitea-like status page showing Go-specific internals.
+* Build static Tailwind CSS file rather than using remote-loaded version. (Gate on debug/prod flag)
 
 ## Immediate Cleanups Required
 

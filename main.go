@@ -53,12 +53,11 @@ func setupEcho() *echo.Echo {
 	uiset := []echo.MiddlewareFunc{ui.SessionStoreInjector, ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest}
 
 	e.RouteNotFound("/*", ui.AmWrap(AmNotFoundHandler), uiset...)
-	if config.GlobalConfig.Site.ExternalPath != "" {
-		root, err := os.OpenRoot(config.GlobalConfig.Site.ExternalPath)
-		if err != nil {
-			panic(err)
-		}
-		fs := root.FS()
+	fs, err := config.AmOpenExternalContentPath()
+	if err != nil {
+		panic(err)
+	}
+	if fs != nil {
 		e.StaticFS("/ext", fs)
 		e.GET("/fext/*", ui.AmWrap(ui.AmStaticFramePage(fs, "/fext/")), uiset...)
 	}
