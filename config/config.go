@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 
@@ -149,123 +150,57 @@ func init() {
 	}
 }
 
-/* overlayString is a helper that takes a loaded or defaulted string and returns it.
- * Parameters:
- *     loaded - The string loaded from a configuration file.
- *     defaulted - The default value of this string.
- * Returns:
- *     loaded if it's not empty, otherwise defaulted.
- */
-func overlayString(loaded string, defaulted string) string {
-	if loaded == "" {
-		return defaulted
+// overlayStructValue overlays the "loaded" and "defaults" structure onto the "dest" structure. All parameters are AmConfig structures.
+func overlayStructValue(dest, loaded, defaults reflect.Value) {
+	typ := dest.Type()
+	for i := 0; i < dest.NumField(); i++ {
+		fldDest := dest.Field(i)
+		fldLoaded := loaded.Field(i)
+		fldDefaults := defaults.Field(i)
+		if fldDest.Kind() == reflect.Struct {
+			// nested struct - call recursively
+			overlayStructValue(fldDest, fldLoaded, fldDefaults)
+		} else if fldDest.Kind() == reflect.String {
+			// string field handling
+			s := fldLoaded.Interface().(string)
+			if s == "" {
+				fldDest.Set(fldDefaults)
+			} else {
+				fldDest.Set(fldLoaded)
+			}
+		} else if fldDest.Kind() == reflect.Array || fldDest.Kind() == reflect.Slice {
+			// array of strings - merge the two arrays
+			m := make(map[string]bool)
+			for i := 0; i < fldDefaults.Len(); i++ {
+				m[fldDefaults.Index(i).String()] = true
+			}
+			for i := 0; i < fldLoaded.Len(); i++ {
+				m[fldLoaded.Index(i).String()] = true
+			}
+			rc := make([]string, 0, len(m))
+			for s := range m {
+				rc = append(rc, s)
+			}
+			fldDest.Set(reflect.ValueOf(rc))
+		} else if fldDest.Kind() == reflect.Bool {
+			// just "or" the boolean values together
+			b1 := fldDefaults.Bool()
+			b2 := fldLoaded.Bool()
+			fldDest.SetBool(b1 || b2)
+		} else if fldDest.CanInt() {
+			// int field handling
+			n := fldLoaded.Int()
+			if n == 0 {
+				fldDest.Set(fldDefaults)
+			} else {
+				fldDest.Set(fldLoaded)
+			}
+		} else {
+			// if we see this message, this function needs more work
+			errField := typ.Field(i)
+			log.Errorf("*** unable to deal with field %s of type %s", errField.Name, typ.Name())
+		}
 	}
-	return loaded
-}
-
-/* overlayString is a helper that takes a loaded or defaulted string array and returns it. (It merges the two
- * if two different arrays are specified.)
- * Parameters:
- *     loaded - The array loaded from a configuration file.
- *     defaulted - The default value of this array.
- * Returns:
- *     Merged version of the two arrays.
- */
-func overlayStringArray(loaded, defaulted []string) []string {
-	m := make(map[string]bool)
-	for _, s := range defaulted {
-		m[s] = true
-	}
-	for _, s := range loaded {
-		m[s] = true
-	}
-	rc := make([]string, 0, len(m))
-	for s := range m {
-		rc = append(rc, s)
-	}
-	return rc
-}
-
-/* overlayInt is a helper that takes a loaded or defaulted integer and returns it.
- * Parameters:
- *     loaded - The integer loaded from a configuration file.
- *     defaulted - The default value of this integer.
- * Returns:
- *     loaded if it's not empty, otherwise defaulted.
- */
-func overlayInt(loaded int, defaulted int) int {
-	if loaded != 0 {
-		return loaded
-	}
-	return defaulted
-}
-
-/* overlayOptionFlag is a helper that takes a loaded or defaulted option flag and returns it.
- * Parameters:
- *     loaded - The option flag loaded from a configuration file.
- *     defaulted - The default value of this option flag.
- * Returns:
- *     Combined value.
- */
-func overlayOptionFlag(loaded, defaulted bool) bool {
-	return loaded || defaulted
-}
-
-/* overlayConfig takes two configuration structures and overlays them to create the third.
- * Parameters:
- *     dest - Points to the destination configuration structure.
- *     loaded - Points to the loaded configuration structure.
- *     defaults - Points to the default configuration structure.
- */
-func overlayConfig(dest *AmConfig, loaded *AmConfig, defaults *AmConfig) {
-	dest.Site.BaseURL = overlayString(loaded.Site.BaseURL, defaults.Site.BaseURL)
-	dest.Site.Title = overlayString(loaded.Site.Title, defaults.Site.Title)
-	dest.Site.TopRefresh = overlayInt(loaded.Site.TopRefresh, defaults.Site.TopRefresh)
-	dest.Site.LoginCookieName = overlayString(loaded.Site.LoginCookieName, defaults.Site.LoginCookieName)
-	dest.Site.LoginCookieAge = overlayInt(loaded.Site.LoginCookieAge, defaults.Site.LoginCookieAge)
-	dest.Site.SessionExpire = overlayString(loaded.Site.SessionExpire, defaults.Site.SessionExpire)
-	dest.Site.UserAgreement.Title = overlayString(loaded.Site.UserAgreement.Title, defaults.Site.UserAgreement.Title)
-	dest.Site.UserAgreement.Text = overlayString(loaded.Site.UserAgreement.Text, defaults.Site.UserAgreement.Text)
-	dest.Site.ExternalPath = overlayString(loaded.Site.ExternalPath, defaults.Site.ExternalPath)
-	dest.Database.Driver = overlayString(loaded.Database.Driver, defaults.Database.Driver)
-	dest.Database.Dsn = overlayString(loaded.Database.Dsn, defaults.Database.Dsn)
-	dest.Defaults.Language = overlayString(loaded.Defaults.Language, defaults.Defaults.Language)
-	dest.Defaults.TimeZone = overlayString(loaded.Defaults.TimeZone, defaults.Defaults.TimeZone)
-	dest.Email.Host = overlayString(loaded.Email.Host, defaults.Email.Host)
-	dest.Email.Port = overlayInt(loaded.Email.Port, defaults.Email.Port)
-	dest.Email.Tls = overlayString(loaded.Email.Tls, defaults.Email.Tls)
-	dest.Email.AuthType = overlayString(loaded.Email.AuthType, defaults.Email.AuthType)
-	dest.Email.User = overlayString(loaded.Email.User, defaults.Email.User)
-	dest.Email.Password = overlayString(loaded.Email.Password, defaults.Email.Password)
-	dest.Email.MailFromAddr = overlayString(loaded.Email.MailFromAddr, defaults.Email.MailFromAddr)
-	dest.Email.MailFromName = overlayString(loaded.Email.MailFromName, defaults.Email.MailFromName)
-	dest.Email.Signature = overlayString(loaded.Email.Signature, defaults.Email.Signature)
-	dest.Email.Disclaimer = overlayString(loaded.Email.Disclaimer, defaults.Email.Disclaimer)
-	dest.Rendering.TemplateDir = overlayString(loaded.Rendering.TemplateDir, defaults.Rendering.TemplateDir)
-	dest.Rendering.CookieKey = overlayString(loaded.Rendering.CookieKey, defaults.Rendering.CookieKey)
-	dest.Rendering.CountryList.Prioritize = overlayString(loaded.Rendering.CountryList.Prioritize, defaults.Rendering.CountryList.Prioritize)
-	dest.Rendering.VeniceCompatibleImageURLs = overlayOptionFlag(loaded.Rendering.VeniceCompatibleImageURLs, defaults.Rendering.VeniceCompatibleImageURLs)
-	dest.Posting.ExternalDictionary = overlayString(loaded.Posting.ExternalDictionary, defaults.Posting.ExternalDictionary)
-	dest.Posting.Uploads.MaxSize = overlayString(loaded.Posting.Uploads.MaxSize, defaults.Posting.Uploads.MaxSize)
-	dest.Posting.Uploads.NoCompressTypes = overlayStringArray(loaded.Posting.Uploads.NoCompressTypes, defaults.Posting.Uploads.NoCompressTypes)
-	dest.Tuning.WorkerTasks = overlayInt(loaded.Tuning.WorkerTasks, defaults.Tuning.WorkerTasks)
-	dest.Tuning.Queues.AuditWrites = overlayInt(loaded.Tuning.Queues.AuditWrites, defaults.Tuning.Queues.AuditWrites)
-	dest.Tuning.Queues.ContextRecycle = overlayInt(loaded.Tuning.Queues.ContextRecycle, defaults.Tuning.Queues.ContextRecycle)
-	dest.Tuning.Queues.EmailRecycle = overlayInt(loaded.Tuning.Queues.EmailRecycle, defaults.Tuning.Queues.EmailRecycle)
-	dest.Tuning.Queues.EmailSend = overlayInt(loaded.Tuning.Queues.EmailSend, defaults.Tuning.Queues.EmailSend)
-	dest.Tuning.Queues.IPBans = overlayInt(loaded.Tuning.Queues.IPBans, defaults.Tuning.Queues.IPBans)
-	dest.Tuning.Queues.WorkerTasks = overlayInt(loaded.Tuning.Queues.WorkerTasks, defaults.Tuning.Queues.WorkerTasks)
-	dest.Tuning.Caches.Ads = overlayInt(loaded.Tuning.Caches.Ads, defaults.Tuning.Caches.Ads)
-	dest.Tuning.Caches.Communities = overlayInt(loaded.Tuning.Caches.Communities, defaults.Tuning.Caches.Communities)
-	dest.Tuning.Caches.CommunityProps = overlayInt(loaded.Tuning.Caches.CommunityProps, defaults.Tuning.Caches.CommunityProps)
-	dest.Tuning.Caches.Conferences = overlayInt(loaded.Tuning.Caches.Conferences, defaults.Tuning.Caches.Conferences)
-	dest.Tuning.Caches.ConferenceProps = overlayInt(loaded.Tuning.Caches.ConferenceProps, defaults.Tuning.Caches.ConferenceProps)
-	dest.Tuning.Caches.ContactInfo = overlayInt(loaded.Tuning.Caches.ContactInfo, defaults.Tuning.Caches.ContactInfo)
-	dest.Tuning.Caches.Members = overlayInt(loaded.Tuning.Caches.Members, defaults.Tuning.Caches.Members)
-	dest.Tuning.Caches.Menus = overlayInt(loaded.Tuning.Caches.Menus, defaults.Tuning.Caches.Menus)
-	dest.Tuning.Caches.Services = overlayInt(loaded.Tuning.Caches.Services, defaults.Tuning.Caches.Services)
-	dest.Tuning.Caches.Users = overlayInt(loaded.Tuning.Caches.Users, defaults.Tuning.Caches.Users)
-	dest.Tuning.Caches.UserProps = overlayInt(loaded.Tuning.Caches.UserProps, defaults.Tuning.Caches.UserProps)
 }
 
 // parseDataSize converts the data size in bytes, kilobytes, megabytes, or gigabytes to a number value.
@@ -311,7 +246,7 @@ func SetupConfig() {
 		if err = yaml.Unmarshal(data, &loadedConfig); err != nil {
 			panic(fmt.Sprintf("unable to load configuration file %s: %v", CommandLine.ConfigFile, err))
 		}
-		overlayConfig(&GlobalConfig, &loadedConfig, &defaultConfig)
+		overlayStructValue(reflect.ValueOf(&GlobalConfig).Elem(), reflect.ValueOf(&loadedConfig).Elem(), reflect.ValueOf(&defaultConfig).Elem())
 	} else {
 		GlobalConfig = defaultConfig // just copy over the defaults
 	}
