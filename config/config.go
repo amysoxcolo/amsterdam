@@ -14,7 +14,9 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -29,6 +31,9 @@ const AMSTERDAM_VERSION = "0.0.1"
 
 // AMSTERDAM_COPYRIGHT contains the copyright dates for Amsterdam.
 const AMSTERDAM_COPYRIGHT = "2025-2026"
+
+// CONFIGFILE_NAME is the name of the standard configuration file.
+const CONFIGFILE_NAME = "amsterdam.yaml"
 
 // AmCLI is the command-line interface arguments structure.
 type AmCLI struct {
@@ -126,9 +131,10 @@ type AmConfig struct {
 	} `yaml:"tuning"`
 }
 
+// AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig.
 type AmConfigComputed struct {
-	UploadMaxSize    int32
-	UploadNoCompress map[string]bool
+	UploadMaxSize    int32           // maximum upload size in bytes
+	UploadNoCompress map[string]bool // which upload types are not compressed?
 }
 
 //go:embed default.yaml
@@ -148,6 +154,28 @@ func init() {
 	if err := yaml.Unmarshal(defaultConfigData, &defaultConfig); err != nil {
 		panic(err) // can't happen
 	}
+}
+
+// locateConfigFile locates and opens the Amsterdam configuration file, if it exists.
+func locateConfigFile() (string, *os.File) {
+	// first, check the one on the command line (or in the environment)
+	if CommandLine.ConfigFile != "" {
+		f, err := os.Open(CommandLine.ConfigFile)
+		if err == nil {
+			return CommandLine.ConfigFile, f
+		}
+	}
+	// now, check the OS-specific configuration file directories
+	dirs := configFileDirs()
+	for _, d := range dirs {
+		p := filepath.Join(d, CONFIGFILE_NAME)
+		f, err := os.Open(p)
+		if err == nil {
+			return p, f
+		}
+	}
+	// finally, punt and just use the defaults
+	return "", nil
 }
 
 // overlayStructValue overlays the "loaded" and "defaults" structure onto the "dest" structure. All parameters are AmConfig structures.
@@ -211,7 +239,7 @@ func parseDataSize(s string) (int32, error) {
 	}
 	m := re.FindStringSubmatch(s)
 	if m == nil {
-		return -1, errors.New("invalid value spacified")
+		return -1, errors.New("invalid value specified")
 	}
 	rc, err := strconv.Atoi(m[1])
 	if err != nil {
@@ -236,18 +264,22 @@ func SetupConfig() {
 		log.Warn("WARNING: --buggy-attachments flag set - NOT recommended for production usage")
 	}
 
-	if CommandLine.ConfigFile != "" {
-		// load the data and use it to unmarshal the loaded configuration
-		data, err := os.ReadFile(CommandLine.ConfigFile)
+	// Locate and read the Amsterdam configuration file.
+	name, file := locateConfigFile()
+	if file != nil {
+		log.Infof("SetupConfig(): using config file %s", name)
+		data, err := io.ReadAll(file)
+		file.Close()
 		if err != nil {
-			panic(fmt.Sprintf("unable to load configuration file %s: %v", CommandLine.ConfigFile, err))
+			panic(fmt.Sprintf("unable to load configuration file %s: %v", name, err))
 		}
 		var loadedConfig AmConfig
 		if err = yaml.Unmarshal(data, &loadedConfig); err != nil {
-			panic(fmt.Sprintf("unable to load configuration file %s: %v", CommandLine.ConfigFile, err))
+			panic(fmt.Sprintf("unable to load configuration file %s: %v", name, err))
 		}
 		overlayStructValue(reflect.ValueOf(&GlobalConfig).Elem(), reflect.ValueOf(&loadedConfig).Elem(), reflect.ValueOf(&defaultConfig).Elem())
 	} else {
+		log.Info("SetupConfig(): using default configs only")
 		GlobalConfig = defaultConfig // just copy over the defaults
 	}
 
