@@ -7,6 +7,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 site:
+  production: false
   baseURL: "http://localhost:1323"
   title: "Amsterdam Web Communities System"
   siteIcon:

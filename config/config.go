@@ -39,6 +39,8 @@ const CONFIGFILE_NAME = "amsterdam.yaml"
 // AmCLI is the command-line interface arguments structure.
 type AmCLI struct {
 	ConfigFile       string `arg:"-C,--config,env:AMSTERDAM_CONFIG" help:"Location of the configuration file."`
+	Debug            bool   `arg:"-D,--debug,env:AMSTERDAM_DEBUG" help:"Force Amsterdam to run in debug mode."`
+	Production       bool   `arg:"-P,--prod,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
 	DebugPanic       bool   `arg:"--debug-panic" help:"Development Only - disable Echo panic recovery"`
 	BuggyAttachments bool   `arg:"--buggy-attachments" help:"Some attachments may be buggy - truncate data if necessary"`
 }
@@ -59,9 +61,10 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
-		BaseURL  string `yaml:"baseURL"`
-		Title    string `yaml:"title"`
-		SiteIcon struct {
+		Production bool   `yaml:"production"`
+		BaseURL    string `yaml:"baseURL"`
+		Title      string `yaml:"title"`
+		SiteIcon   struct {
 			Path string `yaml:"path"`
 			Type string `yaml:"type"`
 		} `yaml:"siteIcon"`
@@ -148,6 +151,7 @@ type AmConfig struct {
 
 // AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig.
 type AmConfigComputed struct {
+	DebugMode        bool            // are we in debug mode?
 	UploadMaxSize    int32           // maximum upload size in bytes
 	UploadNoCompress map[string]bool // which upload types are not compressed?
 }
@@ -214,15 +218,16 @@ func overlayStructValue(dest, loaded, defaults reflect.Value) {
 		} else if fldDest.Kind() == reflect.Array || fldDest.Kind() == reflect.Slice {
 			// array of strings - merge the two arrays
 			m := make(map[string]bool)
+			rc := make([]string, 0, fldDefaults.Len()+fldLoaded.Len())
 			for i := 0; i < fldDefaults.Len(); i++ {
 				m[fldDefaults.Index(i).String()] = true
+				rc = append(rc, fldDefaults.Index(i).String())
 			}
 			for i := 0; i < fldLoaded.Len(); i++ {
-				m[fldLoaded.Index(i).String()] = true
-			}
-			rc := make([]string, 0, len(m))
-			for s := range m {
-				rc = append(rc, s)
+				if !m[fldLoaded.Index(i).String()] {
+					m[fldLoaded.Index(i).String()] = true
+					rc = append(rc, fldLoaded.Index(i).String())
+				}
 			}
 			fldDest.Set(reflect.ValueOf(rc))
 		} else if fldDest.Kind() == reflect.Bool {
@@ -320,6 +325,13 @@ func SetupConfig() {
 	}
 
 	// Compute additional values.
+	if CommandLine.Debug {
+		GlobalComputedConfig.DebugMode = true
+	} else if CommandLine.Production {
+		GlobalComputedConfig.DebugMode = false
+	} else {
+		GlobalComputedConfig.DebugMode = !GlobalConfig.Site.Production
+	}
 	tmp, err := parseDataSize(GlobalConfig.Posting.Uploads.MaxSize)
 	if err != nil {
 		panic(err.Error())

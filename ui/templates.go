@@ -302,7 +302,7 @@ func setupTemplates() {
 	templateLoaders = append(templateLoaders, embedfs.NewLoader("views/", static_views))
 
 	// Create the template renderer and add our globals to it.
-	views = jet.NewSet(multi.NewLoader(templateLoaders...), jet.DevelopmentMode(true))
+	views = jet.NewSet(multi.NewLoader(templateLoaders...), jet.DevelopmentMode(config.GlobalComputedConfig.DebugMode))
 	views.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	views.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	views.AddGlobal("GlobalConfig", config.GlobalConfig)

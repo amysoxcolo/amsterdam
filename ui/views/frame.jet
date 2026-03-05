@@ -18,7 +18,12 @@
     {{ range k, v := .FrameMetadata(0) }}
         <meta http-equiv="{{ k }}" content="{{ v }}">
     {{ end }}
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{ if __debugMode }}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {{ else }}
+        {* TODO - replace with reference to generated Tailwind CSS file *}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {{ end }}
     <link rel="stylesheet" href="/static/css/ams_style.css" />
 </head>
 

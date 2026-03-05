@@ -228,7 +228,7 @@ func SetupMailSender() func() {
 	templateLoaders = append(templateLoaders, embedfs.NewLoader("templates/", emailTemplates))
 
 	// Initialize the template engine.
-	emailRenderer = jet.NewSet(multi.NewLoader(templateLoaders...), jet.DevelopmentMode(true))
+	emailRenderer = jet.NewSet(multi.NewLoader(templateLoaders...), jet.DevelopmentMode(config.GlobalComputedConfig.DebugMode))
 	emailRenderer.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	emailRenderer.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	emailRenderer.AddGlobal("GlobalConfig", config.GlobalConfig)
