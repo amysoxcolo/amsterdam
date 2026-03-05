@@ -15,9 +15,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -76,6 +79,33 @@ func init() {
 				messageBoxDefs.D[i].useConfirm = true
 				break
 			}
+		}
+	}
+}
+
+// setupMessageBoxes loads external message box definitions.
+func setupMessageBoxes() {
+	if config.GlobalConfig.Resources.ExternalMessageDefinitions != "" {
+		b, err := os.ReadFile(config.GlobalConfig.Resources.ExternalMessageDefinitions)
+		if err == nil {
+			mb := new(MessageBoxDefs)
+			err = yaml.Unmarshal(b, mb)
+			if err == nil {
+				for i, def := range mb.D {
+					messageBoxDefs.table[def.Id] = &(mb.D[i])
+					mb.D[i].useConfirm = false
+					for _, b := range mb.D[i].Buttons {
+						if b.Confirm {
+							mb.D[i].useConfirm = true
+							break
+						}
+					}
+				}
+			} else {
+				log.Errorf("cannot parse external message definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMessageDefinitions, err)
+			}
+		} else {
+			log.Errorf("cannot read external message definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMessageDefinitions, err)
 		}
 	}
 }

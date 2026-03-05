@@ -55,6 +55,8 @@ resources:
   emailTemplateDir: ""
   externalContentPath: ""
   externalResourcePath: ""
+  externalMenuDefinitions: ""
+  externalMessageDefinitions: ""
 posting:
   externalDictionary: ""
   uploads:

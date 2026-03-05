@@ -105,11 +105,13 @@ type AmConfig struct {
 		VeniceCompatibleImageURLs bool `yaml:"veniceCompatibleImageURLs"`
 	} `yaml:"rendering"`
 	Resources struct {
-		ViewTemplateDir      string `yaml:"viewTemplateDir"`
-		DialogTemplateDir    string `yaml:"dialogTemplateDir"`
-		EmailTemplateDir     string `yaml:"emailTemplateDir"`
-		ExternalContentPath  string `yaml:"externalContentPath"`
-		ExternalResourcePath string `yaml:"externalResourcePath"`
+		ViewTemplateDir            string `yaml:"viewTemplateDir"`
+		DialogTemplateDir          string `yaml:"dialogTemplateDir"`
+		EmailTemplateDir           string `yaml:"emailTemplateDir"`
+		ExternalContentPath        string `yaml:"externalContentPath"`
+		ExternalResourcePath       string `yaml:"externalResourcePath"`
+		ExternalMenuDefinitions    string `yaml:"externalMenuDefinitions"`
+		ExternalMessageDefinitions string `yaml:"externalMessageDefinitions"`
 	} `yaml:"resources"`
 	Posting struct {
 		ExternalDictionary string `yaml:"externalDictionary"`

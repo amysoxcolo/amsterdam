@@ -13,6 +13,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
 	lru "github.com/hashicorp/golang-lru"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -156,11 +158,30 @@ func init() {
 	}
 }
 
-// setupMenuCache sets up the menu cache.
-func setupMenuCache() {
+// setupMenus sets up the menu cache and the external menus.
+func setupMenus() {
 	var err error
 	if menuCache, err = lru.New(config.GlobalConfig.Tuning.Caches.Menus); err != nil {
 		panic(err)
+	}
+	if config.GlobalConfig.Resources.ExternalMenuDefinitions != "" {
+		b, err := os.ReadFile(config.GlobalConfig.Resources.ExternalMenuDefinitions)
+		if err == nil {
+			md := new(MenuDefs)
+			err = yaml.Unmarshal(b, md)
+			if err == nil {
+				for i, d := range md.D {
+					menuDefinitions.table[d.ID] = &(md.D[i])
+					for j := range md.D[i].Items {
+						md.D[i].Items[j].P = &(md.D[i])
+					}
+				}
+			} else {
+				log.Errorf("cannot parse external menu definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMenuDefinitions, err)
+			}
+		} else {
+			log.Errorf("cannot read external menu definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMenuDefinitions, err)
+		}
 	}
 }
 
