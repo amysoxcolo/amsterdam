@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -316,7 +317,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 	}
 
 	// Load the user agreement from the resources.
-	agreementTitle, agreementBody, err := ui.AmLoadHTMLResource("useragreement.html")
+	agreementTitle, agreementBody, err := ui.AmLoadHTMLResource(config.GlobalConfig.Site.UserAgreementResource)
 	if err != nil {
 		return "error", err
 	}

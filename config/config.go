@@ -59,16 +59,13 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
-		BaseURL         string `yaml:"baseURL"`
-		Title           string `yaml:"title"`
-		TopRefresh      int    `yaml:"topRefresh"`
-		LoginCookieName string `yaml:"loginCookieName"`
-		LoginCookieAge  int    `yaml:"loginCookieAge"`
-		SessionExpire   string `yaml:"sessionExpire"`
-		UserAgreement   struct {
-			Title string `yaml:"title"`
-			Text  string `yaml:"text"`
-		} `yaml:"userAgreement"`
+		BaseURL               string `yaml:"baseURL"`
+		Title                 string `yaml:"title"`
+		TopRefresh            int    `yaml:"topRefresh"`
+		LoginCookieName       string `yaml:"loginCookieName"`
+		LoginCookieAge        int    `yaml:"loginCookieAge"`
+		SessionExpire         string `yaml:"sessionExpire"`
+		UserAgreementResource string `yaml:"userAgreementResource"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`
@@ -98,8 +95,9 @@ type AmConfig struct {
 		VeniceCompatibleImageURLs bool `yaml:"veniceCompatibleImageURLs"`
 	} `yaml:"rendering"`
 	Resources struct {
-		ViewTemplateDir     string `yaml:"viewTemplateDir"`
-		ExternalContentPath string `yaml:"externalContentPath"`
+		ViewTemplateDir      string `yaml:"viewTemplateDir"`
+		ExternalContentPath  string `yaml:"externalContentPath"`
+		ExternalResourcePath string `yaml:"externalResourcePath"`
 	} `yaml:"resources"`
 	Posting struct {
 		ExternalDictionary string `yaml:"externalDictionary"`

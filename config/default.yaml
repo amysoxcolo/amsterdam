@@ -13,10 +13,7 @@ site:
   loginCookieName: AmsterdamAuth
   loginCookieAge: 365
   sessionExpire: "3h"
-  userAgreement:
-    title: "Amsterdam User Agreement"
-    text: >
-      Text of this agreement is TBD.
+  userAgreementResource: "useragreement.html"
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"
@@ -46,6 +43,7 @@ rendering:
 resources:
   viewTemplateDir: ""
   externalContentPath: ""
+  externalResourcePath: ""
 posting:
   externalDictionary: ""
   uploads:

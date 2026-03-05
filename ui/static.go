@@ -16,10 +16,13 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/labstack/echo/v4"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
@@ -29,8 +32,27 @@ var static_data embed.FS
 //go:embed resources/*
 var static_resources embed.FS
 
+// external_resources is the link to the external resource path.
+var external_resources fs.FS = nil
+
 func setupResources() {
-	// do nothing yet
+	// Open the external resource path.
+	if config.GlobalConfig.Resources.ExternalResourcePath != "" {
+		finfo, err := os.Stat(config.GlobalConfig.Resources.ExternalResourcePath)
+		if err == nil {
+			if finfo.IsDir() {
+				root, err := os.OpenRoot(config.GlobalConfig.Resources.ExternalResourcePath)
+				if err != nil {
+					panic(err)
+				}
+				external_resources = root.FS()
+			} else {
+				log.Errorf("external resource path \"%s\" is not a directory, ignored", config.GlobalConfig.Resources.ExternalResourcePath)
+			}
+		} else {
+			log.Errorf("external resource path \"%s\" is not valid, ignored (%v)", config.GlobalConfig.Resources.ExternalResourcePath, err)
+		}
+	}
 }
 
 // AmStaticFileHandler returns a handler for the files in the static embedded filesystem.
@@ -95,9 +117,26 @@ func breakUpHTML(r io.Reader) (string, string, error) {
 
 // AmLoadHTMLResource loads an HTML resource and splits it into title and body.
 func AmLoadHTMLResource(resourceName string) (string, string, error) {
-	f, err := static_resources.Open(filepath.Join("resources", resourceName))
-	if err != nil {
-		return "", "", err
+	var f fs.File = nil
+	var err error
+	if external_resources != nil {
+		f, err = external_resources.Open(resourceName)
+		if err != nil {
+			f = nil
+			pe := err.(*fs.PathError)
+			if pe.Err == os.ErrInvalid || pe.Err == os.ErrNotExist {
+				err = nil
+			}
+		}
+		if err != nil {
+			return "", "", err
+		}
+	}
+	if f == nil {
+		f, err = static_resources.Open(filepath.Join("resources", resourceName))
+		if err != nil {
+			return "", "", err
+		}
 	}
 	title, body, err := breakUpHTML(f)
 	f.Close()
