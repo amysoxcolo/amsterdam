@@ -104,6 +104,8 @@ type AmConfig struct {
 	} `yaml:"rendering"`
 	Resources struct {
 		ViewTemplateDir      string `yaml:"viewTemplateDir"`
+		DialogTemplateDir    string `yaml:"dialogTemplateDir"`
+		EmailTemplateDir     string `yaml:"emailTemplateDir"`
 		ExternalContentPath  string `yaml:"externalContentPath"`
 		ExternalResourcePath string `yaml:"externalResourcePath"`
 	} `yaml:"resources"`

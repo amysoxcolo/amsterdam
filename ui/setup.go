@@ -16,6 +16,7 @@ import "slices"
 func SetupUILayer() func() {
 	exitfuncs := make([]func(), 0, 2)
 	setupTemplates()
+	setupDialogs()
 	setupMenuCache()
 	setupResources()
 	exitfuncs = append(exitfuncs, setupSessionManager())

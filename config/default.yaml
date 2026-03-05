@@ -49,6 +49,8 @@ rendering:
   veniceCompatibleImageURLs: false
 resources:
   viewTemplateDir: ""
+  dialogTemplateDir: ""
+  emailTemplateDir: ""
   externalContentPath: ""
   externalResourcePath: ""
 posting:

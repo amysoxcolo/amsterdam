@@ -13,9 +13,12 @@ package ui
 import (
 	"embed"
 	"fmt"
+	"io"
+	"io/fs"
 	"math"
 	"net"
 	"net/mail"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,6 +27,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -78,51 +82,99 @@ func (vr *VRange) IsEmpty() bool {
 //go:embed dialogs/*
 var dialogs embed.FS
 
+// extDialogs is the external dialogs directory filesystem.
+var extDialogs fs.FS = nil
+
+// setupDialogs sets up the external dialog filesystem.
+func setupDialogs() {
+	// Open the external dialog path.
+	if config.GlobalConfig.Resources.DialogTemplateDir != "" {
+		finfo, err := os.Stat(config.GlobalConfig.Resources.DialogTemplateDir)
+		if err == nil {
+			if finfo.IsDir() {
+				root, err := os.OpenRoot(config.GlobalConfig.Resources.DialogTemplateDir)
+				if err != nil {
+					panic(err)
+				}
+				extDialogs = root.FS()
+			} else {
+				log.Errorf("external resource path \"%s\" is not a directory, ignored", config.GlobalConfig.Resources.DialogTemplateDir)
+			}
+		} else {
+			log.Errorf("external resource path \"%s\" is not valid, ignored (%v)", config.GlobalConfig.Resources.DialogTemplateDir, err)
+		}
+	}
+}
+
 /* AmLoadDialog loads a dialog definition.
  * Parameters:
  *     name - The name of the dialog to load
  */
 func AmLoadDialog(name string) (*Dialog, error) {
-	b, err := dialogs.ReadFile(fmt.Sprintf("dialogs/%s.yaml", name))
-	if err == nil {
-		var d Dialog
-		err = yaml.Unmarshal(b, &d)
-		if err == nil {
-			// "nil-patch" certain fields and create the fast-lookup map
-			if d.MenuSelector == "" {
-				d.MenuSelector = "nochange"
+	var f fs.File = nil
+	var err error
+	if extDialogs != nil {
+		f, err = extDialogs.Open(fmt.Sprintf("%s.yaml", name))
+		if err != nil {
+			f = nil
+			pe := err.(*fs.PathError)
+			if pe.Err == os.ErrInvalid || pe.Err == os.ErrNotExist {
+				err = nil
 			}
-			d.fldmap = make(map[string]*DialogItem)
-			for i, fld := range d.Fields {
-				d.fldmap[fld.Name] = &(d.Fields[i])
-				if fld.Type == "button" && fld.Param == "" {
-					d.Fields[i].Param = "blue"
-				}
-				if fld.Type == "date" && fld.Param == "" {
-					d.Fields[i].Param = "year:-100"
-				}
-				if fld.Type == "integer" && fld.Size == 0 {
-					vr := fld.ValueRange()
-					if !vr.IsEmpty() {
-						// compute the number of digits in each end of the range and take the maximum as the size
-						dlow := int(math.Floor(math.Log10(float64(vr.Low)))) + 1
-						dhigh := int(math.Floor(math.Log10(float64(vr.High)))) + 1
-						d.Fields[i].Size = max(dlow, dhigh)
-						d.Fields[i].MaxLength = d.Fields[i].Size
-					}
-				}
-				if fld.Type == "ipaddress" {
-					d.Fields[i].Size = 15      // max IPv4
-					d.Fields[i].MaxLength = 39 // max IPv6
-				}
-				if fld.Type == "dropdown" && len(fld.Choices) == 0 {
-					return nil, fmt.Errorf("dropdown field %s in dialog %s has no choices", fld.Name, name)
-				}
-			}
-			return &d, nil
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
-	return nil, err
+	if f == nil {
+		f, err = dialogs.Open(fmt.Sprintf("dialogs/%s.yaml", name))
+		if err != nil {
+			return nil, err
+		}
+	}
+	b, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	d := new(Dialog)
+	err = yaml.Unmarshal(b, d)
+	if err != nil {
+		return nil, err
+	}
+	// "nil-patch" certain fields and create the fast-lookup map
+	if d.MenuSelector == "" {
+		d.MenuSelector = "nochange"
+	}
+	d.fldmap = make(map[string]*DialogItem)
+	for i, fld := range d.Fields {
+		d.fldmap[fld.Name] = &(d.Fields[i])
+		if fld.Type == "button" && fld.Param == "" {
+			d.Fields[i].Param = "blue"
+		}
+		if fld.Type == "date" && fld.Param == "" {
+			d.Fields[i].Param = "year:-100"
+		}
+		if fld.Type == "integer" && fld.Size == 0 {
+			vr := fld.ValueRange()
+			if !vr.IsEmpty() {
+				// compute the number of digits in each end of the range and take the maximum as the size
+				dlow := int(math.Floor(math.Log10(float64(vr.Low)))) + 1
+				dhigh := int(math.Floor(math.Log10(float64(vr.High)))) + 1
+				d.Fields[i].Size = max(dlow, dhigh)
+				d.Fields[i].MaxLength = d.Fields[i].Size
+			}
+		}
+		if fld.Type == "ipaddress" {
+			d.Fields[i].Size = 15      // max IPv4
+			d.Fields[i].MaxLength = 39 // max IPv6
+		}
+		if fld.Type == "dropdown" && len(fld.Choices) == 0 {
+			return nil, fmt.Errorf("dropdown field %s in dialog %s has no choices", fld.Name, name)
+		}
+	}
+	return d, nil
 }
 
 // DateValues returns the date values stored in a date field.

@@ -26,6 +26,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
+	"github.com/CloudyKit/jet/v6/loaders/multi"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -210,11 +211,24 @@ func SetupMailSender() func() {
 	disclaimerLines = strings.Split(config.GlobalConfig.Email.Disclaimer, "\n")
 	signatureLines = strings.Split(config.GlobalConfig.Email.Signature, "\n")
 
+	// Locate the external template directory and build the loaders.
+	templateLoaders := make([]jet.Loader, 0, 2)
+	if config.GlobalConfig.Resources.EmailTemplateDir != "" {
+		finfo, err := os.Stat(config.GlobalConfig.Resources.EmailTemplateDir)
+		if err == nil {
+			if finfo.IsDir() {
+				templateLoaders = append(templateLoaders, jet.NewOSFileSystemLoader(config.GlobalConfig.Resources.EmailTemplateDir))
+			} else {
+				log.Errorf("email template directory %s is not a directory, ignored", config.GlobalConfig.Resources.EmailTemplateDir)
+			}
+		} else {
+			log.Errorf("email template directory %s is not valid, ignored (%v)", config.GlobalConfig.Resources.EmailTemplateDir, err)
+		}
+	}
+	templateLoaders = append(templateLoaders, embedfs.NewLoader("templates/", emailTemplates))
+
 	// Initialize the template engine.
-	emailRenderer = jet.NewSet(
-		embedfs.NewLoader("templates/", emailTemplates),
-		jet.DevelopmentMode(true),
-	)
+	emailRenderer = jet.NewSet(multi.NewLoader(templateLoaders...), jet.DevelopmentMode(true))
 	emailRenderer.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	emailRenderer.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	emailRenderer.AddGlobal("GlobalConfig", config.GlobalConfig)
