@@ -12,7 +12,7 @@
             <div class="flex-shrink-0">
                 <img src="{{ post_profile_pic }}" alt="Profile image: {{ post_userName }}"
                      class="w-16 h-16 rounded-lg border-2 border-gray-300"
-                     onerror="this.src='/img/builtin/no-user.png'">
+                     onerror="this.src='{{ GlobalConfig.Site.DefaultUserPhoto }}'">
             </div>
         {{ end }}
         <div class="flex-1">

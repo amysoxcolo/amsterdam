@@ -21,6 +21,8 @@ site:
   userAgreementResource: "useragreement.html"
   policyResource: "policy.html"
   footerTemplate: "footer.jet"
+  defaultCommunityLogo: "/img/builtin/default-community.jpg"
+  defaultUserPhoto: "/img/builtin/no-user.png"
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"

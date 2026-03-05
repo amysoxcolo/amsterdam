@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/exports"
@@ -108,7 +109,7 @@ func communityLogoURL(ci *database.ContactInfo) string {
 	if ci.PhotoURL != nil && *ci.PhotoURL != "" {
 		return *ci.PhotoURL
 	}
-	return "/img/builtin/default-community.jpg"
+	return config.GlobalConfig.Site.DefaultCommunityLogo
 }
 
 /* CommunityProfileForm displays the dfialog for editing the community profile.

@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -32,7 +33,7 @@ func userPhotoURL(ci *database.ContactInfo) string {
 	if ci.PhotoURL != nil && *ci.PhotoURL != "" {
 		return *ci.PhotoURL
 	}
-	return "/img/builtin/no-user.png"
+	return config.GlobalConfig.Site.DefaultUserPhoto
 }
 
 /* EditProfileForm renders the Amsterdam profile editing form.

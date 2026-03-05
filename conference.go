@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
@@ -440,7 +441,7 @@ func templateBozo(args jet.Arguments) reflect.Value {
 func templateProfileImage(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
-	rc := "/img/builtin/no-user.png"
+	rc := config.GlobalConfig.Site.DefaultUserPhoto
 	user, err := post.Creator(ctxt.Ctx())
 	if err == nil {
 		ci, err := user.ContactInfo(ctxt.Ctx())

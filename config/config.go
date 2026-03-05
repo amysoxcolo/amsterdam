@@ -74,6 +74,8 @@ type AmConfig struct {
 		UserAgreementResource string `yaml:"userAgreementResource"`
 		PolicyResource        string `yaml:"policyResource"`
 		FooterTemplate        string `yaml:"footerTemplate"`
+		DefaultCommunityLogo  string `yaml:"defaultCommunityLogo"`
+		DefaultUserPhoto      string `yaml:"defaultUserPhoto"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`

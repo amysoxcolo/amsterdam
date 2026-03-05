@@ -111,7 +111,7 @@ func immediateIf(a jet.Arguments) reflect.Value {
 
 // extractCommunityLogo extracts a community logo URL from a community.
 func extractCommunityLogo(a jet.Arguments) reflect.Value {
-	rc := "/img/builtin/default-community.jpg"
+	rc := config.GlobalConfig.Site.DefaultCommunityLogo
 	comm := a.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
 	ci, err := comm.ContactInfo(ctxt.Ctx())

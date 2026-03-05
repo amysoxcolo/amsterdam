@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
@@ -69,7 +70,7 @@ func ShowCommunity(ctxt ui.AmContext) (string, any) {
 	if ci.PhotoURL != nil && *ci.PhotoURL != "" {
 		ctxt.VarMap().Set("logoURL", *ci.PhotoURL)
 	} else {
-		ctxt.VarMap().Set("logoURL", "/img/builtin/default-community.jpg")
+		ctxt.VarMap().Set("logoURL", config.GlobalConfig.Site.DefaultCommunityLogo)
 	}
 	tz := prefs.Location()
 	loc := prefs.Localizer()
