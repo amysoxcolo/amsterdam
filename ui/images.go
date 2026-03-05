@@ -22,7 +22,6 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -70,13 +69,13 @@ func AmServeImage(c echo.Context) error {
 		switch components[2] {
 		case "builtin/":
 			var b []byte
-			b, err = static_images.ReadFile(filepath.Join("static_images", components[3]))
+			b, err = static_images.ReadFile(fmt.Sprintf("static_images/%s", components[3]))
 			if err == nil {
 				return c.Blob(http.StatusOK, mimeTypeFromFilename(components[3]), b)
 			}
 		case "ads/":
 			var b []byte
-			b, err = ad_banners.ReadFile(filepath.Join("adbanners", components[3]))
+			b, err = ad_banners.ReadFile(fmt.Sprintf("adbanners/%s", components[3]))
 			if err == nil {
 				return c.Blob(http.StatusOK, mimeTypeFromFilename(components[3]), b)
 			}

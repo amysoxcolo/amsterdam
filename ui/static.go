@@ -13,11 +13,11 @@ package ui
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -133,7 +133,7 @@ func AmLoadHTMLResource(resourceName string) (string, string, error) {
 		}
 	}
 	if f == nil {
-		f, err = static_resources.Open(filepath.Join("resources", resourceName))
+		f, err = static_resources.Open(fmt.Sprintf("resources/%s", resourceName))
 		if err != nil {
 			return "", "", err
 		}
