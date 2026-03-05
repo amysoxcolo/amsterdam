@@ -327,7 +327,7 @@ func NewAccountUserAgreement(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("agreementTitle", agreementTitle)
 	ctxt.VarMap().Set("agreementBody", agreementBody)
 	ctxt.SetScratch("frame_suppressLogin", true)
-	ctxt.SetFrameTitle("New Account User Agreement")
+	ctxt.SetFrameTitle(agreementTitle)
 	return "framed", "agreement.jet"
 }
 

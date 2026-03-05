@@ -11,9 +11,9 @@
         <div class="mb-8">
             <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ agreementTitle }}</h1>
             <hr class="border-2 border-gray-400 w-4/5 mb-4">
-            <p class="text-black text-sm mb-4">
+            <div class="text-black mb-4 space-y-4 amsDocument">
                 {{ agreementBody | raw }}
-            </p>
+            </div>
             <div class="flex justify-center gap-4 mt-6">
                 <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors"
                         onclick="window.location.assign('/newacct2?tgt={{ target | url }}')">I Accept</button>
