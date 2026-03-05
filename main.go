@@ -255,7 +255,7 @@ func main() {
 
 	// Start server
 	go func() {
-		if err := e.Start(":1323"); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(config.GlobalComputedConfig.Listen); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatalf("shutting down the server: %v", err)
 		}
 	}()

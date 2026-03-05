@@ -25,7 +25,7 @@ var amdb *sqlx.DB
 // SetupDb sets up the database and associated items.
 func SetupDb() (func(), error) {
 	exitfns := make([]func(), 0, 2)
-	db, err := sqlx.Open(config.GlobalConfig.Database.Driver, config.GlobalConfig.Database.Dsn)
+	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, config.GlobalComputedConfig.DatabaseDSN)
 	if err == nil {
 		amdb = db
 		setupAdCache()

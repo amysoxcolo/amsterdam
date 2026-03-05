@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 
 	argparse "github.com/alexflint/go-arg"
 	log "github.com/sirupsen/logrus"
@@ -41,6 +42,8 @@ type AmCLI struct {
 	ConfigFile       string `arg:"-C,--config,env:AMSTERDAM_CONFIG" help:"Location of the configuration file."`
 	Debug            bool   `arg:"-D,--debug,env:AMSTERDAM_DEBUG" help:"Force Amsterdam to run in debug mode."`
 	Production       bool   `arg:"-P,--prod,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
+	DatabaseURL      string `arg:"-d,--database,env:AMSTERDAM_DATABASE_URL" help:"Database URL for Amsterdam to connect to."`
+	Listen           string `arg:"-l,--listen,env:AMSTERDAM_LISTEN" help:"Specifies the local address and port for Amsterdam to listen on."`
 	DebugPanic       bool   `arg:"--debug-panic" help:"Development Only - disable Echo panic recovery"`
 	BuggyAttachments bool   `arg:"--buggy-attachments" help:"Some attachments may be buggy - truncate data if necessary"`
 }
@@ -62,6 +65,7 @@ func (*AmCLI) Version() string {
 type AmConfig struct {
 	Site struct {
 		Production bool   `yaml:"production"`
+		Listen     string `yaml:"listen"`
 		BaseURL    string `yaml:"baseURL"`
 		Title      string `yaml:"title"`
 		SiteIcon   struct {
@@ -152,6 +156,9 @@ type AmConfig struct {
 // AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig.
 type AmConfigComputed struct {
 	DebugMode        bool            // are we in debug mode?
+	Listen           string          // listen address
+	DatabaseDriver   string          // name of database driver
+	DatabaseDSN      string          // DSN for the database
 	UploadMaxSize    int32           // maximum upload size in bytes
 	UploadNoCompress map[string]bool // which upload types are not compressed?
 }
@@ -331,6 +338,22 @@ func SetupConfig() {
 		GlobalComputedConfig.DebugMode = false
 	} else {
 		GlobalComputedConfig.DebugMode = !GlobalConfig.Site.Production
+	}
+	if CommandLine.Listen != "" {
+		GlobalComputedConfig.Listen = CommandLine.Listen
+	} else {
+		GlobalComputedConfig.Listen = GlobalConfig.Site.Listen
+	}
+	if CommandLine.DatabaseURL != "" {
+		p := strings.Index(CommandLine.DatabaseURL, ":")
+		if p < 0 {
+			panic("Invalid database URL on command line")
+		}
+		GlobalComputedConfig.DatabaseDriver = CommandLine.DatabaseURL[:p]
+		GlobalComputedConfig.DatabaseDSN = CommandLine.DatabaseURL[p+1:]
+	} else {
+		GlobalComputedConfig.DatabaseDriver = GlobalConfig.Database.Driver
+		GlobalComputedConfig.DatabaseDSN = GlobalConfig.Database.Dsn
 	}
 	tmp, err := parseDataSize(GlobalConfig.Posting.Uploads.MaxSize)
 	if err != nil {

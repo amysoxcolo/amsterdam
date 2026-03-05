@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -653,15 +654,15 @@ func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, error) {
 	}
 
 	// Use the post IDs to build a SQL statement.
-	pidStrs := make([]string, len(pids))
-	for i, pid := range pids {
-		pidStrs[i] = fmt.Sprintf("%d", pid)
+	query, args, err := sqlx.In("SELECT * FROM posts WHERE postid IN (?)", pids)
+	if err != nil {
+		return nil, err
 	}
-	sql := fmt.Sprintf("SELECT * FROM posts WHERE postid IN (%s)", strings.Join(pidStrs, ", "))
+	query = amdb.Rebind(query)
 
 	// Use the SQL to read in all the post headers using a single database query.
 	var data []PostHeader
-	if err = amdb.SelectContext(ctx, &data, sql); err != nil {
+	if err = amdb.SelectContext(ctx, &data, query, args...); err != nil {
 		return nil, err
 	}
 	if len(data) < len(pids) {

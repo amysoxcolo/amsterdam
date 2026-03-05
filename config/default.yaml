@@ -8,6 +8,7 @@
 #
 site:
   production: false
+  listen: ":1323"
   baseURL: "http://localhost:1323"
   title: "Amsterdam Web Communities System"
   siteIcon:
