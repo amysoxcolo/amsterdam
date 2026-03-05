@@ -59,14 +59,21 @@ func (*AmCLI) Version() string {
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
-		BaseURL               string `yaml:"baseURL"`
-		Title                 string `yaml:"title"`
+		BaseURL  string `yaml:"baseURL"`
+		Title    string `yaml:"title"`
+		SiteIcon struct {
+			Path string `yaml:"path"`
+			Type string `yaml:"type"`
+		} `yaml:"siteIcon"`
+		SiteShortcutIcon      string `yaml:"siteShortcutIcon"`
+		SiteLogo              string `yaml:"siteLogo"`
 		TopRefresh            int    `yaml:"topRefresh"`
 		LoginCookieName       string `yaml:"loginCookieName"`
 		LoginCookieAge        int    `yaml:"loginCookieAge"`
 		SessionExpire         string `yaml:"sessionExpire"`
 		UserAgreementResource string `yaml:"userAgreementResource"`
 		PolicyResource        string `yaml:"policyResource"`
+		FooterTemplate        string `yaml:"footerTemplate"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`

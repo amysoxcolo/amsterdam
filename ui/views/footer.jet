@@ -1,0 +1,24 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="flex justify-center items-start gap-6">
+    <div class="text-right text-xs text-black leading-relaxed">
+        All trademarks and copyrights on this page are owned by their respective companies.<br>
+        All messages posted by users on this page are owned by those users.<br>
+        The rest: Copyright © {{ AmsterdamCopyright }} 
+        <a href="https://www.erbosoft.com/" class="text-blue-700 hover:text-blue-900">Erbosoft Metaverse Design Solutions</a>,
+        All Rights Reserved.<br>
+        See our <a href="/policy" class="text-blue-700 hover:text-blue-900">Policy Page</a> 
+        for our copyright and privacy policies.
+    </div>
+    <div class="flex-shrink-0">
+        <a href="https://git.erbosoft.com/amy/amsterdam" target="_blank">
+            <img src="/img/builtin/powered-by-amsterdam.png" alt="Powered By Amsterdam" class="w-32 h-26">
+        </a>
+    </div>
+</div>

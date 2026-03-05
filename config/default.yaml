@@ -9,12 +9,18 @@
 site:
   baseURL: "http://localhost:1323"
   title: "Amsterdam Web Communities System"
+  siteIcon:
+    path: "/img/builtin/AmsterdamIcon32.png"
+    type: "image/png"
+  siteShortcutIcon: "/img/builtin/AmsterdamIcon32.ico"
+  siteLogo: "/img/builtin/powered-by-amsterdam.png"
   topRefresh: 300
   loginCookieName: AmsterdamAuth
   loginCookieAge: 365
   sessionExpire: "3h"
   userAgreementResource: "useragreement.html"
   policyResource: "policy.html"
+  footerTemplate: "footer.jet"
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"

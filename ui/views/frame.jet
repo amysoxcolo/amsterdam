@@ -1,6 +1,6 @@
 {*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .FrameTitle() | raw }} - {{ GlobalConfig.Site.Title }}</title>
-    <link rel="icon" href="/img/builtin/AmsterdamIcon32.png" type="image/png" />
-    <link rel="shortcut icon" href="/img/builtin/AmsterdamIcon32.ico" />
+    <link rel="icon" href="{{ GlobalConfig.Site.SiteIcon.Path }}" type="{{ GlobalConfig.Site.SiteIcon.Type }}" />
+    <link rel="shortcut icon" href="{{ GlobalConfig.Site.SiteShortcutIcon }}" />
     {{ range k, v := .FrameMetadata(0) }}
         <meta http-equiv="{{ k }}" content="{{ v }}">
     {{ end }}
@@ -28,11 +28,7 @@
         <div class="flex items-center justify-between px-2 py-2">
             <!-- Site Logo -->
             <div class="w-1/5">
-                <a href="/">
-                    <img src="/img/builtin/powered-by-amsterdam.png" 
-                         alt="{{ GlobalConfig.Site.Title }}" 
-                         class="w-35 h-20 mx-2 my-2">
-                </a>
+                <a href="/"><img src="{{ GlobalConfig.Site.SiteLogo }}" alt="{{ GlobalConfig.Site.Title }}" class="w-35 h-20 mx-2 my-2"></a>
             </div>
 
             <!-- Navigation Links -->
@@ -117,22 +113,7 @@
         <div class="w-48 bg-blue-400">&nbsp;</div>
         <div class="flex-1 bg-white p-4">
             <hr class="border-gray-400 w-4/5 mx-auto mb-4">
-            <div class="flex justify-center items-start gap-6">
-                <div class="text-right text-xs text-black leading-relaxed">
-                    All trademarks and copyrights on this page are owned by their respective companies.<br>
-                    All messages posted by users on this page are owned by those users.<br>
-                    The rest: Copyright © {{ AmsterdamCopyright }} 
-                    <a href="https://www.erbosoft.com/" class="text-blue-700 hover:text-blue-900">Erbosoft Metaverse Design Solutions</a>,
-                    All Rights Reserved.<br>
-                    See our <a href="/TODO/policypage" class="text-blue-700 hover:text-blue-900">Policy Page</a> 
-                    for our copyright and privacy policies.
-                </div>
-                <div class="flex-shrink-0">
-                    <a href="https://git.erbosoft.com/amy/amsterdam" target="_blank">
-                        <img src="/img/builtin/powered-by-amsterdam.png" alt="Powered By Amsterdam" class="w-32 h-26">
-                    </a>
-                </div>
-            </div>
+            {{ include GlobalConfig.Site.FooterTemplate }}
         </div>
     </div>
 </body>
