@@ -61,6 +61,11 @@ func (*AmCLI) Version() string {
 	return "Amsterdam " + AMSTERDAM_VERSION
 }
 
+// Epilogue (from argparse.Epilogued) returns an epilogue string for the application.
+func (*AmCLI) Epilogue() string {
+	return fmt.Sprintf("Copyright © %s Erbosoft Metaverse Design Solutions, All Rights Reserved.\nLicensed under MPL 2.0. https://erbosoft.com", AMSTERDAM_COPYRIGHT)
+}
+
 // AmConfig holds the configuration of the application as read from YAML.
 type AmConfig struct {
 	Site struct {
