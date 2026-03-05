@@ -14,3 +14,13 @@ div.amsDocument a {
     color: rgb(29 78 216);
     text-decoration: underline;
 }
+div.amsDocument h2 {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: calc(2 /1.5)
+}
+div.amsDocument h3 {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: calc(1.75 /1.25)
+}

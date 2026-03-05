@@ -14,6 +14,7 @@ site:
   loginCookieAge: 365
   sessionExpire: "3h"
   userAgreementResource: "useragreement.html"
+  policyResource: "policy.html"
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"

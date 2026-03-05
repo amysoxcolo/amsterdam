@@ -21,6 +21,8 @@ menudefs:
     title: "About This Site"
     permSet: "user"
     items:
+      - text: "Policy Page"
+        link: "/policy"
       - text: "Documentation"
         link: "/TODO/documentation"
         disabled: true

@@ -66,6 +66,7 @@ type AmConfig struct {
 		LoginCookieAge        int    `yaml:"loginCookieAge"`
 		SessionExpire         string `yaml:"sessionExpire"`
 		UserAgreementResource string `yaml:"userAgreementResource"`
+		PolicyResource        string `yaml:"policyResource"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`

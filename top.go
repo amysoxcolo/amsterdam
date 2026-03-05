@@ -245,6 +245,25 @@ func AboutPage(ctxt ui.AmContext) (string, any) {
 	return "framed", "about.jet"
 }
 
+/* PolicyPage renders the policy page.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func PolicyPage(ctxt ui.AmContext) (string, any) {
+	title, body, err := ui.AmLoadHTMLResource(config.GlobalConfig.Site.PolicyResource)
+	if err != nil {
+		return "error", err
+	}
+
+	ctxt.VarMap().Set("title", title)
+	ctxt.VarMap().Set("body", body)
+	ctxt.SetFrameTitle(title)
+	return "framed", "policy.jet"
+}
+
 /* JumpToShortcut resolves "/go" links by redirecting them to the appropriate page.
  * Parameters:
  *     ctxt - The AmContext for the request.
