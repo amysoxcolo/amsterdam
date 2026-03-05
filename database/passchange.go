@@ -35,7 +35,7 @@ var passwordRequests map[int32]*PasswordChangeRequest = make(map[int32]*Password
  * Returns:
  *     Pointer to the new PasswordChangeRequest.
  */
-func AmNewPasswordChangeRequest(uid int32, username string, email string) *PasswordChangeRequest {
+func AmNewPasswordChangeRequest(uid int32, username, email string) *PasswordChangeRequest {
 	rc := PasswordChangeRequest{Uid: uid, Username: username, Email: email,
 		Authentication: util.GenerateRandomConfirmationNumber(), Expires: time.Now().Add(time.Hour)}
 	passwordRequests[uid] = &rc

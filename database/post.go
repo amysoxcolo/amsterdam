@@ -88,11 +88,11 @@ func (p *PostHeader) AttachmentInfo(ctx context.Context) (*PostAttachInfo, error
 		return nil, errors.New("no attachment data for scribbled post")
 	}
 	row := amdb.QueryRowContext(ctx, "SELECT filename, mimetype, datalen FROM postattach WHERE postid = ?", p.PostId)
-	var rc PostAttachInfo
+	rc := new(PostAttachInfo)
 	err := row.Scan(&(rc.Filename), &(rc.MIMEType), &(rc.Length))
 	switch err {
 	case nil:
-		return &rc, nil
+		return rc, nil
 	case sql.ErrNoRows:
 		return nil, nil
 	}
@@ -235,8 +235,8 @@ func (p *PostHeader) PruneAttachment(ctx context.Context, u *User, comm *Communi
 
 // Text returns the text associated with a post.
 func (p *PostHeader) Text(ctx context.Context) (string, error) {
-	var pd PostData
-	err := amdb.GetContext(ctx, &pd, "SELECT * FROM postdata WHERE postid = ?", p.PostId)
+	pd := new(PostData)
+	err := amdb.GetContext(ctx, pd, "SELECT * FROM postdata WHERE postid = ?", p.PostId)
 	switch err {
 	case nil:
 		if pd.Data == nil {
@@ -519,11 +519,11 @@ func (p *PostHeader) ImportFix(ctx context.Context, parent int64, dateStamp time
  *     Standard Go error status.
  */
 func AmGetPost(ctx context.Context, postId int64) (*PostHeader, error) {
-	var pd PostHeader
-	if err := amdb.GetContext(ctx, &pd, "SELECT * FROM posts WHERE postid = ?", postId); err != nil {
+	pd := new(PostHeader)
+	if err := amdb.GetContext(ctx, pd, "SELECT * FROM posts WHERE postid = ?", postId); err != nil {
 		return nil, err
 	}
-	return &pd, nil
+	return pd, nil
 }
 
 /* AmGetPostRange gets a range of posts from a topic by post numbers.

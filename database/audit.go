@@ -174,8 +174,8 @@ func (ar *AuditRecord) Store(ctx context.Context) error {
  * Returns:
  *     The audit record pointer.
  */
-func AmNewAudit(rectype int32, uid int32, ip string, data ...string) *AuditRecord {
-	rc := AuditRecord{Event: rectype, Uid: uid, CommId: 0}
+func AmNewAudit(rectype, uid int32, ip string, data ...string) *AuditRecord {
+	rc := &AuditRecord{Event: rectype, Uid: uid, CommId: 0}
 	if len(ip) > 0 {
 		rc.IP = &ip
 	}
@@ -194,7 +194,7 @@ func AmNewAudit(rectype int32, uid int32, ip string, data ...string) *AuditRecor
 			rc.Data4 = &(data[3])
 		}
 	}
-	return &rc
+	return rc
 }
 
 /* AmNewCommAudit creates a new audit record tied to a community.
@@ -207,8 +207,8 @@ func AmNewAudit(rectype int32, uid int32, ip string, data ...string) *AuditRecor
  * Returns:
  *     The audit record pointer.
  */
-func AmNewCommAudit(rectype int32, uid int32, commid int32, ip string, data ...string) *AuditRecord {
-	rc := AuditRecord{Event: rectype, Uid: uid, CommId: commid}
+func AmNewCommAudit(rectype, uid, commid int32, ip string, data ...string) *AuditRecord {
+	rc := &AuditRecord{Event: rectype, Uid: uid, CommId: commid}
 	if len(ip) > 0 {
 		rc.IP = &ip
 	}
@@ -227,7 +227,7 @@ func AmNewCommAudit(rectype int32, uid int32, commid int32, ip string, data ...s
 			rc.Data4 = &(data[3])
 		}
 	}
-	return &rc
+	return rc
 }
 
 // AmStoreAudit stores the audit record in the background.

@@ -60,11 +60,11 @@ func (img *ImageStore) Save(ctx context.Context) error {
  *     Standard Go error status.
  */
 func AmLoadImage(ctx context.Context, id int32) (*ImageStore, error) {
-	var imgdata ImageStore
-	if err := amdb.GetContext(ctx, &imgdata, "SELECT * FROM imagestore WHERE imgid = ?", id); err != nil {
+	imgdata := new(ImageStore)
+	if err := amdb.GetContext(ctx, imgdata, "SELECT * FROM imagestore WHERE imgid = ?", id); err != nil {
 		return nil, err
 	}
-	return &imgdata, nil
+	return imgdata, nil
 }
 
 /* AmStoreImage stores an image in the database, overwriting one with the same type code and owner if it exists.

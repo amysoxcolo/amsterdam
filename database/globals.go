@@ -62,7 +62,7 @@ var globalPropMutex sync.Mutex
 
 // Clone clones the entire global state.
 func (g *Globals) Clone() *Globals {
-	rc := Globals{
+	rc := &Globals{
 		PostsPerPage:            g.PostsPerPage,
 		OldPostsAtTop:           g.OldPostsAtTop,
 		MaxSearchPage:           g.MaxSearchPage,
@@ -73,7 +73,7 @@ func (g *Globals) Clone() *Globals {
 		CommunityCreateLevel:    g.CommunityCreateLevel,
 		flags:                   nil,
 	}
-	return &rc
+	return rc
 }
 
 // Flags returns the global flags.
@@ -107,11 +107,11 @@ func AmGlobals(ctx context.Context) (*Globals, error) {
 	globalsMutex.Lock()
 	defer globalsMutex.Unlock()
 	if theGlobals == nil {
-		var g Globals
-		if err := amdb.GetContext(ctx, &g, "SELECT * FROM globals"); err != nil {
+		g := new(Globals)
+		if err := amdb.GetContext(ctx, g, "SELECT * FROM globals"); err != nil {
 			return nil, err
 		}
-		theGlobals = &g
+		theGlobals = g
 	}
 	return theGlobals, nil
 }

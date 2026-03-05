@@ -488,14 +488,14 @@ type TopicSummary struct {
  *     Standard Go error status.
  */
 func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
-	var top Topic
-	if err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
+	top := new(Topic)
+	if err := amdb.GetContext(ctx, top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
 		if err == sql.ErrNoRows {
 			err = ErrNoTopic
 		}
 		return nil, err
 	}
-	return &top, nil
+	return top, nil
 }
 
 /* AmGetTopicTx retrieves a topic by ID, in a transaction.
@@ -508,14 +508,14 @@ func AmGetTopic(ctx context.Context, topicId int32) (*Topic, error) {
  *     Standard Go error status.
  */
 func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, error) {
-	var top Topic
-	if err := tx.GetContext(ctx, &top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
+	top := new(Topic)
+	if err := tx.GetContext(ctx, top, "SELECT * FROM topics WHERE topicid = ?", topicId); err != nil {
 		if err == sql.ErrNoRows {
 			err = ErrNoTopic
 		}
 		return nil, err
 	}
-	return &top, nil
+	return top, nil
 }
 
 /* AmGetTopicByNumber retrieves a topic by conference and sequence number.
@@ -528,10 +528,10 @@ func AmGetTopicTx(ctx context.Context, tx *sqlx.Tx, topicId int32) (*Topic, erro
  *     Standard Go error status.
  */
 func AmGetTopicByNumber(ctx context.Context, conf *Conference, topicNum int16) (*Topic, error) {
-	var top Topic
-	err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
+	top := new(Topic)
+	err := amdb.GetContext(ctx, top, "SELECT * FROM topics WHERE confid = ? AND num = ?", conf.ConfId, topicNum)
 	if err == nil {
-		return &top, nil
+		return top, nil
 	}
 	if err == sql.ErrNoRows {
 		err = ErrNoTopic
@@ -549,10 +549,10 @@ func AmGetTopicByNumber(ctx context.Context, conf *Conference, topicNum int16) (
  *     Standard Go error status.
  */
 func AmGetTopicByName(ctx context.Context, conf *Conference, name string) (*Topic, error) {
-	var top Topic
-	err := amdb.GetContext(ctx, &top, "SELECT * FROM topics WHERE confid = ? AND name = ?", conf.ConfId, name)
+	top := new(Topic)
+	err := amdb.GetContext(ctx, top, "SELECT * FROM topics WHERE confid = ? AND name = ?", conf.ConfId, name)
 	if err == nil {
-		return &top, nil
+		return top, nil
 	}
 	if err == sql.ErrNoRows {
 		err = ErrNoTopic
@@ -723,8 +723,8 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
  *     Pointer to the new Topic data structure.
  *     Standard Go error status.
  */
-func AmNewTopic(ctx context.Context, conf *Conference, user *User, title string, zeroPostPseud string, zeroPost string,
-	zeroPostLines int32, comm *Community, ipaddr string) (*Topic, error) {
+func AmNewTopic(ctx context.Context, conf *Conference, user *User, title, zeroPostPseud, zeroPost string, zeroPostLines int32,
+	comm *Community, ipaddr string) (*Topic, error) {
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
 

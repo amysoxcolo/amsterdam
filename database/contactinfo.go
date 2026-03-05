@@ -197,7 +197,7 @@ func (ci *ContactInfo) Save(ctx context.Context, changer *User, ipaddr string) (
 
 // Clone makes a copy of the ContactInfo.
 func (ci *ContactInfo) Clone() *ContactInfo {
-	newstr := ContactInfo{
+	newstr := &ContactInfo{
 		ContactId:    ci.ContactId,
 		GivenName:    ci.GivenName,
 		FamilyName:   ci.FamilyName,
@@ -225,7 +225,7 @@ func (ci *ContactInfo) Clone() *ContactInfo {
 		URL:          ci.URL,
 		LastUpdate:   ci.LastUpdate,
 	}
-	return &newstr
+	return newstr
 }
 
 // contactCache is the cache for ContactInfo objects.
@@ -245,11 +245,11 @@ func setupContactsCache() {
 
 // internalContactInfo retrieves the contact info from the database.
 func internalContactInfo(ctx context.Context, id int32) (*ContactInfo, error) {
-	var cinf ContactInfo
-	if err := amdb.GetContext(ctx, &cinf, "SELECT * from contacts WHERE contactid = ?", id); err != nil {
+	cinf := new(ContactInfo)
+	if err := amdb.GetContext(ctx, cinf, "SELECT * from contacts WHERE contactid = ?", id); err != nil {
 		return nil, err
 	}
-	return &cinf, nil
+	return cinf, nil
 }
 
 /* AmGetContactInfo retrieves the contact info for a given identifier.
@@ -304,8 +304,8 @@ func AmGetContactInfoForUser(ctx context.Context, uid int32) (*ContactInfo, erro
  *     New ContactInfo structure.
  */
 func AmNewUserContactInfo(uid int32) *ContactInfo {
-	rc := ContactInfo{OwnerUid: uid, OwnerCommId: -1}
-	return &rc
+	rc := &ContactInfo{OwnerUid: uid, OwnerCommId: -1}
+	return rc
 }
 
 /* AmNewCommunityContactInfo creates a new contact info record for the community.
@@ -315,7 +315,7 @@ func AmNewUserContactInfo(uid int32) *ContactInfo {
  * Returns:
  *     New ContactInfo structure.
  */
-func AmNewCommunityContactInfo(uid int32, cid int32) *ContactInfo {
-	rc := ContactInfo{OwnerUid: uid, OwnerCommId: cid}
-	return &rc
+func AmNewCommunityContactInfo(uid, cid int32) *ContactInfo {
+	rc := &ContactInfo{OwnerUid: uid, OwnerCommId: cid}
+	return rc
 }

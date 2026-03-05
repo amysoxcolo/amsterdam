@@ -65,7 +65,7 @@ func AmGetSideboxes(ctx context.Context, uid int32) ([]*Sidebox, error) {
 }
 
 // AmReorderSideboxes changes the position of two sideboxes on the user's list.
-func AmReorderSideboxes(ctx context.Context, uid int32, seq1, seq2 int32) error {
+func AmReorderSideboxes(ctx context.Context, uid, seq1, seq2 int32) error {
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
 
@@ -86,7 +86,7 @@ func AmReorderSideboxes(ctx context.Context, uid int32, seq1, seq2 int32) error 
 }
 
 // AmRemoveSidebox removes a sidebox from the user configuration.
-func AmRemoveSidebox(ctx context.Context, uid int32, boxid int32) error {
+func AmRemoveSidebox(ctx context.Context, uid, boxid int32) error {
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
 
@@ -113,7 +113,7 @@ func AmRemoveSidebox(ctx context.Context, uid int32, boxid int32) error {
 }
 
 // AmAppendSidebox appends a new sidebox to the existing user's configuration.
-func AmAppendSidebox(ctx context.Context, uid int32, boxid int32, param *string) error {
+func AmAppendSidebox(ctx context.Context, uid, boxid int32, param *string) error {
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
 

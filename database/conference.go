@@ -408,14 +408,14 @@ func (c *Conference) SaveFlags(ctx context.Context, f *util.OptionSet) error {
 
 // Settings returns the settings for a user.
 func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings, error) {
-	var settings ConferenceSettings
-	err := amdb.GetContext(ctx, &settings, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
+	settings := new(ConferenceSettings)
+	err := amdb.GetContext(ctx, settings, "SELECT * FROM confsettings WHERE confid = ? AND uid = ?", c.ConfId, u.Uid)
 	switch err {
 	case nil:
 		settings.newflag = false
-		return &settings, nil
+		return settings, nil
 	case sql.ErrNoRows:
-		settings := ConferenceSettings{
+		settings := &ConferenceSettings{
 			ConfId:       c.ConfId,
 			Uid:          u.Uid,
 			DefaultPseud: nil,
@@ -423,7 +423,7 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 			LastPost:     nil,
 			newflag:      true,
 		}
-		return &settings, nil
+		return settings, nil
 	}
 	return nil, err
 }
@@ -456,8 +456,8 @@ func (c *Conference) SetInfo(ctx context.Context, name, descr string, read_lvl, 
 		hide_lvl = ?, nuke_lvl = ?, change_lvl = ?, delete_lvl = ?, lastupdate = NOW() WHERE confid = ?`, name, descr, read_lvl, post_lvl,
 		create_lvl, hide_lvl, nuke_lvl, change_lvl, delete_lvl, c.ConfId)
 	if err == nil {
-		var tmp Conference
-		if err = amdb.GetContext(ctx, &tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId); err == nil {
+		tmp := new(Conference)
+		if err = amdb.GetContext(ctx, tmp, "SELECT * FROM confs WHERE confid = ?", c.ConfId); err == nil {
 			if c.Name != tmp.Name {
 				AmStoreAudit(AmNewCommAudit(AuditConferenceName, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId), fmt.Sprintf("name='%s'", tmp.Name)))
 			}
@@ -1016,12 +1016,12 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
 	if rc, ok := conferenceCache.Get(id); ok {
 		return rc.(*Conference), nil
 	}
-	var conf Conference
-	err := amdb.GetContext(ctx, &conf, "SELECT * from confs where confid = ?", id)
+	conf := new(Conference)
+	err := amdb.GetContext(ctx, conf, "SELECT * from confs where confid = ?", id)
 	switch err {
 	case nil:
-		conferenceCache.Add(id, &conf)
-		return &conf, nil
+		conferenceCache.Add(id, conf)
+		return conf, nil
 	case sql.ErrNoRows:
 		return nil, ErrNoConference
 	}
@@ -1137,19 +1137,19 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 }
 
 // internalGetConfProp is a helper used by the conference property functions.
-func internalGetConfProp(ctx context.Context, confid int32, ndx int32) (*ConferenceProperties, error) {
+func internalGetConfProp(ctx context.Context, confid, ndx int32) (*ConferenceProperties, error) {
 	key := fmt.Sprintf("%d:%d", confid, ndx)
 	getConferencePropMutex.Lock()
 	defer getConferencePropMutex.Unlock()
 	if rc, ok := conferencePropCache.Get(key); ok {
 		return rc.(*ConferenceProperties), nil
 	}
-	var prop ConferenceProperties
-	err := amdb.GetContext(ctx, &prop, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx)
+	prop := new(ConferenceProperties)
+	err := amdb.GetContext(ctx, prop, "SELECT * from propconf WHERE confid = ? AND ndx = ?", confid, ndx)
 	switch err {
 	case nil:
-		conferencePropCache.Add(key, &prop)
-		return &prop, nil
+		conferencePropCache.Add(key, prop)
+		return prop, nil
 	case sql.ErrNoRows:
 		return nil, nil
 	}
@@ -1165,7 +1165,7 @@ func internalGetConfProp(ctx context.Context, confid int32, ndx int32) (*Confere
  *     Value of the property string.
  *     Standard Go error status.
  */
-func AmGetConferenceProperty(ctx context.Context, confid int32, ndx int32) (*string, error) {
+func AmGetConferenceProperty(ctx context.Context, confid, ndx int32) (*string, error) {
 	p, err := internalGetConfProp(ctx, confid, ndx)
 	if err != nil {
 		return nil, err
@@ -1184,7 +1184,7 @@ func AmGetConferenceProperty(ctx context.Context, confid int32, ndx int32) (*str
  * Returns:
  *     Standard Go error status.
  */
-func AmSetConferenceProperty(ctx context.Context, confid int32, ndx int32, val *string) error {
+func AmSetConferenceProperty(ctx context.Context, confid, ndx int32, val *string) error {
 	p, err := internalGetConfProp(ctx, confid, ndx)
 	if err != nil {
 		return err

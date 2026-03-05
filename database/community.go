@@ -127,7 +127,7 @@ var memberCache *lru.Cache = nil
 var memberMutex sync.Mutex
 
 // stuffMembership stuffs a membership record into the cache.
-func stuffMembership(cid int32, uid int32, member bool, locked bool, level uint16) {
+func stuffMembership(cid int32, uid int32, member, locked bool, level uint16) {
 	key := fmt.Sprintf("%d:%d", cid, uid)
 	memberMutex.Lock()
 	memberCache.Add(key, &memberCacheData{isMember: member, locked: locked, level: level})
@@ -253,13 +253,13 @@ func (c *Community) MemberCount(ctx context.Context, hidden bool) (int, error) {
  *         ListMembersOperRegex - The specified field matches the regular expression in "term".
  *     term - The search term, as specified above.
  *     offset - Number of members to skip at beginning of list.
- *     max - Maximum number of members to return.
+ *     maxCount - Maximum number of members to return.
  * Returns:
  *     Array of User pointers representing the return elements.
  *     The total number of members matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func (c *Community) ListMembers(ctx context.Context, field int, oper int, term string, offset int, max int, showHidden bool) ([]*User, int, error) {
+func (c *Community) ListMembers(ctx context.Context, field, oper int, term string, offset, maxCount int, showHidden bool) ([]*User, int, error) {
 	var query strings.Builder
 	if field != ListMembersFieldNone && oper != ListMembersOperNone {
 		query.WriteString(" AND ")
@@ -303,16 +303,16 @@ func (c *Community) ListMembers(ctx context.Context, field int, oper int, term s
 		AND u.contactid = c.contactid`+q, c.Id); err == nil {
 		if offset > 0 {
 			rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
-				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
+				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, maxCount, offset)
 		} else {
 			rs, err = amdb.QueryContext(ctx, `SELECT m.uid FROM commmember m, users u, contacts c WHERE m.commid = ? AND m.uid = u.uid
-				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ?", c.Id, max)
+				AND u.contactid = c.contactid`+q+" ORDER BY u.username LIMIT ?", c.Id, maxCount)
 		}
 	}
 	if err != nil {
 		return nil, total, err
 	}
-	rc := make([]*User, 0, min(max, 10000))
+	rc := make([]*User, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var uid int32
 		if err = rs.Scan(&uid); err == nil {
@@ -650,12 +650,12 @@ func AmGetCommunity(ctx context.Context, id int32) (*Community, error) {
 	if rc, ok := communityCache.Get(id); ok {
 		return rc.(*Community), nil
 	}
-	var newcomm Community
-	err := amdb.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id)
+	newcomm := new(Community)
+	err := amdb.GetContext(ctx, newcomm, "SELECT * from communities WHERE commid = ?", id)
 	switch err {
 	case nil:
-		communityCache.Add(id, &newcomm)
-		return &newcomm, nil
+		communityCache.Add(id, newcomm)
+		return newcomm, nil
 	case sql.ErrNoRows:
 		return nil, ErrNoCommunity
 	}
@@ -677,12 +677,12 @@ func AmGetCommunityTx(ctx context.Context, tx *sqlx.Tx, id int32) (*Community, e
 	if rc, ok := communityCache.Get(id); ok {
 		return rc.(*Community), nil
 	}
-	var newcomm Community
-	err := tx.GetContext(ctx, &newcomm, "SELECT * from communities WHERE commid = ?", id)
+	newcomm := new(Community)
+	err := tx.GetContext(ctx, newcomm, "SELECT * from communities WHERE commid = ?", id)
 	switch err {
 	case nil:
-		communityCache.Add(id, &newcomm)
-		return &newcomm, nil
+		communityCache.Add(id, newcomm)
+		return newcomm, nil
 	case sql.ErrNoRows:
 		return nil, ErrNoCommunity
 	}
@@ -791,7 +791,7 @@ func AmGetCommunitiesForUser(ctx context.Context, uid int32) ([]*Community, erro
  *     Access level within the community, or 0 if the user is not a member.
  *     Standard Go error status.
  */
-func AmGetCommunityAccessLevel(ctx context.Context, uid int32, commid int32) (uint16, error) {
+func AmGetCommunityAccessLevel(ctx context.Context, uid, commid int32) (uint16, error) {
 	var rc uint16 = 0
 	rows, err := amdb.QueryxContext(ctx, `SELECT GREATEST(m.granted_lvl, u.base_lvl) AS level FROM users u, commmember m
 	    WHERE u.uid = m.uid AND m.uid = ? AND m.commid = ?`, uid, commid)
@@ -844,19 +844,19 @@ func AmAutoJoinCommunities(ctx context.Context, user *User) error {
 }
 
 // internalGetCommProp is a helper used by the community property functions.
-func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityProperties, error) {
+func internalGetCommProp(ctx context.Context, cid, ndx int32) (*CommunityProperties, error) {
 	key := fmt.Sprintf("%d:%d", cid, ndx)
 	getCommunityPropMutex.Lock()
 	defer getCommunityPropMutex.Unlock()
 	if rc, ok := communityPropCache.Get(key); ok {
 		return rc.(*CommunityProperties), nil
 	}
-	var prop CommunityProperties
-	err := amdb.GetContext(ctx, &prop, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
+	prop := new(CommunityProperties)
+	err := amdb.GetContext(ctx, prop, "SELECT * from propcomm WHERE cid = ? AND ndx = ?", cid, ndx)
 	switch err {
 	case nil:
-		communityPropCache.Add(key, &prop)
-		return &prop, nil
+		communityPropCache.Add(key, prop)
+		return prop, nil
 	case sql.ErrNoRows:
 		return nil, nil
 	}
@@ -872,7 +872,7 @@ func internalGetCommProp(ctx context.Context, cid int32, ndx int32) (*CommunityP
  *     Value of the property string.
  *     Standard Go error status.
  */
-func AmGetCommunityProperty(ctx context.Context, cid int32, ndx int32) (*string, error) {
+func AmGetCommunityProperty(ctx context.Context, cid, ndx int32) (*string, error) {
 	p, err := internalGetCommProp(ctx, cid, ndx)
 	if err != nil {
 		return nil, err
@@ -891,7 +891,7 @@ func AmGetCommunityProperty(ctx context.Context, cid int32, ndx int32) (*string,
  * Returns:
  *     Standard Go error status.
  */
-func AmSetCommunityProperty(ctx context.Context, cid int32, ndx int32, val *string) error {
+func AmSetCommunityProperty(ctx context.Context, cid, ndx int32, val *string) error {
 	p, err := internalGetCommProp(ctx, cid, ndx)
 	if err != nil {
 		return err
@@ -930,8 +930,8 @@ func AmSetCommunityProperty(ctx context.Context, cid int32, ndx int32, val *stri
  *     Pointer to new Community record, or nil.
  *     Standard Go error status.
  */
-func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid int32, language *string, synopsis *string,
-	rules *string, joinkey *string, hideDirectory bool, hideSearch bool, remoteIP string) (*Community, error) {
+func AmCreateCommunity(ctx context.Context, name, alias string, hostUid int32, language, synopsis, rules, joinkey *string,
+	hideDirectory, hideSearch bool, remoteIP string) (*Community, error) {
 	tx, commit, rollback := transaction(ctx)
 	defer rollback()
 
@@ -1012,14 +1012,14 @@ func AmCreateCommunity(ctx context.Context, name string, alias string, hostUid i
  *     ctx - Standard Go context value.
  *     catid - Category ID to search for.
  *     offset - Number of communities to skip at beginning of list.
- *     max - Maximum number of communities to return.
+ *     maxCount - Maximum number of communities to return.
  *     showAll - Include communities that are "hidden in directory."
  * Returns:
  *     Array of Community pointers representing the return elements.
  *     The total number of communities matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, max int, showAll bool) ([]*Community, int, error) {
+func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset, maxCount int, showAll bool) ([]*Community, int, error) {
 	var err error
 	var total int
 	if showAll {
@@ -1034,22 +1034,22 @@ func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, m
 	if showAll {
 		if offset > 0 {
 			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ? OFFSET ?",
-				catid, max, offset)
+				catid, maxCount, offset)
 		} else {
-			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ?", catid, max)
+			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? ORDER BY commname LIMIT ?", catid, maxCount)
 		}
 	} else {
 		if offset > 0 {
 			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ? OFFSET ?",
-				catid, max, offset)
+				catid, maxCount, offset)
 		} else {
-			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ?", catid, max)
+			rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities WHERE catid = ? AND hide_dir = 0 ORDER BY commname LIMIT ?", catid, maxCount)
 		}
 	}
 	if err != nil {
 		return nil, total, err
 	}
-	rc := make([]*Community, 0, min(max, 10000))
+	rc := make([]*Community, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var commid int32
 		if err = rs.Scan(&commid); err == nil {
@@ -1074,14 +1074,14 @@ func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset int, m
  *         SearchCommOperRegex - The specified field matches the regular expression in "term".
  *     term - The search term, as specified above.
  *     offset - Number of communities to skip at beginning of list.
- *     max - Maximum number of communities to return.
+ *     maxCount - Maximum number of communities to return.
  *     showAll - Include communities that are "hidden in search."
  * Returns:
  *     Array of Community pointers representing the return elements.
  *     The total number of communities matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmSearchCommunities(ctx context.Context, field int, oper int, term string, offset int, max int, showAll bool) ([]*Community, int, error) {
+func AmSearchCommunities(ctx context.Context, field, oper int, term string, offset, maxCount int, showAll bool) ([]*Community, int, error) {
 	var queryPortion strings.Builder
 	queryPortion.WriteString("WHERE ")
 	switch field {
@@ -1119,14 +1119,14 @@ func AmSearchCommunities(ctx context.Context, field int, oper int, term string, 
 	}
 	var rs *sql.Rows
 	if offset > 0 {
-		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ? OFFSET ?", max, offset)
+		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ? OFFSET ?", maxCount, offset)
 	} else {
-		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ?", max)
+		rs, err = amdb.QueryContext(ctx, "SELECT commid FROM communities "+q+" ORDER BY commname LIMIT ?", maxCount)
 	}
 	if err != nil {
 		return nil, total, err
 	}
-	rc := make([]*Community, 0, min(max, 10000))
+	rc := make([]*Community, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var commid int32
 		if err = rs.Scan(&commid); err == nil {
@@ -1154,13 +1154,13 @@ func AmSearchCommunities(ctx context.Context, field int, oper int, term string, 
  *         SearchUserOperRegex - The specified field matches the regular expression in "term".
  *     term - The search term, as specified above.
  *     offset - Number of users to skip at beginning of list.
- *     max - Maximum number of users to return.
+ *     maxCount - Maximum number of users to return.
  * Returns:
  *     Array of User pointers representing the return elements.
  *     The total number of users matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmSearchCommunityMembers(ctx context.Context, c *Community, field int, oper int, term string, offset int, max int) ([]*User, int, error) {
+func AmSearchCommunityMembers(ctx context.Context, c *Community, field, oper int, term string, offset, maxCount int) ([]*User, int, error) {
 	var queryPortion strings.Builder
 	switch field {
 	case SearchUserFieldName:
@@ -1203,15 +1203,15 @@ func AmSearchCommunityMembers(ctx context.Context, c *Community, field int, oper
 	var rs *sql.Rows
 	if offset > 0 {
 		rs, err = amdb.QueryContext(ctx, `SELECT u.uid FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
-			AND m.commid = ? AND u.is_anon = 0 AND `+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, max, offset)
+			AND m.commid = ? AND u.is_anon = 0 AND `+q+" ORDER BY u.username LIMIT ? OFFSET ?", c.Id, maxCount, offset)
 	} else {
 		rs, err = amdb.QueryContext(ctx, `SELECT u.uid FROM users u, contacts c, commmember m WHERE u.contactid = c.contactid AND u.uid = m.uid
-			AND m.commid = ? AND u.is_anon = 0 AND `+q+" ORDER BY u.username LIMIT ?", c.Id, max)
+			AND m.commid = ? AND u.is_anon = 0 AND `+q+" ORDER BY u.username LIMIT ?", c.Id, maxCount)
 	}
 	if err != nil {
 		return nil, total, err
 	}
-	rc := make([]*User, 0, min(max, 10000))
+	rc := make([]*User, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var uid int32
 		if err = rs.Scan(&uid); err == nil {

@@ -64,13 +64,13 @@ func AmGetAd(ctx context.Context, adid int32) (*Advert, error) {
 	if ok {
 		return rc.(*Advert), nil
 	}
-	var theAd Advert
-	err := amdb.GetContext(ctx, &theAd, "SELECT * FROM adverts WHERE adid = ?", adid)
+	theAd := new(Advert)
+	err := amdb.GetContext(ctx, theAd, "SELECT * FROM adverts WHERE adid = ?", adid)
 	if err != nil {
 		return nil, err
 	}
-	adCache.Add(adid, &theAd)
-	return &theAd, nil
+	adCache.Add(adid, theAd)
+	return theAd, nil
 }
 
 // AmGetRandomAd gets a random ad from the

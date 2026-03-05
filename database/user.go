@@ -473,12 +473,12 @@ func AmGetUser(ctx context.Context, uid int32) (*User, error) {
 	if rc, ok := userCache.Get(uid); ok {
 		return rc.(*User), nil
 	}
-	var user User
-	err := amdb.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid)
+	user := new(User)
+	err := amdb.GetContext(ctx, user, "SELECT * from users WHERE uid = ?", uid)
 	switch err {
 	case nil:
-		userCache.Add(uid, &user)
-		return &user, nil
+		userCache.Add(uid, user)
+		return user, nil
 	case sql.ErrNoRows:
 		return nil, ErrNoUser
 	}
@@ -500,12 +500,12 @@ func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
 	if rc, ok := userCache.Get(uid); ok {
 		return rc.(*User), nil
 	}
-	var user User
-	err := tx.GetContext(ctx, &user, "SELECT * from users WHERE uid = ?", uid)
+	user := new(User)
+	err := tx.GetContext(ctx, user, "SELECT * from users WHERE uid = ?", uid)
 	switch err {
 	case nil:
-		userCache.Add(uid, &user)
-		return &user, nil
+		userCache.Add(uid, user)
+		return user, nil
 	case sql.ErrNoRows:
 		return nil, ErrNoUser
 	}
@@ -522,12 +522,12 @@ func AmGetUserTx(ctx context.Context, tx *sqlx.Tx, uid int32) (*User, error) {
  *     Standard Go error status
  */
 func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, error) {
-	var user User
 	var err error
+	user := new(User)
 	if tx != nil {
-		err = tx.GetContext(ctx, &user, "SELECT * FROM users WHERE username = ?", name)
+		err = tx.GetContext(ctx, user, "SELECT * FROM users WHERE username = ?", name)
 	} else {
-		err = amdb.GetContext(ctx, &user, "SELECT * FROM users WHERE username = ?", name)
+		err = amdb.GetContext(ctx, user, "SELECT * FROM users WHERE username = ?", name)
 	}
 	switch err {
 	case nil:
@@ -536,9 +536,9 @@ func AmGetUserByName(ctx context.Context, name string, tx *sqlx.Tx) (*User, erro
 		if rc, ok := userCache.Get(user.Uid); ok {
 			return rc.(*User), nil
 		} else {
-			userCache.Add(user.Uid, &user)
+			userCache.Add(user.Uid, user)
 		}
-		return &user, nil
+		return user, nil
 	case sql.ErrNoRows:
 		return nil, ErrNoUser
 	}
@@ -821,12 +821,12 @@ func internalGetProp(ctx context.Context, uid int32, ndx int32) (*UserProperties
 	if rc, ok := userPropCache.Get(key); ok {
 		return rc.(*UserProperties), nil
 	}
-	var prop UserProperties
-	if err := amdb.GetContext(ctx, &prop, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
+	prop := new(UserProperties)
+	if err := amdb.GetContext(ctx, prop, "SELECT * from propuser WHERE uid = ? AND ndx = ?", uid, ndx); err != nil {
 		return nil, err
 	}
-	userPropCache.Add(key, &prop)
-	return &prop, nil
+	userPropCache.Add(key, prop)
+	return prop, nil
 }
 
 /* AmGetUserProperty retrieves the value of a user property.
@@ -891,13 +891,13 @@ func AmSetUserProperty(ctx context.Context, uid int32, ndx int32, val *string) e
  *         SearchUserOperRegex - The specified field matches the regular expression in "term".
  *     term - The search term, as specified above.
  *     offset - Number of users to skip at beginning of list.
- *     max - Maximum number of users to return.
+ *     maxCount - Maximum number of users to return.
  * Returns:
  *     Array of User pointers representing the return elements.
  *     The total number of users matching this query (could be greater than max)
  *	   Standard Go error status.
  */
-func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset int, max int) ([]*User, int, error) {
+func AmSearchUsers(ctx context.Context, field, oper int, term string, offset, maxCount int) ([]*User, int, error) {
 	var queryPortion strings.Builder
 	switch field {
 	case SearchUserFieldName:
@@ -939,15 +939,15 @@ func AmSearchUsers(ctx context.Context, field int, oper int, term string, offset
 	var rs *sql.Rows
 	if offset > 0 {
 		rs, err = amdb.QueryContext(ctx, "SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
-			" ORDER BY u.username LIMIT ? OFFSET ?", max, offset)
+			" ORDER BY u.username LIMIT ? OFFSET ?", maxCount, offset)
 	} else {
 		rs, err = amdb.QueryContext(ctx, "SELECT u.uid FROM users u, contacts c WHERE u.contactid = c.contactid AND u.is_anon = 0 AND "+q+
-			" ORDER BY u.username LIMIT ?", max)
+			" ORDER BY u.username LIMIT ?", maxCount)
 	}
 	if err != nil {
 		return nil, total, err
 	}
-	rc := make([]*User, 0, min(max, 10000))
+	rc := make([]*User, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var uid int32
 		if err = rs.Scan(&uid); err == nil {
