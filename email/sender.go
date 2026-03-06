@@ -213,16 +213,17 @@ func SetupMailSender() func() {
 
 	// Locate the external template directory and build the loaders.
 	templateLoaders := make([]jet.Loader, 0, 2)
-	if config.GlobalConfig.Resources.EmailTemplateDir != "" {
-		finfo, err := os.Stat(config.GlobalConfig.Resources.EmailTemplateDir)
+	etDir := config.GlobalConfig.ExPath(config.GlobalConfig.Resources.EmailTemplateDir)
+	if etDir != "" {
+		finfo, err := os.Stat(etDir)
 		if err == nil {
 			if finfo.IsDir() {
-				templateLoaders = append(templateLoaders, jet.NewOSFileSystemLoader(config.GlobalConfig.Resources.EmailTemplateDir))
+				templateLoaders = append(templateLoaders, jet.NewOSFileSystemLoader(etDir))
 			} else {
-				log.Errorf("email template directory %s is not a directory, ignored", config.GlobalConfig.Resources.EmailTemplateDir)
+				log.Errorf("email template directory %s is not a directory, ignored", etDir)
 			}
 		} else {
-			log.Errorf("email template directory %s is not valid, ignored (%v)", config.GlobalConfig.Resources.EmailTemplateDir, err)
+			log.Errorf("email template directory %s is not valid, ignored (%v)", etDir, err)
 		}
 	}
 	templateLoaders = append(templateLoaders, embedfs.NewLoader("templates/", emailTemplates))

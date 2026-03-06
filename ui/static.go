@@ -37,20 +37,21 @@ var external_resources fs.FS = nil
 
 func setupResources() {
 	// Open the external resource path.
-	if config.GlobalConfig.Resources.ExternalResourcePath != "" {
-		finfo, err := os.Stat(config.GlobalConfig.Resources.ExternalResourcePath)
+	rpath := config.GlobalConfig.ExPath(config.GlobalConfig.Resources.ExternalResourcePath)
+	if rpath != "" {
+		finfo, err := os.Stat(rpath)
 		if err == nil {
 			if finfo.IsDir() {
-				root, err := os.OpenRoot(config.GlobalConfig.Resources.ExternalResourcePath)
+				root, err := os.OpenRoot(rpath)
 				if err != nil {
 					panic(err)
 				}
 				external_resources = root.FS()
 			} else {
-				log.Errorf("external resource path \"%s\" is not a directory, ignored", config.GlobalConfig.Resources.ExternalResourcePath)
+				log.Errorf("external resource path \"%s\" is not a directory, ignored", rpath)
 			}
 		} else {
-			log.Errorf("external resource path \"%s\" is not valid, ignored (%v)", config.GlobalConfig.Resources.ExternalResourcePath, err)
+			log.Errorf("external resource path \"%s\" is not valid, ignored (%v)", rpath, err)
 		}
 	}
 }

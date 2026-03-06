@@ -164,8 +164,9 @@ func setupMenus() {
 	if menuCache, err = lru.New(config.GlobalConfig.Tuning.Caches.Menus); err != nil {
 		panic(err)
 	}
-	if config.GlobalConfig.Resources.ExternalMenuDefinitions != "" {
-		b, err := os.ReadFile(config.GlobalConfig.Resources.ExternalMenuDefinitions)
+	mfile := config.GlobalConfig.ExPath(config.GlobalConfig.Resources.ExternalMenuDefinitions)
+	if mfile != "" {
+		b, err := os.ReadFile(mfile)
 		if err == nil {
 			md := new(MenuDefs)
 			err = yaml.Unmarshal(b, md)
@@ -177,10 +178,10 @@ func setupMenus() {
 					}
 				}
 			} else {
-				log.Errorf("cannot parse external menu definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMenuDefinitions, err)
+				log.Errorf("cannot parse external menu definition file %s, ignored (%v)", mfile, err)
 			}
 		} else {
-			log.Errorf("cannot read external menu definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMenuDefinitions, err)
+			log.Errorf("cannot read external menu definition file %s, ignored (%v)", mfile, err)
 		}
 	}
 }

@@ -156,6 +156,15 @@ type AmConfig struct {
 			UserProps       int `yaml:"userProps"`
 		} `yaml:"caches"`
 	} `yaml:"tuning"`
+	baseDir string // the base directory to evaluate relative paths to.
+}
+
+// ExPath expands a path relative to the baseDir (the location of the config file).
+func (c *AmConfig) ExPath(path string) string {
+	if path == "" || c.baseDir == "" || filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(c.baseDir, path)
 }
 
 // AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig.
@@ -213,6 +222,10 @@ func locateConfigFile() (string, *os.File) {
 func overlayStructValue(dest, loaded, defaults reflect.Value) {
 	typ := dest.Type()
 	for i := 0; i < dest.NumField(); i++ {
+		structField := typ.Field(i)
+		if !structField.IsExported() {
+			continue
+		}
 		fldDest := dest.Field(i)
 		fldLoaded := loaded.Field(i)
 		fldDefaults := defaults.Field(i)
@@ -257,8 +270,7 @@ func overlayStructValue(dest, loaded, defaults reflect.Value) {
 			}
 		} else {
 			// if we see this message, this function needs more work
-			errField := typ.Field(i)
-			log.Errorf("*** unable to deal with field %s of type %s", errField.Name, typ.Name())
+			log.Errorf("*** unable to deal with field %s of type %s", structField.Name, typ.Name())
 		}
 	}
 }
@@ -290,19 +302,20 @@ func parseDataSize(s string) (int32, error) {
 
 // AmOpenExternalContentPath opens the "external content path" specified in the configuration as a root filesystem.
 func AmOpenExternalContentPath() (fs.FS, error) {
-	if GlobalConfig.Resources.ExternalContentPath == "" {
+	path := GlobalConfig.ExPath(GlobalConfig.Resources.ExternalContentPath)
+	if path == "" {
 		return nil, nil
 	}
-	finfo, err := os.Stat(GlobalConfig.Resources.ExternalContentPath)
+	finfo, err := os.Stat(path)
 	if err != nil {
-		log.Errorf("external content path \"%s\" is not valid, ignored (%v)", GlobalConfig.Resources.ExternalContentPath, err)
+		log.Errorf("external content path \"%s\" is not valid, ignored (%v)", path, err)
 		return nil, nil
 	}
 	if !finfo.IsDir() {
-		log.Errorf("external content path \"%s\" is not a directory, ignored", GlobalConfig.Resources.ExternalContentPath)
+		log.Errorf("external content path \"%s\" is not a directory, ignored", path)
 		return nil, nil
 	}
-	root, err := os.OpenRoot(GlobalConfig.Resources.ExternalContentPath)
+	root, err := os.OpenRoot(path)
 	if err != nil {
 		return nil, err
 	}
@@ -331,9 +344,11 @@ func SetupConfig() {
 			panic(fmt.Sprintf("unable to load configuration file %s: %v", name, err))
 		}
 		overlayStructValue(reflect.ValueOf(&GlobalConfig).Elem(), reflect.ValueOf(&loadedConfig).Elem(), reflect.ValueOf(&defaultConfig).Elem())
+		GlobalConfig.baseDir = filepath.Dir(name)
 	} else {
 		log.Info("SetupConfig(): using default configs only")
 		GlobalConfig = defaultConfig // just copy over the defaults
+		GlobalConfig.baseDir = ""
 	}
 
 	// Compute additional values.

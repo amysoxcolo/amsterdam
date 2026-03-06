@@ -88,20 +88,21 @@ var extDialogs fs.FS = nil
 // setupDialogs sets up the external dialog filesystem.
 func setupDialogs() {
 	// Open the external dialog path.
-	if config.GlobalConfig.Resources.DialogTemplateDir != "" {
-		finfo, err := os.Stat(config.GlobalConfig.Resources.DialogTemplateDir)
+	dtDir := config.GlobalConfig.ExPath(config.GlobalConfig.Resources.DialogTemplateDir)
+	if dtDir != "" {
+		finfo, err := os.Stat(dtDir)
 		if err == nil {
 			if finfo.IsDir() {
-				root, err := os.OpenRoot(config.GlobalConfig.Resources.DialogTemplateDir)
+				root, err := os.OpenRoot(dtDir)
 				if err != nil {
 					panic(err)
 				}
 				extDialogs = root.FS()
 			} else {
-				log.Errorf("external resource path \"%s\" is not a directory, ignored", config.GlobalConfig.Resources.DialogTemplateDir)
+				log.Errorf("external resource path \"%s\" is not a directory, ignored", dtDir)
 			}
 		} else {
-			log.Errorf("external resource path \"%s\" is not valid, ignored (%v)", config.GlobalConfig.Resources.DialogTemplateDir, err)
+			log.Errorf("external resource path \"%s\" is not valid, ignored (%v)", dtDir, err)
 		}
 	}
 }

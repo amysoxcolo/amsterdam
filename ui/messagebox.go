@@ -85,8 +85,9 @@ func init() {
 
 // setupMessageBoxes loads external message box definitions.
 func setupMessageBoxes() {
-	if config.GlobalConfig.Resources.ExternalMessageDefinitions != "" {
-		b, err := os.ReadFile(config.GlobalConfig.Resources.ExternalMessageDefinitions)
+	mbfile := config.GlobalConfig.ExPath(config.GlobalConfig.Resources.ExternalMessageDefinitions)
+	if mbfile != "" {
+		b, err := os.ReadFile(mbfile)
 		if err == nil {
 			mb := new(MessageBoxDefs)
 			err = yaml.Unmarshal(b, mb)
@@ -102,10 +103,10 @@ func setupMessageBoxes() {
 					}
 				}
 			} else {
-				log.Errorf("cannot parse external message definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMessageDefinitions, err)
+				log.Errorf("cannot parse external message definition file %s, ignored (%v)", mbfile, err)
 			}
 		} else {
-			log.Errorf("cannot read external message definition file %s, ignored (%v)", config.GlobalConfig.Resources.ExternalMessageDefinitions, err)
+			log.Errorf("cannot read external message definition file %s, ignored (%v)", mbfile, err)
 		}
 	}
 }

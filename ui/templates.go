@@ -287,16 +287,17 @@ func postRewrite(a jet.Arguments) reflect.Value {
 func setupTemplates() {
 	// Set up the template loaders: the optional filesystem loader, then the embedded loader.
 	templateLoaders := make([]jet.Loader, 0, 2)
-	if config.GlobalConfig.Resources.ViewTemplateDir != "" {
-		finfo, err := os.Stat(config.GlobalConfig.Resources.ViewTemplateDir)
+	vtDir := config.GlobalConfig.ExPath(config.GlobalConfig.Resources.ViewTemplateDir)
+	if vtDir != "" {
+		finfo, err := os.Stat(vtDir)
 		if err == nil {
 			if finfo.IsDir() {
-				templateLoaders = append(templateLoaders, jet.NewOSFileSystemLoader(config.GlobalConfig.Resources.ViewTemplateDir))
+				templateLoaders = append(templateLoaders, jet.NewOSFileSystemLoader(vtDir))
 			} else {
-				log.Errorf("view template directory %s is not a directory, ignored", config.GlobalConfig.Resources.ViewTemplateDir)
+				log.Errorf("view template directory %s is not a directory, ignored", vtDir)
 			}
 		} else {
-			log.Errorf("view template directory %s is not valid, ignored (%v)", config.GlobalConfig.Resources.ViewTemplateDir, err)
+			log.Errorf("view template directory %s is not valid, ignored (%v)", vtDir, err)
 		}
 	}
 	templateLoaders = append(templateLoaders, embedfs.NewLoader("views/", static_views))
