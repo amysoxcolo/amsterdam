@@ -88,6 +88,9 @@ type AmConfig struct {
 		FooterTemplate        string `yaml:"footerTemplate"`
 		DefaultCommunityLogo  string `yaml:"defaultCommunityLogo"`
 		DefaultUserPhoto      string `yaml:"defaultUserPhoto"`
+		WelcomeTitle          string `yaml:"welcomeTitle"`
+		WelcomeMessage        string `yaml:"welcomeMessage"`
+		TopPostsTitle         string `yaml:"topPostsTitle"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`

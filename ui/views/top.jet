@@ -12,17 +12,15 @@
         {{ if .CurrentUser().IsAnon }}
             <!-- Welcome Section -->
             <div class="mb-8">
-                <h1 class="text-blue-800 text-4xl font-bold mb-2">Welcome to Amsterdam</h1>
+                <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ GlobalConfig.Site.WelcomeTitle | raw }}</h1>
                 <hr class="border-2 border-gray-400 w-4/5 mb-4">
-                <p class="text-black text-sm mb-4">
-                    Welcome to the <strong>Amsterdam Web Communities System</strong>. To get the most out of this site, you should log in or create an account, using one of the links above.
-                </p>
+                <p class="text-black text-sm mb-4">{{ GlobalConfig.Site.WelcomeMessage | raw }}</p>
             </div>
         {{ end }}
 
         <!-- Front Page Posts Section -->
         <div>
-            <h2 class="text-blue-800 text-4xl font-bold mb-2">Latest from the Conferences</h2>
+            <h2 class="text-blue-800 text-4xl font-bold mb-2">{{ GlobalConfig.Site.TopPostsTitle | raw }}</h2>
             <hr class="border-2 border-gray-400 w-4/5 mb-4">
             
             {{ user := "" }}

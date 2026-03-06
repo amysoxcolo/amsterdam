@@ -25,6 +25,11 @@ site:
   footerTemplate: "footer.jet"
   defaultCommunityLogo: "/img/builtin/default-community.jpg"
   defaultUserPhoto: "/img/builtin/no-user.png"
+  welcomeTitle: "Welcome to Amsterdam"
+  welcomeMessage: >
+    Welcome to the <strong>Amsterdam Web Communities System</strong>. To get the most out of this site, you should log in or create an account,
+    using one of the links above.
+  topPostsTitle: "Latest from the Conferences"
 database:
   driver: "mysql"
   dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"
