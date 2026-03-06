@@ -19,6 +19,7 @@ import (
 	"maps"
 	"net/smtp"
 	"os"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -81,8 +82,9 @@ func formatMessage(ctx context.Context, m *amMessage) ([]byte, error) {
 		}
 		hdrs["Subject"] = m.subject
 		hdrs["Content-Type"] = "text/plain; charset=UTF-8"
+		hdrs["X-Mailer"] = fmt.Sprintf("Amsterdam AutoMail System %s", config.AMSTERDAM_VERSION)
 		me, _ := os.Hostname()
-		hdrs["X-Amsterdam-Server-Info"] = fmt.Sprintf("%s (Amsterdam/%s)", me, config.AMSTERDAM_VERSION)
+		hdrs["X-Amsterdam-Server-Info"] = fmt.Sprintf("%s (Amsterdam/%s %s)", me, config.AMSTERDAM_VERSION, runtime.Version())
 		hdrs["X-Amsterdam-Sender-Info"] = fmt.Sprintf("uid %d, name %s, ip [%s]", m.uid, user.Username, m.ip)
 		for i, v := range disclaimerLines {
 			hdrs[fmt.Sprintf("X-Disclaimer-%d", i+1)] = v
