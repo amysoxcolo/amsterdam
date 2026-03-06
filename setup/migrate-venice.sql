@@ -49,3 +49,7 @@ ALTER TABLE ipban ADD INDEX by_mask (mask_hi, mask_lo);
 ALTER TABLE users MODIFY COLUMN email_confnum INT DEFAULT 0;
 
 DROP TABLE refaudit;
+
+ALTER TABLE globals ADD COLUMN version CHAR(10) FIRST;
+UPDATE globals SET version = '2026030501';
+ALTER TABLE globals MODIFY COLUMN version CHAR(10) NOT NULL;

@@ -10,23 +10,19 @@
     <div class="flex-1 p-4">
         <!-- Amsterdam Logo -->
         <div class="text-center mb-6">
-            <img src="/img/builtin/AmsterdamLogo.png" 
-                    alt="Amsterdam Web Communities System" 
-                    class="w-96 h-88 mx-auto">
+            <img src="/img/builtin/AmsterdamLogo.png" alt="Amsterdam Web Communities System" class="w-96 h-88 mx-auto">
         </div>
 
         <!-- Version and Copyright -->
         <div class="mb-6">
-            <h3 class="text-lg font-bold mb-2">Amsterdam Web Communities System Release {{ AmsterdamVersion }}</h3>
-            <p class="text-sm text-black mb-4">
+            <h1 class="text-2xl font-bold mb-2">Amsterdam Web Communities System Release {{ AmsterdamVersion }} - Database Version {{ dbVersion }}</h1>
+            <p class="text-base text-black mb-4">
                 Copyright © {{ AmsterdamCopyright }} <a href="https://erbosoft.com/">Erbosoft Metaverse Design Solutions</a>,
                 All Rights Reserved.
             </p>
-            <p class="text-sm text-black">
+            <p class="text-base text-black">
                 This software is subject to the
-                <a href="https://www.mozilla.org/en-US/MPL/2.0/" 
-                    target="_blank" 
-                    class="text-blue-700 hover:text-blue-900">Mozilla Public License Version 2.0</a>.
+                <a href="https://www.mozilla.org/en-US/MPL/2.0/" target="_blank" class="text-blue-700 hover:text-blue-900">Mozilla Public License Version 2.0</a>.
                 It is distributed on an "AS IS" basis, <strong>without warranty of any kind</strong>, either express or implied.
                 See the License for the specific language governing rights and limitations under the License.
             </p>
@@ -34,8 +30,8 @@
 
         <!-- Project Team -->
         <div class="mb-6">
-            <h3 class="text-lg font-bold mb-4">The Amsterdam Project Team</h3>
-            <dl class="text-sm text-black space-y-3">
+            <h3 class="text-xl font-bold mb-4">The Amsterdam Project Team</h3>
+            <dl class="text-base text-black space-y-3">
                 <div>
                     <dt class="font-bold">Amy Gale Ruth Bowersox</dt>
                     <dd class="ml-4">Code wrangler, system guru, and administrator in general</dd>
@@ -45,7 +41,7 @@
 
         <!-- Thanks Section -->
         <div class="text-center mb-6">
-            <p class="text-sm text-black italic">
+            <p class="text-base text-black italic">
                 Thanks to: Howard, who thought it up; Andre, who rescued it the first time; the Electric Minds community, who rescued it again;
                 and Nicole, without whom none of this would have been possible.
             </p>
@@ -53,11 +49,7 @@
 
         <!-- Erbosoft Logo -->
         <div class="text-center">
-            <a href="https://erbosoft.com/">
-                <img src="/img/builtin/Erbosoft-logo.png" 
-                        alt="Erbosoft Metaverse Design Solutions" 
-                        class="w-72 h-25 mx-auto">
-            </a>
+            <a href="https://erbosoft.com/"><img src="/img/builtin/Erbosoft-logo.png" alt="Erbosoft Metaverse Design Solutions" class="w-72 h-25 mx-auto"></a>
         </div>
     </div>
 </div>

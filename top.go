@@ -240,6 +240,13 @@ func TopPage(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func AboutPage(ctxt ui.AmContext) (string, any) {
+	// Set the database version.
+	g, err := database.AmGlobals(ctxt.Ctx())
+	if err != nil {
+		return "error", err
+	}
+	ctxt.VarMap().Set("dbVersion", g.Version)
+
 	// Set the page title.
 	ctxt.SetFrameTitle("About Amsterdam")
 	return "framed", "about.jet"

@@ -20,14 +20,15 @@ import (
 // Globals contains the global data.
 type Globals struct {
 	Mutex                   sync.Mutex
-	PostsPerPage            int32 `db:"posts_per_page"`
-	OldPostsAtTop           int32 `db:"old_posts_at_top"`
-	MaxSearchPage           int32 `db:"max_search_page"`
-	MaxCommunityMemberPage  int32 `db:"max_comm_mbr_page"`
-	MaxConferenceMemberPage int32 `db:"max_conf_mbr_page"`
-	FrontPagePosts          int32 `db:"fp_posts"`
-	NumAuditPage            int32 `db:"num_audit_page"`
-	CommunityCreateLevel    int32 `db:"comm_create_lvl"`
+	Version                 string `db:"version"`
+	PostsPerPage            int32  `db:"posts_per_page"`
+	OldPostsAtTop           int32  `db:"old_posts_at_top"`
+	MaxSearchPage           int32  `db:"max_search_page"`
+	MaxCommunityMemberPage  int32  `db:"max_comm_mbr_page"`
+	MaxConferenceMemberPage int32  `db:"max_conf_mbr_page"`
+	FrontPagePosts          int32  `db:"fp_posts"`
+	NumAuditPage            int32  `db:"num_audit_page"`
+	CommunityCreateLevel    int32  `db:"comm_create_lvl"`
 	flags                   *util.OptionSet
 }
 
@@ -63,6 +64,7 @@ var globalPropMutex sync.Mutex
 // Clone clones the entire global state.
 func (g *Globals) Clone() *Globals {
 	rc := &Globals{
+		Version:                 g.Version,
 		PostsPerPage:            g.PostsPerPage,
 		OldPostsAtTop:           g.OldPostsAtTop,
 		MaxSearchPage:           g.MaxSearchPage,
@@ -126,6 +128,7 @@ func AmReplaceGlobals(ctx context.Context, ng *Globals) error {
 	if err != nil {
 		return err
 	}
+	ng.Version = theGlobals.Version
 	ng.flags = nil
 	theGlobals = ng
 	return nil

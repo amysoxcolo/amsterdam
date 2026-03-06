@@ -25,6 +25,7 @@ USE amsterdam;
 # likely to edit "on the fly."  Stuff that can only be updated with a shutdown should go
 # in the XML config file.  This table has ONLY ONE ROW!
 CREATE TABLE globals (
+    version CHAR(10) NOT NULL,
     posts_per_page INT NOT NULL,
     old_posts_at_top INT NOT NULL,
     max_search_page INT NOT NULL,
@@ -851,9 +852,9 @@ INSERT INTO adverts (imagepath) VALUES
 ##############################################################################
 
 # Initialize the system globals table.
-INSERT INTO globals (posts_per_page, old_posts_at_top, max_search_page, max_comm_mbr_page, max_conf_mbr_page,
+INSERT INTO globals (version, posts_per_page, old_posts_at_top, max_search_page, max_comm_mbr_page, max_conf_mbr_page,
                      fp_posts, num_audit_page, comm_create_lvl)
-    VALUES (20, 2, 20, 50, 50, 10, 100, 1000);
+    VALUES ('2026030501', 20, 2, 20, 50, 50, 10, 100, 1000);
 
 # Initialize the global properies table.
 INSERT INTO propglobal (ndx, data)

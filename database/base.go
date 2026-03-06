@@ -28,14 +28,18 @@ func SetupDb() (func(), error) {
 	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, config.GlobalComputedConfig.DatabaseDSN)
 	if err == nil {
 		amdb = db
-		setupAdCache()
-		setupUserCache()
-		setupContactsCache()
-		setupCommunityCache()
-		setupServicesCache()
-		setupConferenceCache()
-		exitfns = append(exitfns, setupAuditWriter())
-		exitfns = append(exitfns, setupIPBanSweep())
+		g, err := AmGlobals(context.Background())
+		if err == nil {
+			setupAdCache()
+			setupUserCache()
+			setupContactsCache()
+			setupCommunityCache()
+			setupServicesCache()
+			setupConferenceCache()
+			exitfns = append(exitfns, setupAuditWriter())
+			exitfns = append(exitfns, setupIPBanSweep())
+			log.Infof("SetupDb(): database version %s", g.Version)
+		}
 	}
 	return func() {
 		slices.Reverse(exitfns)
