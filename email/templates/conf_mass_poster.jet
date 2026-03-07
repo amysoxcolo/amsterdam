@@ -11,6 +11,7 @@
 You are receiving this message because you are a participant in the
 "{{ confName }}" conference in the Amsterdam community "{{ commName }}".
 The sender is a host of this conference.  To stop receiving mass E-mailed
-notices from all Amsterdam community and conference hosts, visit Amsterdam, click
-on the "Profile" link, check the box labeled "Don't send me mass E-mail from
-community/conference hosts," and click Update to save this preference.
+notices from all Amsterdam community and conference hosts, visit Amsterdam at
+{{ GlobalConfig.Site.BaseURL }}, click on the "Profile" link, check the box
+labeled "Don't send me mass E-mail from community/conference hosts," and
+click Update to save this preference.
