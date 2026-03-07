@@ -22,7 +22,7 @@
 
     <!-- General Statistics -->
     <h2 class="text-blue-800 text-2xl font-bold mb-2">General Statistics</h2>
-    <div class="overflow-x-auto mb-2">
+    <div class="mb-2">
         <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
             <table class="w-xl space-x-4 table-fixed">
                 <tr>
@@ -51,7 +51,7 @@
 
     <!-- Heap Statistics -->
     <h2 class="text-blue-800 text-2xl font-bold mb-2">Heap Statistics</h2>
-    <div class="overflow-x-auto mb-2">
+    <div class="mb-2">
         <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
             <table class="w-xl space-x-4 table-fixed">
                 <tr>
@@ -72,32 +72,32 @@
 
     <!-- System Allocations -->
     <h2 class="text-blue-800 text-2xl font-bold mb-2">System Allocations</h2>
-    <div class="overflow-x-auto mb-2">
+    <div class="mb-2">
         <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
             <table class="w-xl space-x-4 table-fixed">
                 <tr>
                     <td class="font-bold text-sm px-4">Stack Usage</td>
-                    <td class="text-sm px-4">{{ mstat.StackInuse }} in use ({{ mstat.StackSys }} from system)</td>
+                    <td class="text-sm px-4">{{ memStackInuse }} in use ({{ memStackSys }} from system)</td>
                 </tr>
                 <tr>
                     <td class="font-bold text-sm px-4">MSpan Usage</td>
-                    <td class="text-sm px-4">{{ mstat.MSpanInuse }} in use ({{ mstat.MSpanSys }} from system)</td>
+                    <td class="text-sm px-4">{{ memMSpanInuse }} in use ({{ memMSpanSys }} from system)</td>
                 </tr>
                 <tr>
                     <td class="font-bold text-sm px-4">MCache Usage</td>
-                    <td class="text-sm px-4">{{ mstat.MCacheInuse }} in use ({{ mstat.MCacheSys }} from system)</td>
+                    <td class="text-sm px-4">{{ memMCacheInuse }} in use ({{ memMCacheSys }} from system)</td>
                 </tr>
                 <tr>
                     <td class="font-bold text-sm px-4">Bucket Hashtable Usage</td>
-                    <td class="text-sm px-4">{{ mstat.BuckHashSys }}</td>
+                    <td class="text-sm px-4">{{ memBuckHashSys }}</td>
                 </tr>
                 <tr>
                     <td class="font-bold text-sm px-4">GC Usage</td>
-                    <td class="text-sm px-4">{{ mstat.GCSys }}</td>
+                    <td class="text-sm px-4">{{ memGCSys }}</td>
                 </tr>
                 <tr>
                     <td class="font-bold text-sm px-4">Miscellaneous Usage</td>
-                    <td class="text-sm px-4">{{ mstat.OtherSys }}</td>
+                    <td class="text-sm px-4">{{ memOtherSys }}</td>
                 </tr>
             </table>
         </div>
@@ -105,7 +105,7 @@
 
     <!-- GC Statistics -->
     <h2 class="text-blue-800 text-2xl font-bold mb-2">GC Statistics</h2>
-    <div class="overflow-x-auto mb-2">
+    <div class="mb-2">
         <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
             <table class="w-xl space-x-4 table-fixed">
                 <tr>
