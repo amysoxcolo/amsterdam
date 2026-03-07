@@ -29,5 +29,15 @@
                 "AMSTERDAM_CONFIG": "${workspaceFolder}/test2.yaml"
             }
         },
+        {
+            "name": "EMinds Reborn",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "env": {
+                "AMSTERDAM_CONFIG": "/u01/home/amy/Erbosoft/emreborn/amsterdam.yaml"
+            }
+        },
     ]
 }

@@ -8,13 +8,25 @@
  *}
 {{ block leftMenu(menu) }}
     <div class="mb-2 mt-2">
-        <div class="font-bold mb-1">{{ menu.Title }}</div>
+        {{ if menu.Title != "" }}
+            <div class="font-bold mb-1">{{ menu.Title }}</div>
+        {{ end }}
         {{ range _, it := menu.Items }}
             {{ if it.Show(.) }}
-                {{ if it.Disabled }}
-                    <div class="text-gray-500 mb-1">{{ it.Text }}</div>
+                {{ if it.Image != "" }}
+                    {{ if it.Link != "" && !it.Disabled }}
+                        <a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a>
+                    {{ else }}
+                        <img src="{{ it.Image }}" alt="{{ it.Text }}">
+                    {{ end }}
                 {{ else }}
-                    <a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900">{{ it.Text }}</a>
+                    {{ if it.Disabled }}
+                        <div class="text-gray-500 mb-1">{{ it.Text }}</div>
+                    {{ else if it.Link != "" }}
+                        <a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900">{{ it.Text }}</a>
+                    {{ else }}
+                        <div class="mb-1">{{ it.Text }}</div>
+                    {{ end }}
                 {{ end }}
             {{ end }}
         {{ end }}
@@ -26,13 +38,25 @@
         <div class="mb-1">
             <img src="{{ ExtractCommunityLogo(__comm, .) }}" alt="{{ __comm.Name }}" class="w-28 h-16 rounded">
         </div>
-        <div class="font-bold mb-1">{{ menu.Title }}</div>
+        {{ if menu.Title != "" }}
+            <div class="font-bold mb-1">{{ menu.Title }}</div>
+        {{ end }}
         {{ range _, it := menu.Items }}
             {{ if it.Show(.) }}
-                {{ if it.Disabled }}
-                    <div class="text-gray-500 mb-1">{{ it.Text }}</div>
+                {{ if it.Image != "" }}
+                    {{ if it.Link != "" && !it.Disabled }}
+                        <a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a>
+                    {{ else }}
+                        <img src="{{ it.Image }}" alt="{{ it.Text }}">
+                    {{ end }}
                 {{ else }}
-                    <div class="mb-1"><a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900">{{ it.Text }}</a></div>
+                    {{ if it.Disabled }}
+                        <div class="text-gray-500 mb-1">{{ it.Text }}</div>
+                    {{ else if it.Link != "" }}
+                        <div class="mb-1"><a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900">{{ it.Text }}</a></div>
+                    {{ else }}
+                        <div class="mb-1">{{ it.Text }}</div>
+                    {{ end }}
                 {{ end }}
             {{ end }}
         {{ end }}

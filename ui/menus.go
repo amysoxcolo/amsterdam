@@ -31,6 +31,7 @@ import (
 type MenuItem struct {
 	Text       string `yaml:"text"`
 	Link       string `yaml:"link"`
+	Image      string `yaml:"image"`
 	Disabled   bool   `yaml:"disabled"`
 	Hazard     bool   `yaml:"hazard"`
 	Permission string `yaml:"permission"`

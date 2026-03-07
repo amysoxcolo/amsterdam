@@ -8,36 +8,47 @@
  *}
  <div class="p-4">
     <!-- Page Title -->
-    <div class="mb-6">
-        {{ if menu.Subtitle != "" }}
-            <div class="flex items-baseline gap-3 mb-2">
-                <h1 class="text-blue-800 text-4xl font-bold">{{ menu.Title }}</h1>
-                <h2 class="text-blue-800 text-2xl font-bold">{{ menu.Subtitle }}</h2>
-            </div>
-        {{ else }}
-            <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ menu.Title }}</h1>
-        {{ end }}
-        <hr class="border-2 border-gray-400 w-4/5 mb-4">
-    </div>
+    {{ if menu.Title != "" }}
+        <div class="mb-6">
+            {{ if menu.Subtitle != "" }}
+                <div class="flex items-baseline gap-3 mb-2">
+                    <h1 class="text-blue-800 text-4xl font-bold">{{ menu.Title }}</h1>
+                    <h2 class="text-blue-800 text-2xl font-bold">{{ menu.Subtitle }}</h2>
+                </div>
+            {{ else }}
+                <h1 class="text-blue-800 text-4xl font-bold mb-2">{{ menu.Title }}</h1>
+            {{ end }}
+            <hr class="border-2 border-gray-400 w-4/5 mb-4">
+        </div>
+    {{ end }}
 
-    <!-- Administration Menu -->
+    <!-- Rendered Menu -->
     <div class="max-w-2xl">
         <div class="bg-gray-50 p-6 rounded-lg">
             <nav class="space-y-3">
-                {{ ctxt := . }}
-                {{ range menu.Items }}
+                {{ range _, m := menu.Items }}
                     {{ vis := true }}
-                    {{ if .Ifdef != "" && !defs[.Ifdef] }}{{ vis = false }}{{ end }}
-                    {{ if vis && .Show(ctxt) }}
+                    {{ if m.Ifdef != "" && !defs[m.Ifdef] }}{{ vis = false }}{{ end }}
+                    {{ if vis && m.Show(.) }}
                         <div class="flex items-start gap-3">
-                            <span class="text-lg pt-0.5">🟣</span>
-                            {{ if .Disabled }}
-                                <span class="text-gray-500 font-medium">{{ .Text }}</span>
-                            {{ else }}
-                                {{ if .Hazard }}
-                                    <a href="{{ .Link }}" class="text-red-700 hover:text-red-900 font-medium">⚠️ {{ .Text }}</a>
+                            {{ if m.Image != "" }}
+                                {{ if it.Link != "" && !it.Disabled }}
+                                    <a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a>
                                 {{ else }}
-                                    <a href="{{ .Link }}" class="text-blue-700 hover:text-blue-900 font-medium">{{ .Text }}</a>
+                                    <img src="{{ it.Image }}" alt="{{ it.Text }}">
+                                {{ end }}
+                            {{ else }}
+                                <span class="text-lg pt-0.5">🟣</span>
+                                {{ if m.Disabled }}
+                                    <span class="text-gray-500 font-medium">{{ m.Text }}</span>
+                                {{ else if m.Link != "" }}
+                                    {{ if m.Hazard }}
+                                        <a href="{{ m.Link }}" class="text-red-700 hover:text-red-900 font-medium">⚠️ {{ m.Text }}</a>
+                                    {{ else }}
+                                        <a href="{{ m.Link }}" class="text-blue-700 hover:text-blue-900 font-medium">{{ m.Text }}</a>
+                                    {{ end }}
+                                {{ else }}
+                                    <span class="font-medium">{{ m.Text }}</span>
                                 {{ end }}
                             {{ end }}
                         </div>
