@@ -113,6 +113,7 @@ func setupEcho() *echo.Echo {
 	sysGroup.POST("/ipban/add", ui.AmWrap(AddIPBan))
 	sysGroup.Match(GetAndPost, "/audit", ui.AmWrap(SystemAudit))
 	sysGroup.Match(GetAndPost, "/import", ui.AmWrap(UserImport))
+	sysGroup.GET("/sysstat", ui.AmWrap(SysStats))
 
 	// community group
 	uiset2 := make([]echo.MiddlewareFunc, len(uiset), len(uiset)+1)
@@ -206,9 +207,12 @@ func setupEcho() *echo.Echo {
 // ampool is the worker pool for one-shot background tasks.
 var ampool *util.WorkerPool
 
+// SystemStartTime records the time since the system was started.
+var SystemStartTime time.Time
+
 // main is Ye Olde Main Function.
 func main() {
-	start := time.Now()
+	SystemStartTime = time.Now()
 	// Configure the system.
 	config.SetupConfig()
 	closer, err := database.SetupDb()
@@ -250,7 +254,7 @@ func main() {
 		database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
 	}()
 
-	stime := time.Since(start)
+	stime := time.Since(SystemStartTime)
 	log.Infof("Amsterdam %s startup sequence completed in %v", config.AMSTERDAM_VERSION, stime)
 
 	// Start server

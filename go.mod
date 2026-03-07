@@ -1,6 +1,6 @@
 module git.erbosoft.com/amy/amsterdam
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/CloudyKit/jet/v6 v6.3.1
@@ -9,6 +9,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.24.0
 	github.com/derekparker/trie v0.0.0-20230829180723-39f4de51ef7d
 	github.com/disintegration/imaging v1.6.2
+	github.com/dustin/go-humanize v1.0.1
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jmoiron/sqlx v1.4.0

@@ -1,0 +1,134 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Page Title -->
+    <div class="mb-6">
+        <h1 class="text-blue-800 text-4xl font-bold mb-2">System Statistics</h1>
+        <hr class="border-2 border-gray-400 w-4/5 mb-6">
+    </div>
+
+    <!-- Backlink -->
+    <div class="mb-4">
+        <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="/sysadmin">
+            <span>←</span> Return to System Administration Menu
+        </a>
+    </div>
+
+    <!-- General Statistics -->
+    <h2 class="text-blue-800 text-2xl font-bold mb-2">General Statistics</h2>
+    <div class="overflow-x-auto mb-2">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-xl space-x-4 table-fixed">
+                <tr>
+                    <td class="font-bold text-sm px-4">Amsterdam Uptime</td>
+                    <td class="text-sm px-4">{{ uptime }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Active Goroutines</td>
+                    <td class="text-sm px-4">{{ numgo }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Memory Usage</td>
+                    <td class="text-sm px-4">{{ memAlloc }} allocated of {{ memTotalAlloc }} ({{ memSys }} from system)</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Pointer Lookups</td>
+                    <td class="text-sm px-4">{{ mstat.Lookups }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Memory Allocations</td>
+                    <td class="text-sm px-4">{{ mstat.Mallocs }} mallocs, {{ mstat.Frees }} frees</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Heap Statistics -->
+    <h2 class="text-blue-800 text-2xl font-bold mb-2">Heap Statistics</h2>
+    <div class="overflow-x-auto mb-2">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-xl space-x-4 table-fixed">
+                <tr>
+                    <td class="font-bold text-sm px-4">Heap Usage</td>
+                    <td class="text-sm px-4">{{ memHeapAlloc }} allocated ({{ memHeapSys }} from system)</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Heap Activity</td>
+                    <td class="text-sm px-4">{{ memHeapIdle }} idle, {{ memHeapInuse }} in use, {{ memHeapReleased }} released to OS</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Heap Objects</td>
+                    <td class="text-sm px-4">{{ mstat.HeapObjects }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- System Allocations -->
+    <h2 class="text-blue-800 text-2xl font-bold mb-2">System Allocations</h2>
+    <div class="overflow-x-auto mb-2">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-xl space-x-4 table-fixed">
+                <tr>
+                    <td class="font-bold text-sm px-4">Stack Usage</td>
+                    <td class="text-sm px-4">{{ mstat.StackInuse }} in use ({{ mstat.StackSys }} from system)</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">MSpan Usage</td>
+                    <td class="text-sm px-4">{{ mstat.MSpanInuse }} in use ({{ mstat.MSpanSys }} from system)</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">MCache Usage</td>
+                    <td class="text-sm px-4">{{ mstat.MCacheInuse }} in use ({{ mstat.MCacheSys }} from system)</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Bucket Hashtable Usage</td>
+                    <td class="text-sm px-4">{{ mstat.BuckHashSys }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">GC Usage</td>
+                    <td class="text-sm px-4">{{ mstat.GCSys }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Miscellaneous Usage</td>
+                    <td class="text-sm px-4">{{ mstat.OtherSys }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- GC Statistics -->
+    <h2 class="text-blue-800 text-2xl font-bold mb-2">GC Statistics</h2>
+    <div class="overflow-x-auto mb-2">
+        <div class="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table class="w-xl space-x-4 table-fixed">
+                <tr>
+                    <td class="font-bold text-sm px-4">Next GC Run At</td>
+                    <td class="text-sm px-4">{{ mstat.NextGC }} bytes heap</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Last GC Run At</td>
+                    <td class="text-sm px-4">{{ memLastGCTime }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Total GC Pause Time</td>
+                    <td class="text-sm px-4">{{ memTotalPause }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">Total GCs</td>
+                    <td class="text-sm px-4">{{ mstat.NumGC }}</td>
+                </tr>
+                <tr>
+                    <td class="font-bold text-sm px-4">GC CPU Percent</td>
+                    <td class="text-sm px-4">{{ memGCPercent }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>

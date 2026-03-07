@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
+	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -808,4 +810,36 @@ func UserImport(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("scroll", scroll)
 	ctxt.SetFrameTitle("Import Results")
 	return "framed", "import_results.jet"
+}
+
+/* SysStats displays system statistics.
+ * Parameters:
+ *     ctxt - The AmContext for the request.
+ * Returns:
+ *     Command string dictating what to be rendered.
+ *     Data as a parameter for the command string.
+ */
+func SysStats(ctxt ui.AmContext) (string, any) {
+	if !database.AmTestPermission("Global.SysAdminAccess", ctxt.CurrentUser().BaseLevel) {
+		return "error", ENOACCESS
+	}
+
+	mstat := new(runtime.MemStats)
+	runtime.ReadMemStats(mstat)
+	ctxt.VarMap().Set("mstat", mstat)
+	ctxt.VarMap().Set("numgo", runtime.NumGoroutine())
+	ctxt.VarMap().Set("uptime", time.Since(SystemStartTime).String())
+	ctxt.VarMap().Set("memAlloc", humanize.IBytes(mstat.Alloc))
+	ctxt.VarMap().Set("memTotalAlloc", humanize.IBytes(mstat.TotalAlloc))
+	ctxt.VarMap().Set("memSys", humanize.IBytes(mstat.Sys))
+	ctxt.VarMap().Set("memHeapAlloc", humanize.IBytes(mstat.HeapAlloc))
+	ctxt.VarMap().Set("memHeapSys", humanize.IBytes(mstat.HeapSys))
+	ctxt.VarMap().Set("memHeapIdle", humanize.IBytes(mstat.HeapIdle))
+	ctxt.VarMap().Set("memHeapInuse", humanize.IBytes(mstat.HeapInuse))
+	ctxt.VarMap().Set("memHeapReleased", humanize.IBytes(mstat.HeapReleased))
+	ctxt.VarMap().Set("memLastGCTime", time.Unix(0, int64(mstat.LastGC)).Format(time.RFC3339))
+	ctxt.VarMap().Set("memTotalPause", fmt.Sprintf("%.3f ms", float64(mstat.PauseTotalNs)/1000/1000))
+	ctxt.VarMap().Set("memGCPercent", fmt.Sprintf("%.5f%%", float64(mstat.GCCPUFraction)*100))
+	ctxt.SetFrameTitle("System Statistics")
+	return "framed", "sysstat.jet"
 }
