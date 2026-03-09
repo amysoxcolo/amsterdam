@@ -187,8 +187,6 @@ func (lf *amLogFile) rotate() error {
 	if lf.keep == 0 && lf.keepCompressed == 0 {
 		return nil // degenerate case, keep the log file the same
 	}
-	lf.mutex.Lock()
-	defer lf.mutex.Unlock()
 	// Close existing logfile if it's open.
 	reopen := lf.wr != nil
 	if reopen {
