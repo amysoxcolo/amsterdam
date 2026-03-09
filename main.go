@@ -215,6 +215,8 @@ func main() {
 	SystemStartTime = time.Now()
 	// Configure the system.
 	config.SetupConfig()
+	closer := SetupLogging()
+	defer closer()
 	closer, err := database.SetupDb()
 	if err != nil {
 		panic(fmt.Sprintf("Database open failure: %v", err))

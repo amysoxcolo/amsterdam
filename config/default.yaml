@@ -51,6 +51,12 @@ email:
     Message sent via Amsterdam Web Communities System - <http://git.erbosoft.com/amy/amsterdam>
     The Amsterdam Project is not responsible for the contents of this message
     Report abuses to: <abuse@example.com>
+logging:
+  logFile: ""
+  maxLogSize: "16 MiB"
+  keepLogFiles: 3
+  keepCompressedLogFiles: 3
+  logLevel: "debug"
 rendering:
   cookiekey: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
   countryList:

@@ -41,6 +41,7 @@ const CONFIGFILE_NAME = "amsterdam.yaml"
 type AmCLI struct {
 	ConfigFile       string `arg:"-C,--config,env:AMSTERDAM_CONFIG" help:"Location of the configuration file."`
 	Debug            bool   `arg:"-D,--debug,env:AMSTERDAM_DEBUG" help:"Force Amsterdam to run in debug mode."`
+	LogLevel         string `arg:"-L,--level,--loglevel,env:AMSTERDAM_LOG_LEVEL" help:"Set the log level for the server."`
 	Production       bool   `arg:"-P,--prod,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
 	DatabaseURL      string `arg:"-d,--database,env:AMSTERDAM_DATABASE_URL" help:"Database URL for Amsterdam to connect to."`
 	Listen           string `arg:"-l,--listen,env:AMSTERDAM_LISTEN" help:"Specifies the local address and port for Amsterdam to listen on."`
@@ -112,6 +113,13 @@ type AmConfig struct {
 		Signature    string `yaml:"signature"`
 		Disclaimer   string `yaml:"disclaimer"`
 	} `yaml:"email"`
+	Logging struct {
+		LogFile                string `yaml:"logFile"`
+		MaxLogSize             string `yaml:"maxLogSize"`
+		KeepLogFiles           int    `yaml:"keepLogFiles"`
+		KeepCompressedLogFiles int    `yaml:"keepCompressedLogFiles"`
+		LogLevel               string `yaml:"logLevel"`
+	} `yaml:"logging"`
 	Rendering struct {
 		CookieKey   string `yaml:"cookiekey"`
 		CountryList struct {
@@ -173,6 +181,7 @@ func (c *AmConfig) ExPath(path string) string {
 // AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig.
 type AmConfigComputed struct {
 	DebugMode        bool            // are we in debug mode?
+	LogLevel         string          // the logging level
 	Listen           string          // listen address
 	DatabaseDriver   string          // name of database driver
 	DatabaseDSN      string          // DSN for the database
@@ -361,6 +370,11 @@ func SetupConfig() {
 		GlobalComputedConfig.DebugMode = false
 	} else {
 		GlobalComputedConfig.DebugMode = !GlobalConfig.Site.Production
+	}
+	if CommandLine.LogLevel != "" {
+		GlobalComputedConfig.LogLevel = CommandLine.LogLevel
+	} else {
+		GlobalComputedConfig.LogLevel = GlobalConfig.Logging.LogLevel
 	}
 	if CommandLine.Listen != "" {
 		GlobalComputedConfig.Listen = CommandLine.Listen
