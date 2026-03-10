@@ -73,7 +73,7 @@ resources:
 posting:
   externalDictionary: ""
   uploads:
-    maxSize: "1M"
+    maxSize: "1 MiB"
     noCompressTypes:
       - "image/gif"
       - "image/jpg"

@@ -12,18 +12,16 @@ package config
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
-	"strconv"
 	"strings"
 
 	argparse "github.com/alexflint/go-arg"
+	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -287,31 +285,6 @@ func overlayStructValue(dest, loaded, defaults reflect.Value) {
 	}
 }
 
-// parseDataSize converts the data size in bytes, kilobytes, megabytes, or gigabytes to a number value.
-func parseDataSize(s string) (int32, error) {
-	re, err := regexp.Compile(`^\s*(\d+)\s*([KkMmGg]?)[Bb]?`)
-	if err != nil {
-		return -1, err
-	}
-	m := re.FindStringSubmatch(s)
-	if m == nil {
-		return -1, errors.New("invalid value specified")
-	}
-	rc, err := strconv.Atoi(m[1])
-	if err != nil {
-		return -1, err
-	}
-	switch m[2] {
-	case "k", "K":
-		rc *= 1024
-	case "m", "M":
-		rc *= (1024 * 1024)
-	case "g", "G":
-		rc *= (1024 * 1024 * 1024)
-	}
-	return int32(rc), nil
-}
-
 // AmOpenExternalContentPath opens the "external content path" specified in the configuration as a root filesystem.
 func AmOpenExternalContentPath() (fs.FS, error) {
 	path := GlobalConfig.ExPath(GlobalConfig.Resources.ExternalContentPath)
@@ -392,11 +365,11 @@ func SetupConfig() {
 		GlobalComputedConfig.DatabaseDriver = GlobalConfig.Database.Driver
 		GlobalComputedConfig.DatabaseDSN = GlobalConfig.Database.Dsn
 	}
-	tmp, err := parseDataSize(GlobalConfig.Posting.Uploads.MaxSize)
+	tmp, err := humanize.ParseBytes(GlobalConfig.Posting.Uploads.MaxSize)
 	if err != nil {
 		panic(err.Error())
 	}
-	GlobalComputedConfig.UploadMaxSize = tmp
+	GlobalComputedConfig.UploadMaxSize = int32(tmp)
 	GlobalComputedConfig.UploadNoCompress = make(map[string]bool)
 	for _, s := range GlobalConfig.Posting.Uploads.NoCompressTypes {
 		GlobalComputedConfig.UploadNoCompress[s] = true
