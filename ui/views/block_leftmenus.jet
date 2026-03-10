@@ -15,15 +15,15 @@
             {{ if it.Show(.) }}
                 {{ if it.Image != "" }}
                     {{ if it.Link != "" && !it.Disabled }}
-                        <a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a>
+                        <div class="mb-1"><a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a></div>
                     {{ else }}
-                        <img src="{{ it.Image }}" alt="{{ it.Text }}">
+                        <div class="mb-1"><img src="{{ it.Image }}" alt="{{ it.Text }}"></div>
                     {{ end }}
                 {{ else }}
                     {{ if it.Disabled }}
                         <div class="text-gray-500 mb-1">{{ it.Text }}</div>
                     {{ else if it.Link != "" }}
-                        <a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900">{{ it.Text }}</a>
+                        <div class="mb-1"><a href="{{ it.Link }}" class="text-blue-700 hover:text-blue-900">{{ it.Text }}</a></div>
                     {{ else }}
                         <div class="mb-1">{{ it.Text }}</div>
                     {{ end }}
@@ -45,9 +45,9 @@
             {{ if it.Show(.) }}
                 {{ if it.Image != "" }}
                     {{ if it.Link != "" && !it.Disabled }}
-                        <a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a>
+                        <div class="mb-1"><a href="{{ it.Link }}"><img src="{{ it.Image }}" alt="{{ it.Text }}"></a></div>
                     {{ else }}
-                        <img src="{{ it.Image }}" alt="{{ it.Text }}">
+                        <div class="mb-1"><img src="{{ it.Image }}" alt="{{ it.Text }}"></div>
                     {{ end }}
                 {{ else }}
                     {{ if it.Disabled }}
