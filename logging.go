@@ -286,7 +286,7 @@ func (lf *amLogFile) tryRotate() {
 	if lf.curSize >= lf.maxSize {
 		err := lf.rotate()
 		if err != nil {
-			log.Error("log rotation failed")
+			//log.Error("log rotation failed")
 		}
 	}
 }

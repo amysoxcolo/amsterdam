@@ -40,7 +40,7 @@ type AmCLI struct {
 	ConfigFile       string `arg:"-C,--config,env:AMSTERDAM_CONFIG" help:"Location of the configuration file."`
 	Debug            bool   `arg:"-D,--debug,env:AMSTERDAM_DEBUG" help:"Force Amsterdam to run in debug mode."`
 	LogLevel         string `arg:"-L,--level,--loglevel,env:AMSTERDAM_LOG_LEVEL" help:"Set the log level for the server."`
-	Production       bool   `arg:"-P,--prod,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
+	Production       bool   `arg:"-P,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
 	DatabaseURL      string `arg:"-d,--database,env:AMSTERDAM_DATABASE_URL" help:"Database URL for Amsterdam to connect to."`
 	Listen           string `arg:"-l,--listen,env:AMSTERDAM_LISTEN" help:"Specifies the local address and port for Amsterdam to listen on."`
 	DebugPanic       bool   `arg:"--debug-panic" help:"Development Only - disable Echo panic recovery"`

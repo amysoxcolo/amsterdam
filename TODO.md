@@ -10,7 +10,7 @@ After the point where it reaches feature parity with Venice circa 2006.
 * ~~Gitea-like status page showing Go-specific internals.~~
 * Build static Tailwind CSS file rather than using remote-loaded version. (Gate on debug/prod flag)
 * Rate limiter.
-* Better logging configuration.
+* ~~Better logging configuration.~~
 
 ## Immediate Cleanups Required
 
