@@ -9,7 +9,7 @@ After the point where it reaches feature parity with Venice circa 2006.
 * ~~Support all customizations that were done with the EMinds instance of Venice.~~
 * ~~Gitea-like status page showing Go-specific internals.~~
 * Build static Tailwind CSS file rather than using remote-loaded version. (Gate on debug/prod flag)
-* Rate limiter.
+* ~~Rate limiter.~~
 * ~~Better logging configuration.~~
 
 ## Immediate Cleanups Required

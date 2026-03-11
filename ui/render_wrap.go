@@ -88,6 +88,11 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		httprc = http.StatusForbidden
 		command = "framed"
 		data = "ipban.jet"
+	case "ratelimit":
+		amctxt.SetFrameTitle("Rate Limit Exceeded")
+		httprc = http.StatusTooManyRequests
+		command = "framed"
+		data = "ratelimit.jet"
 	}
 
 	// Process commands.

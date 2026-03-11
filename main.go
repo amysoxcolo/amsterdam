@@ -49,8 +49,11 @@ func setupEcho() *echo.Echo {
 	}
 	e.Use(LogrusMiddleware)
 
+	// set up the rate limiter from the configuration
+	rateLimiter := AmSetupRateLimiter()
+
 	// This is the set of all middleware functions used by the UI, as opposed to other things.
-	uiset := []echo.MiddlewareFunc{ui.SessionStoreInjector, ui.ContextCreator, ui.IPBanTest, ui.CookieLoginTest}
+	uiset := []echo.MiddlewareFunc{ui.SessionStoreInjector, ui.ContextCreator, rateLimiter, ui.IPBanTest, ui.CookieLoginTest}
 
 	e.RouteNotFound("/*", ui.AmWrap(AmNotFoundHandler), uiset...)
 	fs, err := config.AmOpenExternalContentPath()

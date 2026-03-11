@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -34,6 +35,9 @@ const AMSTERDAM_COPYRIGHT = "2025-2026"
 
 // CONFIGFILE_NAME is the name of the standard configuration file.
 const CONFIGFILE_NAME = "amsterdam.yaml"
+
+// epsilon is used in testing if a float value is 0.
+const epsilon = 1e-9
 
 // AmCLI is the command-line interface arguments structure.
 type AmCLI struct {
@@ -90,6 +94,11 @@ type AmConfig struct {
 		WelcomeTitle          string `yaml:"welcomeTitle"`
 		WelcomeMessage        string `yaml:"welcomeMessage"`
 		TopPostsTitle         string `yaml:"topPostsTitle"`
+		RateLimit             struct {
+			Rate          float64 `yaml:"rate"`
+			Burst         int     `yaml:"burst"`
+			ExpireMinutes int     `yaml:"expireMinutes"`
+		} `yaml:"rateLimit"`
 	} `yaml:"site"`
 	Database struct {
 		Driver string `yaml:"driver"`
@@ -274,6 +283,14 @@ func overlayStructValue(dest, loaded, defaults reflect.Value) {
 			// int field handling
 			n := fldLoaded.Int()
 			if n == 0 {
+				fldDest.Set(fldDefaults)
+			} else {
+				fldDest.Set(fldLoaded)
+			}
+		} else if fldDest.CanFloat() {
+			// float field handling
+			n := fldLoaded.Float()
+			if math.Abs(n) <= epsilon {
 				fldDest.Set(fldDefaults)
 			} else {
 				fldDest.Set(fldLoaded)

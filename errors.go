@@ -13,10 +13,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
+	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 )
 
 // EBUTTON is the standard error for an unknown button.
@@ -79,4 +83,34 @@ func AmErrorHandler(err error, c echo.Context) {
 	if cerr != nil {
 		log.Errorf("Error rendering error (%v): %v", err, cerr)
 	}
+}
+
+// rateLimitErrorHandler is called if there's an error getting the identifier for a connection (unlikely).
+func rateLimitErrorHandler(c echo.Context, err error) error {
+	return ui.AmWithTempContext(c, func(ctxt ui.AmContext) (string, any) {
+		return "error", err
+	})
+}
+
+// rateLimitDenyHandler is called if the rate limit is exceeded by a connection.
+func rateLimitDenyHandler(c echo.Context, identifier string, err error) error {
+	return ui.AmWithTempContext(c, func(ctxt ui.AmContext) (string, any) {
+		ctxt.VarMap().Set("identifier", identifier)
+		return "ratelimit", err
+	})
+}
+
+// AmSetupRateLimiter sets up the rate-limiting middleware.
+func AmSetupRateLimiter() echo.MiddlewareFunc {
+	rcfg := middleware.RateLimiterMemoryStoreConfig{
+		Rate:      rate.Limit(config.GlobalConfig.Site.RateLimit.Rate),
+		Burst:     config.GlobalConfig.Site.RateLimit.Burst,
+		ExpiresIn: time.Duration(config.GlobalConfig.Site.RateLimit.ExpireMinutes) * time.Minute,
+	}
+	cfg := middleware.RateLimiterConfig{
+		Store:        middleware.NewRateLimiterMemoryStoreWithConfig(rcfg),
+		ErrorHandler: rateLimitErrorHandler,
+		DenyHandler:  rateLimitDenyHandler,
+	}
+	return middleware.RateLimiterWithConfig(cfg)
 }

@@ -1,0 +1,29 @@
+{*
+ * Amsterdam Web Communities System
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *}
+<div class="p-4">
+    <!-- Rate Limit Dialog -->
+    <div class="max-w-2xl w-full">
+        <div class="bg-white border-2 border-gray-600 rounded-lg shadow-2xl overflow-hidden">
+            <!-- Dialog Header -->
+            <div class="bg-gray-600 px-6 py-4">
+                <h1 class="text-white text-2xl font-bold text-center flex items-center justify-center gap-3">
+                    <span class="text-3xl">✋</span>Whoa There, Tiger!<span class="text-3xl">✋</span>
+                </h1>
+            </div>
+
+            <!-- Dialog Body -->
+            <div class="px-8 py-8">
+                <div class="text-center mb-8">
+                    <p class="text-black-800 text-lg leading-relaxed"><b>You're hitting this site a little fast, aren't you? Calm down and try again in a bit.</b></p>
+                    <p class="text-black-800 text-lg leading-relaxed">Offending identifier is {{ identifier }}.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
