@@ -11,7 +11,6 @@ After the point where it reaches feature parity with Venice circa 2006.
 * Build static Tailwind CSS file rather than using remote-loaded version. (Gate on debug/prod flag)
 * ~~Rate limiter.~~
 * ~~Better logging configuration.~~
-* Better control of what's cacheable; images should be fine to cache.
 
 ## Immediate Cleanups Required
 

@@ -10,6 +10,9 @@
 // Package main contains the high-level Amsterdam logic.
 package main
 
+// Directive generating the Tailwind CSS file.
+//go:generate tailwindcss -i ui/styles.css -o ui/static/css/tailwind.css
+
 import (
 	"context"
 	"fmt"

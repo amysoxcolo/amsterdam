@@ -21,8 +21,7 @@
     {{ if __debugMode }}
         <script src="https://cdn.tailwindcss.com"></script>
     {{ else }}
-        {* TODO - replace with reference to generated Tailwind CSS file *}
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/static/css/tailwind.css" />
     {{ end }}
     <link rel="stylesheet" href="/static/css/ams_style.css" />
 </head>
