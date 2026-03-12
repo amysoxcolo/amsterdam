@@ -27,6 +27,10 @@ After the point where it reaches feature parity with Venice circa 2006.
   * Should those be community "services" instead?
   * For Chat, if it's implemented, it should use XMPP.
 
+## Architectural Goofs
+
+* Conference Aliases are effectively in a system-wide namespace. Should be per-community.
+
 ## Additional Items
 
 * Decouple from MySQL, introduce other database support. Postgres and SQLite are the two priorities here.
