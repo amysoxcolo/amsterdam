@@ -1071,12 +1071,8 @@ func (ht *htmlCheckerImpl) Reset() {
 	ht.outputBuffer.Reset()
 	ht.tempBuffer.Reset()
 	ht.tagStack.Clear()
-	for u := range ht.externalReferences {
-		delete(ht.externalReferences, u)
-	}
-	for k := range ht.internalReferences {
-		delete(ht.internalReferences, k)
-	}
+	clear(ht.externalReferences)
+	clear(ht.internalReferences)
 	for _, c := range ht.counters {
 		c.Reset()
 	}

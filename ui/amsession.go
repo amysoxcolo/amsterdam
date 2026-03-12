@@ -192,9 +192,7 @@ func (sess *amSession) Set(key, value any) {
 func (sess *amSession) Erase() {
 	sess.mutex.Lock()
 	defer sess.mutex.Unlock()
-	for k := range sess.values {
-		delete(sess.values, k)
-	}
+	clear(sess.values)
 }
 
 // Uid returns the current user ID associated with this session.

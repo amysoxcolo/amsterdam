@@ -154,13 +154,9 @@ func recycleMessages(messages chan *amMessage, done chan bool) {
 		m.bcc = make([]string, 0)
 		m.subject = ""
 		m.text = ""
-		for k := range m.headers {
-			delete(m.headers, k)
-		}
+		clear(m.headers)
 		m.template = ""
-		for k := range m.vars {
-			delete(m.vars, k)
-		}
+		clear(m.vars)
 		freeMessages.Put(m)
 	}
 	done <- true

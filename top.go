@@ -366,10 +366,7 @@ func ManageSideboxes(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("sideboxes", disp)
 
 	// Create the list of available sideboxes to add.
-	addList := make([]*DisplaySidebox, 0, len(avail))
-	for _, v := range avail {
-		addList = append(addList, v)
-	}
+	addList := slices.Collect(maps.Values(avail))
 	if len(addList) > 0 {
 		slices.SortFunc(addList, func(a, b *DisplaySidebox) int {
 			return strings.Compare(strings.ToLower(a.Title), strings.ToLower(b.Title))

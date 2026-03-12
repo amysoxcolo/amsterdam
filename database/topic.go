@@ -199,9 +199,9 @@ type TopicBozo struct {
 }
 
 // GetBozos returns all filtered users for a given user on the topic.
-func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
+func (t *Topic) GetBozos(ctx context.Context, u *User) ([]*TopicBozo, error) {
 	if u.IsAnon {
-		return make([]TopicBozo, 0), nil
+		return make([]*TopicBozo, 0), nil
 	}
 	rs, err := amdb.QueryContext(ctx, `SELECT b.bozo_uid, u.username, c.given_name, c.family_name
 		FROM topicbozo b, users u, contacts c WHERE b.topicid = ? AND b.uid = ? AND b.bozo_uid = u.uid AND u.contactid = c.contactid
@@ -209,9 +209,9 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]TopicBozo, error) {
 	if err != nil {
 		return nil, err
 	}
-	rc := make([]TopicBozo, 0)
+	rc := make([]*TopicBozo, 0)
 	for rs.Next() {
-		var tb TopicBozo
+		tb := new(TopicBozo)
 		err = rs.Scan(&(tb.Uid), &(tb.Username), &(tb.GivenName), &(tb.FamilyName))
 		if err != nil {
 			return nil, err
@@ -279,7 +279,7 @@ func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
  *     List of ActivityReport objects detailing the topic activity.
  *     Standard Go error status.
  */
-func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]ActivityReport, error) {
+func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]*ActivityReport, error) {
 	var myfield string
 	switch reportType {
 	case ActivityReportPosters:
@@ -295,9 +295,9 @@ func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]ActivityRepo
 	if err != nil {
 		return nil, err
 	}
-	rc := make([]ActivityReport, 0)
+	rc := make([]*ActivityReport, 0)
 	for rs.Next() {
-		var cur ActivityReport
+		cur := new(ActivityReport)
 		err = rs.Scan(&(cur.Uid), &(cur.Username), &(cur.LastRead), &(cur.LastPost))
 		if err != nil {
 			return nil, err
@@ -698,12 +698,12 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 	}
 	rc := make([]*TopicSummary, 0)
 	for rs.Next() {
-		var rec TopicSummary
+		rec := new(TopicSummary)
 		if err = rs.Scan(&rec.TopicID, &rec.Number, &rec.Name, &rec.Unread, &rec.Total, &rec.LastUpdate, &rec.Frozen,
 			&rec.Archived, &rec.Subscribed, &rec.Hidden, &rec.Sticky, &rec.NewFlag); err != nil {
 			log.Errorf("AmListTopics scan error: %v", err)
 		} else {
-			rc = append(rc, &rec)
+			rc = append(rc, rec)
 		}
 	}
 	return rc, nil

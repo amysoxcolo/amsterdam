@@ -90,11 +90,8 @@ func formatMessage(ctx context.Context, m *amMessage) ([]byte, error) {
 			hdrs[fmt.Sprintf("X-Disclaimer-%d", i+1)] = v
 		}
 
-		// Sort the header keys tro make for a better presentation.
-		keys := make([]string, 0, len(hdrs))
-		for k := range hdrs {
-			keys = append(keys, k)
-		}
+		// Sort the header keys to make for a better presentation.
+		keys := slices.Collect(maps.Keys(hdrs))
 		slices.Sort(keys)
 
 		// Build the actual message.

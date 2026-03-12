@@ -67,7 +67,7 @@ type sweepentry struct {
 
 // banSweeper is a goroutine that sweeps the banned IP address cache, looking for entries that have expired
 // and kicking them out so the database can be rechecked.
-func banSweeper(done chan bool, ended chan bool, resetMe chan bool, input chan *sweepentry) {
+func banSweeper(ctx context.Context, done chan bool, resetMe chan bool, input chan *sweepentry) {
 	expireTab := make([]*sweepentry, 0) // table of expiring entries
 	running := true
 	var topEntry *sweepentry = nil   // always points to the top of expireTab
@@ -76,7 +76,7 @@ func banSweeper(done chan bool, ended chan bool, resetMe chan bool, input chan *
 		if checkTimer == nil {
 			// "timer idle" mode
 			select {
-			case <-done:
+			case <-ctx.Done():
 				running = false
 			case <-resetMe:
 				// this is bupkis, because we're resetting nothing
@@ -91,7 +91,7 @@ func banSweeper(done chan bool, ended chan bool, resetMe chan bool, input chan *
 		} else {
 			// "timer active" mode
 			select {
-			case <-done:
+			case <-ctx.Done():
 				running = false
 			case <-resetMe:
 				// clear out everything on a reset signal
@@ -129,7 +129,7 @@ func banSweeper(done chan bool, ended chan bool, resetMe chan bool, input chan *
 			}
 		}
 	}
-	ended <- true // signal that we're done
+	done <- true // signal that we're done
 }
 
 // banSweeperReset tells the ban sweeper to clear itself.
@@ -140,14 +140,14 @@ var banSweeperInput chan *sweepentry
 
 // setupIPBanSweep sets up the IP ban sweeper routine, and returns a function that tears it down.
 func setupIPBanSweep() func() {
+	ctx, cancel := context.WithCancel(context.Background())
 	banSweeperReset = make(chan bool)
 	banSweeperInput = make(chan *sweepentry, config.GlobalConfig.Tuning.Queues.IPBans)
 	done := make(chan bool)
-	ended := make(chan bool)
-	go banSweeper(done, ended, banSweeperReset, banSweeperInput)
+	go banSweeper(ctx, done, banSweeperReset, banSweeperInput)
 	return func() {
-		done <- true
-		<-ended
+		cancel()
+		<-done
 	}
 }
 
@@ -157,14 +157,10 @@ func nukeIPBanCache(bad, good bool) {
 	defer banMutex.Unlock()
 	if bad {
 		banSweeperReset <- true // send the reset signal to the sweeper
-		for k := range knownBans {
-			delete(knownBans, k)
-		}
+		clear(knownBans)
 	}
 	if good {
-		for k := range knownGood {
-			delete(knownGood, k)
-		}
+		clear(knownGood)
 	}
 }
 

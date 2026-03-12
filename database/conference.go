@@ -1115,9 +1115,9 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 	}
 	rc := make([]*ConferenceSummary, 0)
 	for rs.Next() {
-		var cs ConferenceSummary
+		cs := new(ConferenceSummary)
 		if err = rs.Scan(&(cs.ConfId), &(cs.Name), &(cs.LastUpdate), &(cs.Description), &(cs.Sequence), &(cs.Hidden)); err == nil {
-			rc = append(rc, &cs)
+			rc = append(rc, cs)
 		} else {
 			return nil, err
 		}
