@@ -36,7 +36,10 @@ site:
     expireMinutes: 3
 database:
   driver: "mysql"
-  dsn: "amsdb:x00yes2k@tcp(localhost)/amsterdam?parseTime=true&loc=UTC"
+  hostName: "localhost"
+  user: "amsdb"
+  password: "x00yes2k"
+  databaseName: "amsterdam"
 defaults:
   language: "en-US"
   timezone: "America/Denver"

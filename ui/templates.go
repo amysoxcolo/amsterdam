@@ -321,7 +321,7 @@ func setupTemplates() {
 	views.AddGlobalFunc("DisplayExpandCat", displayExpandCat)
 
 	views.AddGlobalFunc("GetCountryList", func(jet.Arguments) reflect.Value {
-		return reflect.ValueOf(util.AmCountryList())
+		return reflect.ValueOf(util.AmCountryList(config.GlobalConfig.Rendering.CountryList.Prioritize))
 	})
 	views.AddGlobalFunc("GetLanguageList", func(jet.Arguments) reflect.Value {
 		return reflect.ValueOf(util.AmLanguageList())

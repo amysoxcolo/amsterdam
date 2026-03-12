@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 
-	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/biter777/countries"
 )
 
@@ -26,7 +25,7 @@ var cachedCountryList []countries.CountryCode = nil
 var countryListMutex sync.Mutex
 
 // AmCountryList is a wrapper around countries.All() that sorts it by country name.
-func AmCountryList() []countries.CountryCode {
+func AmCountryList(prioritize string) []countries.CountryCode {
 	countryListMutex.Lock()
 	defer countryListMutex.Unlock()
 	if cachedCountryList == nil {
@@ -34,9 +33,9 @@ func AmCountryList() []countries.CountryCode {
 		slices.SortFunc(countryList, func(a countries.CountryCode, b countries.CountryCode) int {
 			return strings.Compare(a.Info().Name, b.Info().Name)
 		})
-		if config.GlobalConfig.Rendering.CountryList.Prioritize != "" {
+		if prioritize != "" {
 			for i, c := range countryList {
-				if c.Info().Alpha2 == config.GlobalConfig.Rendering.CountryList.Prioritize {
+				if c.Info().Alpha2 == prioritize {
 					newList := make([]countries.CountryCode, len(countryList))
 					newList[0] = c
 					copy(newList[1:], countryList[:i])
@@ -48,9 +47,4 @@ func AmCountryList() []countries.CountryCode {
 		cachedCountryList = countryList
 	}
 	return cachedCountryList
-}
-
-// init preloads the country list.
-func init() {
-	go AmCountryList()
 }

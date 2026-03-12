@@ -11,6 +11,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -22,10 +23,19 @@ import (
 // amdb is the reference to the Amsterdam database.
 var amdb *sqlx.DB
 
+// buildMysqlDSN builds the MySQL DSN for the driver.
+func buildMysqlDSN() string {
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&loc=UTC",
+		config.GlobalComputedConfig.DatabaseUser,
+		config.GlobalComputedConfig.DatabasePassword,
+		config.GlobalComputedConfig.DatabaseHost,
+		config.GlobalComputedConfig.DatabaseName)
+}
+
 // SetupDb sets up the database and associated items.
 func SetupDb() (func(), error) {
 	exitfns := make([]func(), 0, 2)
-	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, config.GlobalComputedConfig.DatabaseDSN)
+	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, buildMysqlDSN())
 	if err == nil {
 		amdb = db
 		g, err := AmGlobals(context.Background())

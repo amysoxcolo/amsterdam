@@ -19,8 +19,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 
+	"git.erbosoft.com/amy/amsterdam/util"
 	argparse "github.com/alexflint/go-arg"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
@@ -45,8 +45,11 @@ type AmCLI struct {
 	Debug            bool   `arg:"-D,--debug,env:AMSTERDAM_DEBUG" help:"Force Amsterdam to run in debug mode."`
 	LogLevel         string `arg:"-L,--level,--loglevel,env:AMSTERDAM_LOG_LEVEL" help:"Set the log level for the server."`
 	Production       bool   `arg:"-P,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
-	DatabaseURL      string `arg:"-d,--database,env:AMSTERDAM_DATABASE_URL" help:"Database URL for Amsterdam to connect to."`
-	Listen           string `arg:"-l,--listen,env:AMSTERDAM_LISTEN" help:"Specifies the local address and port for Amsterdam to listen on."`
+	DatabaseName     string `arg:"-d,--database-name,env:AMSTERDAM_DATABASE_NAME" help:"Database name to use on the database server."`
+	Listen           string `arg:"-l,--listen,env:AMSTERDAM_LISTEN" help:"The local address and port for Amsterdam to listen on."`
+	DatabasePassword string `arg:"-p,--database-password,env:AMSTERDAM_DATABASE_PASSWORD" help:"Password for the database server."`
+	DatabaseHost     string `arg:"-t,--database-host,env:AMSTERDAM_DATABASE_HOST" help:"Hostname for the database server."`
+	DatabaseUser     string `arg:"-u,--database-user,env:AMSTERDAM_DATABASE_USER" help:"User name for the database server."`
 	DebugPanic       bool   `arg:"--debug-panic" help:"Development Only - disable Echo panic recovery"`
 	BuggyAttachments bool   `arg:"--buggy-attachments" help:"Some attachments may be buggy - truncate data if necessary"`
 }
@@ -101,8 +104,11 @@ type AmConfig struct {
 		} `yaml:"rateLimit"`
 	} `yaml:"site"`
 	Database struct {
-		Driver string `yaml:"driver"`
-		Dsn    string `yaml:"dsn"`
+		Driver       string `yaml:"driver"`
+		HostName     string `yaml:"hostName"`
+		User         string `yaml:"user"`
+		Password     string `yaml:"password"`
+		DatabaseName string `yaml:"databaseName"`
 	} `yaml:"database"`
 	Defaults struct {
 		Language string `yaml:"language"`
@@ -191,7 +197,10 @@ type AmConfigComputed struct {
 	LogLevel         string          // the logging level
 	Listen           string          // listen address
 	DatabaseDriver   string          // name of database driver
-	DatabaseDSN      string          // DSN for the database
+	DatabaseHost     string          // hostname for database
+	DatabaseUser     string          // user name for database
+	DatabasePassword string          // password for database
+	DatabaseName     string          // database name
 	UploadMaxSize    int32           // maximum upload size in bytes
 	UploadNoCompress map[string]bool // which upload types are not compressed?
 }
@@ -361,27 +370,13 @@ func SetupConfig() {
 	} else {
 		GlobalComputedConfig.DebugMode = !GlobalConfig.Site.Production
 	}
-	if CommandLine.LogLevel != "" {
-		GlobalComputedConfig.LogLevel = CommandLine.LogLevel
-	} else {
-		GlobalComputedConfig.LogLevel = GlobalConfig.Logging.LogLevel
-	}
-	if CommandLine.Listen != "" {
-		GlobalComputedConfig.Listen = CommandLine.Listen
-	} else {
-		GlobalComputedConfig.Listen = GlobalConfig.Site.Listen
-	}
-	if CommandLine.DatabaseURL != "" {
-		p := strings.Index(CommandLine.DatabaseURL, ":")
-		if p < 0 {
-			panic("Invalid database URL on command line")
-		}
-		GlobalComputedConfig.DatabaseDriver = CommandLine.DatabaseURL[:p]
-		GlobalComputedConfig.DatabaseDSN = CommandLine.DatabaseURL[p+1:]
-	} else {
-		GlobalComputedConfig.DatabaseDriver = GlobalConfig.Database.Driver
-		GlobalComputedConfig.DatabaseDSN = GlobalConfig.Database.Dsn
-	}
+	GlobalComputedConfig.LogLevel = util.IIF(CommandLine.LogLevel != "", CommandLine.LogLevel, GlobalConfig.Logging.LogLevel)
+	GlobalComputedConfig.Listen = util.IIF(CommandLine.Listen != "", CommandLine.Listen, GlobalConfig.Site.Listen)
+	GlobalComputedConfig.DatabaseDriver = GlobalConfig.Database.Driver // FUTURE: allow configuration
+	GlobalComputedConfig.DatabaseHost = util.IIF(CommandLine.DatabaseHost != "", CommandLine.DatabaseHost, GlobalConfig.Database.HostName)
+	GlobalComputedConfig.DatabaseUser = util.IIF(CommandLine.DatabaseUser != "", CommandLine.DatabaseUser, GlobalConfig.Database.User)
+	GlobalComputedConfig.DatabasePassword = util.IIF(CommandLine.DatabasePassword != "", CommandLine.DatabasePassword, GlobalConfig.Database.Password)
+	GlobalComputedConfig.DatabaseName = util.IIF(CommandLine.DatabaseName != "", CommandLine.DatabaseName, GlobalConfig.Database.DatabaseName)
 	tmp, err := humanize.ParseBytes(GlobalConfig.Posting.Uploads.MaxSize)
 	if err != nil {
 		panic(err.Error())

@@ -71,6 +71,16 @@ MySQL server, use that.)
 
 Ensure a user in your database is granted SELECT, INSERT, UPDATE, and DELETE privileges to all tables in your new database.
 
-The database URL for this database can be specified on the Amsterdam command line with the `-d` or `--database` parameters,
-or with the `AMSTERDAM_DATABASE_URL` environment variable.  The URL is specified as `mysql:dsn`, where "dsn" is the complete
-datasource name (`user:password@tcp(hostname)/amsterdam?parseTime=true&loc=UTC`).
+The database may be specified to Amsterdam with the following command line options or environment variables:
+
+* Host name: Command line options `-t` or `--database-host`, or environment variable `AMSTERDAM_DATABASE_HOST`
+* User name: Command line options `-u` or `--database-user`, or environment variable `AMSTERDAM_DATABASE_USER`
+* Password: Command line options `-p` or `--database-password`, or environment variable `AMSTERDAM_DATABASE_PASSWORD`
+* Database name: Command line options `-d` or `--database-name`, or environment variable `AMSTERDAM_DATABASE_NAME`
+
+All these options may also be specified via the configuration file (see below).
+
+Amsterdam also requires access to a local SMTP server, as it sends out E-mail messages such as account verification,
+password reminders, subscribed posts, and messages from conference or community hosts.  It may be specified to Amsterdam
+with the following command line options or environment variables:
+
