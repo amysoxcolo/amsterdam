@@ -1,5 +1,7 @@
 # The Amsterdam Web Communities System
 
+## Purpose
+
 Amsterdam is a web-based system allowing for the hosting of multiple virtual communities, each with services such as conferencing.
 Users on an Amsterdam site may be a member of multiple independent communities, all on the same site.
 
@@ -10,7 +12,7 @@ The first public version of Amsterdam has feature parity with the platform that 
 community from 2000-2006, but rebuilt in a modern environment with updated rendering.  Future versions will extend the functionality
 from there.
 
-## Why now?
+### Why now?
 
 Communities like Electric Minds were largely supplanted by the major social media sites, which built huge systems for global
 interaction at massive scale.  They pushed smaller communities out of existence the way Walmart drove smaller shops out of business
@@ -28,7 +30,7 @@ We need _human-scale_ community again.  Amsterdam can be a baseline for bringing
 older systems that _worked,_ and sustained _real communities_ in the process. It was built by someone who's _been there,_ who not
 only wrote the code, but was an active participant in the community that used it.
 
-## Project Vision & Values
+### Project Vision & Values
 
 Amsterdam as a project intends to prioritize certain things:
 
@@ -39,7 +41,7 @@ Amsterdam as a project intends to prioritize certain things:
 * Contribution quality over ideology or factionalism.  Contributors of _all backgrounds_ are welcome, with a focus on the quality
   of the final product.
 
-## Why "Amsterdam"?
+### Why "Amsterdam"?
 
 The first implementation of this concept was in Durand Communications' CommunityWare software, which was code-named "Rome" when it
 was in development. Rome was a center of community in the ancient world.
@@ -49,3 +51,26 @@ during the Renaissance.
 
 This new implementation is named "Amsterdam," which was a center of community during the Age of Exploration, in particular, the
 Dutch Golden Age.
+
+## Building Amsterdam
+
+From the root of the source tree, just run `go build` to build the `amsterdam` executable.
+
+To regenerate the `tailwind.css` file (located in `ui/static/css`), you will need the Tailwind CSS command-line executable.
+Download it from [the Tailwind GitHub](https://github.com/tailwindlabs/tailwindcss/releases/) and install it as `tailwindcss`
+in your `PATH`. Then run `go generate` to regenerate the CSS file before you run `go build` to build the executable.
+
+## Installing Amsterdam
+
+You will need a MySQL database to store Amsterdam data. Create a new empty database, then, from the command line, use the command:
+
+> `mysql -u root -p _databasename_ \< setup/mysql-database.sql`
+
+(Replace _databasename_ with the name of your database. If you use a user other than `root` for administrative access to your
+MySQL server, use that.)
+
+Ensure a user in your database is granted SELECT, INSERT, UPDATE, and DELETE privileges to all tables in your new database.
+
+The database URL for this database can be specified on the Amsterdam command line with the `-d` or `--database` parameters,
+or with the `AMSTERDAM_DATABASE_URL` environment variable.  The URL is specified as `mysql:dsn`, where "dsn" is the complete
+datasource name (`user:password@tcp(hostname)/amsterdam?parseTime=true&loc=UTC`).
