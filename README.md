@@ -180,6 +180,12 @@ or with the `AMSTERDAM_CONFIG` environment variable.
 The exact format of the configuration file is shown in the `config/default.yaml` file. When creating an Amsterdam
 configuration file, you do not have to specify options for which you do not with to change the default.
 
+## Initial Login
+
+After starting Amsterdam, you can log into the administrator account, which has the user name "Administrator" with
+no password. _Please set a password as soon as possible!_ Click the "Profile" link in the top bar to change the
+password.
+
 ## Contributing
 
 See the [Contributors' Guide](CONTRIBUTING.md) for details.
