@@ -45,8 +45,14 @@ type AmCLI struct {
 	Debug            bool   `arg:"-D,--debug,env:AMSTERDAM_DEBUG" help:"Force Amsterdam to run in debug mode."`
 	LogLevel         string `arg:"-L,--level,--loglevel,env:AMSTERDAM_LOG_LEVEL" help:"Set the log level for the server."`
 	Production       bool   `arg:"-P,--production,env:AMSTERDAM_PROD" help:"Force Amsterdam to run in production mode."`
+	MailTLS          string `arg:"-S,--mail-tls,env:AMSTERDAM_MAIL_TLS" help:"The TLS setting for mail connections ('none' or 'starttls')"`
+	MailUser         string `arg:"-U,--mail-user,env:AMSTERDAM_MAIL_USER" help:"User name to use with the mail server"`
+	MailPassword     string `arg:"-W,--mail-password,env:AMSTERDAM_MAIL_PASSWORD" help:"Password to use with the mail server"`
+	MailAuthType     string `arg:"-a,--mail-authtype,env:AMSTERDAM_MAIL_AUTHTYPE" help:"The SMTP authentication type ('none' or 'plain')"`
 	DatabaseName     string `arg:"-d,--database-name,env:AMSTERDAM_DATABASE_NAME" help:"Database name to use on the database server."`
 	Listen           string `arg:"-l,--listen,env:AMSTERDAM_LISTEN" help:"The local address and port for Amsterdam to listen on."`
+	MailHost         string `arg:"-m,--mail-host,env:AMSTERDAM_MAIL_HOST" help:"The SMTP mail host to use to send messages."`
+	MailPort         int    `arg:"-o,--mail-port,env:AMSTERDAM_MAIL_PORT" help:"The SMTP port to connect to."`
 	DatabasePassword string `arg:"-p,--database-password,env:AMSTERDAM_DATABASE_PASSWORD" help:"Password for the database server."`
 	DatabaseHost     string `arg:"-t,--database-host,env:AMSTERDAM_DATABASE_HOST" help:"Hostname for the database server."`
 	DatabaseUser     string `arg:"-u,--database-user,env:AMSTERDAM_DATABASE_USER" help:"User name for the database server."`
@@ -201,6 +207,12 @@ type AmConfigComputed struct {
 	DatabaseUser     string          // user name for database
 	DatabasePassword string          // password for database
 	DatabaseName     string          // database name
+	MailHost         string          // SMTP host
+	MailPort         int             // SMTP port
+	MailTLS          string          // SMTP TLS setting
+	MailAuthType     string          // SMTP auth type
+	MailUser         string          // SMTP user name
+	MailPassword     string          // SMTP password
 	UploadMaxSize    int32           // maximum upload size in bytes
 	UploadNoCompress map[string]bool // which upload types are not compressed?
 }
@@ -377,6 +389,12 @@ func SetupConfig() {
 	GlobalComputedConfig.DatabaseUser = util.IIF(CommandLine.DatabaseUser != "", CommandLine.DatabaseUser, GlobalConfig.Database.User)
 	GlobalComputedConfig.DatabasePassword = util.IIF(CommandLine.DatabasePassword != "", CommandLine.DatabasePassword, GlobalConfig.Database.Password)
 	GlobalComputedConfig.DatabaseName = util.IIF(CommandLine.DatabaseName != "", CommandLine.DatabaseName, GlobalConfig.Database.DatabaseName)
+	GlobalComputedConfig.MailHost = util.IIF(CommandLine.MailHost != "", CommandLine.MailHost, GlobalConfig.Email.Host)
+	GlobalComputedConfig.MailPort = util.IIF(CommandLine.MailPort != 0, CommandLine.MailPort, GlobalConfig.Email.Port)
+	GlobalComputedConfig.MailTLS = util.IIF(CommandLine.MailTLS != "", CommandLine.MailTLS, GlobalConfig.Email.Tls)
+	GlobalComputedConfig.MailAuthType = util.IIF(CommandLine.MailAuthType != "", CommandLine.MailAuthType, GlobalConfig.Email.AuthType)
+	GlobalComputedConfig.MailUser = util.IIF(CommandLine.MailUser != "", CommandLine.MailUser, GlobalConfig.Email.User)
+	GlobalComputedConfig.MailPassword = util.IIF(CommandLine.MailPassword != "", CommandLine.MailPassword, GlobalConfig.Email.Password)
 	tmp, err := humanize.ParseBytes(GlobalConfig.Posting.Uploads.MaxSize)
 	if err != nil {
 		panic(err.Error())

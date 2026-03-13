@@ -119,7 +119,7 @@ func transmitMessage(m *amMessage, body []byte) {
 		defer cl.Close()
 		me, _ := os.Hostname()
 		if err = cl.Hello(me); err == nil {
-			if config.GlobalConfig.Email.Tls == "starttls" {
+			if config.GlobalComputedConfig.MailTLS == "starttls" {
 				if ok, _ := cl.Extension("STARTTLS"); ok {
 					err = cl.StartTLS(nil)
 				} else {
@@ -195,15 +195,15 @@ var sendChan chan *amMessage
 // SetupMailSender starts the mail-sending goroutine.
 func SetupMailSender() func() {
 	// Initialize mail host and authentication.
-	mailHost = fmt.Sprintf("%s:%d", config.GlobalConfig.Email.Host, config.GlobalConfig.Email.Port)
-	switch config.GlobalConfig.Email.AuthType {
+	mailHost = fmt.Sprintf("%s:%d", config.GlobalComputedConfig.MailHost, config.GlobalComputedConfig.MailPort)
+	switch config.GlobalComputedConfig.MailAuthType {
 	case "none":
 		auth = nil
 	case "plain":
-		auth = smtp.PlainAuth("", config.GlobalConfig.Email.User, config.GlobalConfig.Email.Password,
-			config.GlobalConfig.Email.Host)
+		auth = smtp.PlainAuth("", config.GlobalComputedConfig.MailUser, config.GlobalComputedConfig.MailPassword,
+			config.GlobalComputedConfig.MailHost)
 	default:
-		panic("Unknown auth type: " + config.GlobalConfig.Email.AuthType)
+		panic("Unknown auth type: " + config.GlobalComputedConfig.MailAuthType)
 	}
 
 	// Split the configured disclaimer and signature.

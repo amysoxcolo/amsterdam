@@ -70,6 +70,7 @@ You will need a MySQL database to store Amsterdam data. Create a new empty datab
 MySQL server, use that.)
 
 Ensure a user in your database is granted SELECT, INSERT, UPDATE, and DELETE privileges to all tables in your new database.
+This is the user that you will configure Amsterdam to use.
 
 The database may be specified to Amsterdam with the following command line options or environment variables:
 
@@ -83,4 +84,46 @@ All these options may also be specified via the configuration file (see below).
 Amsterdam also requires access to a local SMTP server, as it sends out E-mail messages such as account verification,
 password reminders, subscribed posts, and messages from conference or community hosts.  It may be specified to Amsterdam
 with the following command line options or environment variables:
+
+* Host name: Command line options `-m` or `--mail-host`, or environment variable `AMSTERDAM_MAIL_HOST`
+* Port number: Command line options `-o` or `--mail-port`, or environment variable `AMSTERDAM_MAIL_PORT`
+* TLS option ("none" or "starttls"): `-S` or `--mail-tls`, or environment variable `AMSTERDAM_MAIL_TLS`
+* Authentication type ("none" or "plain"): `-a` or `--mail-authtype`, or environment variable `AMSTERDAM_MAIL_AUTHTYPE`
+* User name: Command line options `-U` or `--mail-user`, or environment variable `AMSTERDAM_MAIL_USER`
+* Password: Command line options `-W` or `--mail-password`, or environment variable `AMSTERDAM_MAIL_PASSWORD`
+
+All these options may also be specified via the configuration file (see below).
+
+By default, Amsterdam sends log messages to stdout. You can change the log level for Amsterdam with the `-L` or `--level`
+options on the command line, or the `AMSTERDAM_LOG_LEVEL` environment variable. Valid values are "trace" (most detailed),
+"debug", "info", "warn", "error", "fatal", and "panic" (least detailed).
+
+Connect to Amsterdam on port 1323 by default.  You can change this with the `-l` or `--listen` options on the
+command line, or with the `AMSTERDAM_LISTEN` environment variable.  Listening addresses are specified as "host:port",
+or just ":port" to listen on all interfaces.
+
+By default, Amsterdam runs in debug mode. You can put it in "production" mode by using the `-P` or `--production`
+options on the command line, or by setting the `AMSTERDAM_PROD` environment variable.
+
+### The Amsterdam Configuration File
+
+At startup, Amsterdam looks for the configuration file `amsterdam.yaml` in various directories by host OS:
+
+* Unix/Linux: `/usr/local/etc/amsterdam`, `/etc/amsterdam`, `/etc/xdg/amsterdam`
+* macOS: `/usr/local/etc/amsterdam`, `/Library/Application Support/Amsterdam`
+* Windows: `%PROGRAMDATA%\amsterdam`
+
+You can also specify Amsterdam's configuration file by using the `-C` or `--config` options on the command line,
+or with the `AMSTERDAM_CONFIG` environment variable.
+
+The exact format of the configuration file is shown in the `config/default.yaml` file. When creating an Amsterdam
+configuration file, you do not have to specify options for which you do not with to change the default.
+
+## Contributing
+
+See the [Contributors' Guide](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under [the Mozilla Public License, Version 2.0](LICENSE.md).
 

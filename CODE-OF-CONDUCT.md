@@ -37,7 +37,7 @@ Automated agents, bots, or autonomous AI systems _may not_ independently submit 
 
 Contributors may use software tools, including AI-assisted tools, but the submitting contributor _must:_
 - Fully understand the contribution.
-- Be able to explain design and implementation decisions.
+- Be able to explain design and implementation decisions without the use of AI.
 - Accept responsibility for maintenance and correctness.
 
 Project maintainers retain _full discretion_ to accept or reject contributions for any reason consistent with the project's goals,
