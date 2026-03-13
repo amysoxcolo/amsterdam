@@ -1,9 +1,19 @@
 # The Amsterdam Web Communities System
 
-## Purpose
+A self-hosted platform for running _thoughtful, human-scale_ online communities.
 
-Amsterdam is a web-based system allowing for the hosting of multiple virtual communities, each with services such as conferencing.
-Users on an Amsterdam site may be a member of multiple independent communities, all on the same site.
+## Description
+
+Amsterdam is a self-hosted platform for running multiple virtual communities.
+
+It provides:
+* Multiple communities hosted on a single site
+* A discussion system featuring the linear conferencing model
+* Long-form conversation spaces
+* User identities shared acrioss communities
+* Moderation and community management tools
+
+It is designed for _human-scale communities_ - hundreds or thousands of users, rather than millions.
 
 Amsterdam is intended to become a modern platform styled after the first generation of online communities, designed for
 resilience, autonomy, and human-scale interaction.
@@ -12,11 +22,18 @@ The first public version of Amsterdam has feature parity with the platform that 
 community from 2000-2006, but rebuilt in a modern environment with updated rendering.  Future versions will extend the functionality
 from there.
 
-### Why now?
+## Live Demo
 
-Communities like Electric Minds were largely supplanted by the major social media sites, which built huge systems for global
-interaction at massive scale.  They pushed smaller communities out of existence the way Walmart drove smaller shops out of business
-in cities and towns across America.
+A live version of Amsterdam may be found at [https://electricminds.org](https://electricminds.org).  This site, "Electric Minds Reborn,"
+includes actual community data from Electric Minds circa 2006.
+
+## Why This Exists
+
+Communities from the early days of the Web, like Electric Minds, began as small, independent, and deeply conversational sites.
+People gathered in discussion spaces that felt more like shared living rooms than global broadcast platforms.
+
+Over time, most of these communities were largely supplanted by the major social media sites, which displaced many smaller,
+community-run spaces by optimizing for a massive, global scale, engagement metrics, and advertising.
 
 Now we're seeing what happens as a result:
 
@@ -30,6 +47,8 @@ We need _human-scale_ community again.  Amsterdam can be a baseline for bringing
 older systems that _worked,_ and sustained _real communities_ in the process. It was built by someone who's _been there,_ who not
 only wrote the code, but was an active participant in the community that used it.
 
+Electric Minds Reborn is both a historical preservation project and a living experiment into whether those ideas can work in a modern Web.
+
 ### Project Vision & Values
 
 Amsterdam as a project intends to prioritize certain things:
@@ -37,6 +56,8 @@ Amsterdam as a project intends to prioritize certain things:
 * Human-scale over global scale. Hundreds or thousands of users, not billions.
 * Resilience over growth, and _especially_ over growth for growth's sake.
 * Many smaller sites, not one big one. These sites should work _together,_ not act as more silos.
+  * Future versions of Amsterdam may support this directly, allowing interaction between independent sites while still providing
+    for autonomous, self-hosted communities.
 * Tools that serve _community members, moderators, and hosts,_ not shareholders.
 * Contribution quality over ideology or factionalism.  Contributors of _all backgrounds_ are welcome, with a focus on the quality
   of the final product.
@@ -51,6 +72,26 @@ during the Renaissance.
 
 This new implementation is named "Amsterdam," which was a center of community during the Age of Exploration, in particular, the
 Dutch Golden Age.
+
+## Key Features
+
+* Multiple communities hosted on a single site
+* A discussion system featuring the linear conferencing model
+* Long-form conversation spaces
+* User identities shared acrioss communities
+* Moderation and community management tools
+* Archival support for historic communities
+* Modern HTML rendering
+
+## Project status
+
+Amsterdam is in its first (early) public release.
+
+The software is capable of running a full community site, and is currently being used to host [Electric Minds Reborn](https://electricminds.org).
+
+The project is under active development, and APIs and internal structures may change between releases.
+
+---
 
 ## Building Amsterdam
 

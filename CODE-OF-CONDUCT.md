@@ -4,11 +4,15 @@ _(January 25, 2026)_
 
 For purposes of this document, the sole maintainer of the Amsterdam project is Amy G. Bowersox, `amy@erbosoft.com`.
 
+Any violations of this Code of Conduct may be reported to the maintainers, as listed above.
+
 ## Purpose
 
 Amsterdam is a collaborative software project. Its primary purpose is to build, maintain, and improve a system for hosting human-scale online communities.
 
 This Code of Conduct exists to support productive collaboration, respectful technical discussion, and a healthy working environment for everyone involved.
+
+This Code of Conduct shall apply to all project spaces including repositories, issue trackers, discussion forums, and official communications channels.
 
 As a general principle, anyone who adheres to this Code of Conduct and provides quality contributions to the project is welcome to participate.
 ("Contributions" may include but are not limited to code, documentation, testing, or fundraising.)

@@ -7,8 +7,10 @@ This document explains how to contribute changes to the Amsterdam project.
 ## Development Location
 
 While you may have found this project on GitHub or another site, the "source of truth" for the project will always
-reside on [the Erbosoft code hosting site](https://git.erbosoft.com/amy/amsterdam). Serious contributors should
-contact [Amy Bowersox](https://links.inclusiveladyship.com/@amy) for access.
+reside on [the Erbosoft code hosting site](https://git.erbosoft.com/amy/amsterdam). This is to ensure long-term
+independence from platforms controlled by third parties; the mirrors to GitHub and/or other sites are for visibility.
+
+Serious contributors should contact [Amy Bowersox](https://links.inclusiveladyship.com/@amy) for access.
 
 ## AI Contribution Policy
 
@@ -21,7 +23,7 @@ Contributors should indicate AI-generated content in issue and pull request desc
 
 Do _not_ use AI to reply to questions about your issue or pull request. The questions are for _you,_ the human, not an AI model.
 
-All project contributions must be submitted by _identifiable human participants_ who accept full responibility for their content.
+All project contributions must be submitted by _identifiable human participants_ who accept full responsibility for their content.
 Automated agents, bots, or autonomous AI systems _may not_ independently submit issues, pull requests, or other contributions.
 
 Project maintainers retain _full discretion_ to close pull requests and issues that appear to be low-quality AI-generated content.
@@ -35,6 +37,26 @@ From the root of the source tree, just run `go build` to build the `amsterdam` e
 To regenerate the `tailwind.css` file (located in `ui/static/css`), you will need the Tailwind CSS command-line executable.
 Download it from [the Tailwind GitHub](https://github.com/tailwindlabs/tailwindcss/releases/) and install it as `tailwindcss`
 in your `PATH`. Then run `go generate` to regenerate the CSS file before you run `go build` to build the executable.
+
+## Contribution Workflow
+
+1. [Open an issue](https://git.erbosoft.com/amy/amsterdam/issues/new) describing the problem or proposed feature.
+2. Discuss the design with [maintainers](MAINTAINERS).
+3. Submit a pull request referencing the issue.
+4. Participate in code review.
+
+## Versioning
+
+Amsterdam employs [semantic versioning](https://semver.org/), with version numbers in the "major.minor.bugfix" format. Please see
+the linked specification for further details.
+
+## Git Branching
+
+Amsterdam employs the [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow) style of branch management.
+
+One thing to remember: when working on a feature branch, and seeking to merge new changes from `main` into your branch, _never_ use `git merge`,
+but _always_ use `git rebase` to rebase your feature branch off the tip of `main`.  The rule to remember is, changes flowing "inward"
+_from_ feature branches _to_ `main` use `git merge`, but changes flowing "outward" _from_ `main` _to_ feature branches use `git rebase`.
 
 ## Dependencies
 
