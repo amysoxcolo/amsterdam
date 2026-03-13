@@ -2,7 +2,16 @@
 
 A self-hosted platform for running _thoughtful, human-scale_ online communities.
 
-## Description
+Amsterdam is the third generation of community software originally written to keep the Electric Minds community alive after
+its original platform shut down.
+
+Its predecessor, the Venice Web Communities System, was created in 2000 to rescue the Electric Minds community after the
+shutdown of its original platform. That system kept the community alive until 2006.
+
+Amsterdam is a modern re-implementation of those concepts, designed to support new human-scale communities while preserving
+the history of the original one.
+
+## What Amsterdam Is
 
 Amsterdam is a self-hosted platform for running multiple virtual communities.
 
@@ -21,6 +30,17 @@ resilience, autonomy, and human-scale interaction.
 The first public version of Amsterdam has feature parity with the platform that successfully hosted the original Electric Minds
 community from 2000-2006, but rebuilt in a modern environment with updated rendering.  Future versions will extend the functionality
 from there.
+
+## What Amsterdam Is Not
+
+Amsterdam is _not_ designed to be:
+
+* A large-scale social media platform
+* An algorithmic, feed-driven network.
+* A replacement for services like Facebook or exTwitter.
+* A mass-broadcast publishing system.
+
+Instead, it focuses on deliberate, human-scale conversation and community identity.
 
 ## Live Demo
 
@@ -168,4 +188,3 @@ See the [Contributors' Guide](CONTRIBUTING.md) for details.
 
 This project is licensed under [the Mozilla Public License, Version 2.0](LICENSE.md).  Its predecessor, Venice,
 was licensed under MPL 1.0, so this was a natural choice for the new implementation.
-
