@@ -125,5 +125,6 @@ See the [Contributors' Guide](CONTRIBUTING.md) for details.
 
 ## License
 
-This project is licensed under [the Mozilla Public License, Version 2.0](LICENSE.md).
+This project is licensed under [the Mozilla Public License, Version 2.0](LICENSE.md).  Its predecessor, Venice,
+was licensed under MPL 1.0, so this was a natural choice for the new implementation.
 
