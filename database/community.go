@@ -611,7 +611,10 @@ func (c *Community) Delete(ctx context.Context, u *User, ipaddr string, backgrou
 		if err == nil {
 			_, err = tx.ExecContext(ctx, "DELETE FROM propcomm WHERE cid = ?", c.Id)
 			if err == nil {
-				_, err = tx.ExecContext(ctx, "DELETE FROM communities WHERE commid = ?", c.Id)
+				_, err = tx.ExecContext(ctx, "DELETE FROM contacts WHERE owner_commid = ?", c.Id)
+				if err == nil {
+					_, err = tx.ExecContext(ctx, "DELETE FROM communities WHERE commid = ?", c.Id)
+				}
 			}
 		}
 	}
