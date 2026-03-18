@@ -28,14 +28,14 @@ CREATE TABLE globals (
     fp_posts INT NOT NULL,
     num_audit_page INT NOT NULL,
     comm_create_lvl INT NOT NULL
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The global properties table.  The "ndx" parameter is used to indicate what
 # element is being loaded, and then the "data" element is parsed.
 CREATE TABLE propglobal (
     ndx INT NOT NULL PRIMARY KEY,
     data VARCHAR(255)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The audit records table.  Most "major" events add a record to this table.
 CREATE TABLE audit (
@@ -51,7 +51,7 @@ CREATE TABLE audit (
     data4 VARCHAR(128),
     INDEX on_date_x (on_date),
     INDEX comm_view (commid, on_date)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The user information table.
 CREATE TABLE users (
@@ -72,14 +72,14 @@ CREATE TABLE users (
     description VARCHAR(255),
     dob DATE,
     UNIQUE INDEX username_x (username)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # User preferences table.
 CREATE TABLE userprefs (
     uid INT NOT NULL PRIMARY KEY,
     tzid VARCHAR(64) DEFAULT 'UTC',
     localeid VARCHAR(64) DEFAULT 'en_US'
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The per-user properties table.  The "ndx" parameter is used to indicate what
 # element is being loaded, and then the "data" element is parsed.
@@ -88,7 +88,7 @@ CREATE TABLE propuser (
     ndx INT NOT NULL,
     data VARCHAR(255),
     PRIMARY KEY (uid, ndx)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Indicates what the top-level "sidebox" configuration is for any given user.
 CREATE TABLE sideboxes (
@@ -98,7 +98,7 @@ CREATE TABLE sideboxes (
     param VARCHAR(255),
     UNIQUE INDEX userboxes (uid, boxid),
     INDEX inorder (uid, sequence)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The contact information table.  This is used for both users and communities.
 CREATE TABLE contacts (
@@ -128,14 +128,14 @@ CREATE TABLE contacts (
     photo_url VARCHAR(255),
     url VARCHAR(255),
     lastupdate DATETIME
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # A table listing email addresses which are barred from registering.
 CREATE TABLE emailban (
     address VARCHAR(255) NOT NULL PRIMARY KEY,
     by_uid INT,
     on_date DATETIME
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The community table.
 CREATE TABLE communities (
@@ -166,7 +166,7 @@ CREATE TABLE communities (
     INDEX list_chron (createdate),
     INDEX list_cat (catid, createdate),
     INDEX list_alpha (catid, commname)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table mapping category IDs to category names.
 CREATE TABLE refcategory (
@@ -177,14 +177,14 @@ CREATE TABLE refcategory (
     hide_search TINYINT DEFAULT 0,
     name VARCHAR(64) NOT NULL,
     UNIQUE INDEX display (parent, name)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table mapping communities and their associated features.
 CREATE TABLE commftrs (
     commid INT NOT NULL,
     ftr_code SMALLINT NOT NULL,
     PRIMARY KEY (commid, ftr_code)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table mapping members of a community and their access levels.
 CREATE TABLE commmember (
@@ -194,7 +194,7 @@ CREATE TABLE commmember (
     locked TINYINT DEFAULT 0,
     hidden TINYINT DEFAULT 0,
     PRIMARY KEY (commid, uid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # A table listing users which have been banned from joining a community.
 CREATE TABLE commban (
@@ -203,7 +203,7 @@ CREATE TABLE commban (
     by_uid INT,
     on_date DATETIME,
     PRIMARY KEY (commid, uid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The community properties table.  The "index" parameter is used to indicate what
 # element is being loaded, and then the "data" element is parsed.
@@ -212,7 +212,7 @@ CREATE TABLE propcomm (
     ndx INT NOT NULL,
     data VARCHAR(255),
     PRIMARY KEY (cid, ndx)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table describing conferences.  Like original CW, confs may be linked to more
 # than one community.
@@ -233,7 +233,7 @@ CREATE TABLE confs (
     icon_url VARCHAR(255),
     color VARCHAR(8),
     INDEX name_x (name)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table that links communities to conferences.
 CREATE TABLE commtoconf (
@@ -244,14 +244,14 @@ CREATE TABLE commtoconf (
     hide_list TINYINT DEFAULT 0,
     PRIMARY KEY (commid, confid),
     INDEX display_ord (commid, sequence)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table listing "aliases" to a conference for post-linking purposes.
 CREATE TABLE confalias (
     confid INT NOT NULL,
     alias VARCHAR(64) NOT NULL PRIMARY KEY,
     INDEX confid_x (confid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # A "membership" table for conferences used to control access to private conferences
 # and grant conference hosting powers.
@@ -260,7 +260,7 @@ CREATE TABLE confmember (
     uid INT NOT NULL,
     granted_lvl SMALLINT UNSIGNED DEFAULT 0,
     PRIMARY KEY (confid, uid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Holds "saved settings" for a user with respect to a conference.
 CREATE TABLE confsettings (
@@ -270,7 +270,7 @@ CREATE TABLE confsettings (
     last_read DATETIME,
     last_post DATETIME,
     PRIMARY KEY (confid, uid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The "hot list" of conferences for a given user.
 CREATE TABLE confhotlist (
@@ -280,7 +280,7 @@ CREATE TABLE confhotlist (
     confid INT NOT NULL,
     PRIMARY KEY (uid, commid, confid),
     INDEX inorder (uid, sequence)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The conference properties table.  The "index" parameter is used to indicate what
 # element is being loaded, and then the "data" element is parsed.
@@ -289,7 +289,7 @@ CREATE TABLE propconf (
     ndx INT NOT NULL,
     data VARCHAR(255),
     PRIMARY KEY (confid, ndx)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The conference custom HTML block table.  There are two custom blocks, one at the
 # top of the page, one at the bottom, each a maximum of 64K in length.
@@ -297,7 +297,7 @@ CREATE TABLE confcustom (
     confid INT NOT NULL PRIMARY KEY,
     htmltop TEXT,
     htmlbottom TEXT
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The table describing topics within a conference.
 CREATE TABLE topics (
@@ -315,7 +315,7 @@ CREATE TABLE topics (
     UNIQUE INDEX by_num (confid, num),
     UNIQUE INDEX by_name (confid, name),
     INDEX by_date (confid, lastupdate)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Holds "saved settings" for a user with respect to a topic.
 CREATE TABLE topicsettings (
@@ -327,7 +327,7 @@ CREATE TABLE topicsettings (
     last_post DATETIME,
     subscribe TINYINT DEFAULT 0,
     PRIMARY KEY (topicid, uid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The "bozo filter" list for a topic, for use by users in filtering out
 # the rantings of other users who are bozos.
@@ -336,7 +336,7 @@ CREATE TABLE topicbozo (
     uid INT NOT NULL,
     bozo_uid INT NOT NULL,
     PRIMARY KEY (topicid, uid, bozo_uid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The "header" for a posted message.
 CREATE TABLE posts (
@@ -354,14 +354,14 @@ CREATE TABLE posts (
     UNIQUE INDEX read_order (topicid, num),
     INDEX date_order (topicid, posted),
     INDEX child_order (parent, num)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # The actual message text.
 CREATE TABLE postdata (
     postid BIGINT NOT NULL PRIMARY KEY,
     data MEDIUMTEXT,
     FULLTEXT INDEX searchpost (data)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Message attachment.
 CREATE TABLE postattach (
@@ -374,14 +374,14 @@ CREATE TABLE postattach (
     filename VARCHAR(255),
     mimetype VARCHAR(128),
     data MEDIUMBLOB
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # "Bookmark" table for posts we like.
 CREATE TABLE postdogear (
     uid INT NOT NULL,
     postid BIGINT NOT NULL,
     PRIMARY KEY (uid, postid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # "Front page" publishing table.
 CREATE TABLE postpublish (
@@ -390,7 +390,7 @@ CREATE TABLE postpublish (
     by_uid INT NOT NULL,
     on_date DATETIME NOT NULL,
     INDEX display_order (on_date, postid)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Advertisement (actually quote, for now) banners
 CREATE TABLE adverts (
@@ -399,7 +399,7 @@ CREATE TABLE adverts (
     pathstyle SMALLINT NOT NULL DEFAULT 0,
     caption VARCHAR(255),
     linkurl VARCHAR(255)    
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Storage space for uploaded images.
 CREATE TABLE imagestore (
@@ -409,7 +409,7 @@ CREATE TABLE imagestore (
     mimetype VARCHAR(128) NOT NULL,
     length INT NOT NULL,
     data MEDIUMBLOB
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 # Table listing IP addresses that are banned from logging in or registering.
 CREATE TABLE ipban (
@@ -425,7 +425,7 @@ CREATE TABLE ipban (
     block_on DATETIME NOT NULL,
     INDEX by_mask (mask_hi, mask_lo),
     INDEX by_date (block_on)
-);
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 ##############################################################################
 # Constant Data Population
