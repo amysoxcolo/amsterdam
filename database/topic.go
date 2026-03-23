@@ -610,7 +610,7 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 	case TopicViewAll:
 		whereClause = ""
 	case TopicViewNew:
-		tail := "t.top_message > IFNULL(s.last_message,-1)"
+		tail := "t.top_message > COALESCE(s.last_message,-1)"
 		if !ignoreSticky {
 			tail = "(t.sticky = 1 OR " + tail + ")"
 		}
@@ -673,9 +673,9 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 
 	// Build the full SQL statement
 	var fullStatement strings.Builder
-	fullStatement.WriteString("SELECT t.topicid, t.num, t.name, (t.top_message - IFNULL(s.last_message,-1)) AS unread, ")
-	fullStatement.WriteString("(t.top_message + 1) AS total, t.lastupdate, t.frozen, t.archived, IFNULL(s.subscribe,0) AS subscribe, ")
-	fullStatement.WriteString("IFNULL(s.hidden,0) AS hidden, t.sticky, GREATEST(SIGN(t.top_message - IFNULL(s.last_message,-1)),0) AS newflag ")
+	fullStatement.WriteString("SELECT t.topicid, t.num, t.name, (t.top_message - COALESCE(s.last_message,-1)) AS unread, ")
+	fullStatement.WriteString("(t.top_message + 1) AS total, t.lastupdate, t.frozen, t.archived, COALESCE(s.subscribe,0) AS subscribe, ")
+	fullStatement.WriteString("COALESCE(s.hidden,0) AS hidden, t.sticky, GREATEST(SIGN(t.top_message - COALESCE(s.last_message,-1)),0) AS newflag ")
 	fullStatement.WriteString("FROM topics t LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ? WHERE t.confid = ? ")
 	if whereClause != "" {
 		fullStatement.WriteString("AND ")

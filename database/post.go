@@ -800,7 +800,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, searchTerms)
 	case "community":
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
@@ -808,7 +808,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, searchTerms)
 	case "conference":
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
@@ -816,7 +816,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms)
 	case "topic":
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
@@ -824,7 +824,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND t.topicid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`,
 			u.Uid, confService, comm.Id, conf.ConfId, topic.TopicId, searchTerms)
 	}
@@ -842,7 +842,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, searchTerms, max, offset)
 	case "community":
@@ -851,7 +851,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, searchTerms, max, offset)
 	case "conference":
@@ -860,7 +860,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms, max, offset)
 	case "topic":
@@ -869,7 +869,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
 			JOIN topics t ON t.confid = c.confid JOIN posts p ON p.topicid = t.topicid JOIN postdata d ON d.postid = p.postid JOIN users u2 ON u2.uid = p.creator_uid
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
-			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,IFNULL(x.granted_lvl,0)) >= c.read_lvl
+			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND t.topicid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, conf.ConfId, topic.TopicId, searchTerms, max, offset)
 	}

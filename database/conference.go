@@ -580,7 +580,7 @@ func (c *Conference) UnreadMessages(ctx context.Context, u *User) (int32, error)
 		return 0, nil
 	}
 	var rc int32
-	err = amdb.GetContext(ctx, &rc, `SELECT SUM(t.top_message - IFNULL(s.last_message,-1))
+	err = amdb.GetContext(ctx, &rc, `SELECT SUM(t.top_message - COALESCE(s.last_message,-1))
 		FROM topics t LEFT JOIN topicsettings s ON t.topicid = s.topicid AND s.uid = ?
 		WHERE t.confid = ? AND t.archived = 0 AND (s.hidden IS NULL OR s.hidden = 0)`, u.Uid, c.ConfId)
 	return rc, err
@@ -800,7 +800,7 @@ func (c *Conference) GetActiveUserEMailAddrs(ctx context.Context, userSelect, da
 
 // Stats retrieves the number of topics and posts in this conference.
 func (c *Conference) Stats(ctx context.Context) (int, int, error) {
-	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*), SUM(top_message + 1) FROM topics WHERE confid = ?", c.ConfId)
+	row := amdb.QueryRowContext(ctx, "SELECT COUNT(*), COALESCE(SUM(top_message + 1), 0) FROM topics WHERE confid = ?", c.ConfId)
 	ntopic := 0
 	npost := 0
 	err := row.Scan(&ntopic, &npost)
