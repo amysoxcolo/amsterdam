@@ -307,12 +307,12 @@ func UserManagementSave(ctxt ui.AmContext) (string, any) {
 
 	dlg, err := ui.AmLoadDialog("admin_user")
 	if err == nil {
-		dlg.LoadFromForm(ctxt)
 		dlg.SetTargetUser(user)
 		if ctxt.CurrentUser().BaseLevel == database.AmRole("Global.BOFH").Level() {
 			// only the BOFH can designate a user as a PFY!
 			dlg.Field("base_lvl").Param = "Global.UserLevelsPFY"
 		}
+		dlg.LoadFromForm(ctxt)
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
 			return "redirect", "/sysadmin/users"
