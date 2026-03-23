@@ -239,7 +239,7 @@ func UserManagementForm(ctxt ui.AmContext) (string, any) {
 	dlg, err := ui.AmLoadDialog("admin_user")
 	if err == nil {
 		dlg.SetTargetUser(user)
-		if ctxt.CurrentUser().BaseLevel == database.AmRole("Global.BOFH").Level() {
+		if database.AmTestPermission("Global.DesignatePFY", ctxt.CurrentUser().BaseLevel) {
 			// only the BOFH can designate a user as a PFY!
 			dlg.Field("base_lvl").Param = "Global.UserLevelsPFY"
 		}
@@ -308,7 +308,7 @@ func UserManagementSave(ctxt ui.AmContext) (string, any) {
 	dlg, err := ui.AmLoadDialog("admin_user")
 	if err == nil {
 		dlg.SetTargetUser(user)
-		if ctxt.CurrentUser().BaseLevel == database.AmRole("Global.BOFH").Level() {
+		if database.AmTestPermission("Global.DesignatePFY", ctxt.CurrentUser().BaseLevel) {
 			// only the BOFH can designate a user as a PFY!
 			dlg.Field("base_lvl").Param = "Global.UserLevelsPFY"
 		}
