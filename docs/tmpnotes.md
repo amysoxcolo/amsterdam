@@ -24,24 +24,17 @@ The character set was defined starting with the list of characters allowable in 
 defined in [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986.txt), section 3.3, page 23), minus the percent-encoded
 forms, so that Amsterdam identifiers would be usable as "path information" in a URL.
 
-The ampersand (&) was excluded because of its possible confusion with a URL parameter separator, and because it requires HTML escaping.
+From here, various characters were excluded:
 
-The at sign (@) was excluded because of possible confusion with E-mail addresses and XMPP identifiers.
-
-The plus sign (+) was excluded because of possible confusion with a URL=encoded space character.
-
-The comma (,) was excluded because of its possible interpretation as a separator character.
-
-The equals sign (=) was excluded because of its possible confusion with a URL parameter/value separator.
-
-The semicolon (;) was excluded because of its possible interpretation as a separator character.
-
-The colon (:) was withheld to provide for a possible future "namespace" expansion (as in XML namespaces).
-
-The parentheses ((, )) were excluded because of possible confusion with user link syntax in conferencing.
-
-The period (.) was excluded because of possible confusion with post link syntax in conferencing.
-
-The exclamation point (!) was excluded because of possible confusion with extended post link syntax in conferencing.
+* The ampersand (&) was excluded because of its possible confusion with a URL parameter separator, and because it requires HTML escaping.
+* The at sign (@) was excluded because of possible confusion with E-mail addresses and XMPP identifiers.
+* The plus sign (+) was excluded because of possible confusion with a URL-encoded space character.
+* The comma (,) was excluded because of its possible interpretation as a separator character.
+* The equals sign (=) was excluded because of its possible confusion with a URL parameter/value separator.
+* The semicolon (;) was excluded because of its possible interpretation as a separator character.
+* The colon (:) was withheld to provide for a possible future "namespace" expansion (as in XML namespaces).
+* The parentheses ((, )) were excluded because of possible confusion with user link syntax in conferencing.
+* The period (.) was excluded because of possible confusion with post link syntax in conferencing.
+* The exclamation point (!) was excluded because of possible confusion with extended post link syntax in conferencing.
 
 The definition of Amsterdam identifiers was taken almost directly from the definition of Venice identifiers in the predecessor project.

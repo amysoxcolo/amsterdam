@@ -120,7 +120,7 @@ state are saved in a temporary buffer before being written to the main output bu
 after having been modified by a rewriter.
 
 The `context.Context` value passed to **AmNewHTMLChecker** is checked on every iteration of the main parse loop. If
-it returns an error, the parser is stopped, allowing the HTML checker to respect external timeouts.  (The value is
+it signals "done," the parser is stopped, allowing the HTML checker to respect external timeouts.  (The value is
 stored in the HTML Checker itself, which is generally frowned upon, but used in this case to simplify the external
 API since HTML Checker objects are typically scoped to a single request.)
 

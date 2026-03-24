@@ -178,7 +178,7 @@ You can also specify Amsterdam's configuration file by using the `-C` or `--conf
 or with the `AMSTERDAM_CONFIG` environment variable.
 
 The exact format of the configuration file is shown in the `config/default.yaml` file. When creating an Amsterdam
-configuration file, you do not have to specify options for which you do not with to change the default.
+configuration file, you do not have to specify options for which you do not wish to change the default.
 
 ## Initial Login
 
