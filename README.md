@@ -19,7 +19,7 @@ It provides:
 * Multiple communities hosted on a single site
 * A discussion system featuring the linear conferencing model
 * Long-form conversation spaces
-* User identities shared acrioss communities
+* User identities shared across communities
 * Moderation and community management tools
 
 It is designed for _human-scale communities_ - hundreds or thousands of users, rather than millions.
@@ -98,16 +98,14 @@ Dutch Golden Age.
 * Multiple communities hosted on a single site
 * A discussion system featuring the linear conferencing model
 * Long-form conversation spaces
-* User identities shared acrioss communities
+* User identities shared across communities
 * Moderation and community management tools
 * Archival support for historic communities
 * Modern HTML rendering
 
 ## Project status
 
-Amsterdam is in its first (early) public release.
-
-The software is capable of running a full community site, and is currently being used to host [Electric Minds Reborn](https://electricminds.org).
+Amsterdam is in its first (early) public release.  The software is capable of running a full community site.
 
 The project is under active development, and APIs and internal structures may change between releases.
 
@@ -180,11 +178,10 @@ or with the `AMSTERDAM_CONFIG` environment variable.
 The exact format of the configuration file is shown in the `config/default.yaml` file. When creating an Amsterdam
 configuration file, you do not have to specify options for which you do not wish to change the default.
 
-## Initial Login
+### Initial Login
 
 After starting Amsterdam, you can log into the administrator account, which has the user name "Administrator" with
-no password. _Please set a password as soon as possible!_ Click the "Profile" link in the top bar to change the
-password.
+no password. After logging in, you will be immediately bounced to the profile page, where you _must_ set a password.
 
 ## Contributing
 

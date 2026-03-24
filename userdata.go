@@ -107,6 +107,9 @@ func EditProfileForm(ctxt ui.AmContext) (string, any) {
 				dlg.Field("no_mass_mail").SetChecked(u.FlagValue(ctxt.Ctx(), database.UserFlagMassMailOptOut))
 				dlg.Field("locale").Value = prefs.ReadLocale()
 				dlg.Field("tz").Value = prefs.TimeZoneID
+				if u.Passhash == "" {
+					ctxt.VarMap().Set("__infoMessage", "Your password is not set. Please set one.")
+				}
 				return dlg.Render(ctxt)
 			}
 		}
@@ -156,6 +159,9 @@ func EditProfile(ctxt ui.AmContext) (string, any) {
 			err = dlg.Validate()
 			if err != nil {
 				return dlg.RenderError(ctxt, err.Error())
+			}
+			if u.Passhash == "" && dlg.Field("pass1").IsEmpty() && dlg.Field("pass2").IsEmpty() {
+				return dlg.RenderError(ctxt, "Your password is not set. Please set one.")
 			}
 			var ci *database.ContactInfo
 			ci, err = u.ContactInfo(ctxt.Ctx())

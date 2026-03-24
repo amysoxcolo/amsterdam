@@ -140,7 +140,11 @@ func Login(ctxt ui.AmContext) (string, any) {
 				}
 			}
 			if user.VerifyEMail {
-				return "redirect", target
+				if user.Passhash == "" {
+					return "redirect", "/profile?tgt=" + url.QueryEscape(target)
+				} else {
+					return "redirect", target
+				}
 			} else {
 				return "redirect", "/verify?tgt=" + url.QueryEscape(target)
 			}
@@ -199,7 +203,11 @@ func VerifyEmailForm(ctxt ui.AmContext) (string, any) {
 
 	// If user is already verified, this is a no-op.
 	if user.VerifyEMail {
-		return "redirect", target
+		if user.Passhash == "" {
+			return "redirect", "/profile?tgt=" + url.QueryEscape(target)
+		} else {
+			return "redirect", target
+		}
 	}
 
 	dlg, err := ui.AmLoadDialog("verify_email")
@@ -255,12 +263,20 @@ func VerifyEMail(ctxt ui.AmContext) (string, any) {
 
 		// If user is already verified, this is a no-op.
 		if user.VerifyEMail {
-			return "redirect", target
+			if user.Passhash == "" {
+				return "redirect", "/profile?tgt=" + url.QueryEscape(target)
+			} else {
+				return "redirect", target
+			}
 		}
 
 		action := dlg.WhichButton(ctxt)
 		if action == "cancel" { // Cancel button pressed
-			return "redirect", target
+			if user.Passhash == "" {
+				return "redirect", "/profile?tgt=" + url.QueryEscape(target)
+			} else {
+				return "redirect", target
+			}
 		}
 		if action == "sendagain" {
 			var ci *database.ContactInfo
@@ -283,7 +299,11 @@ func VerifyEMail(ctxt ui.AmContext) (string, any) {
 				cn, _ := dlg.Field("num").ValueInt()
 				err = user.ConfirmEMailAddress(ctxt.Ctx(), int32(cn), ctxt.RemoteIP())
 				if err == nil {
-					return "redirect", target
+					if user.Passhash == "" {
+						return "redirect", "/profile?tgt=" + url.QueryEscape(target)
+					} else {
+						return "redirect", target
+					}
 				}
 			}
 			return dlg.RenderError(ctxt, err.Error())

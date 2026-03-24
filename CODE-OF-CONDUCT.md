@@ -36,7 +36,7 @@ Participants in the Amsterdam project are expected to:
 
 Contributions must be the _own work_ of the contributor.  Plagiarism in any form is unacceptable.
 
-All project contributions must be submitted by _identifiable human participants_ who accept full responibility for their content.
+All project contributions must be submitted by _identifiable human participants_ who accept full responsibility for their content.
 Automated agents, bots, or autonomous AI systems _may not_ independently submit issues, pull requests, or other contributions.
 
 Contributors may use software tools, including AI-assisted tools, but the submitting contributor _must:_
