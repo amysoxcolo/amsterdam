@@ -19,7 +19,7 @@
         <div class="mb-6">
             <h1 class="text-2xl font-bold mb-2">Amsterdam Web Communities System Release {{ AmsterdamVersion }} - Database Version {{ dbVersion }}</h1>
             <p class="text-base text-black mb-4">
-                Copyright © {{ AmsterdamCopyright }} <a href="https://erbosoft.com/">Erbosoft Metaverse Design Solutions</a>,
+                Copyright © {{ AmsterdamCopyright }} <a class="text-blue-700 hover:text-blue-900" href="https://erbosoft.com/">Erbosoft Metaverse Design Solutions</a>,
                 All Rights Reserved.
             </p>
             <p class="text-base text-black">
