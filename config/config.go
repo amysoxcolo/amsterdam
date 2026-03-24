@@ -30,7 +30,7 @@ import (
 )
 
 // AMSTERDAM_VERSION contains the version number of Amsterdam.
-const AMSTERDAM_VERSION = "0.0.1"
+const AMSTERDAM_VERSION = "0.1.0"
 
 // AMSTERDAM_COPYRIGHT contains the copyright dates for Amsterdam.
 const AMSTERDAM_COPYRIGHT = "2025-2026"
