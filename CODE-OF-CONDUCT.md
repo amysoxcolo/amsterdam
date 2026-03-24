@@ -1,7 +1,5 @@
 # Code of Conduct - Amsterdam Web Communities System Project
 
-_(January 25, 2026)_
-
 For purposes of this document, the sole maintainer of the Amsterdam project is Amy G. Bowersox, `amy@erbosoft.com`.
 
 Any violations of this Code of Conduct may be reported to the maintainers, as listed above.
@@ -43,6 +41,10 @@ Contributors may use software tools, including AI-assisted tools, but the submit
 - Fully understand the contribution.
 - Be able to explain design and implementation decisions without the use of AI.
 - Accept responsibility for maintenance and correctness.
+
+Contributors should indicate AI-generated content in issue and pull request descriptions and comments, specifying which model was used.
+
+Do _not_ use AI to reply to questions about your issue or pull request. The questions are for _you,_ the human, not an AI model.
 
 Project maintainers retain _full discretion_ to accept or reject contributions for any reason consistent with the project's goals,
 quality standards, and maintainability requirements. Submission of a contribution _shall not_ guarantee review, acceptance, or

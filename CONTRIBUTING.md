@@ -10,33 +10,13 @@ While you may have found this project on GitHub or another site, the "source of 
 reside on [the Erbosoft code hosting site](https://git.erbosoft.com/amy/amsterdam). This is to ensure long-term
 independence from platforms controlled by third parties; the mirrors to GitHub and/or other sites are for visibility.
 
-Serious contributors should contact [Amy Bowersox](https://links.inclusiveladyship.com/@amy) for access.
+Serious contributors should contact Amy Bowersox (amy@erbosoft.com or via a contact method listed in
+[her LinkStack](https://links.inclusiveladyship.com/@amy)) for access.
 
 ## AI Contribution Policy
 
-As per our [Code of Conduct](CODE-OF-CONDUCT.md), AI contributions are acceptable, but the submitting contributor _must:_
-* Fully understand the contribution.
-* Be able to explain design and implementation decisions without the use of AI.
-* Accept responsibility for maintenance and correctness.
-
-Contributors should indicate AI-generated content in issue and pull request descriptions and comments, specifying which model was used.
-
-Do _not_ use AI to reply to questions about your issue or pull request. The questions are for _you,_ the human, not an AI model.
-
-All project contributions must be submitted by _identifiable human participants_ who accept full responsibility for their content.
-Automated agents, bots, or autonomous AI systems _may not_ independently submit issues, pull requests, or other contributions.
-
-Project maintainers retain _full discretion_ to close pull requests and issues that appear to be low-quality AI-generated content.
-While we welcome new contributors, we want to see those that will engage constructively with the review process, rather than deferring
-to AI.
-
-## Building Amsterdam
-
-From the root of the source tree, just run `go build` to build the `amsterdam` executable.
-
-To regenerate the `tailwind.css` file (located in `ui/static/css`), you will need the Tailwind CSS command-line executable.
-Download it from [the Tailwind GitHub](https://github.com/tailwindlabs/tailwindcss/releases/) and install it as `tailwindcss`
-in your `PATH`. Then run `go generate` to regenerate the CSS file before you run `go build` to build the executable.
+AI contributions are allowed, but _must_ follow the policy set out in our [Code of Conduct](CODE-OF-CONDUCT.md). Failure to do so
+will result in summary rejection of contributions and possible restriction of participation in the project.
 
 ## Contribution Workflow
 

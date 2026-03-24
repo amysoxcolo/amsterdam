@@ -37,7 +37,7 @@ Amsterdam is _not_ designed to be:
 
 * A large-scale social media platform
 * An algorithmic, feed-driven network.
-* A replacement for services like Facebook or exTwitter.
+* A replacement for services like Facebook or X (formerly known as Twitter).
 * A mass-broadcast publishing system.
 
 Instead, it focuses on deliberate, human-scale conversation and community identity.
@@ -93,16 +93,6 @@ during the Renaissance.
 This new implementation is named "Amsterdam," which was a center of community during the Age of Exploration, in particular, the
 Dutch Golden Age.
 
-## Key Features
-
-* Multiple communities hosted on a single site
-* A discussion system featuring the linear conferencing model
-* Long-form conversation spaces
-* User identities shared across communities
-* Moderation and community management tools
-* Archival support for historic communities
-* Modern HTML rendering
-
 ## Project status
 
 Amsterdam is in its first (early) public release.  The software is capable of running a full community site.
@@ -157,7 +147,7 @@ By default, Amsterdam sends log messages to stdout. You can change the log level
 options on the command line, or the `AMSTERDAM_LOG_LEVEL` environment variable. Valid values are "trace" (most detailed),
 "debug", "info", "warn", "error", "fatal", and "panic" (least detailed).
 
-Connect to Amsterdam on port 1323 by default.  You can change this with the `-l` or `--listen` options on the
+Amsterdam listens on port 1323 by default.  You can change this with the `-l` or `--listen` options on the
 command line, or with the `AMSTERDAM_LISTEN` environment variable.  Listening addresses are specified as "host:port",
 or just ":port" to listen on all interfaces.
 
