@@ -361,6 +361,8 @@ type TemplateRenderer struct{}
  *     Standard Go error status.
  */
 func (r *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
+	defer util.MeasureTime(fmt.Sprintf("ui.Render(%s)", name))()
+
 	view, err := views.GetTemplate(name)
 
 	if err != nil {
