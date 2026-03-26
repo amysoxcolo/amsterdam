@@ -157,30 +157,30 @@ func LogrusPanicLogging(c echo.Context, err error, stack []byte) error {
 
 // amLogFile represents the log output file.
 type amLogFile struct {
-	mutex          sync.Mutex
-	wr             io.WriteCloser
-	curSize        int64
-	maxSize        int64
-	logPath        string
-	keep           int
-	keepCompressed int
+	mutex          sync.Mutex     // mutex for this object
+	wr             io.WriteCloser // underlying log file
+	curSize        int64          // current size of log file
+	maxSize        int64          // maximum size of log file
+	logPath        string         // log file path
+	keep           int            // number of uncompressed files to keep
+	keepCompressed int            // number of compressed files to keep
 }
 
 // Write (from io.Writer) writes to the log file.
 func (lf *amLogFile) Write(p []byte) (int, error) {
 	lf.mutex.Lock()
-	defer lf.mutex.Unlock()
 	n, err := lf.wr.Write(p)
 	lf.curSize += int64(n)
+	lf.mutex.Unlock()
 	return n, err
 }
 
 // Close (from io.Closer) closes the log file.
 func (lf *amLogFile) Close() error {
 	lf.mutex.Lock()
-	defer lf.mutex.Unlock()
 	err := lf.wr.Close()
 	lf.wr = nil
+	lf.mutex.Unlock()
 	return err
 }
 
@@ -284,13 +284,13 @@ func (lf *amLogFile) rotate() error {
 // tryRotate sees if the log file needs to be rotated and does so.
 func (lf *amLogFile) tryRotate() {
 	lf.mutex.Lock()
-	defer lf.mutex.Unlock()
 	if lf.curSize >= lf.maxSize {
 		err := lf.rotate()
 		if err != nil {
 			//log.Error("log rotation failed")
 		}
 	}
+	lf.mutex.Unlock()
 }
 
 // open opens the log file and sets up the structure for use.
