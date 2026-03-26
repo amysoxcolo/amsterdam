@@ -346,6 +346,9 @@ func setupTemplates() {
 		s := a.Get(0).Convert(reflect.TypeFor[string]()).String()
 		return reflect.ValueOf(util.CapitalizeString(s))
 	})
+
+	// Start the country list initializing in the background.
+	go util.AmCountryList(config.GlobalConfig.Rendering.CountryList.Prioritize)
 }
 
 // TemplateRenderer is the Renderer instance set into the Echo context at creation time, to render Jet templates.
