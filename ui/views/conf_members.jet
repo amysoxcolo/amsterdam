@@ -19,7 +19,7 @@
     </div>
 
     <!-- Upper Links -->
-    <div class="mb-4">
+    <div class="mb-4 flex items-baseline gap-2">
         <a class="text-blue-700 hover:text-blue-900 text-sm flex items-center gap-2 w-fit" href="{{ selfLink }}">
             <span>🔃</span>
             Redisplay Member List
