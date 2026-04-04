@@ -11,6 +11,9 @@ shutdown of its original platform. That system kept the community alive until 20
 Amsterdam is a modern re-implementation of those concepts, designed to support new human-scale communities while preserving
 the history of the original one.
 
+**N.B.:** If you are seeing this repository on any site other than `git.erbosoft.com`, it is a mirror. The source of truth
+for the project will always be the version of the repository found on `git.erbosoft.com`.
+
 ## What Amsterdam Is
 
 Amsterdam is a self-hosted platform for running multiple virtual communities.
