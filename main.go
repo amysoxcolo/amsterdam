@@ -76,7 +76,7 @@ func setupEcho() *echo.Echo {
 		e.GET("/venice/imagedata/:id", ui.AmServeVeniceCompatibleImage)
 	}
 	e.GET("/static/*", ui.AmStaticFileHandler())
-	e.GET("/go/:postlink", ui.AmWrap(JumpToShortcut))
+	e.GET("/go/:postlink", ui.AmWrap(JumpToShortcut), uiset...)
 
 	e.GET("/", ui.AmWrap(TopPage), uiset...)
 	e.GET("/about", ui.AmWrap(AboutPage), uiset...)
