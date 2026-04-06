@@ -42,7 +42,7 @@
                                     {{ if len(c.Hosts) > 0 }}
                                         {{ range j, u := c.Hosts }}
                                             {{ if j > 0 }}, {{ end }}
-                                            <a href="/users/{{ u }}" class="text-blue-700 hover:text-blue-900">{{ u }}</a>
+                                            <a href="/user/{{ u }}" class="text-blue-700 hover:text-blue-900">{{ u }}</a>
                                         {{ end }}
                                     {{ else }}
                                         None 
