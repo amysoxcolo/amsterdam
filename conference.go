@@ -247,7 +247,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), conf.TopTopic+1))
 		checker.Append(postdata)
 		checker.Finish()
 		v, _ = checker.Value()
@@ -282,7 +282,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), conf.TopTopic+1))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), conf.TopTopic+1))
 		checker.Append(ctxt.FormField("pb"))
 		checker.Finish()
 		zeroPost, _ := checker.Value()
@@ -734,7 +734,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), topic.Number))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
 		checker.Append(postdata)
 		checker.Finish()
 		v, _ = checker.Value()
@@ -805,7 +805,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.URLParam("cid"), topic.Number))
+	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
 	checker.Append(ctxt.FormField("pb"))
 	checker.Finish()
 	postText, _ := checker.Value()
