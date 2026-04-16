@@ -18,7 +18,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}",
             "env": {
-                "AMSTERDAM_CONFIG": "/u01/home/amy/Erbosoft/emreborn/amsterdam.yaml"
+                "AMSTERDAM_CONFIG": "${env:HOME}/Erbosoft/emreborn/amsterdam.yaml"
             }
         },
     ]
