@@ -26,22 +26,58 @@ import (
 var amdb *sqlx.DB
 
 // buildMysqlDSN builds the MySQL DSN for the driver.
-func buildMysqlDSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&loc=UTC",
+func buildMysqlDSN(multiStatement bool) string {
+	rc := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true&loc=UTC",
 		config.GlobalComputedConfig.DatabaseUser,
 		config.GlobalComputedConfig.DatabasePassword,
 		config.GlobalComputedConfig.DatabaseHost,
 		config.GlobalComputedConfig.DatabaseName)
+	if multiStatement {
+		rc += "&multiStatements=true"
+	}
+	return rc
+}
+
+// databaseVersionNumber reads the version number from the database.
+func databaseVersionNumber(db *sqlx.DB) (string, error) {
+	ver := ""
+	err := db.Get(&ver, "SELECT version FROM globals")
+	return ver, err
+}
+
+// prepareDB prepares the database if it's not yet been loaded.
+func prepareDB() (string, error) {
+	dsn := buildMysqlDSN(true)
+	log.Debugf("dsn=%s", dsn)
+	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, dsn)
+	if err != nil {
+		return "", err
+	}
+	defer db.Close()
+	version, err := databaseVersionNumber(db)
+	if err != nil {
+		// TODO: database needs initializing here
+		log.Errorf("*** cannot get version number: %v", err)
+	}
+	// TODO: apply migration scripts
+	return version, err
 }
 
 // SetupDb sets up the database and associated items.
 func SetupDb() (func(), error) {
 	exitfns := make([]func(), 0, 2)
-	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, buildMysqlDSN())
+	version, err := prepareDB()
+	if err != nil {
+		return nil, err
+	}
+	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, buildMysqlDSN(false))
 	if err == nil {
 		amdb = db
 		g, err := AmGlobals(context.Background())
 		if err == nil {
+			if g.Version != version {
+				log.Warnf("!! database version %s does not match prepared version %s", g.Version, version)
+			}
 			setupAdCache()
 			setupUserCache()
 			setupContactsCache()
@@ -53,8 +89,8 @@ func SetupDb() (func(), error) {
 			log.Infof("SetupDb(): database version %s", g.Version)
 		}
 	}
+	slices.Reverse(exitfns)
 	return func() {
-		slices.Reverse(exitfns)
 		for _, f := range exitfns {
 			f()
 		}
