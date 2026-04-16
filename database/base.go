@@ -13,14 +13,30 @@ package database
 
 import (
 	"context"
+	_ "embed"
+	"errors"
 	"fmt"
 	"slices"
 
 	"git.erbosoft.com/amy/amsterdam/config"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
+
+// Error classifications
+const (
+	classUnspecified = 0
+	classNeedInstall = 1
+	classNeedConvert = 2
+)
+
+// MySQL Errors
+var errMySQLNoTable = &mysql.MySQLError{Number: 1146}
+var errMySQLNoColumn = &mysql.MySQLError{Number: 1054}
+
+//go:embed mysql-install.sql
+var installScriptMySQL string
 
 // amdb is the reference to the Amsterdam database.
 var amdb *sqlx.DB
@@ -38,11 +54,32 @@ func buildMysqlDSN(multiStatement bool) string {
 	return rc
 }
 
+// classifyGetError classifies errors returns from the original get of the version number.
+func classifyGetError(err error) int {
+	if errors.Is(err, errMySQLNoTable) {
+		return classNeedInstall
+	}
+	if errors.Is(err, errMySQLNoColumn) {
+		return classNeedConvert
+	}
+	return classUnspecified
+}
+
 // databaseVersionNumber reads the version number from the database.
 func databaseVersionNumber(db *sqlx.DB) (string, error) {
 	ver := ""
 	err := db.Get(&ver, "SELECT version FROM globals")
 	return ver, err
+}
+
+// databaseInstallScript returns the install script for the database.
+func databaseInstallScript() (string, error) {
+	switch config.GlobalComputedConfig.DatabaseDriver {
+	case "mysql":
+		return installScriptMySQL, nil
+	default:
+		return "", fmt.Errorf("No install script for database driver: %s", config.GlobalComputedConfig.DatabaseDriver)
+	}
 }
 
 // prepareDB prepares the database if it's not yet been loaded.
@@ -56,8 +93,27 @@ func prepareDB() (string, error) {
 	defer db.Close()
 	version, err := databaseVersionNumber(db)
 	if err != nil {
-		// TODO: database needs initializing here
-		log.Errorf("*** cannot get version number: %v", err)
+		switch classifyGetError(err) {
+		case classUnspecified:
+			log.Errorf("*** cannot get version number: %v (%T)", err, err)
+			return version, err
+		case classNeedInstall:
+			installScript, err := databaseInstallScript()
+			if err != nil {
+				return "", err
+			}
+			_, err = db.Exec(installScript)
+			if err != nil {
+				return "", fmt.Errorf("Failure of install script: %w", err)
+			}
+			version, err = databaseVersionNumber(db)
+			if err != nil {
+				return "", err
+			}
+		case classNeedConvert:
+			// TODO
+		}
+		err = nil // if get here, we are OK to go
 	}
 	// TODO: apply migration scripts
 	return version, err
