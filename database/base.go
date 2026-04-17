@@ -108,29 +108,31 @@ func databaseConvertScript() (string, error) {
 }
 
 // databaseMigrationScripts returns the migration scripts to apply to the database.
-func databaseMigrationScripts(version string) (fs.FS, []string, error) {
+func databaseMigrationScripts(version string) (fs.FS, string, []string, error) {
 	var myfs fs.FS
-	var err error
+	var dirname string = ""
+	var err error = nil
 	switch config.GlobalComputedConfig.DatabaseDriver {
 	case "mysql":
-		myfs, err = fs.Sub(migrationsMySQL, "mysql-migrate")
+		myfs = migrationsMySQL
+		dirname = "mysql-migrate"
 	default:
 		err = fmt.Errorf("No migration scripts for database driver: %s", config.GlobalComputedConfig.DatabaseDriver)
 	}
 	if err != nil {
-		return nil, make([]string, 0), err
+		return nil, "", make([]string, 0), err
 	}
 	rdfs := myfs.(fs.ReadDirFS)
-	dents, err := rdfs.ReadDir("/")
+	dents, err := rdfs.ReadDir(dirname)
 	if err != nil {
-		return nil, make([]string, 0), err
+		return nil, "", make([]string, 0), err
 	}
 	rc := make([]string, 0, len(dents))
 	for _, d := range dents {
 		s := strings.TrimSuffix(d.Name(), ".sql")
 		m, err := regexp.Match(`\d{10}`, []byte(s))
 		if err != nil {
-			return nil, make([]string, 0), err
+			return nil, "", make([]string, 0), err
 		}
 		if m && s > version {
 			rc = append(rc, d.Name())
@@ -139,7 +141,7 @@ func databaseMigrationScripts(version string) (fs.FS, []string, error) {
 	if len(rc) > 1 {
 		slices.Sort(rc)
 	}
-	return myfs, rc, nil
+	return myfs, dirname, rc, nil
 }
 
 // prepareDB prepares the database if it's not yet been loaded.
@@ -181,14 +183,14 @@ func prepareDB() (string, error) {
 			return "", err
 		}
 	}
-	scriptfs, scripts, err := databaseMigrationScripts(version)
+	scriptfs, dirname, scripts, err := databaseMigrationScripts(version)
 	if err == nil {
 		log.Infof("%d migration script(s) to be applied", len(scripts))
 		rffs := scriptfs.(fs.ReadFileFS)
 		for _, script := range scripts {
 			log.Infof("applying migration script: %s", script)
 			var data []byte
-			data, err = rffs.ReadFile(script)
+			data, err = rffs.ReadFile(fmt.Sprintf("%s/%s", dirname, script))
 			if err != nil {
 				return version, fmt.Errorf("Unable to read migration script %s: %w", script, err)
 			}
