@@ -38,6 +38,9 @@ var errMySQLNoColumn = &mysql.MySQLError{Number: 1054}
 //go:embed mysql-install.sql
 var installScriptMySQL string
 
+//go:embed mysql-convert.sql
+var convertScriptMySQL string
+
 // amdb is the reference to the Amsterdam database.
 var amdb *sqlx.DB
 
@@ -82,6 +85,16 @@ func databaseInstallScript() (string, error) {
 	}
 }
 
+// databaseConvertScript returns the script to convert a Venice database to Amsterdam.
+func databaseConvertScript() (string, error) {
+	switch config.GlobalComputedConfig.DatabaseDriver {
+	case "mysql":
+		return convertScriptMySQL, nil
+	default: // N.B.: Not to be implemented for any database type besides MySQL!
+		return "", fmt.Errorf("No conversion script for database driver: %s", config.GlobalComputedConfig.DatabaseDriver)
+	}
+}
+
 // prepareDB prepares the database if it's not yet been loaded.
 func prepareDB() (string, error) {
 	dsn := buildMysqlDSN(true)
@@ -106,14 +119,20 @@ func prepareDB() (string, error) {
 			if err != nil {
 				return "", fmt.Errorf("Failure of install script: %w", err)
 			}
-			version, err = databaseVersionNumber(db)
+		case classNeedConvert:
+			convertScript, err := databaseConvertScript()
 			if err != nil {
 				return "", err
 			}
-		case classNeedConvert:
-			// TODO
+			_, err = db.Exec(convertScript)
+			if err != nil {
+				return "", fmt.Errorf("Failure of conversion script: %w", err)
+			}
 		}
-		err = nil // if get here, we are OK to go
+		version, err = databaseVersionNumber(db)
+		if err != nil {
+			return "", err
+		}
 	}
 	// TODO: apply migration scripts
 	return version, err

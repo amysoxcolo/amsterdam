@@ -1,6 +1,3 @@
-# MySQL script for migrating a Venice database to the Amsterdam schema.
-# Written by Amy Bowersox <amy@erbosoft.com>
-#---------------------------------------------------------------------------
 # Amsterdam Web Communities System
 # Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
 # 
@@ -10,7 +7,6 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 #
-
 ALTER TABLE globals RENAME COLUMN max_sig_mbr_page TO max_comm_mbr_page;
 ALTER TABLE globals RENAME COLUMN sig_create_lvl TO comm_create_lvl;
 
