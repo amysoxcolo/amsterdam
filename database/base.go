@@ -198,10 +198,12 @@ func prepareDB() (string, error) {
 			if err != nil {
 				return version, fmt.Errorf("Unable to apply migration script %s: %w", script, err)
 			}
-			err = setDatabaseVersionNumber(db, strings.TrimSuffix(script, ".sql"))
+			nv := strings.TrimSuffix(script, ".sql")
+			err = setDatabaseVersionNumber(db, nv)
 			if err != nil {
 				break
 			}
+			version = nv
 		}
 	}
 	return version, err
