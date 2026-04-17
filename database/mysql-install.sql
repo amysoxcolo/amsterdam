@@ -1,8 +1,5 @@
-# MySQL script for initializing the Amsterdam database (contents only).
-# Written by Amy Bowersox <amy@erbosoft.com>
-#---------------------------------------------------------------------------
 # Amsterdam Web Communities System
-# Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+# Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
 # 
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,14 +7,6 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 #
-
-##############################################################################
-# Table Creation
-##############################################################################
-
-# The global parameters table.  This is used for stuff that a Venice admin would be
-# likely to edit "on the fly."  Stuff that can only be updated with a shutdown should go
-# in the XML config file.  This table has ONLY ONE ROW!
 CREATE TABLE globals (
     version CHAR(10) NOT NULL,
     posts_per_page INT NOT NULL,
@@ -30,14 +19,11 @@ CREATE TABLE globals (
     comm_create_lvl INT NOT NULL
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The global properties table.  The "ndx" parameter is used to indicate what
-# element is being loaded, and then the "data" element is parsed.
 CREATE TABLE propglobal (
     ndx INT NOT NULL PRIMARY KEY,
     data VARCHAR(255)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The audit records table.  Most "major" events add a record to this table.
 CREATE TABLE audit (
     record BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     on_date DATETIME NOT NULL,
@@ -53,7 +39,6 @@ CREATE TABLE audit (
     INDEX comm_view (commid, on_date)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The user information table.
 CREATE TABLE users (
     uid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(64) NOT NULL,
@@ -74,15 +59,12 @@ CREATE TABLE users (
     UNIQUE INDEX username_x (username)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# User preferences table.
 CREATE TABLE userprefs (
     uid INT NOT NULL PRIMARY KEY,
     tzid VARCHAR(64) DEFAULT 'UTC',
     localeid VARCHAR(64) DEFAULT 'en_US'
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The per-user properties table.  The "ndx" parameter is used to indicate what
-# element is being loaded, and then the "data" element is parsed.
 CREATE TABLE propuser (
     uid INT NOT NULL,
     ndx INT NOT NULL,
@@ -90,7 +72,6 @@ CREATE TABLE propuser (
     PRIMARY KEY (uid, ndx)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Indicates what the top-level "sidebox" configuration is for any given user.
 CREATE TABLE sideboxes (
     uid INT NOT NULL,
     boxid INT NOT NULL,
@@ -100,7 +81,6 @@ CREATE TABLE sideboxes (
     INDEX inorder (uid, sequence)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The contact information table.  This is used for both users and communities.
 CREATE TABLE contacts (
     contactid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     given_name VARCHAR(64),
@@ -130,14 +110,12 @@ CREATE TABLE contacts (
     lastupdate DATETIME
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# A table listing email addresses which are barred from registering.
 CREATE TABLE emailban (
     address VARCHAR(255) NOT NULL PRIMARY KEY,
     by_uid INT,
     on_date DATETIME
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The community table.
 CREATE TABLE communities (
     commid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     createdate DATETIME NOT NULL,
@@ -168,7 +146,6 @@ CREATE TABLE communities (
     INDEX list_alpha (catid, commname)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table mapping category IDs to category names.
 CREATE TABLE refcategory (
     catid INT NOT NULL PRIMARY KEY,
     parent INT NOT NULL,
@@ -179,14 +156,12 @@ CREATE TABLE refcategory (
     UNIQUE INDEX display (parent, name)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table mapping communities and their associated features.
 CREATE TABLE commftrs (
     commid INT NOT NULL,
     ftr_code SMALLINT NOT NULL,
     PRIMARY KEY (commid, ftr_code)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table mapping members of a community and their access levels.
 CREATE TABLE commmember (
     commid INT NOT NULL,
     uid INT NOT NULL,
@@ -196,7 +171,6 @@ CREATE TABLE commmember (
     PRIMARY KEY (commid, uid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# A table listing users which have been banned from joining a community.
 CREATE TABLE commban (
     commid INT NOT NULL,
     uid INT NOT NULL,
@@ -205,8 +179,6 @@ CREATE TABLE commban (
     PRIMARY KEY (commid, uid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The community properties table.  The "index" parameter is used to indicate what
-# element is being loaded, and then the "data" element is parsed.
 CREATE TABLE propcomm (
     cid INT NOT NULL,
     ndx INT NOT NULL,
@@ -214,8 +186,6 @@ CREATE TABLE propcomm (
     PRIMARY KEY (cid, ndx)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table describing conferences.  Like original CW, confs may be linked to more
-# than one community.
 CREATE TABLE confs (
     confid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     createdate DATETIME NOT NULL,
@@ -235,7 +205,6 @@ CREATE TABLE confs (
     INDEX name_x (name)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table that links communities to conferences.
 CREATE TABLE commtoconf (
     commid INT NOT NULL,
     confid INT NOT NULL,
@@ -246,15 +215,12 @@ CREATE TABLE commtoconf (
     INDEX display_ord (commid, sequence)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table listing "aliases" to a conference for post-linking purposes.
 CREATE TABLE confalias (
     confid INT NOT NULL,
     alias VARCHAR(64) NOT NULL PRIMARY KEY,
     INDEX confid_x (confid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# A "membership" table for conferences used to control access to private conferences
-# and grant conference hosting powers.
 CREATE TABLE confmember (
     confid INT NOT NULL,
     uid INT NOT NULL,
@@ -262,7 +228,6 @@ CREATE TABLE confmember (
     PRIMARY KEY (confid, uid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Holds "saved settings" for a user with respect to a conference.
 CREATE TABLE confsettings (
     confid INT NOT NULL,
     uid INT NOT NULL,
@@ -272,7 +237,6 @@ CREATE TABLE confsettings (
     PRIMARY KEY (confid, uid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The "hot list" of conferences for a given user.
 CREATE TABLE confhotlist (
     uid INT NOT NULL,
     sequence SMALLINT NOT NULL,
@@ -282,8 +246,6 @@ CREATE TABLE confhotlist (
     INDEX inorder (uid, sequence)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The conference properties table.  The "index" parameter is used to indicate what
-# element is being loaded, and then the "data" element is parsed.
 CREATE TABLE propconf (
     confid INT NOT NULL,
     ndx INT NOT NULL,
@@ -291,15 +253,12 @@ CREATE TABLE propconf (
     PRIMARY KEY (confid, ndx)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The conference custom HTML block table.  There are two custom blocks, one at the
-# top of the page, one at the bottom, each a maximum of 64K in length.
 CREATE TABLE confcustom (
     confid INT NOT NULL PRIMARY KEY,
     htmltop TEXT,
     htmlbottom TEXT
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The table describing topics within a conference.
 CREATE TABLE topics (
     topicid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     confid INT NOT NULL,
@@ -317,7 +276,6 @@ CREATE TABLE topics (
     INDEX by_date (confid, lastupdate)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Holds "saved settings" for a user with respect to a topic.
 CREATE TABLE topicsettings (
     topicid INT NOT NULL,
     uid INT NOT NULL,
@@ -329,8 +287,6 @@ CREATE TABLE topicsettings (
     PRIMARY KEY (topicid, uid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The "bozo filter" list for a topic, for use by users in filtering out
-# the rantings of other users who are bozos.
 CREATE TABLE topicbozo (
     topicid INT NOT NULL,
     uid INT NOT NULL,
@@ -338,7 +294,6 @@ CREATE TABLE topicbozo (
     PRIMARY KEY (topicid, uid, bozo_uid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The "header" for a posted message.
 CREATE TABLE posts (
     postid BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     parent BIGINT NOT NULL DEFAULT 0,
@@ -356,14 +311,12 @@ CREATE TABLE posts (
     INDEX child_order (parent, num)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# The actual message text.
 CREATE TABLE postdata (
     postid BIGINT NOT NULL PRIMARY KEY,
     data MEDIUMTEXT,
     FULLTEXT INDEX searchpost (data)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Message attachment.
 CREATE TABLE postattach (
     postid BIGINT NOT NULL PRIMARY KEY,
     datalen INT,
@@ -376,14 +329,12 @@ CREATE TABLE postattach (
     data MEDIUMBLOB
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# "Bookmark" table for posts we like.
 CREATE TABLE postdogear (
     uid INT NOT NULL,
     postid BIGINT NOT NULL,
     PRIMARY KEY (uid, postid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# "Front page" publishing table.
 CREATE TABLE postpublish (
     commid INT NOT NULL,
     postid BIGINT NOT NULL PRIMARY KEY,
@@ -392,7 +343,6 @@ CREATE TABLE postpublish (
     INDEX display_order (on_date, postid)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Advertisement (actually quote, for now) banners
 CREATE TABLE adverts (
     adid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     imagepath VARCHAR(255) NOT NULL,
@@ -401,7 +351,6 @@ CREATE TABLE adverts (
     linkurl VARCHAR(255)    
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Storage space for uploaded images.
 CREATE TABLE imagestore (
     imgid INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     typecode SMALLINT DEFAULT 0,
@@ -411,7 +360,6 @@ CREATE TABLE imagestore (
     data MEDIUMBLOB
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-# Table listing IP addresses that are banned from logging in or registering.
 CREATE TABLE ipban (
     id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     address_lo BIGINT UNSIGNED NOT NULL,
@@ -427,13 +375,7 @@ CREATE TABLE ipban (
     INDEX by_date (block_on)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
-##############################################################################
 # Constant Data Population
-##############################################################################
-
-# Populate the Category table.
-# Source: Mozilla Open Directory Project categorization system <http://dmoz.org>;
-# additional categorization from WebbMe categories
 INSERT INTO refcategory (catid, parent, symlink, name) VALUES
     (0,    -1,  -1, 'Unclassified'),
     (1,    -1,  -1, 'Arts'),
@@ -801,10 +743,8 @@ INSERT INTO refcategory (catid, parent, symlink, name) VALUES
     (15,   -1,  -1, 'System');
 ### -- LAST IS 363 -- ###
 
-# Make sure the special "System" category is hidden.
 UPDATE refcategory SET hide_dir = 1, hide_search = 1 WHERE catid = 15;
 
-# Create the initial advertisements (quotes).
 INSERT INTO adverts (imagepath) VALUES
     ('images/ads/Brown.gif'),
     ('images/ads/Caine.gif'),
@@ -831,22 +771,14 @@ INSERT INTO adverts (imagepath) VALUES
     ('images/ads/wonka.gif'),
     ('images/ads/worf.gif');
 
-##############################################################################
 # Database Initialization
-##############################################################################
-
-# Initialize the system globals table.
 INSERT INTO globals (version, posts_per_page, old_posts_at_top, max_search_page, max_comm_mbr_page, max_conf_mbr_page,
                      fp_posts, num_audit_page, comm_create_lvl)
     VALUES ('2026030501', 20, 2, 20, 50, 50, 10, 100, 1000);
 
-# Initialize the global properies table.
 INSERT INTO propglobal (ndx, data)
     VALUES (0, '');
 
-# Add the 'Anonymous Honyak' user to the users table.
-# (Do 'SELECT * FROM users WHERE is_anon = 1' to retrieve the AC user details.)
-# (UID = 1, CONTACTID = 1)
 INSERT INTO users (uid, username, passhash, contactid, is_anon, verify_email, base_lvl, created)
     VALUES (1, 'Anonymous_Honyak', '', 1, 1, 1, 100, '2000-12-01 00:00:00');
 INSERT INTO userprefs (uid) VALUES (1);
@@ -854,15 +786,11 @@ INSERT INTO propuser (uid, ndx, data) VALUES (1, 0, '');
 INSERT INTO contacts (contactid, given_name, family_name, locality, region, pcode, country, email, owner_uid)
     VALUES (1, 'Anonymous', 'User', 'Anywhere', '', '', 'US', 'nobody@example.com', 1);
 
-# Provide the default view for Anonymous Honyak.  This view will be copied to all
-# new users.
 INSERT INTO sideboxes (uid, boxid, sequence, param)
     VALUES (1, 1, 100, NULL), (1, 2, 200, NULL), (1, 3, 300, NULL);
 INSERT INTO confhotlist (uid, sequence, commid, confid)
     VALUES (1, 100, 2, 2);
 
-# Add the 'Administrator' user to the users table.
-# (UID = 2, CONTACTID = 2)
 INSERT INTO users (uid, username, passhash, contactid, verify_email, base_lvl, created)
     VALUES (2, 'Administrator', '', 2, 1, 64999, '2000-12-01 00:00:00');
 INSERT INTO userprefs (uid) VALUES (2);
@@ -870,35 +798,27 @@ INSERT INTO propuser (uid, ndx, data) VALUES (2, 0, '');
 INSERT INTO contacts (contactid, given_name, family_name, locality, region, pcode, country, email, owner_uid)
     VALUES (2, 'System', 'Administrator', 'Anywhere', '', '', 'US', 'root@your.box.com', 2);
 
-# Create the default view for Administrator.
 INSERT INTO sideboxes (uid, boxid, sequence, param)
     VALUES (2, 1, 100, NULL), (2, 2, 200, NULL), (2, 3, 300, NULL);
 INSERT INTO confhotlist (uid, sequence, commid, confid)
     VALUES (2, 100, 2, 2);
 
-# Add the administration community to the communities table.
-# (COMMID = 1, CONTACTID = 3)
 INSERT INTO communities (commid, createdate, read_lvl, write_lvl, create_lvl, delete_lvl, join_lvl, contactid,
                   host_uid, catid, hide_dir, hide_search, membersonly, is_admin, init_ftr,
 		  commname, language, synopsis, rules, joinkey, alias)
     VALUES (1, '2000-12-01 00:00:00', 63000, 63000, 63000, 65500, 63000, 3, 2, 15, 1, 1, 1, 1, 0,
             'Administration', 'en-US', 'Administrative Community', 'Administrators only!', '',
-	    'Admin');
+    	    'Admin');
 INSERT INTO contacts (contactid, locality, country, owner_uid, owner_commid)
     VALUES (3, 'Anywhere', 'US', 2, 1);
 INSERT INTO propcomm (cid, ndx, data) VALUES (1, 0, '');
 
-# Insert the desired features for the 'Administration' community.
 INSERT INTO commftrs (commid, ftr_code)
     VALUES (1, 0), (1, 1), (1, 2), (1, 3), (1, 4);
 
-# Make the 'Administrator' user the host of the 'Administration' community.  Also, the Administrator
-# cannot unjoin the community.
 INSERT INTO commmember (commid, uid, granted_lvl, locked)
     VALUES (1, 2, 58500, 1);
 
-# Insert the "Administrative Notes" conference into the Administration community.
-# (CONFID = 1)
 INSERT INTO confs (confid, createdate, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl,
                    delete_lvl, top_topic, name, descr)
     VALUES (1, '2000-12-01 00:00:00', 63000, 63000, 63000, 63000, 64999, 64999, 65500, 0,
@@ -907,12 +827,8 @@ INSERT INTO commtoconf (commid, confid, sequence) VALUES (1, 1, 10);
 INSERT INTO confalias (confid, alias) VALUES (1, 'Admin_Notes');
 INSERT INTO propconf (confid, ndx, data) VALUES (1, 0, '');
 
-# Make the Administrator the host-of-record of the "Administrative Notes" conference.
 INSERT INTO confmember (confid, uid, granted_lvl) VALUES (1, 2, 52500);
 
-# Add the 'Coffeehouse' community.  This is the equivalent of the old CommunityWare
-# 'Universal Community.'
-# (COMMID = 2, CONTACTID = 4)
 INSERT INTO communities (commid, createdate, read_lvl, write_lvl, create_lvl, delete_lvl, join_lvl, contactid,
                   host_uid, catid, membersonly, init_ftr, commname, language, synopsis, rules, alias)
     VALUES (2, '2000-12-01 00:00:00', 100, 58000, 58000, 65500, 500, 4, 2, 0, 1, 0, 'Coffeehouse', 'en-US',
@@ -922,22 +838,15 @@ INSERT INTO contacts (contactid, locality, country, owner_uid, owner_commid)
     VALUES (4, 'Anywhere', 'US', 2, 2);
 INSERT INTO propcomm (cid, ndx, data) VALUES (2, 0, '');
 
-# Insert the desired features for Coffeehouse.
 INSERT INTO commftrs (commid, ftr_code)
     VALUES (2, 0), (2, 1), (2, 3), (2, 4);
 
-# Make 'Anonymous Honyak' a member of Coffeehouse.  This is important because new users will
-# have the membership list of Anonymous Honyak copied to their account on signup (but with
-# the 'member' access level).
 INSERT INTO commmember (commid, uid, granted_lvl, locked, hidden)
     VALUES (2, 1, 100, 1, 1);
 
-# Make the 'Administrator' user the host of Coffeehouse.
 INSERT INTO commmember (commid, uid, granted_lvl, locked)
     VALUES (2, 2, 58500, 1);
 
-# Insert the "General Discussion" conference into Coffeehouse.
-# (CONFID = 2)
 INSERT INTO confs (confid, createdate, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl,
                    delete_lvl, top_topic, name, descr)
     VALUES (2, '2000-12-01 00:00:00', 6500, 6500, 6500, 52500, 52500, 52500, 58000, 0, 'General Discussion',
@@ -946,11 +855,8 @@ INSERT INTO commtoconf (commid, confid, sequence) VALUES (2, 2, 10);
 INSERT INTO confalias (confid, alias) VALUES (2, 'General');
 INSERT INTO propconf (confid, ndx, data) VALUES (2, 0, '');
 
-# Make the Administrator the host-of-record of the "General Discussion" conference.
 INSERT INTO confmember (confid, uid, granted_lvl) VALUES (2, 2, 52500);
 
-# Insert the "Test Postings" conference into Coffeehouse.
-# (CONFID = 3)
 INSERT INTO confs (confid, createdate, read_lvl, post_lvl, create_lvl, hide_lvl, nuke_lvl, change_lvl,
                    delete_lvl, top_topic, name, descr)
     VALUES (3, '2000-12-01 00:00:00', 6500, 6500, 6500, 52500, 52500, 52500, 58000, 0, 'Test Postings',
@@ -959,5 +865,4 @@ INSERT INTO commtoconf (commid, confid, sequence) VALUES (2, 3, 20);
 INSERT INTO confalias (confid, alias) VALUES (3, 'Test');
 INSERT INTO propconf (confid, ndx, data) VALUES (3, 0, '');
 
-# Make the Administrator the host-of-record of the "Test Postings" conference.
 INSERT INTO confmember (confid, uid, granted_lvl) VALUES (3, 2, 52500);

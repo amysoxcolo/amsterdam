@@ -12,13 +12,23 @@
             "program": "${workspaceFolder}"
         },
         {
+            "name": "Blank Test",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "env": {
+                "AMSTERDAM_DATABASE_NAME": "blank"
+            }
+        },
+        {
             "name": "EMinds Reborn",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
             "env": {
-                "AMSTERDAM_CONFIG": "/u01/home/amy/Erbosoft/emreborn/amsterdam.yaml"
+                "AMSTERDAM_CONFIG": "${env:HOME}/Erbosoft/emreborn/amsterdam.yaml"
             }
         },
     ]
