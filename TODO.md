@@ -14,9 +14,9 @@ After the point where it reaches feature parity with Venice circa 2006.
 
 ## Immediate Cleanups Required
 
-* A better way to set up the database than `setup/database.sql`. Bring the table setup into the application somehow.
-  The [migrate](https://github.com/golang-migrate/migrate) library might be of use here.
-* Database format migrations.
+* <s>A better way to set up the database than `setup/database.sql`. Bring the table setup into the application somehow.
+  The [migrate](https://github.com/golang-migrate/migrate) library might be of use here.</s>
+* ~~Database format migrations.~~
 * Allow use of Postgres as a database.
 * Dockerization.
 * Implement proper help and online documentation.

@@ -114,14 +114,9 @@ in your `PATH`. Then run `go generate` to regenerate the CSS file before you run
 
 ## Installing Amsterdam
 
-You will need a MySQL database to store Amsterdam data. Create a new empty database, then, from the command line, use the command:
+You will need a MySQL database to store Amsterdam data. Create a new empty database.
 
-> `mysql -u root -p _databasename_ \< setup/mysql-database.sql`
-
-(Replace _databasename_ with the name of your database. If you use a user other than `root` for administrative access to your
-MySQL server, use that.)
-
-Ensure a user in your database is granted SELECT, INSERT, UPDATE, and DELETE privileges to all tables in your new database.
+Ensure a user in your database is granted all privileges to all tables in your new database.
 This is the user that you will configure Amsterdam to use.
 
 The database may be specified to Amsterdam with the following command line options or environment variables:
@@ -132,6 +127,8 @@ The database may be specified to Amsterdam with the following command line optio
 * Database name: Command line options `-d` or `--database-name`, or environment variable `AMSTERDAM_DATABASE_NAME`
 
 All these options may also be specified via the configuration file (see below).
+
+The first time you execute Amsterdam, the necessary database tables will be created and populated.
 
 Amsterdam also requires access to a local SMTP server, as it sends out E-mail messages such as account verification,
 password reminders, subscribed posts, and messages from conference or community hosts.  It may be specified to Amsterdam
