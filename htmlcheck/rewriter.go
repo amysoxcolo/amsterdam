@@ -127,6 +127,7 @@ func buildPostLink(decoded, context *database.PostLinkData) string {
 		b.WriteString(context.Conference)
 	} else {
 		b.WriteString(decoded.Conference)
+		started = true
 	}
 	b.WriteString(".")
 	if decoded.Topic == -1 {
@@ -168,6 +169,7 @@ func (rw *postLinkRewriter) Rewrite(ctx context.Context, data string, svc rewrit
 	if err != nil {
 		return nil
 	}
+	mydata.CommId = ctxt.CommId
 	err = mydata.VerifyNames(ctx)
 	if err != nil {
 		return nil

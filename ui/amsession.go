@@ -342,7 +342,6 @@ func (st *amSessionStore) SessionInfo() (int, []string, int) {
 func (st *amSessionStore) sweep(tick <-chan time.Time, done chan bool) {
 	for range tick {
 		if st.sweepRunning.Load() {
-			log.Infof("session sweep running")
 			// phase 1 - identify expired sessions
 			st.mutex.RLock()
 			zap := make([]string, 0, len(st.sessions))
@@ -353,7 +352,9 @@ func (st *amSessionStore) sweep(tick <-chan time.Time, done chan bool) {
 				}
 			}
 			st.mutex.RUnlock()
-			log.Infof("identified %d sessions to zap", len(zap))
+			if len(zap) > 0 {
+				log.Infof("identified %d sessions to zap", len(zap))
+			}
 
 			// phase 2 - get rid of the expired sessions
 			for _, k := range zap {
