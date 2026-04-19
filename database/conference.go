@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -184,6 +185,7 @@ func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *
 		return err
 	}
 
+	conferenceAliasMap.Store(confAliasMapKey(comm.Id, alias), c.ConfId)
 	AmStoreAudit(AmNewCommAudit(AuditConferenceAlias, u.Uid, comm.Id, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("add=%s", alias)))
 	return nil
 }
@@ -219,6 +221,7 @@ func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, com
 		return errors.New("alias not found")
 	}
 
+	conferenceAliasMap.Delete(confAliasMapKey(comm.Id, alias))
 	AmStoreAudit(AmNewCommAudit(AuditConferenceAlias, u.Uid, comm.Id, ipaddr, fmt.Sprintf("conf=%d", c.ConfId), fmt.Sprintf("remove=%s", alias)))
 	return nil
 }
@@ -899,6 +902,9 @@ func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipadd
 		// kick the conference out of the cache
 		conferenceCache.Remove(c.ConfId)
 
+		// simpler to just nuke the entire alias map
+		conferenceAliasMap.Clear()
+
 		// add an audit record
 		AmStoreAudit(AmNewCommAudit(AuditConferenceDelete, u.Uid, comm.Id, ipaddr, fmt.Sprintf("confid=%d", c.ConfId)))
 
@@ -971,7 +977,8 @@ func (*conferenceServiceVTable) OnDeleteCommunity(ctx context.Context, tx *sqlx.
 		getConferenceMutex.Unlock()
 	}
 
-	// Just dump the whole conference property cache.
+	// Just dump the whole conference alias map and property cache.
+	conferenceAliasMap.Clear()
 	getConferencePropMutex.Lock()
 	conferencePropCache.Purge()
 	getConferencePropMutex.Unlock()
@@ -1028,9 +1035,19 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
 	return nil, err
 }
 
+// confAliasMapKey creates the key for the conference alias map.
+func confAliasMapKey(commid int32, alias string) string {
+	var b strings.Builder
+	b.WriteString(strconv.FormatInt(int64(commid), 10))
+	b.WriteByte(byte(':'))
+	b.WriteString(alias)
+	return b.String()
+}
+
 /* AmGetConferenceByAlias returns a conference given its alias.
  * Parameters:
  *     ctx - Standard Go context value.
+ *.    commid - Community ID to look under.
  *     alias - The alias to look up.
  * Returns:
  *     Pointer to the conference, or nil.
@@ -1038,7 +1055,8 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
  */
 func AmGetConferenceByAlias(ctx context.Context, commid int32, alias string) (*Conference, error) {
 	var confid int32
-	xconf, ok := conferenceAliasMap.Load(alias)
+	key := confAliasMapKey(commid, alias)
+	xconf, ok := conferenceAliasMap.Load(key)
 	if ok {
 		confid = xconf.(int32)
 	} else {
@@ -1048,7 +1066,7 @@ func AmGetConferenceByAlias(ctx context.Context, commid int32, alias string) (*C
 		} else if err != nil {
 			return nil, err
 		}
-		conferenceAliasMap.Store(alias, confid)
+		conferenceAliasMap.Store(key, confid)
 	}
 	return AmGetConference(ctx, confid)
 }
@@ -1070,27 +1088,6 @@ func AmGetConferenceContainingPost(ctx context.Context, postId int64) (*Conferen
 		return nil, err
 	}
 	return AmGetConference(ctx, confId)
-}
-
-/* AmGetConferenceByAliasInCommunity returns a conference in a community given its alias.
- * Parameters:
- *     ctx - Standard Go context value.
- *     cid - The community to look inside.
- *     alias - The alias to look up.
- * Returns:
- *     Pointer to the conference, or nil.
- *     Standard Go error status.
- */
-func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias string) (*Conference, error) {
-	var confid int32
-	err := amdb.GetContext(ctx, &confid, `SELECT confid FROM confalias WHERE commid = ? AND alias = ?`, cid, alias)
-	switch err {
-	case nil:
-		return AmGetConference(ctx, confid)
-	case sql.ErrNoRows:
-		return nil, errors.New("conference not found")
-	}
-	return nil, err
 }
 
 /* AmListConferences returns all conferences for a given community.
@@ -1327,6 +1324,7 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 
 	// Add the new conference to the cache.
 	conferenceCache.Add(rc.ConfId, &rc)
+	conferenceAliasMap.Store(confAliasMapKey(comm.Id, alias), rc.ConfId)
 
 	// Set the "pictures in posts" flag for the conference from the community default.
 	fcomm, err := comm.Flags(ctx)

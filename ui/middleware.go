@@ -113,7 +113,7 @@ func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
 func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
-		conf, err := database.AmGetConferenceByAliasInCommunity(ctxt.Ctx(), ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
+		conf, err := database.AmGetConferenceByAlias(ctxt.Ctx(), ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
 		if err != nil {
 			return AmSendPageData(c, ctxt, "error", err)
 		}
