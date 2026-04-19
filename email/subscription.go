@@ -88,7 +88,7 @@ func AmDeliverSubscription(ctx context.Context, comm *database.Community, conf *
 	vars.Set("communityName", comm.Name)
 	vars.Set("conferenceName", conf.Name)
 	vars.Set("topicName", topic.Name)
-	pl := database.AmCreatePostLinkContext(comm.Alias, confAlias, topic.Number)
+	pl := database.AmCreatePostLinkContext(comm.Alias, comm.Id, confAlias, topic.Number)
 	vars.Set("topicLink", pl.AsString())
 	vars.Set("pseud", realPseud)
 	vars.Set("text", realText)

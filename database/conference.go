@@ -152,8 +152,8 @@ func (cs *ConferenceSettings) Save(ctx context.Context) error {
 }
 
 // Aliases returns the list of aliases for this conference.
-func (c *Conference) Aliases(ctx context.Context) ([]string, error) {
-	rs, err := amdb.QueryContext(ctx, "SELECT alias FROM confalias WHERE confid = ? ORDER BY alias", c.ConfId)
+func (c *Conference) Aliases(ctx context.Context, commid int32) ([]string, error) {
+	rs, err := amdb.QueryContext(ctx, "SELECT alias FROM confalias WHERE commid = ? AND confid = ? ORDER BY alias", commid, c.ConfId)
 	if err != nil {
 		return nil, err
 	}
@@ -169,22 +169,18 @@ func (c *Conference) Aliases(ctx context.Context) ([]string, error) {
 	return rc, nil
 }
 
-// AliasesQ returns the list of aliases for this conference, quietly.
-func (c *Conference) AliasesQ(ctx context.Context) []string {
-	rc, _ := c.Aliases(ctx)
-	return rc
-}
-
 // AddAlias adds an alias to the conference.
 func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *Community, ipaddr string) error {
 	tmp := ""
-	if err := amdb.GetContext(ctx, &tmp, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias); err != sql.ErrNoRows {
+	if err := amdb.GetContext(ctx, &tmp, "SELECT alias FROM confalias WHERE commid = ? AND confid = ? AND alias = ?",
+		comm.Id, c.ConfId, alias); err != sql.ErrNoRows {
 		if err == nil {
 			return fmt.Errorf("the alias '%s' is already in use by another conference", alias)
 		}
 		return err
 	}
-	if _, err := amdb.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", c.ConfId, alias); err != nil {
+	if _, err := amdb.ExecContext(ctx, "INSERT INTO confalias (commid, confid, alias) VALUES (?, ?)",
+		comm.Id, c.ConfId, alias); err != nil {
 		return err
 	}
 
@@ -195,13 +191,15 @@ func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *
 // RemoveAlias removes an alias from the conference.
 func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, comm *Community, ipaddr string) error {
 	aliasCount := 0
-	if err := amdb.GetContext(ctx, &aliasCount, "SELECT COUNT(*) FROM confalias WHERE confid = ?", c.ConfId); err != nil {
+	if err := amdb.GetContext(ctx, &aliasCount, "SELECT COUNT(*) FROM confalias WHERE commid = ? AND confid = ?",
+		comm.Id, c.ConfId); err != nil {
 		return err
 	}
 
 	if aliasCount == 1 {
 		tmp := ""
-		err := amdb.GetContext(ctx, &tmp, "SELECT alias FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
+		err := amdb.GetContext(ctx, &tmp, "SELECT alias FROM confalias WHERE commid = ? AND confid = ? AND alias = ?",
+			comm.Id, c.ConfId, alias)
 		if err == nil {
 			return errors.New("the conference must have at least one alias")
 		} else if err != sql.ErrNoRows {
@@ -209,7 +207,7 @@ func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, com
 		}
 	}
 
-	rs, err := amdb.ExecContext(ctx, "DELETE FROM confalias WHERE confid = ? AND alias = ?", c.ConfId, alias)
+	rs, err := amdb.ExecContext(ctx, "DELETE FROM confalias WHERE commid = ? confid = ? AND alias = ?", comm.Id, c.ConfId, alias)
 	if err != nil {
 		return err
 	}
@@ -431,8 +429,8 @@ func (c *Conference) Settings(ctx context.Context, u *User) (*ConferenceSettings
 }
 
 // Link returns a link string to this conference.
-func (c *Conference) Link(ctx context.Context, scope string) (string, error) {
-	aliases, err := c.Aliases(ctx)
+func (c *Conference) Link(ctx context.Context, commid int32, scope string) (string, error) {
+	aliases, err := c.Aliases(ctx, commid)
 	if err != nil {
 		return "", err
 	}
@@ -440,9 +438,9 @@ func (c *Conference) Link(ctx context.Context, scope string) (string, error) {
 		return fmt.Sprintf("%s.", aliases[0]), nil
 	}
 	if scope == "global" {
-		comms, err := c.ContainedBy(ctx)
+		comm, err := AmGetCommunity(ctx, commid)
 		if err == nil {
-			return fmt.Sprintf("%s!%s", comms[0].Alias, aliases[0]), nil
+			return fmt.Sprintf("%s!%s", comm.Alias, aliases[0]), nil
 		}
 		return "", err
 	}
@@ -872,22 +870,22 @@ func (c *Conference) Delete(ctx context.Context, comm *Community, u *User, ipadd
 
 	// any references to conference other than this community?
 	refCount := 0
-	if err := tx.GetContext(ctx, &refCount, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", c.ConfId, comm.Id); err != nil {
+	err := tx.GetContext(ctx, &refCount, "SELECT COUNT(*) FROM commtoconf WHERE confid = ? AND commid <> ?", c.ConfId, comm.Id)
+	if err != nil {
 		return err
 	}
 
 	// break the link with the community
-	if _, err := tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId); err != nil {
+	if _, err = tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", comm.Id, c.ConfId); err == nil {
+		_, err = tx.ExecContext(ctx, "DELETE FROM confalias WHERE commid = ? AND confid = ?", comm.Id, c.ConfId)
+	}
+	if err != nil {
 		return err
 	}
 
-	var err error
 	if refCount == 0 {
 		// We have to delete all the conference core data now.
 		_, err = tx.ExecContext(ctx, "DELETE FROM confs WHERE confid = ?", c.ConfId)
-		if err == nil {
-			_, err = tx.ExecContext(ctx, "DELETE FROM confalias WHERE confid = ?", c.ConfId)
-		}
 	}
 	if err != nil {
 		return err
@@ -1038,13 +1036,13 @@ func AmGetConference(ctx context.Context, id int32) (*Conference, error) {
  *     Pointer to the conference, or nil.
  *     Standard Go error status.
  */
-func AmGetConferenceByAlias(ctx context.Context, alias string) (*Conference, error) {
+func AmGetConferenceByAlias(ctx context.Context, commid int32, alias string) (*Conference, error) {
 	var confid int32
 	xconf, ok := conferenceAliasMap.Load(alias)
 	if ok {
 		confid = xconf.(int32)
 	} else {
-		err := amdb.GetContext(ctx, &confid, "SELECT confid FROM confalias WHERE alias = ?", alias)
+		err := amdb.GetContext(ctx, &confid, "SELECT confid FROM confalias WHERE commid = ? AND alias = ?", commid, alias)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("alias not found: %s", alias)
 		} else if err != nil {
@@ -1085,8 +1083,7 @@ func AmGetConferenceContainingPost(ctx context.Context, postId int64) (*Conferen
  */
 func AmGetConferenceByAliasInCommunity(ctx context.Context, cid int32, alias string) (*Conference, error) {
 	var confid int32
-	err := amdb.GetContext(ctx, &confid, `SELECT c.confid FROM commtoconf c, confalias a WHERE c.confid = a.confid
-		AND c.commid = ? AND a.alias = ?`, cid, alias)
+	err := amdb.GetContext(ctx, &confid, `SELECT confid FROM confalias WHERE commid = ? AND alias = ?`, cid, alias)
 	switch err {
 	case nil:
 		return AmGetConference(ctx, confid)
@@ -1125,7 +1122,7 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 		}
 	}
 	for i := range rc {
-		err := amdb.GetContext(ctx, &(rc[i].Alias), "SELECT alias FROM confalias WHERE confid = ?", rc[i].ConfId)
+		err := amdb.GetContext(ctx, &(rc[i].Alias), "SELECT alias FROM confalias WHERE commid = ? AND confid = ?", cid, rc[i].ConfId)
 		if err != nil {
 			return nil, err
 		}
@@ -1271,7 +1268,7 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 
 	// Ensure the alias is not in use.
 	var tmp int32
-	err := tx.GetContext(ctx, &tmp, "SELECT confid FROM confalias WHERE alias = ?", alias)
+	err := tx.GetContext(ctx, &tmp, "SELECT confid FROM confalias WHERE commid = ? AND alias = ?", comm.Id, alias)
 	if err == nil {
 		return nil, fmt.Errorf("the alias '%s' is already in use by a different conference", alias)
 	} else if err != sql.ErrNoRows {
@@ -1295,7 +1292,8 @@ func AmCreateConference(ctx context.Context, comm *Community, name, alias, descr
 	}
 
 	// Attach the alias to the conference.
-	if _, err = tx.ExecContext(ctx, "INSERT INTO confalias (confid, alias) VALUES (?, ?)", rc.ConfId, alias); err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO confalias (commid, confid, alias) VALUES (?, ?, ?)",
+		comm.Id, rc.ConfId, alias); err != nil {
 		return nil, err
 	}
 

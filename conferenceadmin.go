@@ -159,7 +159,7 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any) {
 		}
 	}
 
-	aliases, err := conf.Aliases(ctxt.Ctx())
+	aliases, err := conf.Aliases(ctxt.Ctx(), comm.Id)
 	if err != nil {
 		return "error", err
 	}
@@ -206,7 +206,7 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("errorMessage", err.Error())
 	}
 
-	aliases, err := conf.Aliases(ctxt.Ctx())
+	aliases, err := conf.Aliases(ctxt.Ctx(), comm.Id)
 	if err != nil {
 		return "error", err
 	}

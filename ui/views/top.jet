@@ -33,7 +33,7 @@
                 {{ user = post_getUserName(p, .) }}
                 {{ text = post_getText(p, .) }}
                 {{ topic = post_topic(p, .) }}
-                {{ link = post_topicLink(topic, .) }}
+                {{ link = post_topicLink(topic, comms[i], .) }}
                 <div class="text-black text-sm">
                     <div class="mb-2">
                         <strong>{{ p.Pseud | raw }}</strong>

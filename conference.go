@@ -247,7 +247,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), conf.TopTopic+1))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, comm.Id, ctxt.GetScratch("currentAlias").(string), conf.TopTopic+1))
 		checker.Append(postdata)
 		checker.Finish()
 		v, _ = checker.Value()
@@ -282,7 +282,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), conf.TopTopic+1))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, comm.Id, ctxt.GetScratch("currentAlias").(string), conf.TopTopic+1))
 		checker.Append(ctxt.FormField("pb"))
 		checker.Finish()
 		zeroPost, _ := checker.Value()
@@ -560,7 +560,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	summaryLine := fmt.Sprintf("%d Total; %d New; Last: %s", topic.TopMessage+1, topic.TopMessage-lastRead, prefs.Localizer().Strftime("%b %e, %Y %r", topic.LastUpdate))
 	ctxt.VarMap().Set("summaryLine", flags.String()+summaryLine)
 	ctxt.SetFrameTitle(fmt.Sprintf("%s: %s%s", topic.Name, flags.String(), summaryLine))
-	plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
+	plc := database.AmCreatePostLinkContext("", comm.Id, ctxt.GetScratch("currentAlias").(string), topic.Number)
 	ctxt.VarMap().Set("post_confRef", plc.AsString())
 	plc.Community = comm.Alias
 	ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
@@ -734,7 +734,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
+		checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, comm.Id, ctxt.GetScratch("currentAlias").(string), topic.Number))
 		checker.Append(postdata)
 		checker.Finish()
 		v, _ = checker.Value()
@@ -772,7 +772,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 			return "error", err
 		}
 
-		plc := database.AmCreatePostLinkContext("", ctxt.GetScratch("currentAlias").(string), topic.Number)
+		plc := database.AmCreatePostLinkContext("", comm.Id, ctxt.GetScratch("currentAlias").(string), topic.Number)
 		ctxt.VarMap().Set("post_confRef", plc.AsString())
 		plc.Community = comm.Alias
 		ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
@@ -805,7 +805,8 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, ctxt.GetScratch("currentAlias").(string), topic.Number))
+	checker.SetContext("PostLinkDecoderContext", database.AmCreatePostLinkContext(comm.Alias, comm.Id,
+		ctxt.GetScratch("currentAlias").(string), topic.Number))
 	checker.Append(ctxt.FormField("pb"))
 	checker.Finish()
 	postText, _ := checker.Value()

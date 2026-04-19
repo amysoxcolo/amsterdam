@@ -470,7 +470,7 @@ func NukeMessage(ctxt ui.AmContext) (string, any) {
 	}
 
 	// Set up to display the message box.
-	link, err := hdrs[0].Link(ctxt.Ctx(), "community")
+	link, err := hdrs[0].Link(ctxt.Ctx(), ctxt.CurrentCommunity().Id, "community")
 	if err != nil {
 		return "error", err
 	}
@@ -528,7 +528,7 @@ func PruneMessageAttachment(ctxt ui.AmContext) (string, any) {
 	}
 
 	// Set up to display the message box.
-	link, err := hdrs[0].Link(ctxt.Ctx(), "community")
+	link, err := hdrs[0].Link(ctxt.Ctx(), ctxt.CurrentCommunity().Id, "community")
 	if err != nil {
 		return "error", err
 	}

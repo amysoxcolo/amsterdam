@@ -253,7 +253,7 @@ func (p *PostHeader) Text(ctx context.Context) (string, error) {
 }
 
 // Link returns a link string to this post.
-func (p *PostHeader) Link(ctx context.Context, scope string) (string, error) {
+func (p *PostHeader) Link(ctx context.Context, commid int32, scope string) (string, error) {
 	if scope == "topic" {
 		return fmt.Sprintf("%d", p.Num), nil
 	}
@@ -262,7 +262,7 @@ func (p *PostHeader) Link(ctx context.Context, scope string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		parent, err := topic.Link(ctx, scope)
+		parent, err := topic.Link(ctx, commid, scope)
 		if err != nil {
 			return "", err
 		}
@@ -628,47 +628,55 @@ func AmNewPost(ctx context.Context, conf *Conference, topic *Topic, user *User, 
  *     Array of post headers, or nil.
  *     Standard Go error status.
  */
-func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, error) {
+func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, []*Community, error) {
 	// Read the globals.
 	gv, err := AmGlobals(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Read the published posts.
-	rs, err := amdb.QueryContext(ctx, "SELECT postid FROM postpublish ORDER BY on_date DESC")
+	rs, err := amdb.QueryContext(ctx, "SELECT commid, postid FROM postpublish ORDER BY on_date DESC")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Extract post IDs to an array.
+	cids := make([]int32, gv.FrontPagePosts)
 	pids := make([]int64, gv.FrontPagePosts)
 	i := 0
 	for i < int(gv.FrontPagePosts) && rs.Next() {
-		if err = rs.Scan(&(pids[i])); err != nil {
-			return nil, err
+		if err = rs.Scan(&(cids[i]), &(pids[i])); err != nil {
+			return nil, nil, err
 		}
 		i++
 	}
 	if i == 0 { // no published posts, short-circuit response
-		return make([]*PostHeader, 0), nil
+		return make([]*PostHeader, 0), make([]*Community, 0), nil
 	}
 	if i < int(gv.FrontPagePosts) {
+		cids = cids[:i]
 		pids = pids[:i] // truncate if we have fewer posts than spaces
+	}
+
+	// Build the communities return array.
+	comms := make([]*Community, len(cids))
+	for i, cid := range cids {
+		comms[i], _ = AmGetCommunity(ctx, cid)
 	}
 
 	// Use the post IDs to build a SQL statement.
 	query, args, err := sqlx.In("SELECT * FROM posts WHERE postid IN (?)", pids)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	query = amdb.Rebind(query)
 
 	// Use the SQL to read in all the post headers using a single database query.
 	var data []PostHeader
 	if err = amdb.SelectContext(ctx, &data, query, args...); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(data) < len(pids) {
-		return nil, errors.New("internal error reading post headers")
+		return nil, nil, errors.New("internal error reading post headers")
 	}
 
 	// Build the return array by making sure we point to the post headers in the same order the post IDs were returned.
@@ -683,10 +691,10 @@ func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, error) {
 		}
 	}
 	if q < len(pids) {
-		return nil, errors.New("internal error generating output")
+		return nil, nil, errors.New("internal error generating output")
 	}
 
-	return rc, nil
+	return rc, comms, nil
 }
 
 type PostSearchResult struct {
@@ -898,13 +906,13 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 		if err != nil {
 			return nil, count, err
 		}
-		alias, err := conf.Aliases(ctx)
+		alias, err := conf.Aliases(ctx, commid)
 		if err != nil {
 			return nil, count, err
 		}
 
 		// Build the post link.
-		plink := AmCreatePostLinkContext(commAlias, alias[0], topicNum)
+		plink := AmCreatePostLinkContext(commAlias, commid, alias[0], topicNum)
 		plink.FirstPost = postnum
 		plink.LastPost = postnum
 		rc[i].PostLink = plink.AsString()

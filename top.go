@@ -93,7 +93,7 @@ func renderSBConferences(ctx context.Context, u *database.User, sb *DisplaySideb
 			return err
 		}
 		var a []string
-		if a, err = conf[i].Aliases(ctx); err != nil {
+		if a, err = conf[i].Aliases(ctx, comm[i].Id); err != nil {
 			return err
 		}
 		alias[i] = a[0]
@@ -176,9 +176,10 @@ func templateGetTopic(args jet.Arguments) reflect.Value {
 
 // templateTopicLink returns the link string for the given topic.
 func templateTopicLink(args jet.Arguments) reflect.Value {
-	topic := args.Get(0).Convert(reflect.TypeFor[*database.Topic]()).Interface().(*database.Topic)
-	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
-	link, _ := topic.Link(ctxt.Ctx(), "global")
+	comm := args.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
+	topic := args.Get(1).Convert(reflect.TypeFor[*database.Topic]()).Interface().(*database.Topic)
+	ctxt := args.Get(2).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	link, _ := topic.Link(ctxt.Ctx(), comm.Id, "global")
 	return reflect.ValueOf(link)
 }
 
@@ -194,12 +195,13 @@ func TopPage(ctxt ui.AmContext) (string, any) {
 	ctxt.SetFrameTitle("My Front Page")
 
 	// Retrieve the published posts.
-	hdrs, err := database.AmGetPublishedPosts(ctxt.Ctx())
+	hdrs, comms, err := database.AmGetPublishedPosts(ctxt.Ctx())
 	if err != nil {
 		return "error", err
 	}
 
 	ctxt.VarMap().Set("posts", hdrs)
+	ctxt.VarMap().Set("comms", comms)
 	ctxt.VarMap().SetFunc("post_getText", templatePostText)
 	ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 	ctxt.VarMap().SetFunc("post_topic", templateGetTopic)

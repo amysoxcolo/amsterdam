@@ -43,7 +43,7 @@ type Topic struct {
 }
 
 // Link returns a link string to this topic.
-func (t *Topic) Link(ctx context.Context, scope string) (string, error) {
+func (t *Topic) Link(ctx context.Context, commid int32, scope string) (string, error) {
 	if scope == "conference" {
 		return fmt.Sprintf("%d.", t.Number), nil
 	}
@@ -51,7 +51,7 @@ func (t *Topic) Link(ctx context.Context, scope string) (string, error) {
 		conf, err := AmGetConference(ctx, t.ConfId)
 		if err == nil {
 			var plink string
-			plink, err = conf.Link(ctx, scope)
+			plink, err = conf.Link(ctx, commid, scope)
 			if err == nil {
 				if strings.HasSuffix(plink, ".") {
 					return fmt.Sprintf("%s%d", plink, t.Number), nil

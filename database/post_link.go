@@ -23,6 +23,7 @@ import (
 // PostLinkData is the structure holding the decoded parts of the post link.
 type PostLinkData struct {
 	Community  string
+	CommId     int32
 	Conference string
 	Topic      int16
 	FirstPost  int32
@@ -36,6 +37,7 @@ func (d *PostLinkData) NeedsDBVerification() bool {
 
 // VerifyNames verifies the post link data against the database.
 func (d *PostLinkData) VerifyNames(ctx context.Context) error {
+	commid := d.CommId
 	if d.Community != "" {
 		comm, err := AmGetCommunityByAlias(ctx, d.Community)
 		if err != nil {
@@ -44,9 +46,10 @@ func (d *PostLinkData) VerifyNames(ctx context.Context) error {
 		if comm == nil {
 			return errors.New("community alias not found")
 		}
+		commid = comm.Id
 	}
 	if d.Conference != "" {
-		conf, err := AmGetConferenceByAlias(ctx, d.Conference)
+		conf, err := AmGetConferenceByAlias(ctx, commid, d.Conference)
 		if err != nil {
 			return err
 		}
@@ -392,9 +395,10 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 	return &rc, nil
 }
 
-func AmCreatePostLinkContext(community string, conference string, topic int16) *PostLinkData {
+func AmCreatePostLinkContext(community string, commid int32, conference string, topic int16) *PostLinkData {
 	return &PostLinkData{
 		Community:  community,
+		CommId:     commid,
 		Conference: conference,
 		Topic:      topic,
 		FirstPost:  -1,
