@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
@@ -82,6 +83,10 @@ func SetCommunity(next echo.HandlerFunc) echo.HandlerFunc {
 		if err != nil {
 			return AmSendPageData(c, ctxt, "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err))
 		}
+		var b strings.Builder
+		b.WriteString("/comm/")
+		b.WriteString(ctxt.CurrentCommunity().Alias)
+		ctxt.SetScratch("CommunityLink", b.String())
 		ctxt.SetLeftMenu("community")
 		return next(c)
 	}
@@ -128,6 +133,11 @@ func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 		ctxt.SetScratch("currentConference", conf)
 		ctxt.SetScratch("currentAlias", ctxt.URLParam("confid"))
 		ctxt.SetScratch("levelInConference", myLevel)
+		var b strings.Builder
+		b.WriteString(ctxt.GetScratch("CommunityLink").(string))
+		b.WriteString("/conf/")
+		b.WriteString(ctxt.URLParam("confid"))
+		ctxt.SetScratch("ConferenceLink", b.String())
 		return next(c)
 	}
 }

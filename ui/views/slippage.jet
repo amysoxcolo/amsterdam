@@ -32,8 +32,8 @@
                 {{ post_cur = p }}
                 {{ post_userName = post_getUserName(p, .) }}
                 {{ post_text = post_getText(p, .) }}
-                {{ post_overrideLine = post_getOverrideLine(p, .) }}
-                {{ post_overrideLink = post_getOverrideLink(p, post_topicPermalink) }}
+                {{ post_overrideLine = post_getOverrideLine(p, true, .) }}
+                {{ post_overrideLink = post_getOverrideLink(p, true, post_topicLink) }}
                 {{ post_attach = post_getAttachmentInfo(p, .) }}
                 {{ post_bozo = post_isBozo(p, post_topic, .) }}
                 {{ include "singlepost.jet" }}

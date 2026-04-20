@@ -385,7 +385,8 @@ func templatePostText(args jet.Arguments) reflect.Value {
 // templateOverrideLine creates the "override line" for a post, that is, what gets displayed in place of the post text.
 func templateOverrideLine(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
-	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
+	advanced := args.Get(1).Convert(reflect.TypeFor[bool]()).Bool()
+	ctxt := args.Get(2).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
 	rc := ""
 	if post.IsScribbled() {
 		scr_date := ""
@@ -402,7 +403,7 @@ func templateOverrideLine(args jet.Arguments) reflect.Value {
 		} else {
 			rc = fmt.Sprintf("<<<%v>>>", err)
 		}
-	} else if post.Hidden {
+	} else if post.Hidden && !advanced {
 		rc = fmt.Sprintf("(Hidden Message: %d Lines)", *post.LineCount)
 	}
 	return reflect.ValueOf(rc)
@@ -411,9 +412,10 @@ func templateOverrideLine(args jet.Arguments) reflect.Value {
 // templateOverrideLink creates the "override link" for a post, which can make the override line a hyperlink.
 func templateOverrideLink(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
-	root := args.Get(1).Convert(reflect.TypeFor[string]()).String()
+	advanced := args.Get(1).Convert(reflect.TypeFor[bool]()).Bool()
+	root := args.Get(2).Convert(reflect.TypeFor[string]()).String()
 	rc := ""
-	if post.Hidden {
+	if post.Hidden && !advanced {
 		rc = fmt.Sprintf("%s?r=%d&ac=1", root, post.Num)
 	}
 	return reflect.ValueOf(rc)
@@ -564,6 +566,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("post_confRef", plc.AsString())
 	plc.Community = comm.Alias
 	ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
+	ctxt.VarMap().Set("post_topicLink", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
 	plc.FirstPost = postRange[0]
 	plc.LastPost = postRange[1]
 	ctxt.VarMap().Set("postsPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
@@ -776,6 +779,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("post_confRef", plc.AsString())
 		plc.Community = comm.Alias
 		ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
+		ctxt.VarMap().Set("post_topicLink", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
 
 		ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
 		ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
