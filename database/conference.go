@@ -959,16 +959,15 @@ func (*conferenceServiceVTable) OnDeleteCommunity(ctx context.Context, tx *sqlx.
 		if _, err = tx.ExecContext(ctx, "DELETE FROM commtoconf WHERE commid = ? AND confid = ?", commid, confid); err != nil {
 			return err
 		}
+		if _, err = tx.ExecContext(ctx, "DELETE FROM confalias WHERE commid = ? AND confid = ?", commid, confid); err != nil {
+			return err
+		}
 		if refCount > 0 {
 			confids[i] = -1
 			continue // done with this conference
 		}
 		// We have to delete all the conference core data now.
-		_, err = tx.ExecContext(ctx, "DELETE FROM confs WHERE confid = ?", confid)
-		if err == nil {
-			_, err = tx.ExecContext(ctx, "DELETE FROM confalias WHERE confid = ?", confid)
-		}
-		if err != nil {
+		if _, err = tx.ExecContext(ctx, "DELETE FROM confs WHERE confid = ?", confid); err != nil {
 			return err
 		}
 		// kick the conference out of the cache
