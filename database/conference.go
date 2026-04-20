@@ -180,7 +180,7 @@ func (c *Conference) AddAlias(ctx context.Context, alias string, u *User, comm *
 		}
 		return err
 	}
-	if _, err := amdb.ExecContext(ctx, "INSERT INTO confalias (commid, confid, alias) VALUES (?, ?)",
+	if _, err := amdb.ExecContext(ctx, "INSERT INTO confalias (commid, confid, alias) VALUES (?, ?, ?)",
 		comm.Id, c.ConfId, alias); err != nil {
 		return err
 	}
@@ -204,12 +204,12 @@ func (c *Conference) RemoveAlias(ctx context.Context, alias string, u *User, com
 			comm.Id, c.ConfId, alias)
 		if err == nil {
 			return errors.New("the conference must have at least one alias")
-		} else if err != sql.ErrNoRows {
+		} else if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 	}
 
-	rs, err := amdb.ExecContext(ctx, "DELETE FROM confalias WHERE commid = ? confid = ? AND alias = ?", comm.Id, c.ConfId, alias)
+	rs, err := amdb.ExecContext(ctx, "DELETE FROM confalias WHERE commid = ? AND confid = ? AND alias = ?", comm.Id, c.ConfId, alias)
 	if err != nil {
 		return err
 	}
