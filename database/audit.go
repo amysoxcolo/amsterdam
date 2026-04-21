@@ -93,6 +93,7 @@ const (
 	AuditAdminChangeUserAccount     = 111
 	AuditAdminSetAccountSecurity    = 112
 	AuditAdminLockUnlockAccount     = 113
+	AuditAdminSetUserName           = 114
 	AuditCommunityCreate            = 201
 	AuditCommunitySetMembership     = 202
 	AuditCommunityContactInfo       = 203

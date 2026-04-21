@@ -16,6 +16,15 @@ subtitle: "User: [USERNAME]"
 action: "/sysadmin/users/[USERNAME]"
 fields:
   - type: "header"
+    name: "header0"
+    caption: "User Information"
+  - type: "ams_id"
+    name: "user"
+    caption: "User Name"
+    required: true
+    size: 32
+    maxlength: 64
+  - type: "header"
     name: "header1"
     caption: "Security Information"
     subcaption: "To change the user's password, enter a new password into the fields below."

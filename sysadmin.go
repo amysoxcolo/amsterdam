@@ -249,6 +249,7 @@ func UserManagementForm(ctxt ui.AmContext) (string, any) {
 			var prefs *database.UserPrefs
 			prefs, err = user.Prefs(ctxt.Ctx())
 			if err == nil {
+				dlg.Field("user").Value = user.Username
 				dlg.Field("remind").Value = user.PassReminder
 				dlg.Field("base_lvl").SetLevel(user.BaseLevel)
 				dlg.Field("verify_email").SetChecked(user.VerifyEMail)
@@ -327,6 +328,12 @@ func UserManagementSave(ctxt ui.AmContext) (string, any) {
 			if err == nil {
 				var prefs *database.UserPrefs
 				prefs, err = user.Prefs(ctxt.Ctx())
+				if err == nil && user.Username != dlg.Field("user").Value {
+					u2, e := database.AmGetUserByName(ctxt.Ctx(), dlg.Field("user").Value, nil)
+					if e == nil && u2 != nil {
+						err = errors.New("user name is already in use")
+					}
+				}
 				if err == nil && !(dlg.Field("pass1").IsEmpty() && dlg.Field("pass2").IsEmpty()) {
 					p1 := dlg.Field("pass1").Value
 					if p1 == dlg.Field("pass2").Value {
@@ -377,6 +384,9 @@ func UserManagementSave(ctxt ui.AmContext) (string, any) {
 						nf.Set(database.UserFlagDisallowSetPhoto, dlg.Field("nophoto").IsChecked())
 						err = user.SaveFlags(ctxt.Ctx(), nf)
 					}
+				}
+				if err == nil && user.Username != dlg.Field("user").Value {
+					err = user.SetUsername(ctxt.Ctx(), dlg.Field("user").Value, ctxt.CurrentUser(), ctxt.RemoteIP())
 				}
 				if err == nil {
 					err = user.SetProfileData(ctxt.Ctx(), dlg.Field("remind").Value, dlg.Field("dob").AsDate(), dlg.Field("descr").ValPtr(),

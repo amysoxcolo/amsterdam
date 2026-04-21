@@ -44,6 +44,8 @@ auditReference:
     text: "Admin Set Account Security"
   - code: 113
     text: "Admin Lock/Unlock Account"
+  - code: 114
+    text: "Admin Set User Name"
   - code: 201
     text: "Create New Community"
   - code: 202

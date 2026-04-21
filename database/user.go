@@ -381,6 +381,18 @@ func (u *User) Prefs(ctx context.Context) (*UserPrefs, error) {
 	return u.prefs, nil
 }
 
+func (u *User) SetUsername(ctx context.Context, username string, setter *User, ipaddr string) error {
+	u.Mutex.Lock()
+	_, err := amdb.ExecContext(ctx, "UPDATE users SET username = ? WHERE uid = ?", username, u.Uid)
+	u.Mutex.Unlock()
+	if err == nil {
+		u.Username = username
+		AmStoreAudit(AmNewAudit(AuditAdminSetUserName, setter.Uid, ipaddr, fmt.Sprintf("uid=%d", u.Uid),
+			fmt.Sprintf("newname=%s", username)))
+	}
+	return err
+}
+
 /* SetProfileData sets the "profile" variables for this user.
  * Parameters:
  *     ctx - Standard Go context value.
