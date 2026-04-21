@@ -29,7 +29,7 @@ After the point where it reaches feature parity with Venice circa 2006.
 
 ## Architectural Goofs
 
-* Conference Aliases are effectively in a system-wide namespace. Should be per-community.
+* ~~Conference Aliases are effectively in a system-wide namespace. Should be per-community.~~
 
 ## Additional Items
 
