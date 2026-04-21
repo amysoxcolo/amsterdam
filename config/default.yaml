@@ -17,6 +17,7 @@ site:
     path: "/img/builtin/AmsterdamIcon32.png"
     type: "image/png"
   siteShortcutIcon: "/img/builtin/AmsterdamIcon32.ico"
+  siteAppleIcon: "/img/builtin/AmsterdamAppleIcon.png"
   siteLogo: "/img/builtin/powered-by-amsterdam.png"
   topRefresh: 300
   loginCookieName: AmsterdamAuth

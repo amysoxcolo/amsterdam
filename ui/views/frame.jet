@@ -17,6 +17,7 @@
     <title>{{ .FrameTitle() | raw }} - {{ GlobalConfig.Site.Title }}</title>
     <link rel="icon" href="{{ GlobalConfig.Site.SiteIcon.Path }}" type="{{ GlobalConfig.Site.SiteIcon.Type }}" />
     <link rel="shortcut icon" href="{{ GlobalConfig.Site.SiteShortcutIcon }}" />
+    <link rel="apple-touch-icon" href="{{ GlobalConfig.Site.SiteAppleIcon }}" />
     {{ range k, v := .FrameMetadata(0) }}
         <meta http-equiv="{{ k }}" content="{{ v }}">
     {{ end }}

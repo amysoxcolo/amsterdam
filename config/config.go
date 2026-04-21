@@ -92,6 +92,7 @@ type AmConfig struct {
 			Type string `yaml:"type"`
 		} `yaml:"siteIcon"`
 		SiteShortcutIcon      string `yaml:"siteShortcutIcon"`
+		SiteAppleIcon         string `yaml:"siteAppleIcon"`
 		SiteLogo              string `yaml:"siteLogo"`
 		TopRefresh            int    `yaml:"topRefresh"`
 		LoginCookieName       string `yaml:"loginCookieName"`
