@@ -136,7 +136,7 @@ func Topics(ctxt ui.AmContext) (string, any) {
 	}
 
 	// create the "read new" URL
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+	urlStem := ctxt.GetScratch("ConferenceLink").(string)
 	if !ctxt.CurrentUser().IsAnon {
 		traverser := ui.NewTopicTraverser(topics)
 		ctxt.SetSession("topic.traverser", traverser)
@@ -178,14 +178,13 @@ func Topics(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func NewTopicForm(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Create", myLevel) {
 		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to create topics in this conference")
 	}
 	ctxt.VarMap().Set("conferenceName", conf.Name)
-	ctxt.VarMap().Set("urlStem", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("urlStem", ctxt.GetScratch("ConferenceLink").(string))
 	ctxt.VarMap().Set("topicName", "")
 	pseud, err := conf.DefaultPseud(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
@@ -212,7 +211,7 @@ func NewTopic(ctxt ui.AmContext) (string, any) {
 		return "error", echo.NewHTTPError(http.StatusForbidden, "you are not permitted to create topics in this conference")
 	}
 
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+	urlStem := ctxt.GetScratch("ConferenceLink").(string)
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", urlStem
 	}
@@ -634,7 +633,7 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	ctxt.VarMap().Set("advancedControls", advancedControls)
 
 	// Adjust the traverser and get the "next" link.
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias").(string))
+	urlStem := ctxt.GetScratch("ConferenceLink").(string)
 	if traverser != nil {
 		traverser.ClearTopic(topic.Number)
 		nextTopic := traverser.NextTopic(topic.Number)
@@ -689,7 +688,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	ctxt.VarMap().Set("post_topic", topic)
 
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	urlStem := fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 	if ctxt.FormFieldIsSet("cancel") {
 		return "redirect", urlStem
 	}
@@ -757,7 +756,7 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 	} else if ctxt.FormFieldIsSet("postnext") && len(urlNextTopic) > 0 {
 		returnURL = urlNextTopic
 	} else if ctxt.FormFieldIsSet("posttopics") {
-		returnURL = fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+		returnURL = ctxt.GetScratch("ConferenceLink").(string)
 	} else {
 		return "error", EBUTTON
 	}
@@ -779,7 +778,9 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("post_confRef", plc.AsString())
 		plc.Community = comm.Alias
 		ctxt.VarMap().Set("post_topicPermalink", fmt.Sprintf("/go/%s", plc.AsString()))
-		ctxt.VarMap().Set("post_topicLink", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
+		t := fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
+		ctxt.VarMap().Set("post_topicLink", t)
+		ctxt.VarMap().Set("post_stem", t)
 
 		ctxt.VarMap().SetFunc("post_getOverrideLine", templateOverrideLine)
 		ctxt.VarMap().SetFunc("post_getOverrideLink", templateOverrideLink)
@@ -787,7 +788,6 @@ func PostInTopic(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().SetFunc("post_getUserName", templateExtractUserName)
 		ctxt.VarMap().SetFunc("post_getAttachmentInfo", templateAttachmentInfo)
 		ctxt.VarMap().SetFunc("post_isBozo", templateBozo)
-		ctxt.VarMap().Set("post_stem", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
 		ctxt.VarMap().Set("post_max", topic.TopMessage)
 		ctxt.VarMap().Set("posts", posts)
 		ctxt.VarMap().Set("topicName", topic.Name)

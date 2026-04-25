@@ -156,7 +156,7 @@ func ConfManage(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
-	urlStem := fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+	urlStem := ctxt.GetScratch("ConferenceLink").(string)
 	ctxt.VarMap().Set("confName", conf.Name)
 	ctxt.VarMap().Set("urlStem", urlStem)
 
@@ -193,14 +193,13 @@ func ConfManage(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func SetPseud(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	pseud := ctxt.FormField("pseud")
 	err := conf.SetDefaultPseud(ctxt.Ctx(), ctxt.CurrentUser(), pseud)
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 }
 
 /* ConfFixseen marks all messages in a conference as read.
@@ -211,13 +210,12 @@ func SetPseud(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConfFixseen(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	err := conf.Fixseen(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 }
 
 /* AddToHotlist adds the current community and conference to the user's hotlist..
@@ -234,7 +232,7 @@ func AddToHotlist(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, ctxt.GetScratch("currentAlias"))
+	return "redirect", ctxt.GetScratch("ConferenceLink").(string)
 }
 
 /* HideTopic hides or shows the current topic for the current user.
@@ -254,7 +252,7 @@ func HideTopic(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }
 
 /* FreezeTopic freezes or unfreezes the current topic.
@@ -275,7 +273,7 @@ func FreezeTopic(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }
 
 /* ArchiveTopic archives or unarchives the current topic.
@@ -296,7 +294,7 @@ func ArchiveTopic(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }
 
 /* StickTopic sticks or unsticks the current topic.
@@ -317,7 +315,7 @@ func StickTopic(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }
 
 /* DeleteTopic deletes the current topic.
@@ -348,14 +346,14 @@ func DeleteTopic(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"))
+		return "redirect", ctxt.GetScratch("ConferenceLink").(string)
 	}
 
 	// Set up to display the message box.
 	mbox.SetMessage(fmt.Sprintf(`You are about to detele the topic <span class="font-bold text-red-600">"%s"</span>
 		from the <span class="font-bold text-red-600">"%s"</span> conference!`, topic.Name, conf.Name))
-	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number))
-	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/op/%d/delete", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	mbox.SetLink("no", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
+	mbox.SetLink("yes", fmt.Sprintf("%s/op/%d/delete", ctxt.GetScratch("ConferenceLink"), topic.Number))
 	return mbox.Render(ctxt)
 }
 
@@ -390,7 +388,7 @@ func HideMessage(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+	return "redirect", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num)
 }
 
 /* ScribbleMessage scribbles a topic message.
@@ -424,7 +422,7 @@ func ScribbleMessage(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+	return "redirect", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num)
 }
 
 /* NukeMessage nukes (deletes entirely) a topic message.
@@ -466,7 +464,7 @@ func NukeMessage(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+		return "redirect", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 	}
 
 	// Set up to display the message box.
@@ -480,8 +478,8 @@ func NukeMessage(ctxt ui.AmContext) (string, any) {
 	}
 	mbox.SetMessage(fmt.Sprintf(`You are about to nuke message <span class="font-mono font-bold text-red-600">&lt;%s&gt;</span>, 
                         		originally composed by <span class="font-bold text-red-600">&lt;%s&gt;</span>!`, link, creator.Username))
-	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
-	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/op/%d/nuke/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
+	mbox.SetLink("no", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num))
+	mbox.SetLink("yes", fmt.Sprintf("%s/op/%d/nuke/%d", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num))
 	return mbox.Render(ctxt)
 }
 
@@ -524,7 +522,7 @@ func PruneMessageAttachment(ctxt ui.AmContext) (string, any) {
 		if err != nil {
 			return "error", err
 		}
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+		return "redirect", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num)
 	}
 
 	// Set up to display the message box.
@@ -538,8 +536,8 @@ func PruneMessageAttachment(ctxt ui.AmContext) (string, any) {
 	}
 	mbox.SetMessage(fmt.Sprintf(`You are about to prune the attachment of message <span class="font-mono font-bold text-red-600">&lt;%s&gt;</span>, 
                         		originally composed by <span class="font-bold text-red-600">&lt;%s&gt;</span>!`, link, creator.Username))
-	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
-	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/op/%d/prune/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num))
+	mbox.SetLink("no", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num))
+	mbox.SetLink("yes", fmt.Sprintf("%s/op/%d/prune/%d", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num))
 	return mbox.Render(ctxt)
 }
 
@@ -591,7 +589,7 @@ func MoveMessageForm(ctxt ui.AmContext) (string, any) {
 
 	ctxt.VarMap().Set("post", hdrs[0])
 	ctxt.VarMap().Set("topMessage", topic.TopMessage)
-	formLink := fmt.Sprintf("/comm/%s/conf/%s/op/%d/move/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+	formLink := fmt.Sprintf("%s/op/%d/move/%d", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num)
 	ctxt.VarMap().Set("formLink", formLink)
 	ctxt.SetFrameTitle("Move Message")
 
@@ -625,7 +623,7 @@ func PublishMessage(ctxt ui.AmContext) (string, any) {
 	if err = hdrs[0].Publish(ctxt.Ctx(), comm, ctxt.CurrentUser(), ctxt.RemoteIP()); err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+	return "redirect", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num)
 }
 
 /* MoveMessage moves a message to a different topic.
@@ -654,7 +652,7 @@ func MoveMessage(ctxt ui.AmContext) (string, any) {
 		return "error", EPOSTREF
 	}
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d&ac=1", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number, hdrs[0].Num)
+		return "redirect", fmt.Sprintf("%s/r/%d?r=%d&ac=1", ctxt.GetScratch("ConferenceLink"), topic.Number, hdrs[0].Num)
 	}
 	if !conf.TestPermission("Conference.Nuke", myLevel) || !conf.TestPermission("Conference.Post", myLevel) || topic.TopMessage == 0 {
 		return "error", ENOPERM
@@ -696,7 +694,7 @@ func MoveMessage(ctxt ui.AmContext) (string, any) {
 		})
 	}
 
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/r/%d", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }
 
 /* TopicManage displays the "manage topic" page.
@@ -709,8 +707,8 @@ func MoveMessage(ctxt ui.AmContext) (string, any) {
 func TopicManage(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
-	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/r/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
-	opsLink := fmt.Sprintf("/comm/%s/conf/%s/op/%d", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
+	opsLink := fmt.Sprintf("%s/op/%d", ctxt.GetScratch("ConferenceLink"), topic.Number)
 	ctxt.VarMap().Set("opsLink", opsLink)
 	ctxt.VarMap().Set("topicName", topic.Name)
 
@@ -750,7 +748,6 @@ func TopicSetSubscribe(ctxt ui.AmContext) (string, any) {
 	if ctxt.CurrentUser().IsAnon {
 		return "error", ENOPERM
 	}
-	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	flag, err := topic.IsSubscribed(ctxt.Ctx(), ctxt.CurrentUser())
 	if err != nil {
@@ -760,7 +757,7 @@ func TopicSetSubscribe(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/op/%d/manage", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }
 
 /* TopicRemoveBozo removes filtering from a specified user in the topic.
@@ -771,7 +768,6 @@ func TopicSetSubscribe(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func TopicRemoveBozo(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
 	bozoUid, err := strconv.Atoi(ctxt.URLParam("uid"))
 	if err != nil {
@@ -781,5 +777,5 @@ func TopicRemoveBozo(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number)
+	return "redirect", fmt.Sprintf("%s/op/%d/manage", ctxt.GetScratch("ConferenceLink"), topic.Number)
 }

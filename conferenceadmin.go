@@ -99,7 +99,7 @@ func EditConference(ctxt ui.AmContext) (string, any) {
 	}
 	button := dlg.WhichButton(ctxt)
 	if button == "cancel" {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+		return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 	} else if button != "update" {
 		dlg.SetCommunity(comm)
 		dlg.SetConference(conf, ctxt.GetScratch("currentAlias").(string))
@@ -128,7 +128,7 @@ func EditConference(ctxt ui.AmContext) (string, any) {
 		return dlg.RenderError(ctxt, err.Error())
 	}
 
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 }
 
 /* ConferenceAliasForm displays the form for managing conference aliases.
@@ -148,8 +148,8 @@ func ConferenceAliasForm(ctxt ui.AmContext) (string, any) {
 
 	ctxt.VarMap().Set("newAlias", "")
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/aliases", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/aliases", ctxt.GetScratch("ConferenceLink")))
 	ctxt.SetFrameTitle(fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
 
 	if ctxt.HasParameter("del") {
@@ -184,8 +184,8 @@ func ConferenceAliasAdd(ctxt ui.AmContext) (string, any) {
 	}
 
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/aliases", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/aliases", ctxt.GetScratch("ConferenceLink")))
 	ctxt.SetFrameTitle(fmt.Sprintf("Manage Conference Aliases: %s", conf.Name))
 
 	newAlias := ctxt.FormField("na")
@@ -241,8 +241,8 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any) {
 	// Set the first batch of page variables.
 	ctxt.VarMap().Set("commName", comm.Name)
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/members", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/members", ctxt.GetScratch("ConferenceLink")))
 	ctxt.VarMap().Set("roleList", database.AmRoleList("Conference.UserLevels"))
 	ctxt.SetFrameTitle(fmt.Sprintf("Membership in Conference: %s", conf.Name))
 
@@ -381,7 +381,6 @@ func ConferenceMembers(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConfCustomForm(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
@@ -394,7 +393,7 @@ func ConfCustomForm(ctxt ui.AmContext) (string, any) {
 	}
 
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/custom", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/custom", ctxt.GetScratch("ConferenceLink")))
 	ctxt.VarMap().Set("topText", topBlock)
 	ctxt.VarMap().Set("bottomText", bottomBlock)
 	ctxt.SetFrameTitle(fmt.Sprintf("Customize Conference: %s", conf.Name))
@@ -409,7 +408,6 @@ func ConfCustomForm(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConfCustom(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
@@ -429,7 +427,7 @@ func ConfCustom(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 }
 
 /* ConfReports displays conference activity reports.
@@ -440,7 +438,6 @@ func ConfCustom(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConfReports(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Read", myLevel) {
@@ -448,7 +445,7 @@ func ConfReports(ctxt ui.AmContext) (string, any) {
 	}
 
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/activity", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/activity", ctxt.GetScratch("ConferenceLink")))
 
 	if ctxt.HasParameter("r") {
 		// generate a report
@@ -504,7 +501,7 @@ func ConfReports(ctxt ui.AmContext) (string, any) {
 			return "error", err
 		}
 		ctxt.VarMap().Set("topics", topicList)
-		ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+		ctxt.VarMap().Set("backLink", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
 		ctxt.SetFrameTitle(fmt.Sprintf("Conference Reports: %s", conf.Name))
 		return "framed", "conf_reports.jet"
 	}
@@ -518,7 +515,6 @@ func ConfReports(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConferenceEmailForm(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.EMailParticipants", myLevel) {
@@ -531,7 +527,7 @@ func ConferenceEmailForm(ctxt ui.AmContext) (string, any) {
 	}
 	ctxt.VarMap().Set("topics", topics)
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/email", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/email", ctxt.GetScratch("ConferenceLink")))
 	ctxt.VarMap().Set("porl", 0).Set("top", 0).Set("xday", false)
 	ctxt.VarMap().Set("day", 7).Set("subj", "").Set("pb", "")
 	ctxt.SetFrameTitle(fmt.Sprintf("Conference E-Mail: %s", conf.Name))
@@ -555,7 +551,7 @@ func ConferenceEmail(ctxt ui.AmContext) (string, any) {
 
 	// Handle button presses.
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+		return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 	} else if !ctxt.FormFieldIsSet("send") {
 		return "error", EBUTTON
 	}
@@ -646,7 +642,7 @@ func ConferenceEmail(ctxt ui.AmContext) (string, any) {
 		log.Infof("ConferenceEmail delivery completed in %s", elapsed)
 	})
 
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+	return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 }
 
 /* ConferenceExportForm displays the form for exporting data from a conference.
@@ -657,7 +653,6 @@ func ConferenceEmail(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConferenceExportForm(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
@@ -671,7 +666,7 @@ func ConferenceExportForm(ctxt ui.AmContext) (string, any) {
 
 	ctxt.VarMap().Set("topics", topics)
 	ctxt.VarMap().Set("confName", conf.Name)
-	ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/export", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/export", ctxt.GetScratch("ConferenceLink")))
 	ctxt.SetFrameTitle(fmt.Sprintf("Export Messages: %s", conf.Name))
 	return "framed", "conf_export.jet"
 }
@@ -684,7 +679,6 @@ func ConferenceExportForm(ctxt ui.AmContext) (string, any) {
  *     Data as a parameter for the command string.
  */
 func ConferenceExport(ctxt ui.AmContext) (string, any) {
-	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	myLevel := ctxt.GetScratch("levelInConference").(uint16)
 	if !conf.TestPermission("Conference.Change", myLevel) {
@@ -692,7 +686,7 @@ func ConferenceExport(ctxt ui.AmContext) (string, any) {
 	}
 
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+		return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 	} else if !ctxt.FormFieldIsSet("export") {
 		return "error", EBUTTON
 	}
@@ -765,15 +759,16 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 		return "error", ENOPERM
 	}
 
+	ctxt.VarMap().Set("confName", conf.Name)
+	ctxt.VarMap().Set("selfLink", fmt.Sprintf("%s/import", ctxt.GetScratch("ConferenceLink")))
+	ctxt.SetFrameTitle("Import Messages: " + conf.Name)
+
 	if ctxt.Verb() == "GET" {
-		ctxt.VarMap().Set("confName", conf.Name)
-		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
-		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
 
 	if ctxt.FormFieldIsSet("cancel") {
-		return "redirect", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias"))
+		return "redirect", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink"))
 	} else if !ctxt.FormFieldIsSet("import") {
 		return "error", EBUTTON
 	}
@@ -786,27 +781,18 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 		mode = exports.VCIFTopicMatchNum
 	default:
 		ctxt.VarMap().Set("errorMessage", "Invalid matching parameter.")
-		ctxt.VarMap().Set("confName", conf.Name)
-		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
-		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
 
 	importData, err := ctxt.FormFile("idata")
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
-		ctxt.VarMap().Set("confName", conf.Name)
-		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
-		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
 	start := time.Now()
 	f, err := importData.Open()
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
-		ctxt.VarMap().Set("confName", conf.Name)
-		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
-		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
 	topics, posts, scroll, err := exports.VCIFImportMessages(ctxt.Ctx(), f, comm, conf, mode, ctxt.FormFieldIsSet("create"), ctxt.CurrentUser(), ctxt.RemoteIP())
@@ -814,13 +800,10 @@ func ConferenceImport(ctxt ui.AmContext) (string, any) {
 	log.Infof("import messages operation completed in %v", time.Since(start))
 	if err != nil {
 		ctxt.VarMap().Set("errorMessage", err.Error())
-		ctxt.VarMap().Set("confName", conf.Name)
-		ctxt.VarMap().Set("selfLink", fmt.Sprintf("/comm/%s/conf/%s/import", comm.Alias, ctxt.GetScratch("currentAlias")))
-		ctxt.SetFrameTitle("Import Messages: " + conf.Name)
 		return "framed", "conf_import.jet"
 	}
 
-	ctxt.VarMap().Set("backLink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("backLink", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
 	ctxt.VarMap().Set("headline", fmt.Sprintf("Processed %d topic(s) and added %d new post(s).", topics, posts))
 	ctxt.VarMap().Set("scroll", scroll)
 	ctxt.SetFrameTitle("Import Results")
@@ -858,8 +841,8 @@ func DeleteConference(ctxt ui.AmContext) (string, any) {
 	// Set up to display the message box.
 	mbox.SetMessage(fmt.Sprintf(`You are about to delete the conference <span class="font-bold text-red-600">"%s"</span>
 		from the <span class="font-bold text-red-600">"%s"</span> community!`, conf.Name, comm.Name))
-	mbox.SetLink("no", fmt.Sprintf("/comm/%s/conf/%s/manage", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias")))
-	mbox.SetLink("yes", fmt.Sprintf("/comm/%s/conf/%s/delete", ctxt.CurrentCommunity().Alias, ctxt.GetScratch("currentAlias")))
+	mbox.SetLink("no", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
+	mbox.SetLink("yes", fmt.Sprintf("%s/delete", ctxt.GetScratch("ConferenceLink")))
 	return mbox.Render(ctxt)
 }
 
@@ -901,9 +884,12 @@ func CreateConference(ctxt ui.AmContext) (string, any) {
 	if err != nil {
 		return "error", err
 	}
+	var urlbuf strings.Builder
+	urlbuf.WriteString(ctxt.GetScratch("CommunityLink").(string))
+	urlbuf.WriteString("/conf")
 	button := dlg.WhichButton(ctxt)
 	if button == "cancel" {
-		return "redirect", fmt.Sprintf("/comm/%s/conf", comm.Alias)
+		return "redirect", urlbuf.String()
 	} else if button != "create" {
 		dlg.SetCommunity(comm)
 		return dlg.RenderError(ctxt, "invalid button pressed")
@@ -917,7 +903,9 @@ func CreateConference(ctxt ui.AmContext) (string, any) {
 		return dlg.RenderError(ctxt, err.Error())
 	}
 	log.Infof("Created conference '%s'", conf.Name)
-	return "redirect", fmt.Sprintf("/comm/%s/conf/%s", comm.Alias, alias)
+	urlbuf.WriteString("/")
+	urlbuf.WriteString(alias)
+	return "redirect", urlbuf.String()
 }
 
 /* ManageConferenceList displays the list for managing conferences.

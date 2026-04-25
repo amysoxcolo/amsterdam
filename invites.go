@@ -59,7 +59,7 @@ func InviteToConference(ctxt ui.AmContext) (string, any) {
 	ctxt.SetFrameTitle("Send Invitation")
 	ctxt.VarMap().Set("title", "Send Conference Invitation")
 	ctxt.VarMap().Set("subtitle", conf.Name)
-	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/manage", comm.Alias, ctxt.GetScratch("currentAlias")))
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("%s/manage", ctxt.GetScratch("ConferenceLink")))
 	ctxt.VarMap().Set("cid", fmt.Sprintf("%d", comm.Id))
 	ctxt.VarMap().Set("confid", fmt.Sprintf("%d", conf.ConfId))
 	return "framed", "invite.jet"
@@ -83,7 +83,7 @@ func InviteToTopic(ctxt ui.AmContext) (string, any) {
 	ctxt.SetFrameTitle("Send Invitation")
 	ctxt.VarMap().Set("title", "Send Topic Invitation")
 	ctxt.VarMap().Set("subtitle", topic.Name)
-	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf/%s/op/%d/manage", comm.Alias, ctxt.GetScratch("currentAlias"), topic.Number))
+	ctxt.VarMap().Set("backlink", fmt.Sprintf("%s/op/%d/manage", ctxt.GetScratch("ConferenceLink"), topic.Number))
 	ctxt.VarMap().Set("cid", fmt.Sprintf("%d", comm.Id))
 	ctxt.VarMap().Set("confid", fmt.Sprintf("%d", conf.ConfId))
 	ctxt.VarMap().Set("topicid", fmt.Sprintf("%d", topic.TopicId))
