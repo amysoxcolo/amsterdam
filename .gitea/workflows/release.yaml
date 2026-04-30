@@ -1,0 +1,67 @@
+name: Build and Release Amsterdam Assets
+on:
+  release:
+    types: [published]
+jobs:
+  build-and-upload:
+    runs-on: host
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - name: Build Binaries
+        run: |
+          # Build targets: Linux AMD64, Linux ARM64 (RPi), Windows AMD64, macOS ARM64 (Apple Silicon), macOS AMD64 (Intel)
+          GOOS=linux GOARCH=amd64 go build -o amsterdam-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -o amsterdam-linux-arm64
+          GOOS=windows GOARCH=amd64 go build -o amsterdam-windows-amd64.exe
+          GOOS=darwin GOARCH=arm64 go build -o amsterdam-macos-arm64
+          GOOS=darwin GOARCH=amd64 go build -o amsterdam-macos-amd64
+      - name: Upload Linux AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }} 
+          asset_path: ./amsterdam-linux-amd64
+          asset_name: amsterdam-linux-amd64
+          asset_content_type: application/octet-stream
+      - name: Upload Linux ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }} 
+          asset_path: ./amsterdam-linux-arm64
+          asset_name: amsterdam-linux-arm64
+          asset_content_type: application/octet-stream
+      - name: Upload Windows Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./amsterdam-windows-amd64.exe
+          asset_name: amsterdam-windows-amd64.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
+      - name: Upload Mac ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }} 
+          asset_path: ./amsterdam-macos-arm64
+          asset_name: amsterdam-macos-arm64
+          asset_content_type: application/octet-stream
+      - name: Upload Mac AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }} 
+          asset_path: ./amsterdam-macos-amd64
+          asset_name: amsterdam-macos-amd64
+          asset_content_type: application/octet-stream
