@@ -21,17 +21,17 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
 // IPBanTest is middleware that handles the IP banning.
 func IPBanTest(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		// Check IP banning.
 		banmsg, banerr := database.AmTestIPBan(c.Request().Context(), c.RealIP())
 		if banerr != nil {
-			c.Logger().Warnf("address %s could not be tested: %v", c.RealIP(), banerr)
+			log.Warnf("address %s could not be tested: %v", c.RealIP(), banerr)
 			// but let the request pass anyway
 		} else if banmsg != "" {
 			amctxt := AmContextFromEchoContext(c)
@@ -43,7 +43,7 @@ func IPBanTest(next echo.HandlerFunc) echo.HandlerFunc {
 
 // CookieLoginTest is middleware that handles cookie logins.
 func CookieLoginTest(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		amctxt := AmContextFromEchoContext(c)
 		// Check for cookie login.
 		if amctxt.CurrentUser().IsAnon {
@@ -77,11 +77,11 @@ func CookieLoginTest(next echo.HandlerFunc) echo.HandlerFunc {
 
 // SetCommunity is middleware that sets the community context based on the URL.
 func SetCommunity(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 		err := ctxt.SetCommunityContext(ctxt.URLParam("cid"))
 		if err != nil {
-			return AmSendPageData(c, ctxt, "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err))
+			return AmSendPageData(c, ctxt, "error", echo.NewHTTPError(http.StatusNotFound, err.Error()).Wrap(err))
 		}
 		var b strings.Builder
 		b.WriteString("/comm/")
@@ -94,7 +94,7 @@ func SetCommunity(next echo.HandlerFunc) echo.HandlerFunc {
 
 // ValidateConference is middleware that validates the user has access to the community's conference facility.
 func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 		comm := ctxt.CurrentCommunity() // set by middleware
 		b, err := database.AmTestService(c.Request().Context(), comm, "Conference")
@@ -116,7 +116,7 @@ func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
 
 // SetConference is middleware that sets the conference context based on the URL.
 func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 		conf, err := database.AmGetConferenceByAlias(ctxt.Ctx(), ctxt.CurrentCommunity().Id, ctxt.URLParam("confid"))
 		if err != nil {
@@ -144,7 +144,7 @@ func SetConference(next echo.HandlerFunc) echo.HandlerFunc {
 
 // SetTopic is middleware that sets the topic context based on the URL.
 func SetTopic(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 		conf := ctxt.GetScratch("currentConference").(*database.Conference)
 

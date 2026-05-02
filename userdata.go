@@ -26,7 +26,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/biter777/countries"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -382,7 +382,7 @@ func ShowProfile(ctxt ui.AmContext) (string, any) {
 	// Gather the info on the current user.
 	user, err := database.AmGetUserByName(ctxt.Ctx(), ctxt.URLParam("uname"), nil)
 	if err != nil {
-		return "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
+		return "error", echo.NewHTTPError(http.StatusNotFound, err.Error()).Wrap(err)
 	}
 	ci, err := user.ContactInfo(ctxt.Ctx())
 	if err != nil {

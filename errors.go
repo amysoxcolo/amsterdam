@@ -19,10 +19,9 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/ui"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 )
 
 // EBUTTON is the standard error for an unknown button.
@@ -74,9 +73,9 @@ func AmNotFoundHandler(ctxt ui.AmContext) (string, any) {
  *     err - The error to be handled.
  *     c - The Echo context error is being handled on.
  */
-func AmErrorHandler(err error, c echo.Context) {
+func AmErrorHandler(c *echo.Context, err error) {
 	log.Infof("-> AmErrorHandler on path %s", c.Request().URL.Path)
-	if c.Response().Committed {
+	if c.Response().(*echo.Response).Committed {
 		return
 	}
 	cerr := ui.AmWithTempContext(c, func(ctxt ui.AmContext) (string, any) {
@@ -88,14 +87,14 @@ func AmErrorHandler(err error, c echo.Context) {
 }
 
 // rateLimitErrorHandler is called if there's an error getting the identifier for a connection (unlikely).
-func rateLimitErrorHandler(c echo.Context, err error) error {
+func rateLimitErrorHandler(c *echo.Context, err error) error {
 	return ui.AmWithTempContext(c, func(ctxt ui.AmContext) (string, any) {
 		return "error", err
 	})
 }
 
 // rateLimitDenyHandler is called if the rate limit is exceeded by a connection.
-func rateLimitDenyHandler(c echo.Context, identifier string, err error) error {
+func rateLimitDenyHandler(c *echo.Context, identifier string, err error) error {
 	return ui.AmWithTempContext(c, func(ctxt ui.AmContext) (string, any) {
 		ctxt.VarMap().Set("identifier", identifier)
 		return "ratelimit", err
@@ -105,7 +104,7 @@ func rateLimitDenyHandler(c echo.Context, identifier string, err error) error {
 // AmSetupRateLimiter sets up the rate-limiting middleware.
 func AmSetupRateLimiter() echo.MiddlewareFunc {
 	rcfg := middleware.RateLimiterMemoryStoreConfig{
-		Rate:      rate.Limit(config.GlobalConfig.Site.RateLimit.Rate),
+		Rate:      config.GlobalConfig.Site.RateLimit.Rate,
 		Burst:     config.GlobalConfig.Site.RateLimit.Burst,
 		ExpiresIn: time.Duration(config.GlobalConfig.Site.RateLimit.ExpireMinutes) * time.Minute,
 	}

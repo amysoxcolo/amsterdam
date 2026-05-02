@@ -27,7 +27,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/CloudyKit/jet/v6"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -98,7 +98,7 @@ type AmContext interface {
 
 // amContext is the internal structure that implements AmContext.
 type amContext struct {
-	echoContext    echo.Context
+	echoContext    *echo.Context
 	rendervars     jet.VarMap
 	frameTitle     string
 	frameMeta      map[int]map[string]string
@@ -243,7 +243,7 @@ func (c *amContext) FormFieldIsSet(name string) bool {
 
 // FormFieldValues returns all values for a specified parameter name.
 func (c *amContext) FormFieldValues(name string) ([]string, error) {
-	vals, err := c.echoContext.FormParams()
+	vals, err := c.echoContext.FormValues()
 	if err != nil {
 		return make([]string, 0), err
 	}
@@ -525,7 +525,7 @@ var amContextRecycleBin chan *amContext
  *     Internal Amsterdam context structure pointer, or nil.
  *     Standard Go error status.
  */
-func newContext(ctxt echo.Context) (*amContext, error) {
+func newContext(ctxt *echo.Context) (*amContext, error) {
 	var rc *amContext
 	tmp := freeContext.Get()
 	if tmp == nil {
@@ -593,7 +593,7 @@ func newContext(ctxt echo.Context) (*amContext, error) {
  * Returns:
  *     The associated AmContext.
  */
-func AmContextFromEchoContext(ctxt echo.Context) AmContext {
+func AmContextFromEchoContext(ctxt *echo.Context) AmContext {
 	myctxt := ctxt.Get("__amsterdam_context")
 	if myctxt != nil {
 		rc, ok := myctxt.(*amContext)
@@ -641,7 +641,7 @@ func setupContext() func() {
 
 // ContextCreator is middleware that creates and recycles the AmContext.
 func ContextCreator(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		myctxt, err := newContext(c)
 		if err == nil {
 			err = next(c)

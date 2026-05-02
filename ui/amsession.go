@@ -23,7 +23,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -410,7 +410,7 @@ func setupSessionManager() func() {
 
 // SessionStoreInjector is middleware that injects the session store into the context variables.
 func SessionStoreInjector(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		c.Set("AmSessionStore", sessionStore)
 		return next(c)
 	}

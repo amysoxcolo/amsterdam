@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"git.erbosoft.com/amy/amsterdam/config"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )

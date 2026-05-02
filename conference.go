@@ -26,7 +26,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -513,11 +513,11 @@ func ReadPosts(ctxt ui.AmContext) (string, any) {
 	resetLastRead := false
 	if ctxt.HasParameter("r") {
 		if err := breakRange(topic, postRange, ctxt.Parameter("r"), ","); err != nil {
-			return "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
+			return "error", echo.NewHTTPError(http.StatusNotFound, err.Error()).Wrap(err)
 		}
 	} else if ctxt.HasParameter("rgo") {
 		if err := breakRange(topic, postRange, ctxt.Parameter("rgo"), "-"); err != nil {
-			return "error", echo.NewHTTPError(http.StatusNotFound).SetInternal(err)
+			return "error", echo.NewHTTPError(http.StatusNotFound, err.Error()).Wrap(err)
 		}
 	} else {
 		postRange[0] = lastRead + 1

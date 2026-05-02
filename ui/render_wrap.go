@@ -21,7 +21,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/klauspost/lctime"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,7 +44,7 @@ import (
  * Returns:
  *     Standard Go error status.
  */
-func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data any) error {
+func AmSendPageData(ctxt *echo.Context, amctxt AmContext, command string, data any) error {
 	// Preprocess certain commands into different ones.
 	httprc := http.StatusOK
 	switch command {
@@ -56,7 +56,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 			httprc = he.Code
 			m1 := he.Message
 			e1 := he.Unwrap()
-			if m1 == nil || m1 == "" {
+			if m1 == "" {
 				if e1 == nil {
 					message = fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
 				} else {
@@ -114,7 +114,7 @@ func AmSendPageData(ctxt echo.Context, amctxt AmContext, command string, data an
 		err = ctxt.Render(httprc, data.(string), amctxt)
 	case "framed":
 		if amctxt.FrameTitle() == "" {
-			ctxt.Logger().Errorf("*** NO FRAME TITLE set for path %s", amctxt.URLPath())
+			log.Errorf("*** NO FRAME TITLE set for path %s", amctxt.URLPath())
 			amctxt.SetFrameTitle("<<< NO FRAME TITLE >>>")
 		}
 		amctxt.VarMap().Set("__innerPage", data)
@@ -177,7 +177,7 @@ type AmPageFunc func(AmContext) (string, any)
  *     The wrapped function.
  */
 func AmWrap(myfunc AmPageFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 
 		// Add the dynamic headers.
@@ -191,11 +191,11 @@ func AmWrap(myfunc AmPageFunc) echo.HandlerFunc {
 			ctxt.SetSession("lastKnownGood", ctxt.Locator())
 		}
 		if err := ctxt.SaveSession(); err != nil {
-			c.Logger().Errorf("Session save error: %v", err)
+			log.Errorf("Session save error: %v", err)
 			return err
 		}
 		if err := AmSendPageData(c, ctxt, command, arg); err != nil {
-			c.Logger().Errorf("Rendering error: %v", err)
+			log.Errorf("Rendering error: %v", err)
 			return err
 		}
 		return nil
@@ -203,7 +203,7 @@ func AmWrap(myfunc AmPageFunc) echo.HandlerFunc {
 }
 
 // AmWithTempContext runs a page function with a temporary context. Used in error handling.
-func AmWithTempContext(c echo.Context, fn AmPageFunc) error {
+func AmWithTempContext(c *echo.Context, fn AmPageFunc) error {
 	var ctxt AmContext = nil
 	myctxt := c.Get("__amsterdam_context")
 	if myctxt != nil {
@@ -233,7 +233,7 @@ func AmWithTempContext(c echo.Context, fn AmPageFunc) error {
 	c.Response().Header().Set("Expires", expireTime)
 
 	if err := AmSendPageData(c, ctxt, command, arg); err != nil {
-		c.Logger().Errorf("Rendering error: %v", err)
+		log.Errorf("Rendering error: %v", err)
 		return err
 	}
 	return nil

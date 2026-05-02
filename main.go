@@ -17,7 +17,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,8 +32,8 @@ import (
 	"git.erbosoft.com/amy/amsterdam/htmlcheck"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,14 +43,11 @@ var GetAndPost = []string{http.MethodGet, http.MethodPost}
 // setupEcho creates, configures, and returns a new Echo instance.
 func setupEcho() *echo.Echo {
 	e := echo.New()
-	e.HideBanner = true
-	e.Logger = &EchoLogrusAdapter{}
+	e.Logger = slog.New(NewSlogLogrusHandler())
 	e.Renderer = &ui.TemplateRenderer{}
 	e.HTTPErrorHandler = AmErrorHandler
 	if !config.CommandLine.DebugPanic {
-		e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
-			LogErrorFunc: LogrusPanicLogging,
-		}))
+		e.Use(middleware.RecoverWithConfig(middleware.DefaultRecoverConfig))
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
@@ -264,21 +263,24 @@ func main() {
 		database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
 	}()
 
+	sconf := echo.StartConfig{
+		Address:         config.GlobalComputedConfig.Listen,
+		HideBanner:      true,
+		HidePort:        true,
+		GracefulTimeout: 10 * time.Second,
+	}
+
 	stime := time.Since(SystemStartTime)
 	log.Infof("Amsterdam %s startup sequence completed in %v", config.AMSTERDAM_VERSION, stime)
 
 	// Start server
 	go func() {
-		if err := e.Start(config.GlobalComputedConfig.Listen); err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatalf("shutting down the server: %v", err)
+		if err := sconf.Start(ctx, e); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("shutting down the server: %v", err)
 		}
 	}()
 
-	// Wait for the interrupt signal and then gracefully shut the server down.
+	// Wait for the context to be done, when the server is shut down.
 	<-ctx.Done()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := e.Shutdown(ctx); err != nil {
-		e.Logger.Fatal(err)
-	}
+	log.Infof("Amsterdam shut down")
 }

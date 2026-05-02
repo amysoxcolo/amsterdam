@@ -29,7 +29,7 @@ import (
 
 	"git.erbosoft.com/amy/amsterdam/database"
 	"github.com/disintegration/imaging"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 //go:embed static_images/*
@@ -64,7 +64,7 @@ func mimeTypeFromFilename(filename string) string {
  * Returns:
  *     Standard Go error return.
  */
-func AmServeImage(c echo.Context) error {
+func AmServeImage(c *echo.Context) error {
 	components := strings.SplitAfter(c.Request().URL.Path, "/")
 	var err error = nil
 	if len(components) == 4 {
@@ -105,7 +105,7 @@ func AmServeImage(c echo.Context) error {
  * Returns:
  *     Standard Go error return.
  */
-func AmServeVeniceCompatibleImage(c echo.Context) error {
+func AmServeVeniceCompatibleImage(c *echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err == nil {
 		var img *database.ImageStore
