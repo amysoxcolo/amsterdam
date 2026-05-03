@@ -100,7 +100,10 @@ type AmConfig struct {
 		SessionExpire         string `yaml:"sessionExpire"`
 		UserAgreementResource string `yaml:"userAgreementResource"`
 		PolicyResource        string `yaml:"policyResource"`
+		FrameTemplate         string `yaml:"frameTemplate"`
 		FooterTemplate        string `yaml:"footerTemplate"`
+		TopMenuId             string `yaml:"topMenuId"`
+		FixedMenuId           string `yaml:"fixedMenuId"`
 		DefaultCommunityLogo  string `yaml:"defaultCommunityLogo"`
 		DefaultUserPhoto      string `yaml:"defaultUserPhoto"`
 		WelcomeTitle          string `yaml:"welcomeTitle"`
@@ -148,6 +151,9 @@ type AmConfig struct {
 			Prioritize string `yaml:"prioritize"`
 		} `yaml:"countryList"`
 		VeniceCompatibleImageURLs bool `yaml:"veniceCompatibleImageURLs"`
+		PanicRecovery             struct {
+			StackDataSize string `yaml:"stackDataSize"`
+		} `yaml:"panicRecovery"`
 	} `yaml:"rendering"`
 	Resources struct {
 		ViewTemplateDir            string `yaml:"viewTemplateDir"`
@@ -168,9 +174,11 @@ type AmConfig struct {
 	Tuning struct {
 		WorkerTasks int `yaml:"workerTasks"`
 		Timeouts    struct {
-			HttpRead  int `yaml:"httpRead"`
-			HttpWrite int `yaml:"httpWrite"`
-			HttpIdle  int `yaml:"httpIdle"`
+			HttpRead    int `yaml:"httpRead"`
+			HttpWrite   int `yaml:"httpWrite"`
+			HttpIdle    int `yaml:"httpIdle"`
+			PageExecute int `yaml:"pageExecute"`
+			PageRender  int `yaml:"pageRender"`
 		} `yaml:"timeouts"`
 		Queues struct {
 			AuditWrites    int `yaml:"auditWrites"`
@@ -207,22 +215,23 @@ func (c *AmConfig) ExPath(path string) string {
 
 // AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig and CommandLine.
 type AmConfigComputed struct {
-	DebugMode        bool            // are we in debug mode?
-	LogLevel         string          // the logging level
-	Listen           string          // listen address
-	DatabaseDriver   string          // name of database driver
-	DatabaseHost     string          // hostname for database
-	DatabaseUser     string          // user name for database
-	DatabasePassword string          // password for database
-	DatabaseName     string          // database name
-	MailHost         string          // SMTP host
-	MailPort         int             // SMTP port
-	MailTLS          string          // SMTP TLS setting
-	MailAuthType     string          // SMTP auth type
-	MailUser         string          // SMTP user name
-	MailPassword     string          // SMTP password
-	UploadMaxSize    int32           // maximum upload size in bytes
-	UploadNoCompress map[string]bool // which upload types are not compressed?
+	DebugMode          bool            // are we in debug mode?
+	LogLevel           string          // the logging level
+	Listen             string          // listen address
+	DatabaseDriver     string          // name of database driver
+	DatabaseHost       string          // hostname for database
+	DatabaseUser       string          // user name for database
+	DatabasePassword   string          // password for database
+	DatabaseName       string          // database name
+	MailHost           string          // SMTP host
+	MailPort           int             // SMTP port
+	MailTLS            string          // SMTP TLS setting
+	MailAuthType       string          // SMTP auth type
+	MailUser           string          // SMTP user name
+	MailPassword       string          // SMTP password
+	PanicRecoveryStack int32           // stack size for panic recovery
+	UploadMaxSize      int32           // maximum upload size in bytes
+	UploadNoCompress   map[string]bool // which upload types are not compressed?
 }
 
 //go:embed default.yaml
@@ -403,7 +412,12 @@ func SetupConfig() {
 	GlobalComputedConfig.MailAuthType = util.IIF(CommandLine.MailAuthType != "", CommandLine.MailAuthType, GlobalConfig.Email.AuthType)
 	GlobalComputedConfig.MailUser = util.IIF(CommandLine.MailUser != "", CommandLine.MailUser, GlobalConfig.Email.User)
 	GlobalComputedConfig.MailPassword = util.IIF(CommandLine.MailPassword != "", CommandLine.MailPassword, GlobalConfig.Email.Password)
-	tmp, err := humanize.ParseBytes(GlobalConfig.Posting.Uploads.MaxSize)
+	tmp, err := humanize.ParseBytes(GlobalConfig.Rendering.PanicRecovery.StackDataSize)
+	if err != nil {
+		panic(err.Error())
+	}
+	GlobalComputedConfig.PanicRecoveryStack = int32(tmp)
+	tmp, err = humanize.ParseBytes(GlobalConfig.Posting.Uploads.MaxSize)
 	if err != nil {
 		panic(err.Error())
 	}

@@ -50,7 +50,9 @@ func setupEcho() *echo.Echo {
 	e.Renderer = &ui.TemplateRenderer{}
 	e.HTTPErrorHandler = AmErrorHandler
 	if !config.CommandLine.DebugPanic {
-		e.Use(middleware.RecoverWithConfig(middleware.DefaultRecoverConfig))
+		e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+			StackSize: int(config.GlobalComputedConfig.PanicRecoveryStack),
+		}))
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}

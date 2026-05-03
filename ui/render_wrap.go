@@ -1,6 +1,6 @@
 /*
  * Amsterdam Web Communities System
- * Copyright (c) 2025 Erbosoft Metaverse Design Solutions, All Rights Reserved
+ * Copyright (c) 2025-2026 Erbosoft Metaverse Design Solutions, All Rights Reserved
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,6 +44,51 @@ func (e *panicRecoveryErr) Unwrap() error {
 	return e.Err
 }
 
+// doFrameRender renders the outer frame template with an inner template.
+func doFrameRender(ctxt *echo.Context, amctxt AmContext, statusCode int, innerPage string) error {
+	if amctxt.FrameTitle() == "" {
+		log.Errorf("*** NO FRAME TITLE set for path %s", amctxt.URLPath())
+		amctxt.SetFrameTitle("<<< NO FRAME TITLE >>>")
+	}
+	amctxt.VarMap().Set("__innerPage", innerPage)
+	menus := make([]*MenuDefinition, 2)
+	switch amctxt.LeftMenu() {
+	case "top":
+		menus[0] = AmMenu(config.GlobalConfig.Site.TopMenuId)
+	case "community":
+		comm := amctxt.CurrentCommunity()
+		if comm != nil {
+			md, err := AmBuildCommunityMenu(ctxt.Request().Context(), comm)
+			if err != nil {
+				return err
+			}
+			menus[0] = md
+		} else {
+			menus[0] = AmMenu(config.GlobalConfig.Site.TopMenuId)
+		}
+	default:
+		return fmt.Errorf("AmSendPageData(): unknown left menu context: %s", amctxt.LeftMenu())
+	}
+	menus[1] = AmMenu(config.GlobalConfig.Site.FixedMenuId)
+	amctxt.VarMap().Set("__leftMenus", menus)
+	ad, err := database.AmGetRandomAd(ctxt.Request().Context())
+	if err != nil {
+		ad = &database.Advert{
+			AdId:      -1,
+			ImagePath: "",
+			PathStyle: -1,
+			Caption:   nil,
+			LinkURL:   nil,
+		}
+	}
+	amctxt.VarMap().Set("__bannerad", ad)
+	amctxt.VarMap().Set("__debugMode", config.GlobalComputedConfig.DebugMode)
+	if tmp := amctxt.GetScratch("frame_suppressLogin"); tmp != nil {
+		amctxt.VarMap().Set("__suppressLogin", true)
+	}
+	return ctxt.Render(statusCode, config.GlobalConfig.Site.FrameTemplate, amctxt)
+}
+
 /* AmSendPageData sends page data to the output based on the command string.
  * Parameters:
  *     ctxt - The Echo context from the request.
@@ -65,20 +110,22 @@ func (e *panicRecoveryErr) Unwrap() error {
  */
 func AmSendPageData(ctxt *echo.Context, amctxt AmContext, command string, data any) error {
 	// Enable panic recovery.
-	defer func() {
-		if r := recover(); r != nil {
-			if r == http.ErrAbortHandler {
-				panic(r)
+	if !config.CommandLine.DebugPanic {
+		defer func() {
+			if r := recover(); r != nil {
+				if r == http.ErrAbortHandler {
+					panic(r)
+				}
+				tmperr, ok := r.(error)
+				if !ok {
+					tmperr = fmt.Errorf("%v", r)
+				}
+				stack := make([]byte, config.GlobalComputedConfig.PanicRecoveryStack)
+				length := runtime.Stack(stack, false)
+				log.Errorf("[Panic Recovery in SendData Phase] %s %s", tmperr.Error(), stack[:length])
 			}
-			tmperr, ok := r.(error)
-			if !ok {
-				tmperr = fmt.Errorf("%v", r)
-			}
-			stack := make([]byte, 4<<10)
-			length := runtime.Stack(stack, false)
-			log.Errorf("[Panic Recovery in SendData Phase] %s %s", tmperr.Error(), stack[:length])
-		}
-	}()
+		}()
+	}
 
 	// Preprocess certain commands into different ones.
 	httprc := http.StatusOK
@@ -132,7 +179,7 @@ func AmSendPageData(ctxt *echo.Context, amctxt AmContext, command string, data a
 
 	// Process commands.
 	oldreq := ctxt.Request()
-	ctx, cancel := context.WithTimeout(oldreq.Context(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(oldreq.Context(), time.Duration(config.GlobalConfig.Tuning.Timeouts.PageRender)*time.Second)
 	defer cancel()
 	ctxt.SetRequest(oldreq.WithContext(ctx))
 	defer ctxt.SetRequest(oldreq)
@@ -151,47 +198,7 @@ func AmSendPageData(ctxt *echo.Context, amctxt AmContext, command string, data a
 	case "template":
 		err = ctxt.Render(httprc, data.(string), amctxt)
 	case "framed":
-		if amctxt.FrameTitle() == "" {
-			log.Errorf("*** NO FRAME TITLE set for path %s", amctxt.URLPath())
-			amctxt.SetFrameTitle("<<< NO FRAME TITLE >>>")
-		}
-		amctxt.VarMap().Set("__innerPage", data)
-		menus := make([]*MenuDefinition, 2)
-		switch amctxt.LeftMenu() {
-		case "top":
-			menus[0] = AmMenu("top")
-		case "community":
-			comm := amctxt.CurrentCommunity()
-			if comm != nil {
-				md, err := AmBuildCommunityMenu(ctxt.Request().Context(), comm)
-				if err != nil {
-					return err
-				}
-				menus[0] = md
-			} else {
-				menus[0] = AmMenu("top")
-			}
-		default:
-			return fmt.Errorf("AmSendPageData(): unknown left menu context: %s", amctxt.LeftMenu())
-		}
-		menus[1] = AmMenu("fixed")
-		amctxt.VarMap().Set("__leftMenus", menus)
-		ad, err := database.AmGetRandomAd(ctxt.Request().Context())
-		if err != nil {
-			ad = &database.Advert{
-				AdId:      -1,
-				ImagePath: "",
-				PathStyle: -1,
-				Caption:   nil,
-				LinkURL:   nil,
-			}
-		}
-		amctxt.VarMap().Set("__bannerad", ad)
-		amctxt.VarMap().Set("__debugMode", config.GlobalComputedConfig.DebugMode)
-		if tmp := amctxt.GetScratch("frame_suppressLogin"); tmp != nil {
-			amctxt.VarMap().Set("__suppressLogin", true)
-		}
-		err = ctxt.Render(httprc, "frame.jet", amctxt)
+		err = doFrameRender(ctxt, amctxt, httprc, data.(string))
 	default:
 		err = fmt.Errorf("AmSendPageData(): unknown rendering type: %s", command)
 	}
@@ -209,23 +216,25 @@ type AmPageFunc func(AmContext) (string, any)
 
 // callWrappedPageFunc calls the specified page functon inside a wrapper that handles timeouts and panic recovery.
 func callWrappedPageFunc(f AmPageFunc, ctxt *echo.Context, amctxt AmContext) (command string, arg any) {
-	defer func() {
-		if r := recover(); r != nil {
-			if r == http.ErrAbortHandler {
-				panic(r)
+	if !config.CommandLine.DebugPanic {
+		defer func() {
+			if r := recover(); r != nil {
+				if r == http.ErrAbortHandler {
+					panic(r)
+				}
+				tmperr, ok := r.(error)
+				if !ok {
+					tmperr = fmt.Errorf("%v", r)
+				}
+				stack := make([]byte, config.GlobalComputedConfig.PanicRecoveryStack)
+				length := runtime.Stack(stack, false)
+				arg = &panicRecoveryErr{Phase: "PageFunc", Err: tmperr, Stack: stack[:length]}
+				command = "error"
 			}
-			tmperr, ok := r.(error)
-			if !ok {
-				tmperr = fmt.Errorf("%v", r)
-			}
-			stack := make([]byte, 4<<10)
-			length := runtime.Stack(stack, false)
-			arg = &panicRecoveryErr{Phase: "PageFunc", Err: tmperr, Stack: stack[:length]}
-			command = "error"
-		}
-	}()
+		}()
+	}
 	oldreq := ctxt.Request()
-	ctx, cancel := context.WithTimeout(oldreq.Context(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(oldreq.Context(), time.Duration(config.GlobalConfig.Tuning.Timeouts.PageExecute)*time.Second)
 	defer cancel()
 	ctxt.SetRequest(oldreq.WithContext(ctx))
 	defer ctxt.SetRequest(oldreq)
