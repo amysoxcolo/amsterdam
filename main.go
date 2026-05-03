@@ -37,6 +37,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// READ_HEADER_TIMEOUT is the timeout value for reading headers in seconds. (Deliberately NOT configurable because this is a security issue)
+const READ_HEADER_TIMEOUT = 2
+
 // GetAndPost is used to have functions that respond to both GET and POST on a URI.
 var GetAndPost = []string{http.MethodGet, http.MethodPost}
 
@@ -214,7 +217,7 @@ func setupEcho() *echo.Echo {
 // ampool is the worker pool for one-shot background tasks.
 var ampool *util.WorkerPool
 
-// SystemStartTime records the time since the system was started.
+// SystemStartTime records the time the system was started.
 var SystemStartTime time.Time
 
 // main is Ye Olde Main Function.
@@ -273,10 +276,10 @@ func main() {
 			log.Fatalf("error in shutting down the server: %v", err)
 		},
 		BeforeServeFunc: func(s *http.Server) error {
-			s.ReadTimeout = 30 * time.Second
-			s.WriteTimeout = 30 * time.Second
-			s.IdleTimeout = 120 * time.Second
-			s.ReadHeaderTimeout = 2 * time.Second
+			s.ReadTimeout = time.Duration(config.GlobalConfig.Tuning.Timeouts.HttpRead) * time.Second
+			s.WriteTimeout = time.Duration(config.GlobalConfig.Tuning.Timeouts.HttpWrite) * time.Second
+			s.IdleTimeout = time.Duration(config.GlobalConfig.Tuning.Timeouts.HttpIdle) * time.Second
+			s.ReadHeaderTimeout = READ_HEADER_TIMEOUT * time.Second
 			return nil
 		},
 	}

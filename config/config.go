@@ -167,7 +167,12 @@ type AmConfig struct {
 	} `yaml:"posting"`
 	Tuning struct {
 		WorkerTasks int `yaml:"workerTasks"`
-		Queues      struct {
+		Timeouts    struct {
+			HttpRead  int `yaml:"httpRead"`
+			HttpWrite int `yaml:"httpWrite"`
+			HttpIdle  int `yaml:"httpIdle"`
+		} `yaml:"timeouts"`
+		Queues struct {
 			AuditWrites    int `yaml:"auditWrites"`
 			ContextRecycle int `yaml:"contextRecycle"`
 			EmailRecycle   int `yaml:"emailRecycle"`
@@ -200,7 +205,7 @@ func (c *AmConfig) ExPath(path string) string {
 	return filepath.Join(c.baseDir, path)
 }
 
-// AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig.
+// AmConfigComputed is the configuration values which are "computed" based only on values in AmConfig and CommandLine.
 type AmConfigComputed struct {
 	DebugMode        bool            // are we in debug mode?
 	LogLevel         string          // the logging level
@@ -321,7 +326,7 @@ func overlayStructValue(dest, loaded, defaults reflect.Value) {
 			}
 		} else {
 			// if we see this message, this function needs more work
-			log.Errorf("*** unable to deal with field %s of type %s", structField.Name, typ.Name())
+			log.Fatalf("*** unable to deal with field %s of type %s", structField.Name, typ.Name())
 		}
 	}
 }

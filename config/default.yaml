@@ -91,6 +91,10 @@ posting:
       - "image/png"
 tuning:
   workerTasks: 4
+  timeouts:
+    httpRead: 30
+    httpWrite: 30
+    httpIdle: 120
   queues:
     auditWrites: 16
     contextRecycle: 16
