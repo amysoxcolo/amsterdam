@@ -13,9 +13,11 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -24,6 +26,23 @@ import (
 	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
+
+// panicRecoveryErr is the error created for panic recovery.
+type panicRecoveryErr struct {
+	Phase string // phase of operation
+	Err   error  // error value
+	Stack []byte // stack trace
+}
+
+// Error returns the actual error string.
+func (e *panicRecoveryErr) Error() string {
+	return fmt.Sprintf("[Panic Recovery in %s Phase] %s %s", e.Phase, e.Err.Error(), e.Stack)
+}
+
+// Unwrap returns the error "nested" inside this error.
+func (e *panicRecoveryErr) Unwrap() error {
+	return e.Err
+}
 
 /* AmSendPageData sends page data to the output based on the command string.
  * Parameters:
@@ -45,39 +64,53 @@ import (
  *     Standard Go error status.
  */
 func AmSendPageData(ctxt *echo.Context, amctxt AmContext, command string, data any) error {
+	// Enable panic recovery.
+	defer func() {
+		if r := recover(); r != nil {
+			if r == http.ErrAbortHandler {
+				panic(r)
+			}
+			tmperr, ok := r.(error)
+			if !ok {
+				tmperr = fmt.Errorf("%v", r)
+			}
+			stack := make([]byte, 4<<10)
+			length := runtime.Stack(stack, false)
+			log.Errorf("[Panic Recovery in SendData Phase] %s %s", tmperr.Error(), stack[:length])
+		}
+	}()
+
 	// Preprocess certain commands into different ones.
 	httprc := http.StatusOK
 	switch command {
 	case "error":
-		message := ""
-		if data == nil {
-			message = fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
-		} else if he, ok := data.(*echo.HTTPError); ok {
-			httprc = he.Code
-			m1 := he.Message
-			e1 := he.Unwrap()
-			if m1 == "" {
-				if e1 == nil {
-					message = fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
+		message := fmt.Sprintf("Unspecified error in %s", ctxt.Request().URL.String())
+		if data != nil {
+			if he, ok := data.(*echo.HTTPError); ok {
+				httprc = he.Code
+				m1 := he.Message
+				e1 := he.Unwrap()
+				if m1 == "" {
+					if e1 != nil {
+						message = e1.Error()
+					}
 				} else {
-					message = e1.Error()
+					if e1 == nil {
+						message = fmt.Sprintf("%v", m1)
+					} else {
+						message = fmt.Sprintf("%v (%v)", m1, e1)
+					}
 				}
+			} else if er, ok := data.(error); ok {
+				message = er.Error()
 			} else {
-				if e1 == nil {
-					message = fmt.Sprintf("%v", m1)
-				} else {
-					message = fmt.Sprintf("%v (%v)", m1, e1)
-				}
+				message = fmt.Sprintf("%v", data)
 			}
-		} else if er, ok := data.(error); ok {
-			message = er.Error()
-		} else {
-			message = fmt.Sprintf("%v", data)
 		}
 		if httprc < 400 {
 			httprc = http.StatusInternalServerError
 		}
-		amctxt.SetFrameTitle("Internal Server Error")
+		amctxt.SetFrameTitle(http.StatusText(httprc))
 		amctxt.VarMap().Set("error", message)
 		if tmp := amctxt.GetSession("lastKnownGood"); tmp != nil {
 			amctxt.VarMap().Set("recovery", tmp)
@@ -98,6 +131,11 @@ func AmSendPageData(ctxt *echo.Context, amctxt AmContext, command string, data a
 	}
 
 	// Process commands.
+	oldreq := ctxt.Request()
+	ctx, cancel := context.WithTimeout(oldreq.Context(), 15*time.Second)
+	defer cancel()
+	ctxt.SetRequest(oldreq.WithContext(ctx))
+	defer ctxt.SetRequest(oldreq)
 	var err error
 	switch command {
 	case "bytes":
@@ -169,6 +207,32 @@ var expireTime string = lctime.Strftime("%c", time.Unix(1, 0))
 // AmPageFunc is the definition for an Amsterdam "page function" that handles most of the work and defers to the wrapper for rendering.
 type AmPageFunc func(AmContext) (string, any)
 
+// callWrappedPageFunc calls the specified page functon inside a wrapper that handles timeouts and panic recovery.
+func callWrappedPageFunc(f AmPageFunc, ctxt *echo.Context, amctxt AmContext) (command string, arg any) {
+	defer func() {
+		if r := recover(); r != nil {
+			if r == http.ErrAbortHandler {
+				panic(r)
+			}
+			tmperr, ok := r.(error)
+			if !ok {
+				tmperr = fmt.Errorf("%v", r)
+			}
+			stack := make([]byte, 4<<10)
+			length := runtime.Stack(stack, false)
+			arg = &panicRecoveryErr{Phase: "PageFunc", Err: tmperr, Stack: stack[:length]}
+			command = "error"
+		}
+	}()
+	oldreq := ctxt.Request()
+	ctx, cancel := context.WithTimeout(oldreq.Context(), 15*time.Second)
+	defer cancel()
+	ctxt.SetRequest(oldreq.WithContext(ctx))
+	defer ctxt.SetRequest(oldreq)
+	command, arg = f(amctxt)
+	return
+}
+
 /* AmWrap wraps the Amsterdam handler function in a wrapper that implements the spec for
  * Echo handler functions.
  * Parameters:
@@ -186,7 +250,7 @@ func AmWrap(myfunc AmPageFunc) echo.HandlerFunc {
 		c.Response().Header().Set("Expires", expireTime)
 
 		// Exec the wrapped function.
-		command, arg := myfunc(ctxt)
+		command, arg := callWrappedPageFunc(myfunc, c, ctxt)
 		if command != "error" && command != "ipban" {
 			ctxt.SetSession("lastKnownGood", ctxt.Locator())
 		}
@@ -225,7 +289,7 @@ func AmWithTempContext(c *echo.Context, fn AmPageFunc) error {
 	}
 
 	// Call the function
-	command, arg := fn(ctxt)
+	command, arg := callWrappedPageFunc(fn, c, ctxt)
 
 	// Add the dynamic headers.
 	c.Response().Header().Set("Pragma", "No-cache")
