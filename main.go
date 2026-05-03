@@ -263,11 +263,22 @@ func main() {
 		database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
 	}()
 
+	// Set up the start configuration.
 	sconf := echo.StartConfig{
 		Address:         config.GlobalComputedConfig.Listen,
 		HideBanner:      true,
 		HidePort:        true,
 		GracefulTimeout: 10 * time.Second,
+		OnShutdownError: func(err error) {
+			log.Fatalf("error in shutting down the server: %v", err)
+		},
+		BeforeServeFunc: func(s *http.Server) error {
+			s.ReadTimeout = 30 * time.Second
+			s.WriteTimeout = 30 * time.Second
+			s.IdleTimeout = 120 * time.Second
+			s.ReadHeaderTimeout = 2 * time.Second
+			return nil
+		},
 	}
 
 	stime := time.Since(SystemStartTime)
