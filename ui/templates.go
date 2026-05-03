@@ -31,7 +31,7 @@ import (
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/loaders/embedfs"
 	"github.com/CloudyKit/jet/v6/loaders/multi"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -363,7 +363,7 @@ type TemplateRenderer struct{}
  * Returns:
  *     Standard Go error status.
  */
-func (r *TemplateRenderer) Render(w io.Writer, name string, data any, c echo.Context) error {
+func (r *TemplateRenderer) Render(c *echo.Context, w io.Writer, name string, data any) error {
 	defer util.MeasureTime(fmt.Sprintf("ui.Render(%s)", name))()
 
 	view, err := views.GetTemplate(name)

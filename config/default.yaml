@@ -25,7 +25,10 @@ site:
   sessionExpire: "3h"
   userAgreementResource: "useragreement.html"
   policyResource: "policy.html"
+  frameTemplate: "frame.jet"
   footerTemplate: "footer.jet"
+  topMenuId: "top"
+  fixedMenuId: "fixed"
   defaultCommunityLogo: "/img/builtin/default-community.jpg"
   defaultUserPhoto: "/img/builtin/no-user.png"
   welcomeTitle: "Welcome to Amsterdam"
@@ -72,6 +75,8 @@ rendering:
   countryList:
     prioritize: US
   veniceCompatibleImageURLs: false
+  panicRecovery:
+    stackDataSize: "4 KiB"
 resources:
   viewTemplateDir: ""
   dialogTemplateDir: ""
@@ -91,6 +96,12 @@ posting:
       - "image/png"
 tuning:
   workerTasks: 4
+  timeouts:
+    httpRead: 30
+    httpWrite: 30
+    httpIdle: 120
+    pageExecute: 15
+    pageRender: 15
   queues:
     auditWrites: 16
     contextRecycle: 16

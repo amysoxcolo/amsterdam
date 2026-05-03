@@ -24,7 +24,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"github.com/CloudyKit/jet/v6"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -285,14 +285,14 @@ func PolicyPage(ctxt ui.AmContext) (string, any) {
 func JumpToShortcut(ctxt ui.AmContext) (string, any) {
 	link, err := database.AmDecodePostLink(ctxt.URLParam("postlink"))
 	if err != nil {
-		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).SetInternal(err)
+		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).Wrap(err)
 	}
 	scope, target := link.Classify()
 	if scope != "global" {
 		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink")))
 	}
 	if err = link.VerifyNames(ctxt.Ctx()); err != nil {
-		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).SetInternal(err)
+		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).Wrap(err)
 	}
 	targetURL := ""
 	switch target {

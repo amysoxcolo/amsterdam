@@ -13,104 +13,90 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/dustin/go-humanize"
-	"github.com/labstack/echo/v4"
-	glog "github.com/labstack/gommon/log"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 
 /*----------------------------------------------------------------------------
- * Gommon-log to logrus adapter
+ * slog handler that outputs to Logrus
  *----------------------------------------------------------------------------
  */
 
-/* toglog converts a Logrus logging level to a glog one.
- * Parameters:
- *     l - The Logrus log level to be converted.
- * Returns:
- *     The equivalent glog log level.
- */
-func toglog(l log.Level) glog.Lvl {
-	switch l {
-	case log.DebugLevel:
-		return glog.DEBUG
-	case log.InfoLevel:
-		return glog.INFO
-	case log.WarnLevel:
-		return glog.WARN
-	case log.ErrorLevel:
-		return glog.ERROR
-	default:
-		return glog.OFF
-	}
+// slog2logrus converts slog levels to Logrus levels.
+var slog2logrus = map[slog.Level]log.Level{
+	slog.LevelDebug: log.DebugLevel,
+	slog.LevelInfo:  log.InfoLevel,
+	slog.LevelWarn:  log.WarnLevel,
+	slog.LevelError: log.ErrorLevel,
 }
 
-/* fromglog converts a glog logging level to a Logrus one.
- * Parameters:
- *     l - The glog log level to be converted.
- * Returns:
- *     The equivalent Logrus log level.
- */
-func fromglog(l glog.Lvl) log.Level {
-	switch l {
-	case glog.DEBUG:
-		return log.DebugLevel
-	case glog.INFO:
-		return log.InfoLevel
-	case glog.WARN:
-		return log.WarnLevel
-	case glog.ERROR:
-		return log.ErrorLevel
-	default:
-		return log.PanicLevel
-	}
+// SlogLogrusHandler implements slog.Handler and routes to Logrus.
+type SlogLogrusHandler struct {
+	fields      log.Fields // fields defined in this handler
+	groupPrefix string     // group prefix
 }
 
-// EchoLogrusAdapter implements echo.Logger using logrus.
-type EchoLogrusAdapter struct{}
+// NewSlogLogrusHandler creates a SlogLogrusHandler with base information.
+func NewSlogLogrusHandler() *SlogLogrusHandler {
+	rc := new(SlogLogrusHandler{
+		fields:      make(log.Fields),
+		groupPrefix: "",
+	})
+	return rc
+}
 
-func (l *EchoLogrusAdapter) Output() io.Writer                 { return log.StandardLogger().Out }
-func (l *EchoLogrusAdapter) SetOutput(w io.Writer)             { log.SetOutput(w) }
-func (l *EchoLogrusAdapter) Prefix() string                    { return "" }
-func (l *EchoLogrusAdapter) SetPrefix(p string)                {}
-func (l *EchoLogrusAdapter) Level() glog.Lvl                   { return toglog(log.GetLevel()) }
-func (l *EchoLogrusAdapter) SetLevel(lvl glog.Lvl)             { log.SetLevel(fromglog(lvl)) }
-func (l *EchoLogrusAdapter) Print(i ...any)                    { log.Print(i...) }
-func (l *EchoLogrusAdapter) Printf(format string, args ...any) { log.Printf(format, args...) }
-func (l *EchoLogrusAdapter) Printj(j glog.JSON)                { log.WithFields(log.Fields(j)).Print() }
-func (l *EchoLogrusAdapter) Debug(i ...any)                    { log.Debug(i...) }
-func (l *EchoLogrusAdapter) Debugf(format string, args ...any) { log.Debugf(format, args...) }
-func (l *EchoLogrusAdapter) Debugj(j glog.JSON)                { log.WithFields(log.Fields(j)).Debug() }
-func (l *EchoLogrusAdapter) Info(i ...any)                     { log.Info(i...) }
-func (l *EchoLogrusAdapter) Infof(format string, args ...any)  { log.Infof(format, args...) }
-func (l *EchoLogrusAdapter) Infoj(j glog.JSON)                 { log.WithFields(log.Fields(j)).Info() }
-func (l *EchoLogrusAdapter) Warn(i ...any)                     { log.Warn(i...) }
-func (l *EchoLogrusAdapter) Warnf(format string, args ...any)  { log.Warnf(format, args...) }
-func (l *EchoLogrusAdapter) Warnj(j glog.JSON)                 { log.WithFields(log.Fields(j)).Warn() }
-func (l *EchoLogrusAdapter) Error(i ...any)                    { log.Error(i...) }
-func (l *EchoLogrusAdapter) Errorf(format string, args ...any) { log.Errorf(format, args...) }
-func (l *EchoLogrusAdapter) Errorj(j glog.JSON)                { log.WithFields(log.Fields(j)).Error() }
-func (l *EchoLogrusAdapter) Fatal(i ...any)                    { log.Fatal(i...) }
-func (l *EchoLogrusAdapter) Fatalf(format string, args ...any) { log.Fatalf(format, args...) }
-func (l *EchoLogrusAdapter) Fatalj(j glog.JSON)                { log.WithFields(log.Fields(j)).Fatal() }
-func (l *EchoLogrusAdapter) Panic(i ...any)                    { log.Panic(i...) }
-func (l *EchoLogrusAdapter) Panicf(format string, args ...any) { log.Panicf(format, args...) }
-func (l *EchoLogrusAdapter) Panicj(j glog.JSON)                { log.WithFields(log.Fields(j)).Panic() }
-func (l *EchoLogrusAdapter) SetHeader(h string)                {}
+// Enabled returns true if the specified log level is handled.
+func (h *SlogLogrusHandler) Enabled(ctx context.Context, lvl slog.Level) bool {
+	return log.IsLevelEnabled(slog2logrus[lvl])
+}
+
+// Handle sends a slog.Record to the log output.
+func (h *SlogLogrusHandler) Handle(ctx context.Context, r slog.Record) error {
+	flds := make(log.Fields)
+	for k, v := range h.fields {
+		flds[h.groupPrefix+k] = v
+	}
+	r.Attrs(func(a slog.Attr) bool {
+		flds[h.groupPrefix+a.Key] = a.Value.Any()
+		return true
+	})
+	ntry := log.NewEntry(log.StandardLogger()).WithTime(r.Time).WithFields(flds)
+	ntry.Log(slog2logrus[r.Level], r.Message)
+	return nil
+}
+
+// WithAttrs creates a new Handler from this one, with extra attributes.
+func (h *SlogLogrusHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newh := new(SlogLogrusHandler{fields: make(log.Fields)})
+	maps.Copy(newh.fields, h.fields)
+	for _, a := range attrs {
+		newh.fields[a.Key] = a.Value.Any()
+	}
+	newh.groupPrefix = h.groupPrefix
+	return newh
+}
+
+// WithGroup creates a new Handler from this one, with an extra group prefix.
+func (h *SlogLogrusHandler) WithGroup(name string) slog.Handler {
+	newh := new(SlogLogrusHandler{fields: make(log.Fields)})
+	maps.Copy(newh.fields, h.fields)
+	newh.groupPrefix = h.groupPrefix + name + "."
+	return newh
+}
 
 /*----------------------------------------------------------------------------
  * Echo middleware adapters
@@ -119,13 +105,13 @@ func (l *EchoLogrusAdapter) SetHeader(h string)                {}
 
 // LogrusMiddleware installs Logrus logging into the Echo middleware chain.
 func LogrusMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		start := time.Now()
 		err := next(c)
 		stop := time.Now()
 
 		req := c.Request()
-		res := c.Response()
+		res := c.Response().(*echo.Response)
 
 		log.WithFields(log.Fields{
 			"remote_ip":  c.RealIP(),
@@ -137,17 +123,6 @@ func LogrusMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}).Info("handled request")
 		return err
 	}
-}
-
-// LogrusPanicLogging is a log function hooked into the recovery middleware.
-func LogrusPanicLogging(c echo.Context, err error, stack []byte) error {
-	log.Errorf("[PANIC RECOVERY] %v", err)
-	scanner := bufio.NewScanner(bytes.NewReader(stack))
-	for scanner.Scan() {
-		line := strings.ReplaceAll(scanner.Text(), "\t", "    ")
-		log.Error(line)
-	}
-	return scanner.Err()
 }
 
 /*----------------------------------------------------------------------------

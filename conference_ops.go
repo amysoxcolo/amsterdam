@@ -26,7 +26,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
 	"git.erbosoft.com/amy/amsterdam/ui"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -22,7 +22,7 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 	"git.erbosoft.com/amy/amsterdam/util"
 	"github.com/biter777/countries"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // ENOJOIN is an error for not being permitted to join a community.
