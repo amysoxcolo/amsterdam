@@ -21,6 +21,13 @@ import (
 	"git.erbosoft.com/amy/amsterdam/ui"
 )
 
+// Invitation modes.
+const (
+	INVMODE_COMMUNITY  = "community"
+	INVMODE_CONFERENCE = "conference"
+	INVMODE_TOPIC      = "topic"
+)
+
 /* InviteToCommunity displays the community invitation form.
  * Parameters:
  *     ctxt - The AmContext for the request.
@@ -116,7 +123,7 @@ func InviteSend(ctxt ui.AmContext) (string, any) {
 	} else {
 		return "error", EPARAM
 	}
-	mode := "community"
+	mode := INVMODE_COMMUNITY
 	var conf *database.Conference = nil
 	var topic *database.Topic = nil
 	if ctxt.FormFieldIsSet("confid") {
@@ -145,9 +152,9 @@ func InviteSend(ctxt ui.AmContext) (string, any) {
 			if err != nil {
 				return "errors", err
 			}
-			mode = "topic"
+			mode = INVMODE_TOPIC
 		} else {
-			mode = "conference"
+			mode = INVMODE_CONFERENCE
 		}
 	}
 	addr := ctxt.FormField("addr")
@@ -168,6 +175,9 @@ func InviteSend(ctxt ui.AmContext) (string, any) {
 		mailMessage.SetTemplate("invite_private.jet")
 	}
 	mailMessage.AddTo(addr, "")
+	mailMessage.AddVariable("INVMODE_COMMUNITY", INVMODE_COMMUNITY)
+	mailMessage.AddVariable("INVMODE_CONFERENCE", INVMODE_CONFERENCE)
+	mailMessage.AddVariable("INVMODE_TOPIC", INVMODE_TOPIC)
 	mailMessage.AddVariable("comm", comm)
 	mailMessage.AddVariable("conf", conf)
 	mailMessage.AddVariable("topic", topic)

@@ -44,10 +44,10 @@ type Topic struct {
 
 // Link returns a link string to this topic.
 func (t *Topic) Link(ctx context.Context, commid int32, scope string) (string, error) {
-	if scope == "conference" {
+	if scope == PLSCOPE_CONFERENCE {
 		return fmt.Sprintf("%d.", t.Number), nil
 	}
-	if scope == "community" || scope == "global" {
+	if scope == PLSCOPE_COMMUNITY || scope == PLSCOPE_GLOBAL {
 		conf, err := AmGetConference(ctx, t.ConfId)
 		if err == nil {
 			var plink string

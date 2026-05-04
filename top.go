@@ -288,7 +288,7 @@ func JumpToShortcut(ctxt ui.AmContext) (string, any) {
 		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink"))).Wrap(err)
 	}
 	scope, target := link.Classify()
-	if scope != "global" {
+	if scope != database.PLSCOPE_GLOBAL {
 		return "error", echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("not found: %s", ctxt.URLParam("postlink")))
 	}
 	if err = link.VerifyNames(ctxt.Ctx()); err != nil {
@@ -296,13 +296,13 @@ func JumpToShortcut(ctxt ui.AmContext) (string, any) {
 	}
 	targetURL := ""
 	switch target {
-	case "community":
+	case database.PLCLASS_COMMUNITY:
 		targetURL = fmt.Sprintf("/comm/%s", link.Community)
-	case "conference":
+	case database.PLCLASS_CONFERENCE:
 		targetURL = fmt.Sprintf("/comm/%s/conf/%s", link.Community, link.Conference)
-	case "topic":
+	case database.PLCLASS_TOPIC:
 		targetURL = fmt.Sprintf("/comm/%s/conf/%s/r/%d", link.Community, link.Conference, link.Topic)
-	case "post", "postrange", "postopenrange":
+	case database.PLCLASS_POST, database.PLCLASS_POSTRANGE, database.PLCLASS_POSTOPENRANGE:
 		targetURL = fmt.Sprintf("/comm/%s/conf/%s/r/%d?r=%d,%d", link.Community, link.Conference, link.Topic, link.FirstPost, link.LastPost)
 	default:
 		return "error", fmt.Sprintf("invalid target '%s' for link: %s", target, ctxt.URLParam("postlink"))

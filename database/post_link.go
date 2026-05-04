@@ -20,6 +20,25 @@ import (
 	"strings"
 )
 
+// Post link scopes.
+const (
+	PLSCOPE_GLOBAL     = "global"
+	PLSCOPE_COMMUNITY  = "community"
+	PLSCOPE_CONFERENCE = "conference"
+	PLSCOPE_TOPIC      = "topic"
+	PLSCOPE_ERROR      = "error"
+)
+
+// Post link classifications.
+const (
+	PLCLASS_COMMUNITY     = "community"
+	PLCLASS_CONFERENCE    = "conference"
+	PLCLASS_TOPIC         = "topic"
+	PLCLASS_POST          = "post"
+	PLCLASS_POSTRANGE     = "postrange"
+	PLCLASS_POSTOPENRANGE = "postopenrange"
+)
+
 // PostLinkData is the structure holding the decoded parts of the post link.
 type PostLinkData struct {
 	Community  string
@@ -121,53 +140,53 @@ func (d *PostLinkData) Classify() (string, string) {
 				if d.FirstPost == -1 {
 					return "", ""
 				} else if d.LastPost == -1 {
-					return "topic", "postopenrange"
+					return PLSCOPE_TOPIC, PLCLASS_POSTOPENRANGE
 				} else if d.LastPost == d.FirstPost {
-					return "topic", "post"
+					return PLSCOPE_TOPIC, PLCLASS_POST
 				} else {
-					return "topic", "postrange"
+					return PLSCOPE_TOPIC, PLCLASS_POSTRANGE
 				}
 			} else {
 				if d.FirstPost == -1 {
-					return "conference", "topic"
+					return PLSCOPE_CONFERENCE, PLCLASS_TOPIC
 				} else if d.LastPost == -1 {
-					return "conference", "postopenrange"
+					return PLSCOPE_CONFERENCE, PLCLASS_POSTOPENRANGE
 				} else if d.LastPost == d.FirstPost {
-					return "conference", "post"
+					return PLSCOPE_CONFERENCE, PLCLASS_POST
 				} else {
-					return "conference", "postrange"
+					return PLSCOPE_CONFERENCE, PLCLASS_POSTRANGE
 				}
 			}
 		} else {
 			if d.Topic == -1 {
-				return "community", "conference"
+				return PLSCOPE_COMMUNITY, PLCLASS_CONFERENCE
 			} else {
 				if d.FirstPost == -1 {
-					return "community", "topic"
+					return PLSCOPE_COMMUNITY, PLCLASS_TOPIC
 				} else if d.LastPost == -1 {
-					return "community", "postopenrange"
+					return PLSCOPE_COMMUNITY, PLCLASS_POSTOPENRANGE
 				} else if d.LastPost == d.FirstPost {
-					return "community", "post"
+					return PLSCOPE_COMMUNITY, PLCLASS_POST
 				} else {
-					return "community", "postrange"
+					return PLSCOPE_COMMUNITY, PLCLASS_POSTRANGE
 				}
 			}
 		}
 	} else {
 		if d.Conference == "" {
-			return "global", "community"
+			return PLSCOPE_GLOBAL, PLCLASS_COMMUNITY
 		} else {
 			if d.Topic == -1 {
-				return "global", "conference"
+				return PLSCOPE_GLOBAL, PLCLASS_CONFERENCE
 			} else {
 				if d.FirstPost == -1 {
-					return "global", "topic"
+					return PLSCOPE_GLOBAL, PLCLASS_TOPIC
 				} else if d.LastPost == -1 {
-					return "global", "postopenrange"
+					return PLSCOPE_GLOBAL, PLCLASS_POSTOPENRANGE
 				} else if d.LastPost == d.FirstPost {
-					return "global", "post"
+					return PLSCOPE_GLOBAL, PLCLASS_POST
 				} else {
-					return "global", "postrange"
+					return PLSCOPE_GLOBAL, PLCLASS_POSTRANGE
 				}
 			}
 		}
@@ -276,25 +295,25 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 	if len(data) > maxLinkLength {
 		return nil, errors.New("post link string too long")
 	}
-	rc := PostLinkData{
+	rc := new(PostLinkData{
 		Community:  "",
 		Conference: "",
 		Topic:      -1,
 		FirstPost:  -1,
 		LastPost:   -1,
-	}
+	})
 
 	work := data
 	// First test: Bang
 	pos := strings.IndexByte(work, '!')
 	if pos > 0 {
-		err := validateCommunity(work[:pos], &rc)
+		err := validateCommunity(work[:pos], rc)
 		if err != nil {
 			return nil, err
 		}
 		work = work[pos+1:]
 		if len(work) == 0 {
-			return &rc, nil // community link
+			return rc, nil // community link
 		}
 	} else if pos == 0 {
 		return nil, errors.New("cannot have ! at beginning")
@@ -306,14 +325,14 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 		// no dots in here, must be either "postlink" or "community!conference"
 		var err error
 		if rc.Community == "" {
-			err = decodePostRange(work, &rc)
+			err = decodePostRange(work, rc)
 		} else {
-			err = validateConference(work, &rc)
+			err = validateConference(work, rc)
 		}
 		if err != nil {
 			return nil, err
 		}
-		return &rc, nil
+		return rc, nil
 	}
 
 	// Peel off the initial substring before the dot.
@@ -324,19 +343,19 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 		var err error
 		if rc.Community == "" {
 			// it's either "conference." or "topic." - try the latter first
-			err = decodeTopicNumber(confOrTopic, &rc)
+			err = decodeTopicNumber(confOrTopic, rc)
 			if err != nil {
 				// it's not a topic number, try it as a conference name
-				err = validateConference(confOrTopic, &rc)
+				err = validateConference(confOrTopic, rc)
 			}
 		} else {
 			// it was "community!conference."
-			err = validateConference(confOrTopic, &rc)
+			err = validateConference(confOrTopic, rc)
 		}
 		if err != nil {
 			return nil, err
 		}
-		return &rc, nil
+		return rc, nil
 	}
 
 	// Third test: Dot #2
@@ -347,38 +366,38 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 		if rc.Community == "" {
 			// either "conference.topic" or "topic.posts"
 			isTopic := false
-			err = decodeTopicNumber(confOrTopic, &rc)
+			err = decodeTopicNumber(confOrTopic, rc)
 			if err != nil {
 				// it's "conference.topic"
-				err = validateConference(confOrTopic, &rc)
+				err = validateConference(confOrTopic, rc)
 				isTopic = true
 			}
 			if err == nil {
 				if isTopic {
-					err = decodeTopicNumber(work, &rc)
+					err = decodeTopicNumber(work, rc)
 				} else {
-					err = decodePostRange(work, &rc)
+					err = decodePostRange(work, rc)
 				}
 			}
 		} else {
 			// we have "community!conference.topic"
-			err = validateConference(confOrTopic, &rc)
+			err = validateConference(confOrTopic, rc)
 			if err == nil {
-				err = decodeTopicNumber(work, &rc)
+				err = decodeTopicNumber(work, rc)
 			}
 		}
 		if err != nil {
 			return nil, err
 		}
-		return &rc, nil
+		return rc, nil
 	} else if pos == 0 {
 		return nil, errors.New("cannot have . at beginning of string")
 	}
 
 	// We definitely have "conference.topic.something" or "community!conference.topic.something"
-	err := validateConference(confOrTopic, &rc)
+	err := validateConference(confOrTopic, rc)
 	if err == nil {
-		err = decodeTopicNumber(work[:pos], &rc)
+		err = decodeTopicNumber(work[:pos], rc)
 	}
 	if err != nil {
 		return nil, err
@@ -386,22 +405,23 @@ func AmDecodePostLink(data string) (*PostLinkData, error) {
 	work = work[pos+1:]
 	if len(work) == 0 {
 		// we had "conference.topic." or "communtiy!conference.topic.", those are both valid
-		return &rc, nil
+		return rc, nil
 	}
-	err = decodePostRange(work, &rc) // the rest must be the post range
+	err = decodePostRange(work, rc) // the rest must be the post range
 	if err != nil {
 		return nil, err
 	}
-	return &rc, nil
+	return rc, nil
 }
 
+// AmCreatePostLinkContext creates a new empty post link context.
 func AmCreatePostLinkContext(community string, commid int32, conference string, topic int16) *PostLinkData {
-	return &PostLinkData{
+	return new(PostLinkData{
 		Community:  community,
 		CommId:     commid,
 		Conference: conference,
 		Topic:      topic,
 		FirstPost:  -1,
 		LastPost:   -1,
-	}
+	})
 }

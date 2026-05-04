@@ -97,7 +97,7 @@ func ValidateConference(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		ctxt := AmContextFromEchoContext(c)
 		comm := ctxt.CurrentCommunity() // set by middleware
-		b, err := database.AmTestService(c.Request().Context(), comm, "Conference")
+		b, err := database.AmTestService(c.Request().Context(), comm, database.AM_SVC_CONFERENCE)
 		if err != nil {
 			return AmSendPageData(c, ctxt, "error", err)
 		}

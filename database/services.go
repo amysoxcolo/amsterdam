@@ -25,6 +25,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// The service domain names.
+const (
+	AM_DOMAIN_COMMUNITY = "community"
+)
+
+// The service names.
+const (
+	AM_SVC_PROFILE    = "Profile"
+	AM_SVC_ADMIN      = "Admin"
+	AM_SVC_SYSADMIN   = "SysAdmin"
+	AM_SVC_CONFERENCE = "Conference"
+	AM_SVC_MEMBERS    = "Members"
+)
+
 // ServiceVTable is a series of functions called for services on specific events.
 type ServiceVTable interface {
 	OnNewCommunity(context.Context, *sqlx.Tx, *Community) error
@@ -114,13 +128,13 @@ func init() {
 		serviceRoot.Domains[i].seqOrder = sqo
 		serviceRoot.byName[dom.DomainName] = &(serviceRoot.Domains[i])
 	}
-	dom := serviceRoot.byName["community"]
+	dom := serviceRoot.byName[AM_DOMAIN_COMMUNITY]
 	empty := emptyServiceVTable{}
-	dom.byId["Profile"].vtable = &empty
-	dom.byId["Admin"].vtable = &empty
-	dom.byId["SysAdmin"].vtable = &empty
-	dom.byId["Conference"].vtable = &(conferenceServiceVTable{})
-	dom.byId["Members"].vtable = &empty
+	dom.byId[AM_SVC_PROFILE].vtable = &empty
+	dom.byId[AM_SVC_ADMIN].vtable = &empty
+	dom.byId[AM_SVC_SYSADMIN].vtable = &empty
+	dom.byId[AM_SVC_CONFERENCE].vtable = &(conferenceServiceVTable{})
+	dom.byId[AM_SVC_MEMBERS].vtable = &empty
 }
 
 // setupServicesCache sets up the services cache.
@@ -166,7 +180,7 @@ func AmGetCommunityServices(ctx context.Context, cid int32) ([]*ServiceDef, erro
 		if err != nil {
 			return nil, err
 		}
-		dom := serviceRoot.byName["community"]
+		dom := serviceRoot.byName[AM_DOMAIN_COMMUNITY]
 		a := make([]*ServiceDef, 0, len(dom.Services))
 		for rs.Next() {
 			var ndx int16
@@ -198,7 +212,7 @@ func AmGetCommunityServicesTx(ctx context.Context, tx *sqlx.Tx, cid int32) ([]*S
 		if err != nil {
 			return nil, err
 		}
-		dom := serviceRoot.byName["community"]
+		dom := serviceRoot.byName[AM_DOMAIN_COMMUNITY]
 		a := make([]*ServiceDef, 0, len(dom.Services))
 		for rs.Next() {
 			var ndx int16
@@ -222,7 +236,7 @@ func AmGetCommunityServicesTx(ctx context.Context, tx *sqlx.Tx, cid int32) ([]*S
  *     Standard Go error status.
  */
 func AmEstablishCommunityServices(ctx context.Context, tx *sqlx.Tx, c *Community) error {
-	dom := serviceRoot.byName["community"]
+	dom := serviceRoot.byName[AM_DOMAIN_COMMUNITY]
 	a := make([]*ServiceDef, 0, len(dom.Services))
 	for i, svc := range dom.Services {
 		if svc.Default {

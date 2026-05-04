@@ -17,12 +17,12 @@ link at the top of the page, or click the "Log In" link if you already have
 a Amsterdam account.  Once you have completed the process, click the "Join Now"
 button.  You will then be able to take part in the conferences that are
 going on in the community.
-{{ if mode == "conference" }}
+{{ if mode == INVMODE_CONFERENCE }}
 After you've joined the "{{ comm.Name }}" community, check out the
 "{{ conf.Name }}" conference.  To find it, after joining the community,
 click "Conferences" on the left menu bar, then click on the
 "{{ conf.Name }}" conference name in the conference list.
-{{ else if mode == "topic" }}
+{{ else if mode == INVMODE_TOPIC }}
 After you've joined the "{{ comm.Name }}" community, check out the
 "{{ topic.Name | raw }}" topic in the "{{ conf.Name }}" conference.  To find it,
 after joining the community, click "Conferences" on the left menu bar, then

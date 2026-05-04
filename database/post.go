@@ -254,10 +254,10 @@ func (p *PostHeader) Text(ctx context.Context) (string, error) {
 
 // Link returns a link string to this post.
 func (p *PostHeader) Link(ctx context.Context, commid int32, scope string) (string, error) {
-	if scope == "topic" {
+	if scope == PLSCOPE_TOPIC {
 		return fmt.Sprintf("%d", p.Num), nil
 	}
-	if scope == "conference" || scope == "community" || scope == "global" {
+	if scope == PLSCOPE_CONFERENCE || scope == PLSCOPE_COMMUNITY || scope == PLSCOPE_GLOBAL {
 		topic, err := AmGetTopic(ctx, p.TopicId)
 		if err != nil {
 			return "", err
@@ -720,55 +720,55 @@ func decodeSearchScope(ctx context.Context, scopeValues []any) (string, *Communi
 		}
 		if thisComm, ok := scopeValues[i].(*Community); ok {
 			if myComm != nil {
-				return "error", nil, nil, nil, errors.New("cannot specify multiple communities")
+				return PLSCOPE_ERROR, nil, nil, nil, errors.New("cannot specify multiple communities")
 			}
 			myComm = thisComm
 			continue
 		}
 		if thisConf, ok := scopeValues[i].(*Conference); ok {
 			if myConf != nil {
-				return "error", nil, nil, nil, errors.New("cannot specify multiple conferences")
+				return PLSCOPE_ERROR, nil, nil, nil, errors.New("cannot specify multiple conferences")
 			}
 			myConf = thisConf
 			continue
 		}
 		if thisTopic, ok := scopeValues[i].(*Topic); ok {
 			if myTopic != nil {
-				return "error", nil, nil, nil, errors.New("cannot specify multiple topics")
+				return PLSCOPE_ERROR, nil, nil, nil, errors.New("cannot specify multiple topics")
 			}
 			myTopic = thisTopic
 			continue
 		}
-		return "error", nil, nil, nil, errors.New("invalid item specified in scope")
+		return PLSCOPE_ERROR, nil, nil, nil, errors.New("invalid item specified in scope")
 	}
 
 	// Based on which slots are full, determine the scope. Also error-check relations between the specified slots.
 	if myComm == nil {
 		if myConf != nil || myTopic != nil {
-			return "error", nil, nil, nil, errors.New("conference/topic specified without community")
+			return PLSCOPE_ERROR, nil, nil, nil, errors.New("conference/topic specified without community")
 		}
-		return "global", nil, nil, nil, nil
+		return PLSCOPE_GLOBAL, nil, nil, nil, nil
 	}
 	if myConf == nil {
 		if myTopic != nil {
-			return "error", nil, nil, nil, errors.New("topic specified without conference")
+			return PLSCOPE_ERROR, nil, nil, nil, errors.New("topic specified without conference")
 		}
-		return "community", myComm, nil, nil, nil
+		return PLSCOPE_COMMUNITY, myComm, nil, nil, nil
 	}
 	f, err := myConf.InCommunity(ctx, myComm)
 	if err != nil {
-		return "error", nil, nil, nil, err
+		return PLSCOPE_ERROR, nil, nil, nil, err
 	}
 	if !f {
-		return "error", nil, nil, nil, errors.New("community does not contain conference")
+		return PLSCOPE_ERROR, nil, nil, nil, errors.New("community does not contain conference")
 	}
 	if myTopic == nil {
-		return "conference", myComm, myConf, nil, nil
+		return PLSCOPE_CONFERENCE, myComm, myConf, nil, nil
 	}
 	if myTopic.ConfId != myConf.ConfId {
-		return "error", nil, nil, nil, errors.New("conference does not contain topic")
+		return PLSCOPE_ERROR, nil, nil, nil, errors.New("conference does not contain topic")
 	}
-	return "topic", myComm, myConf, myTopic, nil
+	return PLSCOPE_TOPIC, myComm, myConf, myTopic, nil
 }
 
 /* AmSearchPosts finds posts by using full text search on their contents.
@@ -794,7 +794,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 	}
 
 	// Get the proper service index to match against the community services.
-	confService, err := AmGetServiceIndex("community", "Conference")
+	confService, err := AmGetServiceIndex(AM_DOMAIN_COMMUNITY, AM_SVC_CONFERENCE)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -802,7 +802,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 	// Get the count of matching posts.
 	var count int
 	switch scope {
-	case "global":
+	case PLSCOPE_GLOBAL:
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -810,7 +810,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, searchTerms)
-	case "community":
+	case PLSCOPE_COMMUNITY:
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -818,7 +818,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, searchTerms)
-	case "conference":
+	case PLSCOPE_CONFERENCE:
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -826,7 +826,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			LEFT JOIN confmember x ON (c.confid = x.confid AND u.uid = x.uid)
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?)`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms)
-	case "topic":
+	case PLSCOPE_TOPIC:
 		err = amdb.GetContext(ctx, &count, `SELECT COUNT(*)
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -844,7 +844,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 	// Get the matching posts themselves.
 	var rs *sql.Rows
 	switch scope {
-	case "global":
+	case PLSCOPE_GLOBAL:
 		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -853,7 +853,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, searchTerms, max, offset)
-	case "community":
+	case PLSCOPE_COMMUNITY:
 		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -862,7 +862,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, searchTerms, max, offset)
-	case "conference":
+	case PLSCOPE_CONFERENCE:
 		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid
@@ -871,7 +871,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 			WHERE u.uid = ? AND f.ftr_code = ? AND GREATEST(u.base_lvl,m.granted_lvl,s.granted_lvl,COALESCE(x.granted_lvl,0)) >= c.read_lvl
 			AND q.commid = ? AND c.confid = ? AND p.scribble_uid IS NULL AND MATCH(d.data) AGAINST (?) ORDER BY q.commname, c.name, t.num, p.num
 			LIMIT ? OFFSET ?`, u.Uid, confService, comm.Id, conf.ConfId, searchTerms, max, offset)
-	case "topic":
+	case PLSCOPE_TOPIC:
 		rs, err = amdb.QueryContext(ctx, `SELECT q.commid, q.alias, c.confid, t.topicid, t.num, p.postid, p.num, u2.username, p.posted, p.linecount, d.data
 			FROM communities q JOIN commtoconf s ON s.commid = q.commid JOIN confs c ON c.confid = s.confid
 			JOIN commmember m ON m.commid = q.commid JOIN users u ON u.uid = m.uid JOIN commftrs f ON f.commid = q.commid

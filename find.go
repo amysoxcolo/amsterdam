@@ -330,7 +330,7 @@ func commonFindGetBackend(ctxt ui.AmContext) (string, any) {
  */
 func FindPostsPageCommunity(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
-	ctxt.VarMap().Set("scope", "community")
+	ctxt.VarMap().Set("scope", database.PLSCOPE_COMMUNITY)
 	ctxt.VarMap().Set("entityName", comm.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf", comm.Alias))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/find", comm.Alias))
@@ -346,7 +346,7 @@ func FindPostsPageCommunity(ctxt ui.AmContext) (string, any) {
  */
 func FindPostsPageConference(ctxt ui.AmContext) (string, any) {
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
-	ctxt.VarMap().Set("scope", "conference")
+	ctxt.VarMap().Set("scope", database.PLSCOPE_CONFERENCE)
 	ctxt.VarMap().Set("entityName", conf.Name)
 	ctxt.VarMap().Set("backlink", ctxt.GetScratch("ConferenceLink").(string))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("%s/find", ctxt.GetScratch("ConferenceLink")))
@@ -362,7 +362,7 @@ func FindPostsPageConference(ctxt ui.AmContext) (string, any) {
  */
 func FindPostsPageTopic(ctxt ui.AmContext) (string, any) {
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
-	ctxt.VarMap().Set("scope", "topic")
+	ctxt.VarMap().Set("scope", database.PLSCOPE_TOPIC)
 	ctxt.VarMap().Set("entityName", topic.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("%s/op/%d/find", ctxt.GetScratch("ConferenceLink"), topic.Number))
@@ -417,7 +417,7 @@ func commonFindPostBackend(ctxt ui.AmContext, comm *database.Community, conf *da
  */
 func FindPostsCommunity(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
-	ctxt.VarMap().Set("scope", "community")
+	ctxt.VarMap().Set("scope", database.PLSCOPE_COMMUNITY)
 	ctxt.VarMap().Set("entityName", comm.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("/comm/%s/conf", comm.Alias))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("/comm/%s/find", comm.Alias))
@@ -434,7 +434,7 @@ func FindPostsCommunity(ctxt ui.AmContext) (string, any) {
 func FindPostsConference(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
-	ctxt.VarMap().Set("scope", "conference")
+	ctxt.VarMap().Set("scope", database.PLSCOPE_CONFERENCE)
 	ctxt.VarMap().Set("entityName", conf.Name)
 	ctxt.VarMap().Set("backlink", ctxt.GetScratch("ConferenceLink").(string))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("%s/find", ctxt.GetScratch("ConferenceLink")))
@@ -452,7 +452,7 @@ func FindPostsTopic(ctxt ui.AmContext) (string, any) {
 	comm := ctxt.CurrentCommunity()
 	conf := ctxt.GetScratch("currentConference").(*database.Conference)
 	topic := ctxt.GetScratch("currentTopic").(*database.Topic)
-	ctxt.VarMap().Set("scope", "topic")
+	ctxt.VarMap().Set("scope", database.PLSCOPE_TOPIC)
 	ctxt.VarMap().Set("entityName", topic.Name)
 	ctxt.VarMap().Set("backlink", fmt.Sprintf("%s/r/%d", ctxt.GetScratch("ConferenceLink"), topic.Number))
 	ctxt.VarMap().Set("postlink", fmt.Sprintf("%s/op/%d/find", ctxt.GetScratch("ConferenceLink"), topic.Number))

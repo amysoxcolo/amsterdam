@@ -13,11 +13,11 @@
     <div class="mb-2">
         <div class=" flex items-baseline gap-2">
             <h1 class="text-blue-800 text-4xl font-bold">Find Posts</h1>
-            {{ if scope == "community" }}
+            {{ if scope == PLSCOPE_COMMUNITY }}
                 <span class="text-blue-800 text-xl font-bold ml-2">in Community: {{ entityName }}</span>
-            {{ else if scope == "conference" }}
+            {{ else if scope == PLSCOPE_CONFERENCE }}
                 <span class="text-blue-800 text-xl font-bold ml-2">in Conference: {{ entityName }}</span>
-            {{ else if scope == "topic" }}
+            {{ else if scope == PLSCOPE_TOPIC }}
                 <span class="text-blue-800 text-xl font-bold ml-2">in Topic: {{ entityName | raw }}</span>
             {{ end }}
         </div>
@@ -26,11 +26,11 @@
 
     <!-- Backlink -->
     <div class="mb-4">
-        {{ if scope == "community" }}
+        {{ if scope == PLSCOPE_COMMUNITY }}
             <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backlink }}">Return to Conference List</a>
-        {{ else if scope == "conference" }}
+        {{ else if scope == PLSCOPE_CONFERENCE }}
             <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backlink }}">Return to Topic List</a>
-        {{ else if scope == "topic" }}
+        {{ else if scope == PLSCOPE_TOPIC }}
             <a class="text-blue-700 hover:text-blue-900 text-sm font-medium" href="{{ backlink }}">Return to Topic</a>
         {{ end }}
     </div>
