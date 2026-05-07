@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -40,8 +41,22 @@ import (
 // READ_HEADER_TIMEOUT is the timeout value for reading headers in seconds. (Deliberately NOT configurable because this is a security issue)
 const READ_HEADER_TIMEOUT = 2
 
+// GRACEFUL_SHUTDOWN_TIMEOUT is the timeout value for a graceful shutdown.
+const GRACEFUL_SHUTDOWN_TIMEOUT = 10 * time.Second
+
 // GetAndPost is used to have functions that respond to both GET and POST on a URI.
 var GetAndPost = []string{http.MethodGet, http.MethodPost}
+
+// myIPAddress returns the IP address of this computer.
+func myIPAddress() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP
+}
 
 // setupEcho creates, configures, and returns a new Echo instance.
 func setupEcho() *echo.Echo {
@@ -225,11 +240,15 @@ var SystemStartTime time.Time
 // main is Ye Olde Main Function.
 func main() {
 	SystemStartTime = time.Now()
+
+	// Determine my IP address.
+	myIP := myIPAddress()
+
 	// Configure the system.
 	config.SetupConfig()
 	closer := SetupLogging()
 	defer closer()
-	closer, err := database.SetupDb()
+	dbVersion, closer, err := database.SetupDb()
 	if err != nil {
 		panic(fmt.Sprintf("Database open failure: %v", err))
 	}
@@ -239,12 +258,6 @@ func main() {
 	htmlcheck.SetupDicts()
 	closer = ui.SetupUILayer()
 	defer closer()
-
-	// Determine my IP address and the admin user.
-	myIP, err := util.MyIPAddress()
-	if err != nil {
-		panic(err)
-	}
 
 	// Set up to trap SIGINT/SIGTERM and shut down gracefully
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -262,7 +275,7 @@ func main() {
 
 	// Audit the startup
 	database.AmStoreAudit(database.AmNewAudit(database.AuditStartup, 0, myIP.String(),
-		fmt.Sprintf("version=%s", config.AMSTERDAM_VERSION)))
+		fmt.Sprintf("version=%s", config.AMSTERDAM_VERSION), fmt.Sprintf("database=%s", dbVersion)))
 	defer func() {
 		// Audit the shutdown
 		database.AmStoreAudit(database.AmNewAudit(database.AuditShutdown, 0, myIP.String()))
@@ -273,7 +286,7 @@ func main() {
 		Address:         config.GlobalComputedConfig.Listen,
 		HideBanner:      true,
 		HidePort:        true,
-		GracefulTimeout: 10 * time.Second,
+		GracefulTimeout: GRACEFUL_SHUTDOWN_TIMEOUT,
 		OnShutdownError: func(err error) {
 			log.Fatalf("error in shutting down the server: %v", err)
 		},

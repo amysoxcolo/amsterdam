@@ -14,6 +14,7 @@ package ui
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -120,8 +121,7 @@ func AmLoadDialog(name string) (*Dialog, error) {
 		f, err = extDialogs.Open(fmt.Sprintf("%s.yaml", name))
 		if err != nil {
 			f = nil
-			pe := err.(*fs.PathError)
-			if pe.Err == os.ErrInvalid || pe.Err == os.ErrNotExist {
+			if errors.Is(err, os.ErrInvalid) || errors.Is(err, os.ErrNotExist) {
 				err = nil
 			}
 		}

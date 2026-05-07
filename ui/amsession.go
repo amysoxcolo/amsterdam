@@ -18,7 +18,6 @@ import (
 	"net/http"
 	"slices"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
@@ -32,6 +31,12 @@ import (
 	the session variables, as our use case also dictates that the sessions be part of a global map in the session store so they can
 	be timed out as well as used to show the logged-in users.  This is similar to the session support provided in J2EE servlets.
 */
+
+// DEFAULT_SESSION_EXPIRE is the default time in which sessions will expire.
+const DEFAULT_SESSION_EXPIRE = 1 * time.Hour
+
+// The interval at which all sessions will be swept.
+const SESSION_STORE_SWEEP_INTERVAL = 2 * time.Minute
 
 // AmSessionOptions gives the options for the session.
 type AmSessionOptions struct {
@@ -244,11 +249,10 @@ func (sess *amSession) Hit() {
 
 // amSessionStore is the implementation structure for AmSessionStore.
 type amSessionStore struct {
-	mutex        sync.RWMutex
-	sessions     map[string]*amSession
-	maxEntries   int
-	expiry       time.Duration
-	sweepRunning atomic.Bool
+	mutex      sync.RWMutex
+	sessions   map[string]*amSession
+	maxEntries int
+	expiry     time.Duration
 }
 
 // createAmSessionStore creates the session store.
@@ -258,7 +262,6 @@ func createAmSessionStore(exp time.Duration) *amSessionStore {
 		maxEntries: 0,
 		expiry:     exp,
 	}
-	rc.sweepRunning.Store(true)
 	return rc
 }
 
@@ -339,9 +342,15 @@ func (st *amSessionStore) SessionInfo() (int, []string, int) {
  *     tick - Channel that "pulses" periodically to run the task.
  *     done - Channel we write to when we're done.
  */
-func (st *amSessionStore) sweep(tick <-chan time.Time, done chan bool) {
-	for range tick {
-		if st.sweepRunning.Load() {
+func (st *amSessionStore) sweep(ctx context.Context, done chan bool) {
+	tkr := time.NewTicker(SESSION_STORE_SWEEP_INTERVAL)
+	for {
+		select {
+		case <-ctx.Done():
+			tkr.Stop()
+			done <- true
+			return
+		case <-tkr.C:
 			// phase 1 - identify expired sessions
 			st.mutex.RLock()
 			zap := make([]string, 0, len(st.sessions))
@@ -366,11 +375,8 @@ func (st *amSessionStore) sweep(tick <-chan time.Time, done chan bool) {
 				}
 				st.mutex.Unlock()
 			}
-		} else {
-			break
 		}
 	}
-	done <- true
 }
 
 // sessionStore is the global session store.
@@ -381,30 +387,21 @@ func setupSessionManager() func() {
 	// get the time for the session to expire
 	d, err := time.ParseDuration(config.GlobalConfig.Site.SessionExpire)
 	if err != nil {
-		d, err = time.ParseDuration("1h")
-		if err != nil {
-			panic(err.Error())
-		}
+		log.Errorf("invalid session timeout value: %s", config.GlobalConfig.Site.SessionExpire)
+		d = DEFAULT_SESSION_EXPIRE
 	}
 
 	// create session store
 	sessionStore = createAmSessionStore(d)
 
-	// get the clock value to run sweeps
-	d, err = time.ParseDuration("1s")
-	if err != nil {
-		panic(err.Error())
-	}
-
 	// set up the sweep runner
-	tkr := time.NewTicker(d)
+	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan bool)
-	go sessionStore.sweep(tkr.C, done)
+	go sessionStore.sweep(ctx, done)
 	return func() {
 		// stop the sweep runner
-		sessionStore.sweepRunning.Store(false)
+		cancel()
 		<-done
-		tkr.Stop()
 	}
 }
 

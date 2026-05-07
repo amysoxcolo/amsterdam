@@ -31,6 +31,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// DEFAULT_MAXLOG is the default maximum log file size (16 megabytes).
+const DEFAULT_MAXLOG = 16 * 1024 * 1024
+
+// LOG_ROTATE_INTERVAL is the interval, in seconds, at which we try to rotate the logfile.
+const LOG_ROTATE_INTERVAL = 10
+
 /*----------------------------------------------------------------------------
  * slog handler that outputs to Logrus
  *----------------------------------------------------------------------------
@@ -52,11 +58,7 @@ type SlogLogrusHandler struct {
 
 // NewSlogLogrusHandler creates a SlogLogrusHandler with base information.
 func NewSlogLogrusHandler() *SlogLogrusHandler {
-	rc := new(SlogLogrusHandler{
-		fields:      make(log.Fields),
-		groupPrefix: "",
-	})
-	return rc
+	return new(SlogLogrusHandler{fields: make(log.Fields), groupPrefix: ""})
 }
 
 // Enabled returns true if the specified log level is handled.
@@ -81,20 +83,18 @@ func (h *SlogLogrusHandler) Handle(ctx context.Context, r slog.Record) error {
 
 // WithAttrs creates a new Handler from this one, with extra attributes.
 func (h *SlogLogrusHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	newh := new(SlogLogrusHandler{fields: make(log.Fields)})
+	newh := new(SlogLogrusHandler{fields: make(log.Fields), groupPrefix: h.groupPrefix})
 	maps.Copy(newh.fields, h.fields)
 	for _, a := range attrs {
 		newh.fields[a.Key] = a.Value.Any()
 	}
-	newh.groupPrefix = h.groupPrefix
 	return newh
 }
 
 // WithGroup creates a new Handler from this one, with an extra group prefix.
 func (h *SlogLogrusHandler) WithGroup(name string) slog.Handler {
-	newh := new(SlogLogrusHandler{fields: make(log.Fields)})
+	newh := new(SlogLogrusHandler{fields: make(log.Fields), groupPrefix: h.groupPrefix + name + "."})
 	maps.Copy(newh.fields, h.fields)
-	newh.groupPrefix = h.groupPrefix + name + "."
 	return newh
 }
 
@@ -160,6 +160,7 @@ func (lf *amLogFile) Close() error {
 }
 
 // rotate closes the log file and moves it to a new name, shuffling the previously stored log files by the same amount.
+// N.B.: We must be holding lf.mutex.
 func (lf *amLogFile) rotate() error {
 	if lf.keep == 0 && lf.keepCompressed == 0 {
 		return nil // degenerate case, keep the log file the same
@@ -262,7 +263,9 @@ func (lf *amLogFile) tryRotate() {
 	if lf.curSize >= lf.maxSize {
 		err := lf.rotate()
 		if err != nil {
-			//log.Error("log rotation failed")
+			log.SetOutput(os.Stderr)
+			log.Errorf("log rotation failed: %v", err)
+			log.SetOutput(lf)
 		}
 	}
 	lf.mutex.Unlock()
@@ -302,8 +305,7 @@ func (lf *amLogFile) open(path string) error {
 
 // logScanner is a goroutine that monitors the log file to see when it needs rotating.
 func logScanner(ctx context.Context, lf *amLogFile, done chan bool) {
-	d, _ := time.ParseDuration("10s")
-	t := time.NewTicker(d)
+	t := time.NewTicker(LOG_ROTATE_INTERVAL * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
@@ -319,8 +321,10 @@ func logScanner(ctx context.Context, lf *amLogFile, done chan bool) {
 // SetupLogging sets up the log file based on the configuration data.
 func SetupLogging() func() {
 	loglevel, err := log.ParseLevel(config.GlobalComputedConfig.LogLevel)
-	if err != nil {
+	if err == nil {
 		loglevel = log.ErrorLevel
+	} else {
+		log.Errorf("default log level not valid: %s (%v)", config.GlobalComputedConfig.LogLevel, err)
 	}
 	if config.GlobalComputedConfig.DebugMode && loglevel != log.TraceLevel {
 		loglevel = log.DebugLevel
@@ -333,7 +337,8 @@ func SetupLogging() func() {
 		amlog := new(amLogFile)
 		maxlog, err := humanize.ParseBytes(config.GlobalConfig.Logging.MaxLogSize)
 		if err != nil {
-			maxlog = 16 * 1024 * 1024 // default to 16 megabytes
+			log.Errorf("invalid value for max log size: %s (%v)", config.GlobalConfig.Logging.MaxLogSize, err)
+			maxlog = DEFAULT_MAXLOG
 		}
 		amlog.maxSize = int64(maxlog)
 		amlog.keep = config.GlobalConfig.Logging.KeepLogFiles
@@ -344,13 +349,14 @@ func SetupLogging() func() {
 			ctx, cancelfunc = context.WithCancel(context.Background())
 			done = make(chan bool)
 			go logScanner(ctx, amlog, done)
+		} else {
+			log.Errorf("**** failed to open amlog: %v - logs will go to stdout", err)
 		}
 	}
 	if logfile == nil {
 		log.SetOutput(os.Stdout)
 	} else {
 		log.SetOutput(logfile)
-
 	}
 	log.SetLevel(loglevel)
 

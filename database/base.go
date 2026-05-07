@@ -29,9 +29,9 @@ import (
 
 // Error classifications
 const (
-	classUnspecified = 0
-	classNeedInstall = 1
-	classNeedConvert = 2
+	classUnspecified = iota // unspecified, barf
+	classNeedInstall        // need to install the database
+	classNeedConvert        // need to convert a Venice database
 )
 
 // MySQL Errors
@@ -210,11 +210,11 @@ func prepareDB() (string, error) {
 }
 
 // SetupDb sets up the database and associated items.
-func SetupDb() (func(), error) {
+func SetupDb() (string, func(), error) {
 	exitfns := make([]func(), 0, 2)
 	version, err := prepareDB()
 	if err != nil {
-		return nil, err
+		return "X", nil, err
 	}
 	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, buildMysqlDSN(false))
 	if err == nil {
@@ -223,6 +223,7 @@ func SetupDb() (func(), error) {
 		if err == nil {
 			if g.Version != version {
 				log.Warnf("!! database version %s does not match prepared version %s", g.Version, version)
+				version = g.Version
 			}
 			setupAdCache()
 			setupUserCache()
@@ -232,11 +233,11 @@ func SetupDb() (func(), error) {
 			setupConferenceCache()
 			exitfns = append(exitfns, setupAuditWriter())
 			exitfns = append(exitfns, setupIPBanSweep())
-			log.Infof("SetupDb(): database version %s", g.Version)
+			log.Infof("SetupDb(): database version %s", version)
 		}
 	}
 	slices.Reverse(exitfns)
-	return func() {
+	return version, func() {
 		for _, f := range exitfns {
 			f()
 		}
@@ -262,6 +263,8 @@ func transaction(ctx context.Context) (*sqlx.Tx, func() error, func()) {
 			err = tx.Commit()
 			if err == nil {
 				live = false
+			} else {
+				log.Errorf("***COMMIT ERROR*** %v", err)
 			}
 		}
 		return err

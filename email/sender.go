@@ -234,6 +234,9 @@ func SetupMailSender() func() {
 	emailRenderer.AddGlobal("AmsterdamVersion", config.AMSTERDAM_VERSION)
 	emailRenderer.AddGlobal("AmsterdamCopyright", config.AMSTERDAM_COPYRIGHT)
 	emailRenderer.AddGlobal("GlobalConfig", config.GlobalConfig)
+	emailRenderer.AddGlobal("PLSCOPE_COMMUNITY", database.PLSCOPE_COMMUNITY)
+	emailRenderer.AddGlobal("PLSCOPE_CONFERENCE", database.PLSCOPE_CONFERENCE)
+	emailRenderer.AddGlobal("PLSCOPE_TOPIC", database.PLSCOPE_TOPIC)
 
 	// Start the recycler.
 	messageRecycleBin = make(chan *amMessage, config.GlobalConfig.Tuning.Queues.EmailRecycle)

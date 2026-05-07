@@ -55,10 +55,8 @@ func SetupDicts() {
 			log.Errorf("failed to load external dictionary %s: %v", config.GlobalConfig.Posting.ExternalDictionary, err)
 		}
 	}
-	rw := spellingRewriter{
-		dict: NewCompositeDict(dicts),
-	}
-	rewriterRegistry[rw.Name()] = &rw
+	rw := new(spellingRewriter{dict: NewCompositeDict(dicts)})
+	rewriterRegistry[rw.Name()] = rw
 }
 
 // spellingRewriter is a rewriter that flags spelling errors.
@@ -89,10 +87,10 @@ func (rw *spellingRewriter) Rewrite(ctx context.Context, data string, svc rewrit
 	if rw.dict.CheckWord(data) {
 		return nil
 	}
-	return &markupData{
+	return new(markupData{
 		beginMarkup: defaultBeginError,
 		text:        data,
 		endMarkup:   defaultEndError,
 		rescan:      false,
-	}
+	})
 }
