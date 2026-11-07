@@ -117,7 +117,8 @@ func ShowCommunity(ctxt ui.AmContext) (string, any) {
 		b.WriteString(*ci.Region)
 	}
 	if ci.PostalCode != nil {
-		b.WriteString("  " + *ci.PostalCode)
+		b.WriteString("  ")
+		b.WriteString(*ci.PostalCode)
 	}
 	ctxt.VarMap().Set("addrLast", b.String())
 	if ci.Country != nil && *ci.Country != "" {
