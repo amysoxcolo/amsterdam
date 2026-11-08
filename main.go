@@ -71,7 +71,7 @@ func setupEcho() *echo.Echo {
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
-	e.Use(LogrusMiddleware)
+	e.Use(LoggingMiddleware)
 
 	// set up the rate limiter from the configuration
 	rateLimiter := AmSetupRateLimiter()
@@ -262,6 +262,7 @@ func main() {
 	// Set up to trap SIGINT/SIGTERM and shut down gracefully
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	ctx = context.WithValue(ctx, CONTEXTVAL_NAME, "main")
 
 	// Set up ampool.
 	ampool = util.AmNewPool(ctx, config.GlobalConfig.Tuning.WorkerTasks, config.GlobalConfig.Tuning.Queues.WorkerTasks)

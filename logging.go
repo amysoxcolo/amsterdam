@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+	"uuid"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/dustin/go-humanize"
@@ -36,6 +37,15 @@ const DEFAULT_MAXLOG = 16 * 1024 * 1024
 
 // LOG_ROTATE_INTERVAL is the interval, in seconds, at which we try to rotate the logfile.
 const LOG_ROTATE_INTERVAL = 10
+
+// ContextValKey is the type Amsterdam uses for context keys.
+type ContextValKey struct{}
+
+// CONTEXTVAL_NAME is the context key used to store the context name.
+var CONTEXTVAL_NAME = ContextValKey{}
+
+// CONTEXTVAL_REQUESTID is the context key used to store the request id
+var CONTEXTVAL_REQUESTID = ContextValKey{}
 
 /*----------------------------------------------------------------------------
  * slog handler that outputs to Logrus
@@ -103,24 +113,44 @@ func (h *SlogLogrusHandler) WithGroup(name string) slog.Handler {
  *----------------------------------------------------------------------------
  */
 
-// LogrusMiddleware installs Logrus logging into the Echo middleware chain.
-func LogrusMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+// LoggingMiddleware installs Logrus logging into the Echo middleware chain.
+func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c *echo.Context) error {
+		req := c.Request()
+		orgReq := req
+
+		// Set up the request ID and the context.
+		requestId := uuid.New()
+		ctx := context.WithValue(req.Context(), CONTEXTVAL_REQUESTID, requestId)
+		ctx = context.WithValue(ctx, CONTEXTVAL_NAME, fmt.Sprintf("rq:%s", requestId.String()))
+		req = req.WithContext(ctx)
+		c.SetRequest(req)
+		defer c.SetRequest(orgReq)
+
+		// Log the start-request line.
+		log.WithFields(log.Fields{
+			"id":        requestId.String(),
+			"remote_ip": c.RealIP(),
+			"host":      req.Host,
+			"method":    req.Method,
+			"uri":       req.RequestURI,
+		}).Info("start request")
+
+		// Execute the actual request.
 		start := time.Now()
 		err := next(c)
 		stop := time.Now()
 
-		req := c.Request()
+		// Set the response and the request-ID header.
 		res := c.Response().(*echo.Response)
+		res.Header().Set(echo.HeaderXRequestID, requestId.String())
 
+		// Log the end-request line.
 		log.WithFields(log.Fields{
-			"remote_ip":  c.RealIP(),
-			"host":       req.Host,
-			"method":     req.Method,
-			"uri":        req.RequestURI,
+			"id":         requestId.String(),
 			"status":     res.Status,
 			"latency_ms": stop.Sub(start).Milliseconds(),
-		}).Info("handled request")
+		}).Info("end request")
 		return err
 	}
 }

@@ -14,6 +14,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -375,7 +376,12 @@ func templatePostText(args jet.Arguments) reflect.Value {
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
 	rc, err := post.Text(ctxt.Ctx())
 	if err != nil {
-		log.Errorf("templatePostText could not get post text from post #%d: %v", post.PostId, err)
+		if errors.Is(err, context.Canceled) {
+			log.Errorf("templatePostText could not get post text from post #%d: context %s canceled: %v", post.PostId,
+				ctxt.Ctx().Value(CONTEXTVAL_NAME), ctxt.Ctx().Err())
+		} else {
+			log.Errorf("templatePostText could not get post text from post #%d: %v", post.PostId, err)
+		}
 		rc = ""
 	}
 	return reflect.ValueOf(rc)
