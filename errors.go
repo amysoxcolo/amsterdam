@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"uuid"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/ui"
@@ -95,8 +96,9 @@ func rateLimitErrorHandler(c *echo.Context, err error) error {
 
 // rateLimitDenyHandler is called if the rate limit is exceeded by a connection.
 func rateLimitDenyHandler(c *echo.Context, identifier string, err error) error {
+	log.Errorf("request %s tripped rate limiter", c.Request().Context().Value(CONTEXTVAL_REQUESTID).(uuid.UUID).String())
 	return ui.AmWithTempContext(c, func(ctxt ui.AmContext) (string, any) {
-		ctxt.VarMap().Set("identifier", identifier)
+		ctxt.VarMap().Set("identifier", fmt.Sprintf("%s/%s", identifier, ctxt.RemoteIP()))
 		return "ratelimit", err
 	})
 }

@@ -64,6 +64,7 @@ func setupEcho() *echo.Echo {
 	e.Logger = slog.New(NewSlogLogrusHandler())
 	e.Renderer = &ui.TemplateRenderer{}
 	e.HTTPErrorHandler = AmErrorHandler
+	e.IPExtractor = echo.LegacyIPExtractor()
 	if !config.CommandLine.DebugPanic {
 		e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 			StackSize: int(config.GlobalComputedConfig.PanicRecoveryStack),
