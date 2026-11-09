@@ -266,7 +266,8 @@ func main() {
 	ctx = context.WithValue(ctx, CONTEXTVAL_NAME, "main")
 
 	// Set up ampool.
-	ampool = util.AmNewPool(ctx, config.GlobalConfig.Tuning.WorkerTasks, config.GlobalConfig.Tuning.Queues.WorkerTasks)
+	ampool = util.AmNewPool(context.WithValue(ctx, CONTEXTVAL_NAME, "ampool"), config.GlobalConfig.Tuning.WorkerTasks,
+		config.GlobalConfig.Tuning.Queues.WorkerTasks)
 	go func() {
 		<-ctx.Done()
 		ampool.Shutdown()
