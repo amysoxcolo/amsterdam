@@ -21,10 +21,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 
 	"git.erbosoft.com/amy/amsterdam/util"
 	argparse "github.com/alexflint/go-arg"
 	"github.com/dustin/go-humanize"
+	"github.com/labstack/echo/v5"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -109,6 +111,7 @@ type AmConfig struct {
 		WelcomeTitle          string `yaml:"welcomeTitle"`
 		WelcomeMessage        string `yaml:"welcomeMessage"`
 		TopPostsTitle         string `yaml:"topPostsTitle"`
+		IPResolver            string `yaml:"ipResolver"`
 		RateLimit             struct {
 			Rate          float64 `yaml:"rate"`
 			Burst         int     `yaml:"burst"`
@@ -368,6 +371,22 @@ func AmOpenExternalContentPath() (fs.FS, error) {
 	return root.FS(), nil
 }
 
+// validIPResolvers contains the list of valid values for GlobalConfig.Site.IPResolver.
+var validIPResolvers = [3]string{"direct", "realIP", "forwardedFor"}
+
+// AmGetConfiguredIPExtractor returns the configured IP Extractor function based on GlobalConfig.
+func AmGetConfiguredIPExtractor() echo.IPExtractor {
+	switch GlobalConfig.Site.IPResolver {
+	case "direct":
+		return echo.ExtractIPDirect()
+	case "realIP":
+		return echo.ExtractIPFromRealIPHeader()
+	case "forwardedFor":
+		return echo.ExtractIPFromXFFHeader()
+	}
+	panic("improperly configured IP Extractor")
+}
+
 // SetupConfig loads the command line arguments, loads the config file, and prepares GlobalConfig.
 func SetupConfig() {
 	argparse.MustParse(&CommandLine)
@@ -398,6 +417,9 @@ func SetupConfig() {
 	}
 
 	// Error-check values.
+	if !slices.Contains(validIPResolvers[:], GlobalConfig.Site.IPResolver) {
+		panic(fmt.Sprintf("invalid IP resolver name \"%s\"", GlobalConfig.Site.IPResolver))
+	}
 	if GlobalConfig.Database.Pooling.MaxOpen < 0 {
 		panic("maximum database connections must not be less than zero")
 	} else if GlobalConfig.Database.Pooling.MaxOpen == 0 {
