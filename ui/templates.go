@@ -14,7 +14,6 @@ package ui
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -86,18 +85,16 @@ func makeYearRange(a jet.Arguments) reflect.Value {
 	param := a.Get(0).Convert(reflect.TypeFor[string]()).String()
 	yearRegex, _ := regexp.Compile(`year:(\S+)(\s+.+)?$`)
 	m := yearRegex.FindStringSubmatch(param)
-	if m != nil {
-		count, err := strconv.Atoi(m[1])
-		if err == nil {
-			start_year := time.Now().Year()
-			rc := &countRanger{i: -1, val: int64(start_year) + 1, step: -1, to: int64(start_year + count - 1)}
-			return reflect.ValueOf(rc).Convert(reflect.TypeFor[jet.Ranger]())
-		} else {
-			return reflect.ValueOf(err)
-		}
-	} else {
-		return reflect.ValueOf(errors.New("cannot locate year: marker in param"))
+	if m == nil {
+		a.Panicf("cannot locate year: marker in param %s", param)
 	}
+	count, err := strconv.Atoi(m[1])
+	if err != nil {
+		a.Panicf("bad string in yearRange: %s - %v", param, err)
+	}
+	start_year := time.Now().Year()
+	rc := &countRanger{i: -1, val: int64(start_year) + 1, step: -1, to: int64(start_year + count - 1)}
+	return reflect.ValueOf(rc).Convert(reflect.TypeFor[jet.Ranger]())
 }
 
 // immediateIf returns its 2nd argument if its 1st argument is true, and its 3rd argument if its 1st argument is false.
@@ -156,19 +153,19 @@ func displayDateTime(a jet.Arguments) reflect.Value {
 	} else if p0.CanConvert(reflect.TypeFor[*time.Time]()) {
 		ptr := p0.Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
 		if ptr == nil {
-			return reflect.ValueOf("<<NIL>>")
+			a.Panicf("null date/time value in displayDateTime")
 		}
 		timeval = *ptr
 	} else {
-		return reflect.ValueOf("<<BOGUS>>")
+		a.Panicf("bogus date/time value in displayDateTime")
 	}
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
 	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
-	if err == nil {
-		loc := prefs.Localizer()
-		return reflect.ValueOf(loc.Strftime("%b %e, %Y %r", timeval))
+	if err != nil {
+		a.Panicf("unable to get prefs for current user in displayDateTime - %v", err)
 	}
-	return reflect.ValueOf(fmt.Sprintf("<<%v>>", err))
+	loc := prefs.Localizer()
+	return reflect.ValueOf(loc.Strftime("%b %e, %Y %r", timeval))
 }
 
 // displayActivity displays an activity string formatted to the user's preferences.
@@ -176,10 +173,10 @@ func displayActivity(a jet.Arguments) reflect.Value {
 	timeval := a.Get(0).Convert(reflect.TypeFor[*time.Time]()).Interface().(*time.Time)
 	ctxt := a.Get(1).Convert(reflect.TypeFor[AmContext]()).Interface().(AmContext)
 	prefs, err := ctxt.CurrentUser().Prefs(ctxt.Ctx())
-	if err == nil {
-		return reflect.ValueOf(util.AmActivityString(timeval, prefs.Localizer()))
+	if err != nil {
+		a.Panicf("unable to get prefs for current user in displayActivity - %v", err)
 	}
-	return reflect.ValueOf(fmt.Sprintf("<<%v>>", err))
+	return reflect.ValueOf(util.AmActivityString(timeval, prefs.Localizer()))
 }
 
 // displayMemberCount displays the current member count of a community.

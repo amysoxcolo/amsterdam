@@ -14,7 +14,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -358,16 +357,13 @@ func breakRange(topic *database.Topic, into []int32, param string, sep string) e
 
 // templateExtractUserName extracts the user name from the post.
 func templateExtractUserName(args jet.Arguments) reflect.Value {
-	rc := "<<ERROR>>"
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
 	user, err := database.AmGetUser(ctxt.Ctx(), post.CreatorUid)
-	if err == nil {
-		rc = user.Username
-	} else {
-		log.Errorf("templateExtractUserName failed to get user #%d: %v", post.CreatorUid, err)
+	if err != nil {
+		args.Panicf("templateExtractUserName failed to get user #%d: %v", post.CreatorUid, err)
 	}
-	return reflect.ValueOf(rc)
+	return reflect.ValueOf(user.Username)
 }
 
 // templatePostText gets the text of a post.
@@ -376,13 +372,7 @@ func templatePostText(args jet.Arguments) reflect.Value {
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
 	rc, err := post.Text(ctxt.Ctx())
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			log.Errorf("templatePostText could not get post text from post #%d: context %s canceled: %v", post.PostId,
-				ctxt.Ctx().Value(CONTEXTVAL_NAME), ctxt.Ctx().Err())
-		} else {
-			log.Errorf("templatePostText could not get post text from post #%d: %v", post.PostId, err)
-		}
-		rc = ""
+		args.Panicf("templatePostText could not get post text from post #%d: %v", post.PostId, err)
 	}
 	return reflect.ValueOf(rc)
 }
@@ -403,11 +393,10 @@ func templateOverrideLine(args jet.Arguments) reflect.Value {
 				scr_date = p.Localizer().Strftime("%b %e, %Y %r", *post.ScribbleDate)
 			}
 		}
-		if err == nil {
-			rc = fmt.Sprintf("(Scribbled by %s on %s)", scr_user.Username, scr_date)
-		} else {
-			rc = fmt.Sprintf("<<<%v>>>", err)
+		if err != nil {
+			args.Panicf("failed to get prefs for current user in templateOverrideLine - %v", err)
 		}
+		rc = fmt.Sprintf("(Scribbled by %s on %s)", scr_user.Username, scr_date)
 	} else if post.Hidden && !advanced {
 		rc = fmt.Sprintf("(Hidden Message: %d Lines)", *post.LineCount)
 	}
@@ -430,7 +419,10 @@ func templateOverrideLink(args jet.Arguments) reflect.Value {
 func templateAttachmentInfo(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
-	rc, _ := post.AttachmentInfo(ctxt.Ctx())
+	rc, err := post.AttachmentInfo(ctxt.Ctx())
+	if err != nil {
+		args.Panicf("templateAttachmentInfo unable to get attachment info for post #%d: %v", post.PostId, err)
+	}
 	if rc == nil {
 		rc = &database.PostAttachInfo{}
 	}
@@ -442,7 +434,10 @@ func templateBozo(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	topic := args.Get(1).Convert(reflect.TypeFor[*database.Topic]()).Interface().(*database.Topic)
 	ctxt := args.Get(2).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
-	rc, _ := topic.IsBozo(ctxt.Ctx(), ctxt.CurrentUser(), post.CreatorUid)
+	rc, err := topic.IsBozo(ctxt.Ctx(), ctxt.CurrentUser(), post.CreatorUid)
+	if err != nil {
+		args.Panicf("templateBozo unable to get status for user #%d in topic #%d: %v", post.CreatorUid, topic.TopicId, err)
+	}
 	return reflect.ValueOf(rc)
 }
 
@@ -452,13 +447,15 @@ func templateProfileImage(args jet.Arguments) reflect.Value {
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
 	rc := config.GlobalConfig.Site.DefaultUserPhoto
 	user, err := post.Creator(ctxt.Ctx())
-	if err == nil {
-		ci, err := user.ContactInfo(ctxt.Ctx())
-		if err == nil {
-			if ci.PhotoURL != nil {
-				rc = *ci.PhotoURL
-			}
-		}
+	if err != nil {
+		args.Panicf("templateProfileImage unable to get post creator for post #%d: %v", post.PostId, err)
+	}
+	ci, err := user.ContactInfo(ctxt.Ctx())
+	if err != nil {
+		args.Panicf("templateProfileImage unable to get contact info for user #%d: %v", user.Uid, err)
+	}
+	if ci.PhotoURL != nil {
+		rc = *ci.PhotoURL
 	}
 	return reflect.ValueOf(rc)
 }

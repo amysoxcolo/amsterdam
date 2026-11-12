@@ -170,7 +170,10 @@ func (rx *sbRender) SetVar(name string, value any) {
 func templateGetTopic(args jet.Arguments) reflect.Value {
 	post := args.Get(0).Convert(reflect.TypeFor[*database.PostHeader]()).Interface().(*database.PostHeader)
 	ctxt := args.Get(1).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
-	topic, _ := database.AmGetTopic(ctxt.Ctx(), post.TopicId)
+	topic, err := database.AmGetTopic(ctxt.Ctx(), post.TopicId)
+	if err != nil {
+		args.Panicf("templateGetTopic unable to get topic for post #%d: %v", post.PostId, err)
+	}
 	return reflect.ValueOf(topic)
 }
 
@@ -179,7 +182,10 @@ func templateTopicLink(args jet.Arguments) reflect.Value {
 	comm := args.Get(0).Convert(reflect.TypeFor[*database.Community]()).Interface().(*database.Community)
 	topic := args.Get(1).Convert(reflect.TypeFor[*database.Topic]()).Interface().(*database.Topic)
 	ctxt := args.Get(2).Convert(reflect.TypeFor[ui.AmContext]()).Interface().(ui.AmContext)
-	link, _ := topic.Link(ctxt.Ctx(), comm.Id, "global")
+	link, err := topic.Link(ctxt.Ctx(), comm.Id, "global")
+	if err != nil {
+		args.Panicf("templateTopicLink unable to get link for topic %d: %v", topic.TopicId, err)
+	}
 	return reflect.ValueOf(link)
 }
 
