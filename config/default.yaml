@@ -46,6 +46,11 @@ database:
   user: "amsdb"
   password: "x00yes2k"
   databaseName: "amsterdam"
+  pooling:
+    maxOpen: 100
+    maxIdle: 10
+    maxIdleTime: -1
+    maxLifetime: -1
 defaults:
   language: "en-US"
   timezone: "America/Denver"

@@ -180,6 +180,7 @@ func AmGetCommunityServices(ctx context.Context, cid int32) ([]*ServiceDef, erro
 		if err != nil {
 			return nil, err
 		}
+		defer rs.Close()
 		dom := serviceRoot.byName[AM_DOMAIN_COMMUNITY]
 		a := make([]*ServiceDef, 0, len(dom.Services))
 		for rs.Next() {
@@ -188,8 +189,12 @@ func AmGetCommunityServices(ctx context.Context, cid int32) ([]*ServiceDef, erro
 				a = append(a, dom.byIndex[ndx])
 			}
 		}
-		servicesCache.Add(cid, a)
-		rc = a
+		if rs.Err() == nil {
+			servicesCache.Add(cid, a)
+			rc = a
+		} else {
+			return nil, rs.Err()
+		}
 	}
 	return rc.([]*ServiceDef), nil
 }
@@ -212,6 +217,7 @@ func AmGetCommunityServicesTx(ctx context.Context, tx *sqlx.Tx, cid int32) ([]*S
 		if err != nil {
 			return nil, err
 		}
+		defer rs.Close()
 		dom := serviceRoot.byName[AM_DOMAIN_COMMUNITY]
 		a := make([]*ServiceDef, 0, len(dom.Services))
 		for rs.Next() {
@@ -220,8 +226,12 @@ func AmGetCommunityServicesTx(ctx context.Context, tx *sqlx.Tx, cid int32) ([]*S
 				a = append(a, dom.byIndex[ndx])
 			}
 		}
-		servicesCache.Add(cid, a)
-		rc = a
+		if rs.Err() == nil {
+			servicesCache.Add(cid, a)
+			rc = a
+		} else {
+			return nil, rs.Err()
+		}
 	}
 	return rc.([]*ServiceDef), nil
 }

@@ -121,6 +121,12 @@ type AmConfig struct {
 		User         string `yaml:"user"`
 		Password     string `yaml:"password"`
 		DatabaseName string `yaml:"databaseName"`
+		Pooling      struct {
+			MaxOpen     int `yaml:"maxOpen"`
+			MaxIdle     int `yaml:"maxIdle"`
+			MaxIdleTime int `yaml:"maxIdleTime"`
+			MaxLifetime int `yaml:"maxLifetime"`
+		} `yaml:"pooling"`
 	} `yaml:"database"`
 	Defaults struct {
 		Language string `yaml:"language"`
@@ -389,6 +395,16 @@ func SetupConfig() {
 		log.Info("SetupConfig(): using default configs only")
 		GlobalConfig = defaultConfig // just copy over the defaults
 		GlobalConfig.baseDir = ""
+	}
+
+	// Error-check values.
+	if GlobalConfig.Database.Pooling.MaxOpen < 0 {
+		panic("maximum database connections must not be less than zero")
+	} else if GlobalConfig.Database.Pooling.MaxOpen == 0 {
+		log.Warn("WARNING: database connections unlimited - server may crash under heavy load")
+	}
+	if GlobalConfig.Database.Pooling.MaxIdle < 0 {
+		panic("maximum idle database connections must not be less than zero")
 	}
 
 	// Compute additional values.

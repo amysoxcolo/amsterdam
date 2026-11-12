@@ -639,6 +639,7 @@ func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, []*Community, erro
 	if err != nil {
 		return nil, nil, err
 	}
+	defer rs.Close()
 	// Extract post IDs to an array.
 	cids := make([]int32, gv.FrontPagePosts)
 	pids := make([]int64, gv.FrontPagePosts)
@@ -649,7 +650,9 @@ func AmGetPublishedPosts(ctx context.Context) ([]*PostHeader, []*Community, erro
 		}
 		i++
 	}
-	if i == 0 { // no published posts, short-circuit response
+	if rs.Err() != nil {
+		return nil, nil, rs.Err()
+	} else if i == 0 { // no published posts, short-circuit response
 		return make([]*PostHeader, 0), make([]*Community, 0), nil
 	}
 	if i < int(gv.FrontPagePosts) {
@@ -885,6 +888,7 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 		log.Errorf("AmSearchPosts query 2 error %v", err)
 		return nil, count, err
 	}
+	defer rs.Close()
 	rc := make([]PostSearchResult, max)
 	i := 0
 	for rs.Next() {
@@ -930,5 +934,5 @@ func AmSearchPosts(ctx context.Context, searchTerms string, u *User, offset, max
 	if i < max {
 		rc = rc[:i] // slice off any empty entries at the end
 	}
-	return rc, count, nil
+	return rc, count, rs.Err()
 }

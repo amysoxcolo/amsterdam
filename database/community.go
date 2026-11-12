@@ -314,6 +314,7 @@ func (c *Community) ListMembers(ctx context.Context, field, oper int, term strin
 	if err != nil {
 		return nil, total, err
 	}
+	defer rs.Close()
 	rc := make([]*User, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var uid int32
@@ -324,7 +325,7 @@ func (c *Community) ListMembers(ctx context.Context, field, oper int, term strin
 			}
 		}
 	}
-	return rc, total, nil
+	return rc, total, rs.Err()
 }
 
 /* SetMembership sets a user's membership status within the community.
@@ -1054,6 +1055,7 @@ func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset, maxCo
 	if err != nil {
 		return nil, total, err
 	}
+	defer rs.Close()
 	rc := make([]*Community, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var commid int32
@@ -1064,7 +1066,7 @@ func AmGetCommunitiesForCategory(ctx context.Context, catid int32, offset, maxCo
 			}
 		}
 	}
-	return rc, total, nil
+	return rc, total, rs.Err()
 }
 
 /* AmSearchCommunities searches for communities matching certain criteria.
@@ -1131,6 +1133,7 @@ func AmSearchCommunities(ctx context.Context, field, oper int, term string, offs
 	if err != nil {
 		return nil, total, err
 	}
+	defer rs.Close()
 	rc := make([]*Community, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var commid int32
@@ -1141,7 +1144,7 @@ func AmSearchCommunities(ctx context.Context, field, oper int, term string, offs
 			}
 		}
 	}
-	return rc, total, nil
+	return rc, total, rs.Err()
 }
 
 /* AmSearchCommunityMembers searches for members of a community matching certain criteria.
@@ -1216,6 +1219,7 @@ func AmSearchCommunityMembers(ctx context.Context, c *Community, field, oper int
 	if err != nil {
 		return nil, total, err
 	}
+	defer rs.Close()
 	rc := make([]*User, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var uid int32
@@ -1230,5 +1234,5 @@ func AmSearchCommunityMembers(ctx context.Context, c *Community, field, oper int
 			log.Errorf("AmSearchCommunityMembers scan error: %v", err)
 		}
 	}
-	return rc, total, nil
+	return rc, total, rs.Err()
 }

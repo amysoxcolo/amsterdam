@@ -961,6 +961,7 @@ func AmSearchUsers(ctx context.Context, field, oper int, term string, offset, ma
 	if err != nil {
 		return nil, total, err
 	}
+	defer rs.Close()
 	rc := make([]*User, 0, min(maxCount, 10000))
 	for rs.Next() {
 		var uid int32
@@ -975,5 +976,5 @@ func AmSearchUsers(ctx context.Context, field, oper int, term string, offset, ma
 			log.Errorf("AmSearchUsers scan error: %v", err)
 		}
 	}
-	return rc, total, nil
+	return rc, total, rs.Err()
 }

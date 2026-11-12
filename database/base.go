@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
 	"github.com/go-sql-driver/mysql"
@@ -218,13 +219,27 @@ func SetupDb() (string, func(), error) {
 	}
 	db, err := sqlx.Connect(config.GlobalComputedConfig.DatabaseDriver, buildMysqlDSN(false))
 	if err == nil {
+		// Configure the connection pool options.
+		db.SetMaxOpenConns(config.GlobalConfig.Database.Pooling.MaxOpen)
+		db.SetMaxIdleConns(config.GlobalConfig.Database.Pooling.MaxIdle)
+		if config.GlobalConfig.Database.Pooling.MaxIdleTime > 0 {
+			db.SetConnMaxIdleTime(time.Duration(config.GlobalConfig.Database.Pooling.MaxIdleTime) * time.Second)
+		}
+		if config.GlobalConfig.Database.Pooling.MaxLifetime > 0 {
+			db.SetConnMaxLifetime(time.Duration(config.GlobalConfig.Database.Pooling.MaxLifetime) * time.Second)
+		}
+
+		// Retrieve the database globals.
 		amdb = db
 		g, err := AmGlobals(context.Background())
 		if err == nil {
+			// Check database version against expected version.
 			if g.Version != version {
 				log.Warnf("!! database version %s does not match prepared version %s", g.Version, version)
 				version = g.Version
 			}
+
+			// Setup the database-dependent caches and background tasks.
 			setupAdCache()
 			setupUserCache()
 			setupContactsCache()
@@ -236,7 +251,7 @@ func SetupDb() (string, func(), error) {
 			log.Infof("SetupDb(): database version %s", version)
 		}
 	}
-	slices.Reverse(exitfns)
+	slices.Reverse(exitfns) // exit funcs run in reverse order
 	return version, func() {
 		for _, f := range exitfns {
 			f()

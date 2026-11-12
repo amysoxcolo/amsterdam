@@ -158,6 +158,7 @@ func (c *Conference) Aliases(ctx context.Context, commid int32) ([]string, error
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]string, 0, 5)
 	for rs.Next() {
 		var a string
@@ -167,7 +168,7 @@ func (c *Conference) Aliases(ctx context.Context, commid int32) ([]string, error
 			log.Errorf("Aliases scan error: %v", err)
 		}
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 // AddAlias adds an alias to the conference.
@@ -290,6 +291,7 @@ func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]*Community, 0, 1)
 	for rs.Next() {
 		var cid int32
@@ -303,7 +305,7 @@ func (c *Conference) ContainedBy(ctx context.Context) ([]*Community, error) {
 			return nil, err
 		}
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 // Members returns all the members of this conference, with their granted user levels.
@@ -614,11 +616,15 @@ func (c *Conference) Fixseen(ctx context.Context, u *User) error {
 	if err != nil {
 		return err
 	}
+	defer rs.Close()
 	work := make([]fixseenData, 0, count)
 	for rs.Next() {
 		var d fixseenData
 		err = rs.Scan(&(d.topicid), &(d.topmessage), &(d.insert))
 		work = append(work, d)
+	}
+	if rs.Err() != nil {
+		return rs.Err()
 	}
 
 	// Adjust each topic in turn.
@@ -727,6 +733,7 @@ func (c *Conference) GetActivity(ctx context.Context, reportType int) ([]Activit
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]ActivityReport, 0)
 	for rs.Next() {
 		var cur ActivityReport
@@ -736,7 +743,7 @@ func (c *Conference) GetActivity(ctx context.Context, reportType int) ([]Activit
 		}
 		rc = append(rc, cur)
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 // Active user selection types.
@@ -777,6 +784,7 @@ func (c *Conference) GetActiveUserEMailAddrs(ctx context.Context, userSelect, da
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	var stopPoint *time.Time = nil
 	if dayLimit > 0 {
 		mynow := time.Now().UTC()
@@ -796,7 +804,7 @@ func (c *Conference) GetActiveUserEMailAddrs(ctx context.Context, userSelect, da
 		}
 		rc = append(rc, addy)
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 // Stats retrieves the number of topics and posts in this conference.
@@ -1108,6 +1116,7 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]*ConferenceSummary, 0)
 	for rs.Next() {
 		cs := new(ConferenceSummary)
@@ -1116,6 +1125,9 @@ func AmListConferences(ctx context.Context, cid int32, showHidden bool) ([]*Conf
 		} else {
 			return nil, err
 		}
+	}
+	if rs.Err() != nil {
+		return nil, rs.Err()
 	}
 	for i := range rc {
 		err := amdb.GetContext(ctx, &(rc[i].Alias), "SELECT alias FROM confalias WHERE commid = ? AND confid = ?", cid, rc[i].ConfId)

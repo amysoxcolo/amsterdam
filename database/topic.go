@@ -211,6 +211,7 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]*TopicBozo, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]*TopicBozo, 0)
 	for rs.Next() {
 		tb := new(TopicBozo)
@@ -220,7 +221,7 @@ func (t *Topic) GetBozos(ctx context.Context, u *User) ([]*TopicBozo, error) {
 		}
 		rc = append(rc, tb)
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 // IsSubscribed returns true if the given user is subscribed to receive E-mails of topic posts.
@@ -258,6 +259,7 @@ func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]int32, 0)
 	for rs.Next() {
 		var tmp int32
@@ -267,6 +269,9 @@ func (t *Topic) GetSubscribers(ctx context.Context) ([]int32, error) {
 		} else {
 			break
 		}
+	}
+	if err == nil && rs.Err() != nil {
+		err = rs.Err()
 	}
 	return rc, err
 }
@@ -297,6 +302,7 @@ func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]*ActivityRep
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]*ActivityReport, 0)
 	for rs.Next() {
 		cur := new(ActivityReport)
@@ -306,7 +312,7 @@ func (t *Topic) GetActivity(ctx context.Context, reportType int) ([]*ActivityRep
 		}
 		rc = append(rc, cur)
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 /* GetActiveUserEMailAddrs gets the E-mail addresses of each user that's active in the topic, omitting those that have opted out of mass E-mails.
@@ -341,6 +347,7 @@ func (t *Topic) GetActiveUserEMailAddrs(ctx context.Context, userSelect, dayLimi
 	if err != nil {
 		return nil, err
 	}
+	defer rs.Close()
 	var stopPoint *time.Time = nil
 	if dayLimit > 0 {
 		mynow := time.Now().UTC()
@@ -360,7 +367,7 @@ func (t *Topic) GetActiveUserEMailAddrs(ctx context.Context, userSelect, dayLimi
 		}
 		rc = append(rc, addy)
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 // backgroundPurgeTopic removes all posts from a topic that's been deleted.
@@ -698,6 +705,7 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 		}
 		return nil, err
 	}
+	defer rs.Close()
 	rc := make([]*TopicSummary, 0)
 	for rs.Next() {
 		rec := new(TopicSummary)
@@ -708,7 +716,7 @@ func AmListTopics(ctx context.Context, confid int32, uid int32, viewOption int, 
 			rc = append(rc, rec)
 		}
 	}
-	return rc, nil
+	return rc, rs.Err()
 }
 
 /* AmNewTopic creates a new topic.

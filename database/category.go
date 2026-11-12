@@ -243,6 +243,7 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 	if err != nil {
 		return nil, total, err
 	}
+	defer rs.Close()
 	rc := make([]*Category, 0, min(max, 1000))
 	for rs.Next() {
 		var catid int32
@@ -256,5 +257,5 @@ func AmSearchCategories(ctx context.Context, oper int, term string, offset int, 
 			log.Errorf("AmSearchCategoris scan error: %v", err)
 		}
 	}
-	return rc, total, nil
+	return rc, total, rs.Err()
 }
