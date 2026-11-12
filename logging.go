@@ -351,10 +351,9 @@ func logScanner(ctx context.Context, lf *amLogFile, done chan bool) {
 // SetupLogging sets up the log file based on the configuration data.
 func SetupLogging() func() {
 	loglevel, err := log.ParseLevel(config.GlobalComputedConfig.LogLevel)
-	if err == nil {
-		loglevel = log.ErrorLevel
-	} else {
+	if err != nil {
 		log.Errorf("default log level not valid: %s (%v)", config.GlobalComputedConfig.LogLevel, err)
+		loglevel = log.ErrorLevel
 	}
 	if config.GlobalComputedConfig.DebugMode && loglevel != log.TraceLevel {
 		loglevel = log.DebugLevel
