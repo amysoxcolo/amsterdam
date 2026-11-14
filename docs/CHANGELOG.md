@@ -1,5 +1,22 @@
 # Changelog
 
+## Release 0.2.1 - November 14, 2026
+
+### Bug Fixes
+
+* Fixed an issue in selecting log levels.
+* Template functions now panic on error for quicker error handling.
+
+### Enhancements
+
+* Added database connection pooling.
+* Added timeouts and rate limiting on HTTP requests.
+* Updated Echo to version 5, and added a selectable IP resolver which can be configured based on Amsterdam setup.
+
+### Meta-Enhancements
+
+* Release build action updated.
+
 ## Release 0.2.0 - April 29, 2026
 
 ### Bug Fixes
