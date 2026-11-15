@@ -1,0 +1,1803 @@
+[
+  {
+    "id": "claude-code",
+    "name": "Claude Code",
+    "operator": "Anthropic",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "^Claude-User \\(claude-code/(?<version>[\\d.]+)",
+      "^claude-code/(?<version>[\\d.]+)"
+    ],
+    "docs": "https://code.claude.com/docs/en/tools-reference",
+    "examples": [
+      "Claude-User (claude-code/2.1.308; +https://support.anthropic.com/)",
+      "claude-code/2.1.107 (cli)"
+    ],
+    "notes": "Fetches from the user's machine, so Anthropic's IP ranges do not apply. Builds before roughly March 2026 sent a bare axios user agent.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "github-copilot",
+    "name": "GitHub Copilot",
+    "operator": "GitHub",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "\\bGitHubCopilot[\\w-]*"
+    ],
+    "examples": [
+      "GitHubCopilotRuntime-WebFetch"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "opencode",
+    "name": "OpenCode",
+    "operator": "SST",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "\\bOpenCode-User/",
+      "^opencode[/-]"
+    ],
+    "accept": [
+      "text/markdown;q=1.0, text/x-markdown;q=0.9, text/plain;q=0.8, text/html;q=0.7, */*;q=0.1"
+    ],
+    "docs": "https://opencode.ai",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OpenCode-User/1.0; +https://opencode.ai",
+      "opencode-smartfetch/1.0"
+    ],
+    "notes": "Some versions send a stock Chrome user agent; the Accept string still identifies them.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "gemini-cli",
+    "name": "Gemini CLI",
+    "operator": "Google",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogleAgent-URLContext\\b"
+    ],
+    "examples": [
+      "GoogleAgent-URLContext"
+    ],
+    "notes": "URL context fetches run through Google infrastructure.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "antigravity",
+    "name": "Antigravity",
+    "operator": "Google",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogle-Jetski-Antigravity\\b"
+    ],
+    "examples": [
+      "Google-Jetski-Antigravity"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "zcode",
+    "name": "ZCode",
+    "operator": "ZCode",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "\\bZCode-WebFetch/"
+    ],
+    "docs": "https://zcode.ai",
+    "examples": [
+      "ZCode-WebFetch/0.1 (+https://zcode.ai; coding-agent-cli)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "deepseek-harness",
+    "name": "DeepSeek harness",
+    "operator": "DeepSeek",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "^deepseek-harness/"
+    ],
+    "examples": [
+      "deepseek-harness/0.0.1 (+https://github.com/deepseek-ai)"
+    ],
+    "notes": "Observed in traffic; the operator has not documented what product sends it.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "chatgpt-user",
+    "name": "ChatGPT-User",
+    "operator": "OpenAI",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bChatGPT-User/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://openai.com/chatgpt-user.json"
+      ]
+    },
+    "docs": "https://platform.openai.com/docs/bots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot"
+    ],
+    "notes": "Codex has been reported to fetch with this user agent too, so it may not separate ChatGPT from Codex.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "chatgpt-agent",
+    "name": "ChatGPT agent",
+    "operator": "OpenAI",
+    "category": "agent",
+    "kind": "browser",
+    "runsOn": "operator",
+    "userAgents": [],
+    "signatureAgent": [
+      "chatgpt.com"
+    ],
+    "verify": {
+      "webBotAuth": "https://chatgpt.com/.well-known/http-message-signatures-directory"
+    },
+    "docs": "https://platform.openai.com/docs/bots",
+    "examples": [],
+    "notes": "Uses a regular browser user agent; identified by its Signature-Agent header.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "claude-user",
+    "name": "Claude-User",
+    "operator": "Anthropic",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "compatible; Claude-User/",
+      "^Claude-User$",
+      "\\bClaude-Web\\b"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://claude.com/crawling/bots.json"
+      ]
+    },
+    "docs": "https://support.claude.com/en/articles/8896518",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +claude-user@anthropic.com)",
+      "Claude-User",
+      "Claude-Web/1.0 (web crawler; +https://www.anthropic.com/; bots@anthropic.com)"
+    ],
+    "notes": "Fetches made by Claude apps on Anthropic infrastructure. Claude Code uses a different, more specific user agent. The bare `Claude-User` and older `Claude-Web` user agents are included; verify them by IP.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "perplexity-user",
+    "name": "Perplexity-User",
+    "operator": "Perplexity",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bPerplexity-User/",
+      "\\bPerplexityUser/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://www.perplexity.ai/perplexity-user.json"
+      ]
+    },
+    "docs": "https://docs.perplexity.ai/guides/bots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityUser/1.0; +https://perplexity.ai)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "mistralai-user",
+    "name": "MistralAI-User",
+    "operator": "Mistral",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bMistralAI-User/"
+    ],
+    "docs": "https://docs.mistral.ai/robots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; MistralAI-User/1.0; +https://docs.mistral.ai/robots)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "duckassistbot",
+    "name": "DuckAssistBot",
+    "operator": "DuckDuckGo",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bDuckAssistBot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://duckduckgo.com/duckassistbot.json"
+      ],
+      "webBotAuth": "https://assistbot.duckduckgo.com/.well-known/http-message-signatures-directory"
+    },
+    "docs": "https://duckduckgo.com/duckduckgo-help-pages/results/duckassistbot",
+    "examples": [
+      "DuckAssistBot/1.2; (+http://duckduckgo.com/duckassistbot.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "google-notebooklm",
+    "name": "Google NotebookLM",
+    "operator": "Google",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogle-NotebookLM\\b"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json"
+      ]
+    },
+    "examples": [
+      "Google-NotebookLM",
+      "Mozilla/5.0 (compatible; Google-NotebookLM; +https://notebooklm.google.com/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "google-agent",
+    "name": "Google-Agent",
+    "operator": "Google",
+    "category": "agent",
+    "kind": "browser",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogle-Agent\\b"
+    ],
+    "signatureAgent": [
+      "agent.bot.goog"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json"
+      ],
+      "webBotAuth": "https://agent.bot.goog/.well-known/http-message-signatures-directory"
+    },
+    "examples": [
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko; compatible; Google-Agent; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-agent) Chrome/155.0.8059.79 Safari/537.36"
+    ],
+    "notes": "Only some requests are signed; IP ranges are the primary check.",
+    "lastVerified": "2026-10-23",
+    "docs": "https://developers.google.com/crawling/docs/crawlers-fetchers/google-agent"
+  },
+  {
+    "id": "exa-user",
+    "name": "ExaUser",
+    "operator": "Exa",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bExaUser/"
+    ],
+    "signatureAgent": [
+      "crawler.exa.ai"
+    ],
+    "verify": {
+      "webBotAuth": "https://crawler.exa.ai/.well-known/http-message-signatures-directory"
+    },
+    "docs": "https://crawler.exa.ai/exauser",
+    "examples": [
+      "Mozilla/5.0 (compatible; ExaUser/1.0; +https://crawler.exa.ai/exauser)"
+    ],
+    "notes": "Exa fetches on demand for other AI products, reportedly including Cursor. The product behind a given request is not identified.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "grok-agent",
+    "name": "Grok agent",
+    "operator": "xAI",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bgrok-agent/"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; grok-agent/1.0; +https://x.ai)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "meta-externalfetcher",
+    "name": "Meta-ExternalFetcher",
+    "operator": "Meta",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bmeta-externalfetcher/"
+    ],
+    "docs": "https://developers.facebook.com/docs/sharing/webmasters/crawler",
+    "examples": [
+      "Mozilla/5.0 (compatible; Meta-ExternalFetcher/1.0; +https://developers.facebook.com/docs/sharing/webmasters/crawler)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amazon-quick",
+    "name": "Amazon Quick",
+    "operator": "Amazon",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "^amazon-Quick-on-behalf-of-(?<tenant>[\\w-]+)"
+    ],
+    "examples": [
+      "amazon-Quick-on-behalf-of-0a1b2c3d"
+    ],
+    "notes": "Renders JavaScript, so it also fires client-side analytics.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amazon-agentcore-browser",
+    "name": "Amazon Bedrock AgentCore Browser",
+    "operator": "Amazon",
+    "category": "agent",
+    "kind": "browser",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAmazon-Bedrock-AgentCore-Browser\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Amazon-Bedrock-AgentCore-Browser/1.0 (Chromium; +https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/browser-tool.html)"
+    ],
+    "lastVerified": "2026-10-23",
+    "docs": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/browser-tool.html"
+  },
+  {
+    "id": "minimax-agent",
+    "name": "MiniMax Agent",
+    "operator": "MiniMax",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "^MiniMaxAgent\\b"
+    ],
+    "examples": [
+      "MiniMaxAgent"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "browserbase",
+    "name": "Browserbase",
+    "operator": "Browserbase",
+    "category": "agent",
+    "kind": "browser",
+    "runsOn": "operator",
+    "userAgents": [],
+    "signatureAgent": [
+      "browserbase.com"
+    ],
+    "verify": {
+      "webBotAuth": "https://browserbase.com/.well-known/http-message-signatures-directory"
+    },
+    "examples": [],
+    "notes": "Hosted browsers for other companies' agents. A signature proves Browserbase, not the agent running on it.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "manus",
+    "name": "Manus",
+    "operator": "Manus",
+    "category": "agent",
+    "kind": "browser",
+    "runsOn": "operator",
+    "userAgents": [],
+    "signatureAgent": [
+      "api.manus.im"
+    ],
+    "verify": {
+      "webBotAuth": "https://api.manus.im/.well-known/http-message-signatures-directory"
+    },
+    "examples": [],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor",
+    "operator": "Anysphere",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "^Cursor/(?<version>[\\d.]+) \\(",
+      "\\bCursor/(?<version>[\\d.]+) Chrome/[\\d.]+ Electron/"
+    ],
+    "examples": [
+      "Cursor/3.0.16 (darwin arm64)",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/3.0.16 Chrome/142.0.7444.265 Electron/39.8.1 Safari/537.36"
+    ],
+    "notes": "Requests made by the Cursor app itself. Its web fetch tool has been reported to go through Exa as ExaUser.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "qoder",
+    "name": "Qoder CLI",
+    "operator": "Alibaba",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "^qodercli(cn)?/(?<version>[\\d.]+)"
+    ],
+    "docs": "https://qoder.com",
+    "examples": [
+      "qodercli/1.1.69 (+https://qoder.com)",
+      "qoderclicn/1.1.69 (+https://qoder.cn)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "kiro",
+    "name": "Kiro",
+    "operator": "Amazon",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "operator",
+    "userAgents": [
+      "^KiroServer/"
+    ],
+    "docs": "https://kiro.dev",
+    "examples": [
+      "KiroServer/1.0"
+    ],
+    "notes": "Observed in traffic. The KiroServer token suggests Kiro fetches pages from its own servers rather than the user's machine; Amazon has not published IP ranges for it.",
+    "lastVerified": "2026-11-09"
+  },
+  {
+    "id": "augment",
+    "name": "Augment",
+    "operator": "Augment Code",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "^Augment-WebFetch/"
+    ],
+    "docs": "https://www.augmentcode.com",
+    "examples": [
+      "Augment-WebFetch/1.0"
+    ],
+    "notes": "Observed in traffic from Augment's web fetch tool.",
+    "lastVerified": "2026-11-09"
+  },
+  {
+    "id": "qwen-code",
+    "name": "Qwen Code",
+    "operator": "Alibaba",
+    "category": "agent",
+    "kind": "coding",
+    "runsOn": "user",
+    "userAgents": [
+      "^QwenCode/(?<version>[\\d.]+)"
+    ],
+    "docs": "https://github.com/QwenLM/qwen-code",
+    "examples": [
+      "QwenCode/0.27.0 (linux; x64)",
+      "QwenCode/0.26.9 (darwin; arm64)",
+      "QwenCode/0.26.9 (win32; x64)"
+    ],
+    "lastVerified": "2026-11-09"
+  },
+  {
+    "id": "shap-user",
+    "name": "Shap-User",
+    "operator": "Shap",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bShap-User/"
+    ],
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; Shap-User/0.1.0"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "kimi-user",
+    "name": "Kimi-User",
+    "operator": "Moonshot AI",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bKimi-User/"
+    ],
+    "docs": "https://www.kimi.com/policies/kimi-crawlers",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; Kimi-User/1.0; +https://www.kimi.com/policies/kimi-crawlers"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "liner-user",
+    "name": "Liner-User",
+    "operator": "Liner",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bLiner-User/"
+    ],
+    "docs": "https://liner-user.liner.com/docs/liner-user",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Liner-User/1.0; +https://liner-user.liner.com/docs/liner-user)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "gemini-deep-research",
+    "name": "Gemini Deep Research",
+    "operator": "Google",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGemini-Deep-Research\\b"
+    ],
+    "docs": "https://gemini.google/overview/deep-research/",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Gemini-Deep-Research; +https://gemini.google/overview/deep-research/) Chrome/135.0.0.0 Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amzn-user",
+    "name": "Amzn-User",
+    "operator": "Amazon",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAmzn-User/"
+    ],
+    "docs": "https://developer.amazon.com/amazonbot",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amzn-User/0.1) Chrome/W.X.Y.Z Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "kagi-fetcher",
+    "name": "kagi-fetcher",
+    "operator": "Kagi",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "^kagi-fetcher\\b"
+    ],
+    "examples": [
+      "kagi-fetcher/1.0"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "tabstack",
+    "name": "Tabstack",
+    "operator": "Mozilla",
+    "category": "agent",
+    "kind": "assistant",
+    "runsOn": "operator",
+    "userAgents": [
+      "^Mozilla-Tabstack/"
+    ],
+    "docs": "https://tabstack.ai",
+    "examples": [
+      "Mozilla-Tabstack/1.0 (+https://tabstack.ai)"
+    ],
+    "notes": "Web access API for agents; the product behind a request is not identified.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "gptbot",
+    "name": "GPTBot",
+    "operator": "OpenAI",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGPTBot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://openai.com/gptbot.json"
+      ]
+    },
+    "docs": "https://platform.openai.com/docs/bots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.4; +https://openai.com/gptbot)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "claudebot",
+    "name": "ClaudeBot",
+    "operator": "Anthropic",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bClaudeBot/",
+      "^claudebot$",
+      "^anthropic-ai$"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://claude.com/crawling/bots.json"
+      ]
+    },
+    "docs": "https://support.claude.com/en/articles/8896518",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+      "anthropic-ai"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "meta-externalagent",
+    "name": "Meta-ExternalAgent",
+    "operator": "Meta",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bmeta-externalagent/"
+    ],
+    "docs": "https://developers.facebook.com/docs/sharing/webmasters/crawler",
+    "examples": [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "bytespider",
+    "name": "Bytespider",
+    "operator": "ByteDance",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bBytespider\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; Bytespider; spider-feedback@bytedance.com)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "ccbot",
+    "name": "CCBot",
+    "operator": "Common Crawl",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bCCBot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://index.commoncrawl.org/ccbot.json"
+      ]
+    },
+    "docs": "https://commoncrawl.org/ccbot",
+    "examples": [
+      "CCBot/2.0 (https://commoncrawl.org/faq/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "cohere-ai",
+    "name": "cohere-ai",
+    "operator": "Cohere",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bcohere-ai\\b",
+      "\\bcohere-training-data-crawler\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; cohere-ai; +https://cohere.com/crawler)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amazonbot",
+    "name": "Amazonbot",
+    "operator": "Amazon",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAmazonbot/"
+    ],
+    "docs": "https://developer.amazon.com/amazonbot",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot) Chrome/119.0.6045.214 Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "googleother",
+    "name": "GoogleOther",
+    "operator": "Google",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogleOther\\b"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://developers.google.com/static/crawling/ipranges/common-crawlers.json"
+      ],
+      "reverseDns": [
+        "googlebot.com",
+        "google.com"
+      ]
+    },
+    "docs": "https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GoogleOther) Chrome/153.0.8010.52 Safari/537.36"
+    ],
+    "notes": "Google's general-purpose crawler for research and development, not search indexing.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "elevenlabs-crawler",
+    "name": "ElevenlabsCrawler",
+    "operator": "ElevenLabs",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bElevenlabsCrawler/"
+    ],
+    "docs": "https://elevenlabs.io/docs/bots",
+    "examples": [
+      "Mozilla/5.0 (compatible; ElevenlabsCrawler/1.0; +https://elevenlabs.io/docs/bots)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "oai-searchbot",
+    "name": "OAI-SearchBot",
+    "operator": "OpenAI",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bOAI-SearchBot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://openai.com/searchbot.json"
+      ]
+    },
+    "docs": "https://platform.openai.com/docs/bots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "claude-searchbot",
+    "name": "Claude-SearchBot",
+    "operator": "Anthropic",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bClaude-SearchBot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://claude.com/crawling/bots.json"
+      ]
+    },
+    "docs": "https://support.claude.com/en/articles/8896518",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +searchbot@anthropic.com)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "perplexitybot",
+    "name": "PerplexityBot",
+    "operator": "Perplexity",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bPerplexityBot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://www.perplexity.ai/perplexitybot.json"
+      ]
+    },
+    "docs": "https://docs.perplexity.ai/guides/bots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)"
+    ],
+    "notes": "The published range file was last updated on 2025-02-07.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "exa-searchbot",
+    "name": "ExaSearchBot",
+    "operator": "Exa",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bExaSearchBot/"
+    ],
+    "signatureAgent": [
+      "crawler.exa.ai"
+    ],
+    "verify": {
+      "webBotAuth": "https://crawler.exa.ai/.well-known/http-message-signatures-directory"
+    },
+    "docs": "https://crawler.exa.ai/",
+    "examples": [
+      "Mozilla/5.0 (compatible; ExaSearchBot/1.0; +https://crawler.exa.ai/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "shapbot",
+    "name": "ShapBot",
+    "operator": "Shap",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bShapBot/"
+    ],
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ShapBot/0.1.0"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "youbot",
+    "name": "YouBot",
+    "operator": "You.com",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bYouBot\\b"
+    ],
+    "signatureAgent": [
+      "you.com"
+    ],
+    "verify": {
+      "webBotAuth": "https://you.com/.well-known/http-message-signatures-directory"
+    },
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; YouBot/1.0; +https://docs.you.com/youbot; env:prod) Chrome/142.0.0.0 Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23",
+    "docs": "https://docs.you.com/youbot"
+  },
+  {
+    "id": "amazon-bedrock-kb",
+    "name": "Amazon Bedrock Knowledge Bases",
+    "operator": "Amazon",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "^amazon-bedrock-knowledgebase-on-behalf-of-(?<tenant>[\\w-]+)"
+    ],
+    "examples": [
+      "amazon-bedrock-knowledgebase-on-behalf-of-0a1b2c3d"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amazon-kendra",
+    "name": "Amazon Kendra",
+    "operator": "Amazon",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "^amazon-kendra\\b"
+    ],
+    "examples": [
+      "amazon-kendra"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "google-cloudvertexbot",
+    "name": "Google-CloudVertexBot",
+    "operator": "Google",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogle-CloudVertexBot\\b"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://developers.google.com/static/crawling/ipranges/special-crawlers.json"
+      ]
+    },
+    "examples": [
+      "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.8010.52 Mobile Safari/537.36 (compatible; Google-CloudVertexBot; +https://cloud.google.com/enterprise-search)"
+    ],
+    "notes": "Crawls sites that their owners connect to Vertex AI agents.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "kimibot",
+    "name": "KimiBot",
+    "operator": "Moonshot AI",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bKimiBot/"
+    ],
+    "docs": "https://www.kimi.com/policies/kimi-crawlers",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; KimiBot/1.0; +https://www.kimi.com/policies/kimi-crawlers"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "mistralai-training",
+    "name": "MistralAI-Training",
+    "operator": "Mistral",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bMistralAI-Training/"
+    ],
+    "docs": "https://docs.mistral.ai/robots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; MistralAI-Training/1.0; +https://docs.mistral.ai/robots)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "facebookbot",
+    "name": "FacebookBot",
+    "operator": "Meta",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bFacebookBot/"
+    ],
+    "docs": "https://developers.facebook.com/docs/sharing/webmasters/facebookbot/",
+    "examples": [
+      "Mozilla/5.0 (compatible; FacebookBot/1.0; +https://developers.facebook.com/docs/sharing/webmasters/facebookbot/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "ai2bot",
+    "name": "AI2Bot",
+    "operator": "Allen Institute for AI",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAi2Bot(-Dolma)?\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible) AI2Bot (+https://www.allenai.org/crawler)",
+      "Mozilla/5.0 (compatible) Ai2Bot-Dolma (+https://www.allenai.org/crawler)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "clueweb",
+    "name": "ClueWeb-Crawler",
+    "operator": "Carnegie Mellon University",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "^ClueWeb-Crawler/"
+    ],
+    "examples": [
+      "ClueWeb-Crawler/1.0 (+https://boston.lti.cs.cmu.edu/CMU-ClueWeb-Crawler/; mailto:cmu-clueweb-crawler@andrew.cmu.edu)"
+    ],
+    "notes": "Research web corpus widely used for language model research.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "training-datasets",
+    "name": "Dataset crawlers",
+    "operator": "Various",
+    "category": "ai-crawler",
+    "kind": "training",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bTimpibot/",
+      "^ICC-Crawler/",
+      "\\bVelenPublicWebCrawler\\b",
+      "\\bDiffbot/",
+      "\\bimg2(dataset|downloader)\\b",
+      "\\blaion-huggingface-processor\\b",
+      "^webzio-extended\\b",
+      "\\bImagesiftBot\\b",
+      "\\bSBIntuitionsBot/"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; Timpibot/0.9; +http://www.timpi.io)",
+      "ICC-Crawler/2.0 (Mozilla-compatible; ; http://ucri.nict.go.jp/en/icccrawler.html)",
+      "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2 (.NET CLR 3.5.30729; Diffbot/0.1; +http://www.diffbot.com)",
+      "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:72.0) Gecko/20100101 Firefox/72.0 (compatible; img2downloader; +https://github.com/rom1504/img2dataset)",
+      "Mozilla/5.0 (compatible; laion-huggingface-processor; +https://laion.ai/)",
+      "Mozilla/5.0 (compatible; ImagesiftBot; +imagesift.com)",
+      "Mozilla/5.0 (compatible; SBIntuitionsBot/0.1; +https://www.sbintuitions.co.jp/bot/)"
+    ],
+    "notes": "Crawlers that collect web data for datasets and model training.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "kimi-searchbot",
+    "name": "Kimi-SearchBot",
+    "operator": "Moonshot AI",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bKimi-SearchBot/"
+    ],
+    "docs": "https://www.kimi.com/policies/kimi-crawlers",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; Kimi-SearchBot/1.0; +https://www.kimi.com/policies/kimi-crawlers"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "mistralai-index",
+    "name": "MistralAI-Index",
+    "operator": "Mistral",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bMistralAI-Index/"
+    ],
+    "docs": "https://docs.mistral.ai/robots",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; MistralAI-Index/1.0; +https://docs.mistral.ai/robots)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "linerbot",
+    "name": "LinerBot",
+    "operator": "Liner",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bLinerBot/"
+    ],
+    "docs": "https://liner-bot.liner.com/docs/liner-bot",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; LinerBot/1.0; +https://liner-bot.liner.com/docs/liner-bot)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amzn-searchbot",
+    "name": "Amzn-SearchBot",
+    "operator": "Amazon",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAmzn-SearchBot/"
+    ],
+    "docs": "https://developer.amazon.com/amazonbot",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amzn-SearchBot/0.1) Chrome/119.0.6045.214 Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "phindbot",
+    "name": "PhindBot",
+    "operator": "Phind",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bPhindBot\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; PhindBot; +https://www.phind.com/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "linkupbot",
+    "name": "LinkupBot",
+    "operator": "Linkup",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bLinkupBot/"
+    ],
+    "docs": "https://linkup.so/bot",
+    "examples": [
+      "LinkupBot/1.0 (LinkupBot for web indexing; https://linkup.so/bot; bot@linkup.so)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "tavilybot",
+    "name": "TavilyBot",
+    "operator": "Tavily",
+    "category": "ai-crawler",
+    "kind": "ai-search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bTavilyBot\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; TavilyBot; +https://tavily.com/)"
+    ],
+    "notes": "Search API used by agents.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "context7",
+    "name": "Context7-Crawler",
+    "operator": "Upstash",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "^Context7-Crawler/"
+    ],
+    "docs": "https://context7.com/crawler",
+    "examples": [
+      "Context7-Crawler/1.0 (+https://context7.com/crawler)"
+    ],
+    "notes": "Indexes library documentation that coding agents query.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "firecrawl",
+    "name": "FirecrawlAgent",
+    "operator": "Firecrawl",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bFirecrawlAgent\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; FirecrawlAgent; +https://firecrawl.dev/)"
+    ],
+    "notes": "Scraping API used by AI pipelines and agents; the product behind a request is not identified.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "cloudflare-ai-search",
+    "name": "Cloudflare AI Search",
+    "operator": "Cloudflare",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "^Cloudflare-(AutoRAG|AI-Search)\\b"
+    ],
+    "docs": "https://developers.cloudflare.com/autorag",
+    "examples": [
+      "Cloudflare-AutoRAG (https://developers.cloudflare.com/autorag; autorag@cloudflare.com)",
+      "Cloudflare-AI-Search"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "azure-ai-searchbot",
+    "name": "AzureAI-SearchBot",
+    "operator": "Microsoft",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAzureAI-SearchBot/"
+    ],
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; AzureAI-SearchBot/1.0;"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "amazon-qbusiness",
+    "name": "Amazon Q Business",
+    "operator": "Amazon",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "^amazon-QBusiness\\b"
+    ],
+    "examples": [
+      "amazon-QBusiness"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "atlassian-bot",
+    "name": "atlassian-bot",
+    "operator": "Atlassian",
+    "category": "ai-crawler",
+    "kind": "ingest",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\batlassian-bot\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; atlassian-bot; +https://www.atlassian.com/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "googlebot",
+    "name": "Googlebot",
+    "operator": "Google",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGooglebot(-Image|-Video|-News|-Mobile)?/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://developers.google.com/static/crawling/ipranges/common-crawlers.json"
+      ],
+      "reverseDns": [
+        "googlebot.com",
+        "google.com"
+      ]
+    },
+    "docs": "https://developers.google.com/search/docs/crawling-indexing/googlebot",
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/153.0.8010.36 Safari/537.36",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25 (compatible; Googlebot-Mobile/2.1; +http://www.google.com/bot.html)"
+    ],
+    "notes": "Also feeds AI Overviews and Gemini grounding. Google-Extended is a robots.txt token only and never appears in a user agent.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "bingbot",
+    "name": "Bingbot",
+    "operator": "Microsoft",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bbingbot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://www.bing.com/toolbox/bingbot.json"
+      ],
+      "reverseDns": [
+        "search.msn.com"
+      ]
+    },
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/136.0.0.0 Safari/537.36"
+    ],
+    "notes": "Also feeds Copilot answers.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "applebot",
+    "name": "Applebot",
+    "operator": "Apple",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bApplebot/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://search.developer.apple.com/applebot.json"
+      ],
+      "reverseDns": [
+        "applebot.apple.com"
+      ]
+    },
+    "docs": "https://support.apple.com/en-us/119829",
+    "examples": [
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)"
+    ],
+    "notes": "Applebot-Extended is a robots.txt token only.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "duckduckbot",
+    "name": "DuckDuckBot",
+    "operator": "DuckDuckGo",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bDuckDuckBot\\b"
+    ],
+    "examples": [
+      "DuckDuckBot/1.0; (+http://duckduckgo.com/duckduckbot.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "yandexbot",
+    "name": "YandexBot",
+    "operator": "Yandex",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bYandex(Bot|MobileBot|Images|News|Webmaster|AccessibilityBot|RenderResourcesBot)/"
+    ],
+    "verify": {
+      "reverseDns": [
+        "yandex.ru",
+        "yandex.net",
+        "yandex.com"
+      ]
+    },
+    "examples": [
+      "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "baiduspider",
+    "name": "Baiduspider",
+    "operator": "Baidu",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bBaiduspider(-render)?/"
+    ],
+    "verify": {
+      "reverseDns": [
+        "baidu.com",
+        "baidu.jp"
+      ]
+    },
+    "examples": [
+      "Mozilla/5.0 (compatible; Baiduspider-render/2.0; +http://www.baidu.com/search/spider.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "yisouspider",
+    "name": "YisouSpider",
+    "operator": "Alibaba (Shenma)",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bYisouSpider\\b"
+    ],
+    "examples": [
+      "YisouSpider",
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Mobile/15E148 YisouSpider/5.0 Safari/604.1"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "sogou",
+    "name": "Sogou web spider",
+    "operator": "Sogou",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bSogou web spider/"
+    ],
+    "examples": [
+      "Sogou web spider/4.0(+http://www.sogou.com/docs/help/webmasters.htm#07)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "petalbot",
+    "name": "PetalBot",
+    "operator": "Huawei",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bPetalBot\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (Linux; Android 7.0;) AppleWebKit/537.36 (HTML, like Gecko) Mobile Safari/537.36 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "meta-webindexer",
+    "name": "Meta-WebIndexer",
+    "operator": "Meta",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bmeta-webindexer/"
+    ],
+    "docs": "https://developers.facebook.com/docs/sharing/webmasters/crawler",
+    "examples": [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-webindexer/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "seznambot",
+    "name": "SeznamBot",
+    "operator": "Seznam",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bSeznamBot/"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; SeznamBot/4.0; +https://o-seznam.cz/napoveda/vyhledavani/en/seznambot-crawler/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "coveobot",
+    "name": "Coveobot",
+    "operator": "Coveo",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bCoveobot/"
+    ],
+    "examples": [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) (compatible; Coveobot/2.0;+http://www.coveo.com/bot.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "google-inspectiontool",
+    "name": "Google-InspectionTool",
+    "operator": "Google",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bGoogle-InspectionTool/"
+    ],
+    "verify": {
+      "ipRanges": [
+        "https://developers.google.com/static/crawling/ipranges/common-crawlers.json"
+      ],
+      "reverseDns": [
+        "googlebot.com",
+        "google.com"
+      ]
+    },
+    "examples": [
+      "Mozilla/5.0 (compatible; Google-InspectionTool/1.0)"
+    ],
+    "notes": "Search Console URL inspection and Rich Results tests.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "tiktokspider",
+    "name": "TikTokSpider",
+    "operator": "ByteDance",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bTikTokSpider\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; TikTokSpider; ttspider-feedback@tiktok.com)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "coccoc",
+    "name": "coccocbot",
+    "operator": "Cốc Cốc",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\b(image\\.?)?coccoc/"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; coccoc/1.0; +http://help.coccoc.com/searchengine)",
+      "coccoc/1.0 (http://help.coccoc.com/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "ibou",
+    "name": "ibou-search",
+    "operator": "ibou",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bibou-search/"
+    ],
+    "docs": "https://ibou.com/crawlers.html",
+    "examples": [
+      "Mozilla/5.0 (compatible; ibou-search/2.0; +https://ibou.com/crawlers.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "algolia-crawler",
+    "name": "Algolia Crawler",
+    "operator": "Algolia",
+    "category": "crawler",
+    "kind": "search",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAlgolia Crawler\\b"
+    ],
+    "examples": [
+      "Algolia Crawler/v0.0.0"
+    ],
+    "notes": "Site search indexing, including DocSearch.",
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "ahrefsbot",
+    "name": "AhrefsBot",
+    "operator": "Ahrefs",
+    "category": "bot",
+    "kind": "seo",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAhrefs(Bot|SiteAudit)/"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "semrushbot",
+    "name": "SemrushBot",
+    "operator": "Semrush",
+    "category": "bot",
+    "kind": "seo",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bSemrushBot\\b",
+      "\\bSiteAuditBot/"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "seo-crawlers",
+    "name": "Other SEO crawlers",
+    "operator": "Various",
+    "category": "bot",
+    "kind": "seo",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bBarkrowler/",
+      "\\bScreaming Frog SEO Spider/",
+      "\\bDataForSeoBot/",
+      "\\bSERankingBacklinksBot\\b",
+      "\\bMJ12bot/",
+      "\\bDotBot/",
+      "\\bBLEXBot/",
+      "\\bserpstatbot/",
+      "\\bHubSpot Crawler\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; Barkrowler/0.9; +https://babbar.tech/crawler)",
+      "Screaming Frog SEO Spider/24.0"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "link-previews",
+    "name": "Link preview fetchers",
+    "operator": "Various",
+    "category": "bot",
+    "kind": "preview",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bfacebookexternalhit/",
+      "\\bSlackbot-LinkExpanding\\b",
+      "\\bTwitterbot/",
+      "\\bDiscordbot/",
+      "\\bLinkedInBot/",
+      "\\bTelegramBot\\b",
+      "\\bWhatsApp\\b",
+      "^Facebot/",
+      "\\bBingPreview/",
+      "\\bSkypeUriPreview\\b",
+      "\\bgooglemessages/",
+      "\\bGoogleImageProxy\\b",
+      "\\bGoogle Web Preview\\b"
+    ],
+    "examples": [
+      "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+      "Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)",
+      "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)",
+      "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)",
+      "Facebot/1.0",
+      "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0; BingPreview/1.0b) like Gecko",
+      "Mozilla/5.0 (Windows NT 6.1; WOW64) SkypeUriPreview Preview/0.5",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko; Google Web Preview) Chrome/27.0.1453 Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "ad-verification",
+    "name": "Ad verification bots",
+    "operator": "Various",
+    "category": "bot",
+    "kind": "ads",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bAdsBot-Google(-Mobile)?\\b",
+      "\\bmeta-externalads/",
+      "\\bOAI-AdsBot/",
+      "\\bGoogle-Adwords\\b",
+      "(^|[(;,] ?)Mediapartners-Google\\b",
+      "^Google-Display-Ads-Bot\\b",
+      "\\bGoogle-Ads-Conversions\\b"
+    ],
+    "examples": [
+      "meta-externalads/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 (compatible; OAI-AdsBot/1.0; +https://openai.com/adsbot)",
+      "Mediapartners-Google",
+      "Google-Display-Ads-Bot",
+      "Mozilla/5.0 AppleWebKit/537.36 Chrome/139.0.7258.127 Safari/537.36 Google-Ads-Conversions"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "monitors",
+    "name": "Uptime and link monitors",
+    "operator": "Various",
+    "category": "bot",
+    "kind": "monitor",
+    "runsOn": "user",
+    "userAgents": [
+      "^lychee/",
+      "^Consul Health Check$",
+      "\\bUptimeRobot/",
+      "\\bPingdom\\b",
+      "\\bStatusCake\\b",
+      "\\bChecklyHQ\\b",
+      "\\bDatadog/Synthetics\\b",
+      "\\bGoogle-Site-Verification/",
+      "\\bGoogle Page Speed Insights\\b",
+      "\\bGoogle Search Console\\b",
+      "\\bGoogle-Structured-Data-Testing-Tool\\b",
+      "\\bCloudflareObservatory/",
+      "\\bCatchpoint\\b"
+    ],
+    "examples": [
+      "lychee/0.24.2",
+      "Consul Health Check",
+      "Mozilla/5.0 (compatible; Google-Site-Verification/1.0)",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko; Google Search Console) Chrome/41.0.2272.118 Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 CloudflareObservatory/1.0",
+      "Mozilla/5.0 (X11; Linux x86_64; Catchpoint) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Safari/537.36"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "security-scanners",
+    "name": "Security scanners",
+    "operator": "Various",
+    "category": "bot",
+    "kind": "scanner",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\bDetectify\\b",
+      "\\bCensysInspect/",
+      "\\bNuclei\\b",
+      "\\bzgrab/",
+      "\\bAcunetix\\b"
+    ],
+    "examples": [
+      "Mozilla/5.0 (compatible; Detectify) +https://detectify.com/bot/",
+      "Mozilla/5.0 (Linux; U; Android 4.0.3; en-us; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 Acunetix-Deepscan/31"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "archivers",
+    "name": "Web archivers",
+    "operator": "Various",
+    "category": "bot",
+    "kind": "archiver",
+    "runsOn": "operator",
+    "userAgents": [
+      "\\barchive\\.org_bot\\b",
+      "\\bia_archiver\\b",
+      "^Turnitin\\b"
+    ],
+    "examples": [
+      "Turnitin (https://bit.ly/2UvnfoQ)"
+    ],
+    "lastVerified": "2026-10-23"
+  },
+  {
+    "id": "feedfetcher-google",
+    "name": "FeedFetcher-Google",
+    "operator": "Google",
+    "category": "bot",
+    "kind": "feed",
+    "runsOn": "operator",
+    "userAgents": [
+      "^FeedFetcher-Google\\b"
+    ],
+    "examples": [
+      "FeedFetcher-Google; (+http://www.google.com/feedfetcher.html)"
+    ],
+    "lastVerified": "2026-10-23"
+  }
+]
