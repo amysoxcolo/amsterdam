@@ -18,11 +18,13 @@ import (
 	"strings"
 )
 
+// ParsedIP is the structure that holds a parsed IP address.
 type ParsedIP struct {
-	V6    bool
-	Value netip.Addr
+	V6    bool       // is this a v6 address?
+	Value netip.Addr // the actual address
 }
 
+// parseIP turns a string IP address into a ParsedIP. Returns nil if address is not parseable.
 func parseIP(ip string) *ParsedIP {
 	s := strings.TrimSpace(ip)
 	v6 := strings.Index(s, ":") >= 0
@@ -33,9 +35,13 @@ func parseIP(ip string) *ParsedIP {
 	return new(ParsedIP{V6: v6, Value: addy})
 }
 
+// bracketedExpr recognizes an IP address with brackets.
 var bracketedExpr = regexp.MustCompile(`^\[([^\]]+)\](?::\d+)?$`)
+
+// v4WithPortExpr recognizes an IPv4 address with a port.
 var v4WithPortExpr = regexp.MustCompile(`^(\d{1,3}(?:\.\d{1,3}){3}):\d+$`)
 
+// normalizeIP filters a supplied IP address. Returns nil if the address is not parseable.
 func normalizeIP(ip string) *string {
 	s := strings.TrimSpace(ip)
 	if s == "" || strings.Index(s, ",") >= 0 {

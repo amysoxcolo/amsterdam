@@ -16,50 +16,53 @@ import (
 	_ "embed"
 	"encoding/json/v2"
 	"fmt"
+	"maps"
 	"net/http"
 	"regexp"
 	"slices"
 	"strings"
 )
 
+// Constants reflecting confidence levels.
 const (
-	ConfidenceHigh = iota
-	ConfidenceMedium
-	ConfidenceLow
+	ConfidenceHigh   = iota // high confidence
+	ConfidenceMedium        // medium confidence
+	ConfidenceLow           // low confidence
 )
 
+// Classification is the return value from AmClassify, showing what a particular HTTP request is classified as.
 type Classification struct {
-	Category   string
-	Kind       string
-	Id         string
-	Name       string
-	Operator   string
-	Version    string
-	Verified   bool
-	Confidence int
-	Reasons    []string
+	Category   string   // category of requester: agent, ai-crawler, crawler, bot, human, unknown
+	Kind       string   // what kind of requester is it?
+	Id         string   // actual identifier
+	Name       string   // name of requester
+	Operator   string   // what organization operates this requester?
+	Version    string   // version of requester, where applicable
+	Verified   bool     // true if all this is verified, false if not
+	Confidence int      // confidence level (above)
+	Reasons    []string // why did we classify the request this way?
 }
 
 // RawAgentDef is the agent definition data loaded from the agents.json file.
 type RawAgentDef struct {
-	Id             string   `json:"id"`
-	Name           string   `json:"name"`
-	Operator       string   `json:"operator"`
-	Category       string   `json:"category"`
-	Kind           string   `json:"kind"`
-	RunsOn         string   `json:"runsOn"`
-	UserAgents     []string `json:"userAgents"`
-	Accept         []string `json:"accept"`
-	SignatureAgent []string `json:"signatureAgent"`
+	Id             string   `json:"id"`             // agent ID
+	Name           string   `json:"name"`           // agent name
+	Operator       string   `json:"operator"`       // agent operating organization
+	Category       string   `json:"category"`       // category of agent
+	Kind           string   `json:"kind"`           // kind (sub-category) of agent
+	RunsOn         string   `json:"runsOn"`         // does it run on a user machine or an operator machine?
+	UserAgents     []string `json:"userAgents"`     // regexps to recognize its User-Agent
+	Accept         []string `json:"accept"`         // Accept: string(s) the agent sends
+	SignatureAgent []string `json:"signatureAgent"` // what agent(s) we can find in a request signature
 	Verify         struct {
-		IpRanges   []string `json:"ipRanges"`
-		ReverseDNS []string `json:"reverseDns"`
-		WebBotAuth string   `json:"webBotAuth"`
+		IpRanges   []string `json:"ipRanges"`   // where can we find what IP ranges this agent uses?
+		ReverseDNS []string `json:"reverseDns"` // what should the agent's IP address resolve to?
+		WebBotAuth string   `json:"webBotAuth"` // where can I find the authentication?
 	} `json:"verify"`
-	Docs         string   `json:"docs"`
-	Examples     []string `json:"examples"`
-	Notes        string   `json:"notes"`
-	LastVerified string   `json:"lastVerified"`
+	Docs         string   `json:"docs"`         // URL to documentation
+	Examples     []string `json:"examples"`     // examples of strings that match
+	Notes        string   `json:"notes"`        // notes
+	LastVerified string   `json:"lastVerified"` // when was this information last verified?
 }
 
 // agentDef is the definition for a compiled agent.
@@ -74,12 +77,16 @@ var initAgents []byte
 // compiledAgents is the compiled list of agents.
 var compiledAgents []agentDef
 
+// AmInitAgentClass is the initialization function.
 func AmInitAgentClass() {
+	// load the raw agent list
 	var rawAgents []RawAgentDef
 	err := json.Unmarshal(initAgents, &rawAgents)
 	if err != nil {
 		panic(fmt.Sprintf("agent load failure: %v", err))
 	}
+
+	// build the compiled agent list
 	compiledAgents = make([]agentDef, len(rawAgents))
 	for i, v := range rawAgents {
 		compiledAgents[i].r = &(rawAgents[i])
@@ -92,15 +99,28 @@ func AmInitAgentClass() {
 			compiledAgents[i].patterns = make([]*regexp.Regexp, 0)
 		}
 	}
+
+	// get the list of IP range files
+	urls := make(map[string]struct{})
+	for _, ra := range rawAgents {
+		if ra.Verify.IpRanges != nil {
+			for _, url := range ra.Verify.IpRanges {
+				urls[url] = struct{}{}
+			}
+		}
+	}
+	loadIPRanges(slices.Collect(maps.Keys(urls)))
 }
 
+// AgentMatch is the return from findAgent.
 type AgentMatch struct {
-	Agent   *RawAgentDef
-	Version string
-	Reason  string
-	Weak    bool
+	Agent   *RawAgentDef // pointer to raw agent definition
+	Version string       // version of agent, where applicable
+	Reason  string       // reason we matched this agent
+	Weak    bool         // is this a weak match?
 }
 
+// normalizeHeaders joins header values and smashes case on header names.
 func normalizeHeaders(headers http.Header) map[string]string {
 	rc := make(map[string]string)
 	if headers == nil {
@@ -112,16 +132,24 @@ func normalizeHeaders(headers http.Header) map[string]string {
 	return rc
 }
 
+// normalizeAcceptExpr is how we close the gaps around delimiters in an Accept: expression.
 var normalizeAcceptExpr = regexp.MustCompile(`\s*([,;=])\s*`)
 
+// normalizeAccept squeezes the whitespace out of an Accept: expression.
 func normalizeAccept(accept string) string {
 	return strings.TrimSpace(normalizeAcceptExpr.ReplaceAllString(strings.ToLower(accept), "$1"))
 }
 
+// signatureAgentHostExpr recognizes the "host" in a URL.
 var signatureAgentHostExpr = regexp.MustCompile(`(?i)https?:\/\/([^/"\s]+)`)
+
+// signatureAgentHostBare1 is used to trim up a bare host name.
 var signatureAgentHostBare1 = regexp.MustCompile(`^[\w-]+=`)
+
+// signatureAgentHostBare2 is used to trim up a bare host name.
 var signatureAgentHostBare2 = regexp.MustCompile(`"`)
 
+// signatureAgentHost locates the host associated with a request signature.
 func signatureAgentHost(value string) *string {
 	m := signatureAgentHostExpr.FindStringSubmatch(value)
 	if m != nil {
@@ -134,6 +162,7 @@ func signatureAgentHost(value string) *string {
 	return nil
 }
 
+// findAgent matches the request against the list of compiled agents to locate a match. Returns nil on failure.
 func findAgent(ua string, h map[string]string) *AgentMatch {
 	for _, ca := range compiledAgents {
 		for _, p := range ca.patterns {
