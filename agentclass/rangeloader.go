@@ -18,6 +18,7 @@ import (
 	"encoding/json/v2"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"sync"
 	"time"
 )
@@ -41,7 +42,7 @@ type ipRangeData struct {
 	loaded    bool
 	loadError error
 	creation  *time.Time
-	cidrs     []string
+	cidrs     []netip.Prefix
 }
 
 var ipRangeStore map[string]*ipRangeData
@@ -49,11 +50,12 @@ var ipRangeStore map[string]*ipRangeData
 func loadIPRangeData(ctx context.Context, url string, rd *ipRangeData) {
 	rd.m.Lock()
 	defer rd.m.Unlock()
+LOADLOOP:
 	for counter := NUM_RETRIES; counter > 0; counter-- {
 		select {
 		case <-ctx.Done():
 			rd.loadError = ctx.Err()
-			break
+			break LOADLOOP
 		default:
 			client := &http.Client{Timeout: TIMEOUT * time.Second}
 			resp, err := client.Get(url)
@@ -61,7 +63,7 @@ func loadIPRangeData(ctx context.Context, url string, rd *ipRangeData) {
 			case <-ctx.Done():
 				resp.Body.Close()
 				rd.loadError = ctx.Err()
-				break
+				break LOADLOOP
 			default:
 				if err == nil {
 					defer resp.Body.Close()
@@ -74,9 +76,25 @@ func loadIPRangeData(ctx context.Context, url string, rd *ipRangeData) {
 							if parsed.Prefixes != nil {
 								lx = len(parsed.Prefixes)
 							}
-
+							rd.cidrs = make([]netip.Prefix, lx)
+							if lx > 0 {
+								for i, p := range parsed.Prefixes {
+									if p.IPv4Prefix == "" {
+										rd.cidrs[i], err = netip.ParsePrefix(p.IPv6Prefix)
+									} else {
+										rd.cidrs[i], err = netip.ParsePrefix(p.IPv4Prefix)
+									}
+									if err != nil {
+										rd.loadError = err
+										break LOADLOOP
+									}
+								}
+							}
+							rd.loadError = nil
+							break LOADLOOP
 						} else {
 							rd.loadError = err
+							break LOADLOOP
 						}
 					} else {
 						rd.loadError = fmt.Errorf("failed to get file with status %d", resp.StatusCode)
@@ -87,16 +105,55 @@ func loadIPRangeData(ctx context.Context, url string, rd *ipRangeData) {
 			}
 		}
 	}
+	select {
+	case <-ctx.Done():
+		if rd.loadError == nil {
+			rd.loadError = ctx.Err()
+		}
+	default:
+		// fall through
+	}
 	rd.loaded = true
 	rd.c.Signal()
 }
 
-func loadIPRanges(urls []string, ctxname any) {
+var loadRangesCtx context.Context
+
+func loadIPRanges(urls []string, ctxname any) func() {
 	ipRangeStore = make(map[string]*ipRangeData)
 	ctx, cancelfunc := context.WithCancel(context.Background())
-	ctx = context.WithValue(ctx, ctxname, "loadIPRanges")
+	loadRangesCtx = context.WithValue(ctx, ctxname, "loadIPRanges")
 	for _, url := range urls {
 		rdat := new(ipRangeData{loaded: false, loadError: nil, creation: nil})
 		rdat.c = sync.NewCond(&(rdat.m))
+		ipRangeStore[url] = rdat
+		go loadIPRangeData(loadRangesCtx, url, rdat)
 	}
+	return func() {
+		cancelfunc()
+		for _, v := range ipRangeStore {
+			v.m.Lock()
+			if !v.loaded {
+				v.loadError = context.Canceled
+				v.c.Signal()
+			}
+			v.m.Unlock()
+		}
+	}
+}
+
+func getIPRangeData(url string) ([]netip.Prefix, *time.Time, error) {
+	rdat, ok := ipRangeStore[url]
+	if !ok {
+		rdat := new(ipRangeData{loaded: false, loadError: nil, creation: nil})
+		rdat.c = sync.NewCond(&(rdat.m))
+		ipRangeStore[url] = rdat
+		go loadIPRangeData(loadRangesCtx, url, rdat)
+	}
+	rdat.m.Lock()
+	defer rdat.m.Unlock()
+	for !rdat.loaded {
+		rdat.c.Wait()
+	}
+	return rdat.cidrs, rdat.creation, rdat.loadError
 }
