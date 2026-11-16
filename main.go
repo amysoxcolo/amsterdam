@@ -27,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.erbosoft.com/amy/amsterdam/agentclass"
 	"git.erbosoft.com/amy/amsterdam/config"
 	"git.erbosoft.com/amy/amsterdam/database"
 	"git.erbosoft.com/amy/amsterdam/email"
@@ -58,6 +59,17 @@ func myIPAddress() net.IP {
 	return localAddr.IP
 }
 
+// ClassifyInjector injects AmClassify onto the request.
+func ClassifyInjector(next echo.HandlerFunc) echo.HandlerFunc {
+	opts := agentclass.AmClassifyOptions()
+	opts.HeadersComplete = true
+	return func(c *echo.Context) error {
+		classif := agentclass.AmClassify(c.Request().Header, c.RealIP(), "", opts)
+		c.Set("am.classification", classif)
+		return next(c)
+	}
+}
+
 // setupEcho creates, configures, and returns a new Echo instance.
 func setupEcho() *echo.Echo {
 	e := echo.New()
@@ -72,7 +84,7 @@ func setupEcho() *echo.Echo {
 	} else {
 		log.Warn("WARNING: --debug-panic in effect - DO NOT use this in production!")
 	}
-	e.Use(LoggingMiddleware)
+	e.Use(LoggingMiddleware, ClassifyInjector)
 
 	// set up the rate limiter from the configuration
 	rateLimiter := AmSetupRateLimiter()
@@ -257,6 +269,8 @@ func main() {
 	closer = email.SetupMailSender()
 	defer closer()
 	htmlcheck.SetupDicts()
+	closer = agentclass.AmInitAgentClass(CONTEXTVAL_NAME)
+	defer closer()
 	closer = ui.SetupUILayer()
 	defer closer()
 

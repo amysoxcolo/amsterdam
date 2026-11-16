@@ -8,6 +8,28 @@
  *
  * SPDX-License-Identifier: MPL-2.0
  */
+/* This file contains code adapted from Mintlify agent-traffic, https://github.com/mintlify/agent-traffic
+ * ---
+ * Copyright (c) 2026 Mintlify, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 // Package agentclass contains support for agent request classification.
 package agentclass
@@ -24,7 +46,7 @@ import (
 	"time"
 
 	"git.erbosoft.com/amy/amsterdam/config"
-	"github.com/labstack/gommon/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // Format for IP range data inside the RangeDataFormat.
@@ -60,10 +82,11 @@ func loadIPRangeData(ctx context.Context, url string, rd *ipRangeData) {
 LOADLOOP:
 	for counter := config.GlobalConfig.Tuning.IPRangeLoadAttempts; counter > 0; counter-- {
 		select {
-		case <-ctx.Done():
+		case <-ctx.Done(): // cancellation check on every loop
 			rd.loadError = ctx.Err()
 			break LOADLOOP
 		default:
+			// build the HTTP request
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
 				rd.loadError = err
@@ -72,14 +95,17 @@ LOADLOOP:
 			if rd.lastMod != "" {
 				req.Header.Set("If-Modified-Since", rd.lastMod)
 			}
+
+			// build a client and use it to load the file
 			client := &http.Client{Timeout: time.Duration(config.GlobalConfig.Tuning.Timeouts.IPRangeLoad) * time.Second}
 			resp, err := client.Do(req)
 			select {
-			case <-ctx.Done():
+			case <-ctx.Done(): // we might have been canceled while waiting for the GET
 				resp.Body.Close()
 				rd.loadError = ctx.Err()
 				break LOADLOOP
 			default:
+				// interpret error and status codes
 				if err != nil {
 					rd.loadError = err
 					continue LOADLOOP
@@ -93,10 +119,14 @@ LOADLOOP:
 					rd.loadError = fmt.Errorf("failed to get file with status %d", resp.StatusCode)
 					continue LOADLOOP
 				}
+
+				// load Last-Modified date
 				lastmod := ""
 				if lm, ok := resp.Header["Last-Modified"]; ok {
 					lastmod = lm[0]
 				}
+
+				// parse the JSON data retrieved
 				decoder := jsontext.NewDecoder(resp.Body)
 				var parsed RangeDataFormat
 				err = json.UnmarshalDecode(decoder, &parsed)
@@ -104,6 +134,8 @@ LOADLOOP:
 					rd.loadError = err
 					break LOADLOOP
 				}
+
+				// turn the parsed data into our internal data
 				lx := 0
 				if parsed.Prefixes != nil {
 					lx = len(parsed.Prefixes)
@@ -124,22 +156,25 @@ LOADLOOP:
 				}
 				rd.loadError = nil
 				rd.lastMod = lastmod
+				rd.creation = parsed.CreationTime
 				break LOADLOOP
 			}
 		}
 	}
 	select {
-	case <-ctx.Done():
+	case <-ctx.Done(): // one more cancel check before ending
 		if rd.loadError == nil {
 			rd.loadError = ctx.Err()
 		}
 	default:
 		// fall through
 	}
-	rd.loaded = true
+	rd.loaded = true // finished loading, let another routine go
 	rd.c.Signal()
+	log.Debugf("loaded IP range document at %s", url)
 }
 
+// prepareRefresh prepares some ipRangeData for being refreshed.
 func prepareRefresh(rd *ipRangeData) {
 	rd.m.Lock()
 	defer rd.m.Unlock()
@@ -149,6 +184,7 @@ func prepareRefresh(rd *ipRangeData) {
 	rd.loaded = false
 }
 
+// refreshRanges runs periodically to refresh the range data from the various sites.
 func refreshRanges(ctx context.Context, interval time.Duration) {
 	tick := time.NewTicker(interval)
 REFRESHLOOP:
@@ -174,8 +210,10 @@ REFRESHLOOP:
 	}
 }
 
+// loadRangesCtx is the context used for running the range load and refresh data.
 var loadRangesCtx context.Context = nil
 
+// loadIPRanges begins loading the initial IP ranges.
 func loadIPRanges(urls []string, ctxname any) func() {
 	ipRangeStore = make(map[string]*ipRangeData)
 	ctx, cancelfunc := context.WithCancel(context.Background())
@@ -186,6 +224,7 @@ func loadIPRanges(urls []string, ctxname any) func() {
 		ipRangeStore[url] = rdat
 		go loadIPRangeData(loadRangesCtx, url, rdat)
 	}
+	log.Infof("loadIPRanges: started loading %d IP range files", len(urls))
 	dur, err := time.ParseDuration(config.GlobalConfig.Tuning.IPRangeRefresh)
 	if err != nil {
 		log.Errorf("invalid IP range refresh duration \"%s\", using default", config.GlobalConfig.Tuning.IPRangeRefresh)
@@ -205,6 +244,7 @@ func loadIPRanges(urls []string, ctxname any) func() {
 	}
 }
 
+// getIPRangeData gets the IP range data for a specified URL, which may have been cached already.
 func getIPRangeData(url string) ([]netip.Prefix, *time.Time, error) {
 	rdat, ok := ipRangeStore[url]
 	if !ok {
