@@ -181,13 +181,16 @@ type AmConfig struct {
 		} `yaml:"uploads"`
 	} `yaml:"posting"`
 	Tuning struct {
-		WorkerTasks int `yaml:"workerTasks"`
-		Timeouts    struct {
+		WorkerTasks         int    `yaml:"workerTasks"`
+		IPRangeLoadAttempts int    `yaml:"ipRangeLoadAttempts"`
+		IPRangeRefresh      string `yaml:"ipRangeRefresh"`
+		Timeouts            struct {
 			HttpRead    int `yaml:"httpRead"`
 			HttpWrite   int `yaml:"httpWrite"`
 			HttpIdle    int `yaml:"httpIdle"`
 			PageExecute int `yaml:"pageExecute"`
 			PageRender  int `yaml:"pageRender"`
+			IPRangeLoad int `yaml:"ipRangeLoad"`
 		} `yaml:"timeouts"`
 		Queues struct {
 			AuditWrites    int `yaml:"auditWrites"`

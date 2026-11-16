@@ -102,12 +102,15 @@ posting:
       - "image/png"
 tuning:
   workerTasks: 4
+  ipRangeLoadAttempts: 3
+  ipRangeRefresh: "24h"
   timeouts:
     httpRead: 30
     httpWrite: 30
     httpIdle: 120
     pageExecute: 15
     pageRender: 15
+    ipRangeLoad: 10
   queues:
     auditWrites: 16
     contextRecycle: 16
